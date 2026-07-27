@@ -77,12 +77,41 @@ class EmployeeRepositoryDashboardBasicStatsTest {
     }
 
     @Test
-    @DisplayName("여사원만 집계 - 조장/지점장/role=null 은 제외한다")
-    fun onlyWomenRole() {
+    @DisplayName("여사원+조장 집계 - 지점장/role=null 은 제외한다 (레거시 리포트 AppAuthority IN (조장,여사원))")
+    fun womenAndLeaderRoles() {
         persist("EMP_WOMAN", status = "재직", costCenterCode = "C001", role = "여사원")
         persist("EMP_LEADER", status = "재직", costCenterCode = "C001", role = "조장")
         persist("EMP_MANAGER", status = "재직", costCenterCode = "C001", role = "지점장")
         persist("EMP_NULL_ROLE", status = "재직", costCenterCode = "C001", role = null)
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+
+        // 조장은 여사원 조직 관리자라 인원현황에 함께 계상된다 (레거시 new_report_72Y 정합).
+        assertThat(result).hasSize(2)
+    }
+
+    @Test
+    @DisplayName("여사원 직무 3값만 집계 - 영업직/jobCode=null 은 모수에서 제외한다")
+    fun onlyFemaleStaffJobCodes() {
+        persist("EMP_PROMOTION", status = "재직", costCenterCode = "C001", jobCode = "판촉직")
+        persist("EMP_OSC", status = "재직", costCenterCode = "C001", jobCode = "OSC직")
+        persist("EMP_LADY", status = "재직", costCenterCode = "C001", jobCode = "레이디직")
+        persist("EMP_SALES", status = "재직", costCenterCode = "C001", jobCode = "영업직")
+        persist("EMP_NO_JOB", status = "재직", costCenterCode = "C001", jobCode = null)
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+
+        assertThat(result.map { it.jobCode })
+            .containsExactlyInAnyOrder("판촉직", "OSC직", "레이디직")
+    }
+
+    @Test
+    @DisplayName("테스트/시스템 계정 제외 - 사원명에 테스트·관리자·파워세일즈 포함 시 모수에서 뺀다")
+    fun excludesTestAccountNames() {
+        persist("EMP_REAL", status = "재직", costCenterCode = "C001", name = "김여사")
+        persist("EMP_TEST", status = "재직", costCenterCode = "C001", name = "테스트계정")
+        persist("EMP_ADMIN", status = "재직", costCenterCode = "C001", name = "시스템관리자")
+        persist("EMP_PWRS", status = "재직", costCenterCode = "C001", name = "파워세일즈운영")
 
         val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
 
@@ -122,14 +151,17 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         status: String?,
         costCenterCode: String?,
         role: String? = "여사원",
-        jobCode: String? = null,
+        // 레거시 리포트 정합으로 모수가 여사원 직무 3값에 한정되므로 기본값을 판촉직으로 둔다
+        // (직무를 명시하지 않는 테스트는 모수 안에 있어야 status/지점 축 검증이 성립).
+        jobCode: String? = "판촉직",
         isDeleted: Boolean? = false,
+        name: String = employeeCode,
     ) {
         testEntityManager.persist(
             Employee(
                 employeeCode = employeeCode,
                 password = "encodedPassword",
-                name = employeeCode,
+                name = name,
                 orgName = "부산1지점",
                 status = status,
                 costCenterCode = costCenterCode,

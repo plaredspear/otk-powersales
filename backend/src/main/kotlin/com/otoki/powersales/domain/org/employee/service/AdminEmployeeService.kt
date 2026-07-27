@@ -309,6 +309,8 @@ class AdminEmployeeService(
         professionalPromotionTeam: String? = null,
         // 직무(판촉직/OSC직) — 대시보드 인원현황 도넛과 동일한 jobCode 축. blank/null 이면 미적용.
         jobCode: String? = null,
+        // 여사원 인원현황 모수(레거시 리포트 정합)로 좁힐지 — 여사원 현황 화면만 true.
+        femaleStaffHeadcountScope: Boolean = false,
     ): EmployeeListResponse {
         val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
@@ -334,7 +336,7 @@ class AdminEmployeeService(
             status, branchFilter, keyword, role, roles,
             workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
             filters.promotionTeamAssignedOnly,
-            pageable, filters.jobCodes,
+            pageable, filters.jobCodes, femaleStaffHeadcountScope,
         )
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
@@ -375,6 +377,8 @@ class AdminEmployeeService(
         professionalPromotionTeam: String? = null,
         // 직무(판촉직/OSC직) — 목록과 동일 축. blank/null 이면 미적용.
         jobCode: String? = null,
+        // 여사원 인원현황 모수(레거시 리포트 정합)로 좁힐지 — 목록과 동일하게 전달해야 건수가 일치한다.
+        femaleStaffHeadcountScope: Boolean = false,
     ): ExcelResult {
         val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
@@ -400,7 +404,7 @@ class AdminEmployeeService(
                 status, branchFilter, keyword, role, roles,
                 workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
                 filters.promotionTeamAssignedOnly,
-                pageable, filters.jobCodes,
+                pageable, filters.jobCodes, femaleStaffHeadcountScope,
             ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->

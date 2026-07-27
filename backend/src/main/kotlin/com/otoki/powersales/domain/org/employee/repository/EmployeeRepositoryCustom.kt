@@ -91,6 +91,13 @@ interface EmployeeRepositoryCustom {
      *                  OSC직 선택 시 구 명칭 '레이디직' 을 함께 포함한 집합이 전달된다
      *                  ([com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode.OSC_CODES]).
      *                  대시보드 "판촉직/OSC직 인원현황" 도넛과 동일한 판정 축(jobCode)이다.
+     * @param femaleStaffHeadcountScope  여사원 인원현황 모수로 좁힐지 여부. true 면 레거시 인원현황 리포트
+     *                  (`reports/X00/new_report_72Y`) 정합으로 두 조건을 추가한다 —
+     *                  ① `jobCode IN (판촉직,레이디직,OSC직)` ② 사원명에 테스트·관리자·파워세일즈 미포함
+     *                  ([com.otoki.powersales.domain.org.employee.enums.FemaleStaffHeadcountFilter]).
+     *                  **여사원 현황 화면 전용** — 전체 사원 관리/lookup 등 본 메소드를 공유하는 다른 화면은
+     *                  false(기본값) 로 두어 기존 모수를 유지한다. [jobCodes] 와 함께 쓰면 AND 로 겹쳐,
+     *                  사용자가 고른 직무가 여사원 직무 3값 안에서 다시 좁혀진다.
      */
     fun findEmployees(
         status: String?,
@@ -104,6 +111,7 @@ interface EmployeeRepositoryCustom {
         promotionTeamAssignedOnly: Boolean = false,
         pageable: Pageable,
         jobCodes: Set<String>? = null,
+        femaleStaffHeadcountScope: Boolean = false,
     ): Page<Employee>
 
     /**

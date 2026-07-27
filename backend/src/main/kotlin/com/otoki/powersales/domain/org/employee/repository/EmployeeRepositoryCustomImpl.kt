@@ -3,6 +3,8 @@ package com.otoki.powersales.domain.org.employee.repository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffHeadcountFilter
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
@@ -126,17 +128,37 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    /**
+     * 인원현황 모수에서 테스트/시스템 계정을 배제하는 술어 —
+     * 레거시 리포트 필터 `CUST_NAME notContain '테스트,관리자,파워세일즈'` 정합.
+     *
+     * 레거시 notContain 은 대소문자를 구분하지 않으므로 `containsIgnoreCase` 로 맞춘다.
+     * `Employee.name` 은 non-null 컬럼이지만, NOT LIKE 가 NULL 에 대해 UNKNOWN 을 반환해 행을 통째로
+     * 떨어뜨리는 것을 막기 위해 IS NULL 분기를 함께 둔다 (레거시 데이터 이관 중 공백 유입 방어).
+     */
+    private fun excludeTestAccountNames(): BooleanBuilder {
+        val predicate = BooleanBuilder()
+        FemaleStaffHeadcountFilter.EXCLUDED_NAME_KEYWORDS.forEach { keyword ->
+            predicate.and(employee.name.isNull.or(employee.name.containsIgnoreCase(keyword).not()))
+        }
+        return predicate
+    }
+
     override fun findDashboardBasicStatsProjection(
         costCenterCodes: List<String>?
     ): List<DashboardEmployeeProjection> {
-        // 여사원(role='여사원')만 집계 — 조장/지점장/관리직 제외.
-        // 여사원 현황 목록(findEmployees + AdminFemaleEmployeeController.FEMALE_EMPLOYEE_ROLES) 과
-        // 동일한 모수 축이다: role='여사원' + 삭제 제외. 두 화면의 총원이 어긋나지 않도록 함께 유지한다.
-        // 퇴직자(status='퇴직') 제외. status=NULL 은 재직/휴직 미분류로 유지하기 위해 포함한다.
+        // 레거시 SF 홈 대시보드(조장) 인원현황 리포트(`reports/X00/new_report_72Y.report-meta.xml`) 의
+        // 필터 4개를 그대로 재현한다 ([FemaleStaffHeadcountFilter] 참조):
+        //   JobCode IN (판촉직,레이디직,OSC직) / Status <> 퇴직 / AppAuthority IN (조장,여사원)
+        //   / 사원명에 테스트·관리자·파워세일즈 미포함
+        // 여사원 현황 목록(findEmployees) 과 동일 모수여야 두 화면의 총원이 일치한다.
+        // status=NULL 은 레거시 notEqual 의미(퇴직만 배제) 정합으로 포함하며, 재직/휴직 미분류로 계상된다.
         val where = BooleanBuilder()
             .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
-            .and(employee.role.eq(AppAuthority.WOMAN))
+            .and(employee.role.`in`(FemaleStaffHeadcountFilter.ROLES))
+            .and(employee.jobCode.`in`(FemaleStaffJobCode.ALL_CODES))
             .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
+            .and(excludeTestAccountNames())
         if (!costCenterCodes.isNullOrEmpty()) {
             where.and(employee.costCenterCode.`in`(costCenterCodes))
         }
@@ -166,6 +188,7 @@ class EmployeeRepositoryCustomImpl(
         promotionTeamAssignedOnly: Boolean,
         pageable: Pageable,
         jobCodes: Set<String>?,
+        femaleStaffHeadcountScope: Boolean,
     ): Page<Employee> {
         // 근무형태 필터가 걸렸으나 매칭 사원이 0명이면 빈 결과 — employee.id IN (empty) 의 DB/QueryDSL
         // 렌더링에 의존하지 않고 명시적으로 빈 페이지를 반환한다(프로젝트 빈 컬렉션 IN 방어 패턴 정합).
@@ -198,6 +221,12 @@ class EmployeeRepositoryCustomImpl(
         // OSC직 선택 시 구 명칭 '레이디직' 이 포함된 집합이 전달된다(서비스 레이어에서 확장).
         if (!jobCodes.isNullOrEmpty()) {
             where.and(employee.jobCode.`in`(jobCodes))
+        }
+        // 여사원 인원현황 모수 — 레거시 리포트(new_report_72Y) 정합. 여사원 현황 화면 전용이며,
+        // 본 메소드를 공유하는 전체 사원 관리/lookup 화면은 이 조건 없이 기존 모수를 유지한다.
+        if (femaleStaffHeadcountScope) {
+            where.and(employee.jobCode.`in`(FemaleStaffJobCode.ALL_CODES))
+            where.and(excludeTestAccountNames())
         }
         // 전문행사조 필터 — '일반'(미배정) 은 IS NULL 뿐 아니라, SF 레거시가 정규화 없이 적재한
         // '일반'·'해당없음' 문자열 행도 함께 조회한다 (화면 목록이 이 값들을 '일반'으로 표시하는 것과 정합).

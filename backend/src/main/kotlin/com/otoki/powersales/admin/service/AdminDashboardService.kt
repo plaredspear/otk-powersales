@@ -279,7 +279,9 @@ class AdminDashboardService(
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
 
-        // 판촉직/OSC직 (결정 D6 — Employee.jobCode). etc = 두 직군 외/null (모수는 사원 전체로 일치)
+        // 판촉직/OSC직 (결정 D6 — Employee.jobCode). 레이디직(구 OSC) 은 OSC 세그먼트에 합산한다.
+        // 모수가 레거시 리포트 정합으로 여사원 직무 3값에 한정되므로(findDashboardBasicStatsProjection)
+        // etc 는 통상 0 이다 — 모수 조건이 바뀌었을 때 합계가 총원과 어긋나지 않도록 잔차를 잡는 안전망으로 유지한다.
         val promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION }
         val osc = employees.count { it.jobCode in JOB_CODES_OSC }
         val staffTypeEtcEmployees = employees.filter { it.jobCode !in FemaleStaffJobCode.ALL_CODES }

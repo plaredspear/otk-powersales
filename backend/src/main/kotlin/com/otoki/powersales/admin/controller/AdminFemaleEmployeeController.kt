@@ -35,9 +35,9 @@ import java.time.YearMonth
 import java.time.format.DateTimeParseException
 
 /**
- * 여사원 현황 페이지 전용 — role 은 [AppAuthority.WOMAN] ("여사원") 로 고정.
- * 조장([AppAuthority.LEADER]) 은 대시보드 인원현황 도넛과 모수를 맞추기 위해 제외한다
- * ([FEMALE_EMPLOYEE_ROLES] 참조).
+ * 여사원 현황 페이지 전용 — role 은 [AppAuthority.WOMAN] ("여사원") + [AppAuthority.LEADER] ("조장") 로 고정.
+ * 조장은 여사원 조직을 관리하는 직책이라 여사원 현황에 함께 노출한다 (레거시 인원현황 리포트 정합,
+ * [FEMALE_EMPLOYEE_ROLES] 참조).
  *
  * 권한 관리 (`/settings/admin-accounts`) 등 전체 role 을 보여야 하는 화면은
  * [AdminEmployeeController.getEmployees] 를 그대로 사용하고, 본 endpoint 는
@@ -72,14 +72,15 @@ class AdminFemaleEmployeeController(
 
     companion object {
         /**
-         * 여사원 현황에 노출할 직책 — [AppAuthority.WOMAN] ("여사원") 단일.
+         * 여사원 현황에 노출할 직책 — 여사원 + 조장(여사원 조직 관리자).
          *
-         * 과거에는 조장([AppAuthority.LEADER]) 을 함께 노출했으나, 대시보드 "판촉직/OSC직 인원현황"
-         * 도넛과 모수를 일치시키기 위해 여사원 단일로 좁혔다 (사용자 결정). 대시보드 집계
-         * ([com.otoki.powersales.admin.service.AdminDashboardService] · `findDashboardBasicStatsProjection`)
-         * 도 동일하게 `role = '여사원'` 이므로 두 화면의 총원이 같아진다.
+         * 레거시 SF 홈 대시보드(조장) 의 인원현황 리포트
+         * (`reports/X00/new_report_72Y.report-meta.xml`) 가 `AppAuthority__c IN ('조장','여사원')` 으로
+         * 조장을 포함하므로 동일 축을 유지한다. 대시보드 기본현황 집계
+         * ([com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findDashboardBasicStatsProjection])
+         * 도 같은 role 집합을 쓴다 — 두 화면의 총원이 어긋나지 않도록 함께 유지할 것.
          */
-        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN)
+        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
 
         /** 권한 밖 지점 요청 시 사용 — `branchCodes` 가 비어 `effectiveBranchCodes` 가 NoAccess 로 판정한다. */
         private val NO_ACCESS_SCOPE = DataScope(branchCodes = emptyList(), isAllBranches = false)
@@ -177,6 +178,9 @@ class AdminFemaleEmployeeController(
             workType3 = workType3,
             professionalPromotionTeam = professionalPromotionTeam,
             jobCode = jobCode,
+            // 레거시 인원현황 리포트 정합 모수 — 여사원 직무 3값 한정 + 테스트/시스템 계정 제외.
+            // 대시보드 기본현황 집계와 동일 모수라 두 화면의 총원이 일치한다.
+            femaleStaffHeadcountScope = true,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -208,6 +212,9 @@ class AdminFemaleEmployeeController(
             workType3 = workType3,
             professionalPromotionTeam = professionalPromotionTeam,
             jobCode = jobCode,
+            // 레거시 인원현황 리포트 정합 모수 — 여사원 직무 3값 한정 + 테스트/시스템 계정 제외.
+            // 대시보드 기본현황 집계와 동일 모수라 두 화면의 총원이 일치한다.
+            femaleStaffHeadcountScope = true,
         )
         return ExcelResponseUtils.build(result)
     }
