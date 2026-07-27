@@ -949,4 +949,104 @@ class TeamMemberScheduleRepositoryTest {
             assertThat(found!!.workingType).isEqualTo(WorkingType.ANNUAL_LEAVE)
         }
     }
+
+    @Nested
+    @DisplayName("기간별 근무기간 조회 — 연차 일수 집계 (countAnnualLeaveDaysForPeriodByEmployee)")
+    inner class CountAnnualLeaveDaysForPeriod {
+
+        private val from = LocalDate.of(2026, 7, 1)
+        private val to = LocalDate.of(2026, 7, 31)
+
+        /**
+         * 운영 실태 재현 — 연차 행은 SAP 인바운드 생성분이라 일정의 costCenterCode 가 NULL 이고
+         * 사원 소속 지점만 채워져 있다.
+         */
+        private fun persistAnnualLeave(emp: Employee, date: LocalDate, scheduleCostCenter: String? = null) {
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = emp,
+                    workingDate = date,
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                ).apply { costCenterCode = scheduleCostCenter }
+            )
+        }
+
+        @Test
+        @DisplayName("기간 내 연차 일수를 센다 — 근무 행/기간 밖 연차는 제외")
+        fun countsOnlyAnnualLeaveInPeriod() {
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 7, 1))
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 7, 2))
+            // 근무 행 — 연차가 아니므로 제외
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 3),
+                    workingType = WorkingType.WORK,
+                )
+            )
+            // 기간 밖 연차 — 제외
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 8, 1))
+            testEntityManager.clear()
+
+            val count = teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
+                "EMP001", from, to, emptyList()
+            )
+
+            assertThat(count).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("같은 날 연차 행이 중복돼도 1일로 센다 (근무일 distinct)")
+        fun countsDistinctWorkingDays() {
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 7, 1))
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 7, 1))
+            testEntityManager.clear()
+
+            val count = teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
+                "EMP001", from, to, emptyList()
+            )
+
+            assertThat(count).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("지점 스코프는 사원 소속 지점 기준 — 일정 costCenterCode 가 NULL 이어도 집계된다")
+        fun scopesByEmployeeCostCenterEvenWhenScheduleCostCenterIsNull() {
+            val emp = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "EMP100", name = "지점사원").apply { costCenterCode = "5816" }
+            )
+            // 운영 실태 — 연차 행의 일정 costCenterCode 는 NULL.
+            persistAnnualLeave(emp, LocalDate.of(2026, 7, 1))
+            persistAnnualLeave(emp, LocalDate.of(2026, 7, 2))
+            testEntityManager.clear()
+
+            val inScope = teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
+                "EMP100", from, to, listOf("5816")
+            )
+            val outOfScope = teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
+                "EMP100", from, to, listOf("9999")
+            )
+
+            // 일정 기준으로 스코프를 걸면 NULL 이라 0 이 된다 — 사원 기준이어야 2.
+            assertThat(inScope).isEqualTo(2)
+            assertThat(outOfScope).isZero()
+        }
+
+        @Test
+        @DisplayName("다른 사원의 연차는 세지 않는다")
+        fun excludesOtherEmployees() {
+            val other = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "EMP200", name = "다른사원")
+            )
+            persistAnnualLeave(testEmployee, LocalDate.of(2026, 7, 1))
+            persistAnnualLeave(other, LocalDate.of(2026, 7, 2))
+            testEntityManager.clear()
+
+            val count = teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
+                "EMP001", from, to, emptyList()
+            )
+
+            assertThat(count).isEqualTo(1)
+        }
+    }
 }

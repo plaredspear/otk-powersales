@@ -631,7 +631,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 employee.employeeCode.eq(employeeCode),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
-                costCenterCodeIn(branchCodes),
+                // 지점 스코프는 사원 소속 지점 기준 — 연차 행은 SAP 인바운드 생성 시
+                // costCenterCode 를 채우지 않아(운영 전건 NULL) 일정 기준으로 걸면 전건 배제된다.
+                // 좌측 여사원 목록(AdminAttendInfoService.getMembers) 과 동일 축.
+                employeeCostCenterCodeIn(branchCodes),
                 isNotDeleted(),
             )
             .fetchOne()
@@ -689,6 +692,17 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     private fun costCenterCodeIn(branchCodes: List<String>): BooleanExpression? {
         return if (branchCodes.isEmpty()) null
         else teamMemberSchedule.costCenterCode.`in`(branchCodes)
+    }
+
+    /**
+     * 지점 스코프 — **사원 소속 지점**(employee.costCenterCode) 기준.
+     *
+     * 일정 자체의 costCenterCode 가 비어 있을 수 있는 행(연차 등 SAP 인바운드 생성분) 에 쓴다.
+     * 일정 기준이 필요하면 [costCenterCodeIn].
+     */
+    private fun employeeCostCenterCodeIn(branchCodes: List<String>): BooleanExpression? {
+        return if (branchCodes.isEmpty()) null
+        else employee.costCenterCode.`in`(branchCodes)
     }
 
     private fun isNotDeleted(): BooleanExpression {

@@ -210,7 +210,11 @@ interface TeamMemberScheduleRepositoryCustom {
      * 연차 행은 거래처(account) 도 출근등록(attendanceLog) 도 없어 거래처별 집계
      * ([findWorkHistoryForPeriodByEmployee]) 의 모수에 들어오지 않는다. 사원 단위 요약으로 별도 조회한다.
      * 필터: employee.employeeCode 정확일치, workingDate ∈ [from, to], workingType = ANNUAL_LEAVE,
-     *       branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점).
+     *       branchCodes 비어있지 않으면 **employee.costCenterCode** ∈ branchCodes.
+     * 지점 스코프 축이 근무 행(일정의 costCenterCode) 과 다른 이유: 연차 행은 SAP 인바운드
+     * ([AttendInfoToScheduleConverter]) 생성 시 costCenterCode 를 채우지 않아 운영 전건 NULL 이라,
+     * 일정 기준으로 걸면 지점 권한자에게 전건 배제된다. 좌측 여사원 목록
+     * (`AdminAttendInfoService.getMembers` → `findWomenByCostCenterCodes`) 과 동일 축이다.
      * 같은 날 연차 행이 중복 생성돼도 1일로 세도록 근무일 distinct 로 집계한다.
      */
     fun countAnnualLeaveDaysForPeriodByEmployee(
