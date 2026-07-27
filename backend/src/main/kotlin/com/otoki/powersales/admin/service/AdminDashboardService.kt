@@ -347,8 +347,19 @@ class AdminDashboardService(
      *   그 외 값·null 은 [StaffRank.ETC_LABEL] 한 칸으로 합산해 지점 간 열 구성을 고정한다.
      *
      * 인원이 0인 그룹은 표에서 제외한다 — 해당 지점에 OSC직이 없으면 OSC직 열 자체가 나오지 않는다.
+     *
+     * ## 모수: 재직자만 (같은 탭의 다른 차트와 다름)
+     *
+     * 본 표는 **현장 배치 가능 인력**을 보는 용도라 [STATUS_ACTIVE] 만 계상한다. 같은 탭의
+     * 인원현황 도넛 / 총원 도넛 / 연령별은 레거시 리포트(`new_report_72Y`) 정합으로 휴직자를 포함하므로
+     * (퇴직만 제외), **이 표의 총합계는 다른 차트의 총원보다 휴직자 수만큼 적다** (사용자 결정).
+     * 운영 실측 기준 전사 휴직 34명 / 재직 1504명. 화면 툴팁에 사유를 명시한다.
+     *
+     * 쿼리([EmployeeRepository.findDashboardBasicStatsProjection])는 공유하고 여기서만 좁힌다 —
+     * 쿼리를 바꾸면 다른 차트의 모수까지 함께 줄어든다.
      */
-    private fun buildRankGroups(employees: List<DashboardEmployeeProjection>): List<RankGroupCount> {
+    private fun buildRankGroups(all: List<DashboardEmployeeProjection>): List<RankGroupCount> {
+        val employees = all.filter { it.status == STATUS_ACTIVE }
         val (leaders, others) = employees.partition {
             it.jikchak?.trim() == FemaleStaffHeadcountFilter.LEADER_JIKCHAK
         }

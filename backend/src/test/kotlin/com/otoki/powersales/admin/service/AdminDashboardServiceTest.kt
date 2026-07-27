@@ -328,6 +328,28 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("직급별 인원현황 — 재직자만 집계 (휴직·미분류는 제외, 같은 탭 다른 차트와 모수가 다름)")
+    fun rankGroupsCountsActiveOnly() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(status = "재직", jobCode = "판촉직", jikwee = "OSPM"),
+            employee(status = "휴직", jobCode = "판촉직", jikwee = "OSPM"),
+            employee(status = null, jobCode = "판촉직", jikwee = "OSPM"),
+            employee(status = "휴직", jobCode = "판촉직", jikchak = "판매조장", jikwee = "주임"),
+        )
+
+        val basic = service.getDashboard(emptyList(), "2026-05").basicStats
+
+        // 직급별 표는 재직 1명만
+        assertThat(basic.byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(1)
+        // 휴직 조장도 제외되므로 판매조장 그룹 자체가 나오지 않는다
+        assertThat(basic.byRank.map { it.group }).containsExactly("판촉직")
+        // 같은 탭의 다른 차트는 휴직 포함 모수를 유지한다 (퇴직만 제외)
+        assertThat(basic.totalByPosition.active + basic.totalByPosition.onLeave + basic.totalByPosition.etc)
+            .isEqualTo(4)
+    }
+
+    @Test
     @DisplayName("직급별 인원현황 — 인원 0인 그룹은 표에서 제외한다")
     fun rankGroupsOmitsEmptyGroups() {
         stubEmpty()
