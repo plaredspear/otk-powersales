@@ -207,11 +207,11 @@ class AppointmentUserProfileUpdaterTest {
         }
 
         @Test
-        @DisplayName("코드 변환 실패 - 매칭 없음 -> 원본 코드 반환")
-        fun codeResolutionFallback() {
+        @DisplayName("코드 변환 실패 - 매칭 없음 -> null 반환 (SF 정합 — 원시코드 저장 금지)")
+        fun codeResolutionMissReturnsNull() {
             val codeMap = mapOf("H20020:D0052" to "조장")
             val result = updater.resolveCode(codeMap, "H20020", "UNKNOWN")
-            assertThat(result).isEqualTo("UNKNOWN")
+            assertThat(result).isNull()
         }
 
         @Test
@@ -254,6 +254,28 @@ class AppointmentUserProfileUpdaterTest {
             assertThat(employee.jikchak).isNull()
             // 발령일 도래 시 배치가 반영할 대상을 확정해 둔다 (SF PostponedAppointment__c 대응).
             assertThat(employee.postponedAppointment).isSameAs(appointment)
+        }
+
+        @Test
+        @DisplayName("예약 발령 - 전문행사조는 건드리지 않음 (SF cls:179-202 유예 경로에 PPT 로직 없음)")
+        fun reservedAppointmentKeepsPPT() {
+            val employee = createEmployee(
+                role = AppAuthority.WOMAN,
+                professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE
+            )
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "신규지점",
+                jikchak = "D0053", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 3, 23), ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.crmWorkStartDate).isEqualTo(LocalDate.of(2026, 3, 23))
+            // 즉시 반영이었다면 초기화 대상 조건(A049 + 비D0052 + 전보)이지만, 유예 시점에는 유지된다.
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }
 
@@ -355,26 +377,43 @@ class AppointmentUserProfileUpdaterTest {
     inner class PPTResetTests {
 
         @Test
-        @DisplayName("여사원 + 전보 -> 미배정(null)으로 초기화")
+        @DisplayName("여사원 분기 발령(A049 + 비D0052) + 전보 -> 미배정(null)으로 초기화")
         fun resetToGeneral() {
             val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
-            updater.applyProfessionalPromotionTeamReset(employee, "전보")
+            updater.applyProfessionalPromotionTeamReset(employee, "A049", "D0053", "전보")
             assertThat(employee.professionalPromotionTeam).isNull()
         }
 
         @Test
-        @DisplayName("여사원 + 승진 -> 기존 값 유지")
+        @DisplayName("여사원 분기 발령 + 승진 -> 기존 값 유지")
         fun keepOnPromotion() {
             val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
-            updater.applyProfessionalPromotionTeamReset(employee, "승진")
+            updater.applyProfessionalPromotionTeamReset(employee, "A049", "D0053", "승진")
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
 
         @Test
-        @DisplayName("조장 -> 초기화 안 함")
+        @DisplayName("조장 발령(D0052) -> 초기화 안 함")
         fun leaderNoReset() {
             val employee = createEmployee(role = AppAuthority.LEADER, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
-            updater.applyProfessionalPromotionTeamReset(employee, "전보")
+            updater.applyProfessionalPromotionTeamReset(employee, "A049", "D0052", "전보")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+        }
+
+        @Test
+        @DisplayName("비여사원 직무코드(A034) 발령 + 기존 여사원 -> 유지 (SF cls:143-151 — 발령 분기 기준 판정)")
+        fun nonPromotionJobCodeKeepsPPT() {
+            // role 기준으로 판정하던 회귀 방지 — 영업직 전환 발령이 전문행사조를 지우면 SF 와 어긋난다.
+            val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            updater.applyProfessionalPromotionTeamReset(employee, "A034", "D0053", "전보")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+        }
+
+        @Test
+        @DisplayName("jobCode null -> 유지")
+        fun nullJobCodeKeepsPPT() {
+            val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            updater.applyProfessionalPromotionTeamReset(employee, null, "D0053", "전보")
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }

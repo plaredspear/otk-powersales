@@ -129,7 +129,9 @@ class AppointmentUserProfileUpdater(
         employee.postponedAppointment = null
 
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
-        applyProfessionalPromotionTeamReset(employee, appointment.ordDetailNode)
+        applyProfessionalPromotionTeamReset(
+            employee, appointment.jobCode, appointment.jikchak, appointment.ordDetailNode
+        )
     }
 
     private fun applyReservedAppointment(
@@ -143,8 +145,9 @@ class AppointmentUserProfileUpdater(
         // 참조가 없으면 발령일 도래 시 배치가 "최신 발령" 을 추측해야 하고, 동일 발령일 다건에서
         // 옛 발령을 집는 사고로 이어진다.
         employee.postponedAppointment = appointment
+        // SF 유예 경로(cls:179-202) 는 AppAuthority/APPLoginActive + 예약 2필드만 기록한다 —
+        // 전문행사조 초기화는 즉시 반영 경로 전용이므로 여기서 호출하지 않는다.
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
-        applyProfessionalPromotionTeamReset(employee, appointment.ordDetailNode)
     }
 
     internal fun applyJobCodeAuthority(employee: Employee, jobCode: String?, jikchak: String?) {
@@ -159,8 +162,22 @@ class AppointmentUserProfileUpdater(
         }
     }
 
-    internal fun applyProfessionalPromotionTeamReset(employee: Employee, ordDetailNode: String?) {
-        if (employee.role != AppAuthority.WOMAN) return
+    /**
+     * 전문행사조 초기화 (SF `ProfessionalPromotionTeam__c = '일반'` — 신규는 미배정=null 컨벤션).
+     *
+     * SF `AppointmentTriggerHanlder.cls:143-151` 정합 — 판정은 사원의 현재 role 이 아니라 **발령
+     * 레코드의 여사원 분기**(직무코드 ∈ A049/A053/A055 AND 직책 ≠ D0052) 기준이다. role 기준으로
+     * 판정하면 비여사원 직무코드(A034 영업직 등) 발령을 받은 기존 여사원의 전문행사조까지 초기화되어
+     * SF 와 어긋난다.
+     */
+    internal fun applyProfessionalPromotionTeamReset(
+        employee: Employee,
+        jobCode: String?,
+        jikchak: String?,
+        ordDetailNode: String?
+    ) {
+        if (jobCode == null || jobCode !in PROMOTION_JOB_CODES) return
+        if (jikchak == "D0052") return
         if (ordDetailNode != "승진") {
             employee.professionalPromotionTeam = null
         }
@@ -175,10 +192,16 @@ class AppointmentUserProfileUpdater(
         }
     }
 
+    /**
+     * SystemCodeMaster 코드 → 한글명 변환.
+     *
+     * SF `AppointmentTriggerHanlder.cls:169-173` 정합 — 매핑이 없으면 **null** 을 저장한다
+     * (`sysCodeMapGroup.get(g).get(c)` 미스 시 null). 원시코드(A034 등) 를 fallback 으로 저장하면
+     * 한글명 기준으로 조회하는 화면/리포트에서 누락과 동일한데 null 과 달리 눈에 띄지 않는다.
+     */
     internal fun resolveCode(codeMap: Map<String, String>, groupCode: String, detailCode: String?): String? {
         if (detailCode == null) return null
-        val key = "$groupCode:$detailCode"
-        return codeMap[key] ?: detailCode
+        return codeMap["$groupCode:$detailCode"]
     }
 
     internal fun loadSystemCodeMap(): Map<String, String> {
