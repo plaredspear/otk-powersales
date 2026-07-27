@@ -39,11 +39,17 @@ class PostponedAppointmentBatchService(
 
         for (employee in employees) {
             try {
-                val appointment = employee.employeeCode
-                    ?.let { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc(it) }
+                // SF PostponedAppointmentBatch.cls:15 정합 — 예약 시 기록한 발령 참조(PostponedAppointment__c
+                // 대응) 를 우선 사용한다. 참조가 없는 건은 마이그레이션으로 crm_work_start_date 만 넘어온
+                // 레거시 데이터라, 사원코드 기준 최신 발령으로 fallback 한다.
+                val appointment = employee.postponedAppointment
+                    ?: employee.employeeCode?.let {
+                        appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc(it)
+                    }
                 if (appointment == null) {
                     log.warn("예약 발령 Appointment 없음: employeeCode={}", employee.employeeCode)
                     employee.crmWorkStartDate = null
+                    employee.postponedAppointment = null
                     skippedCount++
                     continue
                 }

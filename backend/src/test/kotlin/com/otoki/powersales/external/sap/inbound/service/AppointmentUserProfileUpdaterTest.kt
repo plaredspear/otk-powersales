@@ -105,6 +105,8 @@ class AppointmentUserProfileUpdaterTest {
             assertThat(employee.costCenterCode).isEqualTo("1111")
             assertThat(employee.orgName).isEqualTo("제1영업지점")
             assertThat(employee.crmWorkStartDate).isNull()
+            // 즉시 반영은 예약 상태를 남기지 않는다 — 예정일과 참조를 함께 소진.
+            assertThat(employee.postponedAppointment).isNull()
         }
 
         @Test
@@ -250,6 +252,8 @@ class AppointmentUserProfileUpdaterTest {
             assertThat(employee.orgName).isEqualTo("기존지점")
             assertThat(employee.costCenterCode).isEqualTo("0000")
             assertThat(employee.jikchak).isNull()
+            // 발령일 도래 시 배치가 반영할 대상을 확정해 둔다 (SF PostponedAppointment__c 대응).
+            assertThat(employee.postponedAppointment).isSameAs(appointment)
         }
     }
 

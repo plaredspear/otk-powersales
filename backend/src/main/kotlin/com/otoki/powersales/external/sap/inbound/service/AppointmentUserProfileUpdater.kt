@@ -125,6 +125,8 @@ class AppointmentUserProfileUpdater(
         employee.appointmentDate = appointDate
         employee.ordDetailNode = appointment.ordDetailNode
         employee.crmWorkStartDate = null
+        // SF PostponedAppointmentBatch.cls:140-141 정합 — 예약 소진 시 참조/예정일 동시 해제.
+        employee.postponedAppointment = null
 
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
         applyProfessionalPromotionTeamReset(employee, appointment.ordDetailNode)
@@ -137,6 +139,10 @@ class AppointmentUserProfileUpdater(
         codeMap: Map<String, String>
     ) {
         employee.crmWorkStartDate = appointDate
+        // SF AppointmentTriggerHanlder.cls:197-198 정합 — 예정일 + 반영 대상 발령 참조를 함께 기록한다.
+        // 참조가 없으면 발령일 도래 시 배치가 "최신 발령" 을 추측해야 하고, 동일 발령일 다건에서
+        // 옛 발령을 집는 사고로 이어진다.
+        employee.postponedAppointment = appointment
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
         applyProfessionalPromotionTeamReset(employee, appointment.ordDetailNode)
     }
