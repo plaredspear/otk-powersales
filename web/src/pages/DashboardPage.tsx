@@ -55,16 +55,25 @@ function cardTitle(title: string, desc: string) {
   );
 }
 
-/** 기본 현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외). */
+/**
+ * 기본 현황 각 그래프의 데이터 집계 기준 안내 문구 (지점 조건은 제외).
+ *
+ * 각 차트의 **기준 시점**을 반드시 명시한다 — 같은 탭 안에서도 차트마다 기준이 다르기 때문이다
+ * (인원현황·총원·연령별 = 현재 시점 사원 마스터 / 근무형태별 = 선택월 MFEIS). 조회월 셀렉터는
+ * 이 탭에서 잠겨 있다([BASIC_TAB_KEY]).
+ *
+ * 모수는 레거시 SF 홈 대시보드(조장) 인원현황 리포트 정합 — 여사원+조장, 여사원 직무 3값 한정,
+ * 퇴직자·테스트 계정 제외 (backend `FemaleStaffHeadcountFilter`).
+ */
 const BASIC_CHART_INFO = {
   staffType:
-    '여사원(조장·지점장 제외)의 직군을 기준으로 집계합니다. 판촉직과 OSC직(구 레이디직 포함)으로 분류하며, 두 직군에 해당하지 않거나 직군이 없는 사원은 기타로 표시합니다.',
+    '조회 시점의 현재 인원입니다. 상단 조회월과 무관합니다. 여사원·조장 중 판촉직과 OSC직(구 레이디직 포함)을 직무 기준으로 분류하며, 퇴직자와 테스트 계정은 제외합니다.',
   position:
-    '여사원(조장·지점장 제외)의 재직 상태를 기준으로 집계합니다. 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
+    '조회 시점의 현재 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
   ageGroup:
-    '여사원(조장·지점장 제외)의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
+    '조회 시점의 현재 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
   workType:
-    '월별 여사원 통합일정의 근무형태(고정·격고·순회)별 환산인원을 합산하여 집계합니다.',
+    '월별 여사원 통합일정의 근무형태(고정·격고·순회)별 환산인원을 합산하여 집계합니다. 이 차트만 조회월 기준이며, 나머지 세 차트는 현재 시점 기준입니다.',
 } as const;
 
 /**
@@ -312,6 +321,23 @@ function ageGroupItems(rows: AgeGroupCount[]) {
 
 const CHART_HEIGHT = 320;
 
+/**
+ * 기본 현황 탭 key. 이 탭에서는 조회월 셀렉터를 잠근다.
+ *
+ * 사유: 기본 현황의 인원 집계는 **사원 마스터의 현재 상태 스냅샷**이라 조회월과 무관하다
+ * (레거시 SF `DKRetail__Employee__c` 도 기간 조건 없는 현재 상태 오브젝트이며, 레거시 인원현황
+ * 리포트에 기간 필터가 없다). 셀렉터가 열려 있으면 과거 이력을 조회할 수 있는 것처럼 보이지만
+ * 실제로는 값이 바뀌지 않아 오해를 준다.
+ *
+ * 단, 같은 탭의 '근무형태별 고정/격고/순회' 는 선택월 MFEIS 를 실제로 사용한다 — 탭 단위로 잠그는
+ * 이상 이 차트도 함께 고정되는 것을 감수한다(사용자 결정). 각 차트의 기준 시점은 [BASIC_CHART_INFO]
+ * 툴팁에 명시한다.
+ */
+const BASIC_TAB_KEY = 'basic';
+
+/** 기본 현황 탭에서 조회월이 잠긴 사유 — 셀렉터 아래에 상시 노출. */
+const BASIC_TAB_PERIOD_LOCK_NOTICE = '기본 현황은 현재 시점 기준입니다';
+
 export default function DashboardPage() {
   const today = new Date();
   const [year, setYear] = useState<number>(today.getFullYear());
@@ -320,6 +346,9 @@ export default function DashboardPage() {
   const [queryParams, setQueryParams] = useState<QueryParams>({
     yearMonth: toYearMonth(today.getFullYear(), today.getMonth() + 1),
   });
+  // 활성 탭 — 기본 현황 탭에서는 조회월 셀렉터를 잠근다(BASIC_TAB_KEY 참조).
+  const [activeTab, setActiveTab] = useState<string>('sales');
+  const isBasicTab = activeTab === BASIC_TAB_KEY;
 
   // 시스템 관리자(전사 권한)는 마운트 시 전사 자동 조회를 막고, 지점/전체를 명시 선택해 조회를 눌렀을
   // 때만 실행한다 (무거운 전사 집계의 의도치 않은 자동 트리거 방지). 비-시스템관리자는 권한 스코프가
@@ -607,6 +636,9 @@ export default function DashboardPage() {
         periodFilter={
           <Space direction="vertical" size={4}>
             <span>조회월:</span>
+            {/* 기본 현황 탭에서는 조회월을 잠근다 — 인원 집계가 현재 시점 스냅샷이라
+                월을 바꿔도 값이 변하지 않아, 열어 두면 과거 이력 조회로 오해된다.
+                disabled 상태에서는 antd Tooltip 이 뜨지 않으므로 사유를 셀렉터 아래에 직접 노출한다. */}
             <DatePicker
               picker="month"
               value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
@@ -616,9 +648,15 @@ export default function DashboardPage() {
                 setMonth(value.month() + 1);
               }}
               allowClear={false}
+              disabled={isBasicTab}
               format="YYYY-MM"
               style={{ width: 140 }}
             />
+            {isBasicTab && (
+              <span style={{ fontSize: 12, color: '#8c8c8c', whiteSpace: 'nowrap' }}>
+                {BASIC_TAB_PERIOD_LOCK_NOTICE}
+              </span>
+            )}
           </Space>
         }
       />
@@ -635,11 +673,12 @@ export default function DashboardPage() {
       <Spin spinning={dashboardQuery.isLoading}>
         <Tabs
           style={{ marginTop: 16 }}
-          defaultActiveKey="sales"
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={[
             { key: 'sales', label: '매출현황', children: beforeSearch ? searchPrompt : salesTab },
             { key: 'deployment', label: '여사원 투입현황', children: beforeSearch ? searchPrompt : deploymentTab },
-            { key: 'basic', label: '기본 현황', children: beforeSearch ? searchPrompt : basicTab },
+            { key: BASIC_TAB_KEY, label: '기본 현황', children: beforeSearch ? searchPrompt : basicTab },
           ]}
         />
       </Spin>
