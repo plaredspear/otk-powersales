@@ -181,6 +181,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                     account.id,
                     account.externalKey,
                     account.name,
+                    account.address1,
                     // 거래처유형 — 월매출(전산실적) 화면과 동일 축(ABC유형: abcTypeCode + abcType 결합 라벨).
                     // 기존 account.accountType(SF Account.Type, 순수 명칭) 대신 abcTypeLabel 표현식으로 통일.
                     abcTypeLabelExpr(account.abcTypeCode, account.abcType),

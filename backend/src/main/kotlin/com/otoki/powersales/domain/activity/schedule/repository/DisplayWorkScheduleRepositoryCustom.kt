@@ -32,6 +32,8 @@ data class ScheduleListRow(
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
+    // 거래처 주소 (SF `Account.Address1__c`) — 엑셀 export 전용 (목록 화면 컬럼에는 없음)
+    val accountAddress: String?,
     val accountType: String?,
     val accountStatusName: String?,
     val typeOfWork3: TypeOfWork3?,

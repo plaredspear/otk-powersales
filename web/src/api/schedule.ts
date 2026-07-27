@@ -59,6 +59,8 @@ export interface ScheduleListItem {
   accountId: number | null;
   accountCode: string | null;
   accountName: string | null;
+  /** 거래처 주소 (SF Account.Address1__c) — 엑셀 다운로드 전용, 목록 테이블에는 미표시 */
+  accountAddress: string | null;
   /** 거래처유형 (SF Account.Type) */
   accountType: string | null;
   /** 거래처상태 (SF Account.AccountStatusName__c) */

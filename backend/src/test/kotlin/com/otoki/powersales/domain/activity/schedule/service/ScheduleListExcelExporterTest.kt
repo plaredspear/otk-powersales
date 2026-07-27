@@ -28,6 +28,7 @@ class ScheduleListExcelExporterTest {
         accountId = 100L,
         accountCode = "ACC001",
         accountName = "이마트 강남점",
+        accountAddress = "서울시 강남구 테헤란로 1",
         accountType = "대형마트",
         accountStatus = "정상",
         typeOfWork3 = "고정",
@@ -41,7 +42,7 @@ class ScheduleListExcelExporterTest {
     )
 
     @Test
-    @DisplayName("헤더 15개 + 데이터 행이 목록 컬럼 순서대로 생성")
+    @DisplayName("헤더 16개 + 데이터 행이 목록 컬럼 순서대로 생성")
     fun export_headersAndRows() {
         val result = exporter.export(listOf(item()), "진열스케줄.xlsx")
 
@@ -59,14 +60,15 @@ class ScheduleListExcelExporterTest {
         assertThat(header.getCell(4).stringCellValue).isEqualTo("재직상태")
         assertThat(header.getCell(5).stringCellValue).isEqualTo("거래처코드")
         assertThat(header.getCell(6).stringCellValue).isEqualTo("거래처명")
-        assertThat(header.getCell(7).stringCellValue).isEqualTo("거래처유형")
-        assertThat(header.getCell(8).stringCellValue).isEqualTo("근무형태3")
-        assertThat(header.getCell(9).stringCellValue).isEqualTo("근무형태5")
-        assertThat(header.getCell(10).stringCellValue).isEqualTo("시작일")
-        assertThat(header.getCell(11).stringCellValue).isEqualTo("종료일")
-        assertThat(header.getCell(12).stringCellValue).isEqualTo("거래처상태")
-        assertThat(header.getCell(13).stringCellValue).isEqualTo("전월매출")
-        assertThat(header.getCell(14).stringCellValue).isEqualTo("확정")
+        assertThat(header.getCell(7).stringCellValue).isEqualTo("거래처주소")
+        assertThat(header.getCell(8).stringCellValue).isEqualTo("거래처유형")
+        assertThat(header.getCell(9).stringCellValue).isEqualTo("근무형태3")
+        assertThat(header.getCell(10).stringCellValue).isEqualTo("근무형태5")
+        assertThat(header.getCell(11).stringCellValue).isEqualTo("시작일")
+        assertThat(header.getCell(12).stringCellValue).isEqualTo("종료일")
+        assertThat(header.getCell(13).stringCellValue).isEqualTo("거래처상태")
+        assertThat(header.getCell(14).stringCellValue).isEqualTo("전월매출")
+        assertThat(header.getCell(15).stringCellValue).isEqualTo("확정")
 
         val row = sheet.getRow(1)
         assertThat(row.getCell(0).stringCellValue).isEqualTo("유효")
@@ -76,14 +78,15 @@ class ScheduleListExcelExporterTest {
         assertThat(row.getCell(4).stringCellValue).isEqualTo("재직")
         assertThat(row.getCell(5).stringCellValue).isEqualTo("ACC001")
         assertThat(row.getCell(6).stringCellValue).isEqualTo("이마트 강남점")
-        assertThat(row.getCell(7).stringCellValue).isEqualTo("대형마트")
-        assertThat(row.getCell(8).stringCellValue).isEqualTo("고정")
-        assertThat(row.getCell(9).stringCellValue).isEqualTo("상시")
-        assertThat(row.getCell(10).stringCellValue).isEqualTo("2026-05-01")
-        assertThat(row.getCell(11).stringCellValue).isEqualTo("2026-12-31")
-        assertThat(row.getCell(12).stringCellValue).isEqualTo("정상")
-        assertThat(row.getCell(13).numericCellValue).isEqualTo(3_500_000.0)
-        assertThat(row.getCell(14).stringCellValue).isEqualTo("확정")
+        assertThat(row.getCell(7).stringCellValue).isEqualTo("서울시 강남구 테헤란로 1")
+        assertThat(row.getCell(8).stringCellValue).isEqualTo("대형마트")
+        assertThat(row.getCell(9).stringCellValue).isEqualTo("고정")
+        assertThat(row.getCell(10).stringCellValue).isEqualTo("상시")
+        assertThat(row.getCell(11).stringCellValue).isEqualTo("2026-05-01")
+        assertThat(row.getCell(12).stringCellValue).isEqualTo("2026-12-31")
+        assertThat(row.getCell(13).stringCellValue).isEqualTo("정상")
+        assertThat(row.getCell(14).numericCellValue).isEqualTo(3_500_000.0)
+        assertThat(row.getCell(15).stringCellValue).isEqualTo("확정")
         workbook.close()
     }
 
@@ -105,8 +108,8 @@ class ScheduleListExcelExporterTest {
 
         val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
         val row = workbook.getSheetAt(0).getRow(1)
-        assertThat(row.getCell(13).stringCellValue).isEmpty()
-        assertThat(row.getCell(14).stringCellValue).isEqualTo("미확정")
+        assertThat(row.getCell(14).stringCellValue).isEmpty()
+        assertThat(row.getCell(15).stringCellValue).isEqualTo("미확정")
         workbook.close()
     }
 }

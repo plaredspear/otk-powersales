@@ -162,6 +162,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                     accountId = 100,
                     accountCode = "SAP001",
                     accountName = "이마트 성수점",
+                    accountAddress = "서울시 성동구 아차산로 100",
                     accountType = "대형마트(3대)",
                     accountStatus = "거래",
                     typeOfWork3 = "고정",

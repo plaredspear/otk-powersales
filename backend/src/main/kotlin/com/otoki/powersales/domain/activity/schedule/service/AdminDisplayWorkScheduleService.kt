@@ -555,6 +555,7 @@ class AdminDisplayWorkScheduleService(
             accountId = row.accountId,
             accountCode = row.accountCode,
             accountName = row.accountName,
+            accountAddress = row.accountAddress,
             accountType = row.accountType,
             accountStatus = row.accountStatusName,
             typeOfWork3 = row.typeOfWork3?.displayName,

@@ -18293,6 +18293,9 @@
       },
       "ScheduleListItemDto" : {
         "properties" : {
+          "accountAddress" : {
+            "type" : [ "string", "null" ]
+          },
           "accountCode" : {
             "type" : [ "string", "null" ]
           },

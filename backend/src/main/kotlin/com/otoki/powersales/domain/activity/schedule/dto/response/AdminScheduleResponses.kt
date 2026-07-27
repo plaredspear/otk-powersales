@@ -51,6 +51,8 @@ data class ScheduleListItemDto(
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
+    // 거래처 주소 (SF `Account.Address1__c`) — 엑셀 export 컬럼용 (목록 테이블에는 미표시)
+    val accountAddress: String?,
     // 거래처유형 (SF `Account.Type`)
     val accountType: String?,
     // 거래처상태 (SF `Account.AccountStatusName__c`)

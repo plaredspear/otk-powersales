@@ -25,8 +25,10 @@ class ScheduleListExcelExporter : BaseExcelExporter<ScheduleListItemDto>() {
     // 목록 테이블 컬럼 순서 정합 (유효 ~ 확정). 액션 컬럼은 export 제외.
     // "유효" 는 화면의 신호등(Valid__c 색상) 을 엑셀에서 표현할 수 없어 tooltip 과 동일한
     // 유효데이터(ValidData__c: 유효/예정/종료) 텍스트로 출력한다.
+    // "거래처주소" 는 화면 테이블에는 없고 엑셀에만 있는 컬럼 (Account.Address1__c —
+    // 거래처 목록 화면의 "주소" 컬럼과 동일 필드, 상세주소 address2 는 미포함).
     override val headers = listOf(
-        "유효", "지점명", "사번", "성명", "재직상태", "거래처코드", "거래처명", "거래처유형",
+        "유효", "지점명", "사번", "성명", "재직상태", "거래처코드", "거래처명", "거래처주소", "거래처유형",
         "근무형태3", "근무형태5", "시작일", "종료일", "거래처상태", "전월매출", "확정",
     )
 
@@ -38,19 +40,20 @@ class ScheduleListExcelExporter : BaseExcelExporter<ScheduleListItemDto>() {
         row.createCell(4).setCellValue(item.employmentStatus ?: "")
         row.createCell(5).setCellValue(item.accountCode ?: "")
         row.createCell(6).setCellValue(item.accountName ?: "")
-        row.createCell(7).setCellValue(item.accountType ?: "")
-        row.createCell(8).setCellValue(item.typeOfWork3 ?: "")
-        row.createCell(9).setCellValue(item.typeOfWork5 ?: "")
-        row.createCell(10).setCellValue(item.startDate?.format(DATE_FORMAT) ?: "")
-        row.createCell(11).setCellValue(item.endDate?.format(DATE_FORMAT) ?: "")
-        row.createCell(12).setCellValue(item.accountStatus ?: "")
+        row.createCell(7).setCellValue(item.accountAddress ?: "")
+        row.createCell(8).setCellValue(item.accountType ?: "")
+        row.createCell(9).setCellValue(item.typeOfWork3 ?: "")
+        row.createCell(10).setCellValue(item.typeOfWork5 ?: "")
+        row.createCell(11).setCellValue(item.startDate?.format(DATE_FORMAT) ?: "")
+        row.createCell(12).setCellValue(item.endDate?.format(DATE_FORMAT) ?: "")
+        row.createCell(13).setCellValue(item.accountStatus ?: "")
         val revenue = item.lastMonthRevenue
         if (revenue != null) {
-            row.createCell(13).setCellValue(revenue.toDouble())
+            row.createCell(14).setCellValue(revenue.toDouble())
         } else {
-            row.createCell(13).setCellValue("")
+            row.createCell(14).setCellValue("")
         }
-        row.createCell(14).setCellValue(if (item.confirmed == true) "확정" else "미확정")
+        row.createCell(15).setCellValue(if (item.confirmed == true) "확정" else "미확정")
     }
 
     companion object {
