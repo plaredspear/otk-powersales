@@ -20,23 +20,18 @@ describe('RankHeadcountCard 행 구성', () => {
         { label: 'OSPM', count: 1 },
       ],
     },
+    // 직위는 직무에 종속 — 판촉직은 OSPM/OSPE/OSPJ, OSC직은 OSC 만 열로 온다.
     {
       group: '판촉직',
       ranks: [
         { label: 'OSPM', count: 11 },
         { label: 'OSPE', count: 6 },
         { label: 'OSPJ', count: 18 },
-        { label: 'OSC', count: 0 },
       ],
     },
     {
       group: 'OSC직',
-      ranks: [
-        { label: 'OSPM', count: 0 },
-        { label: 'OSPE', count: 0 },
-        { label: 'OSPJ', count: 0 },
-        { label: 'OSC', count: 9 },
-      ],
+      ranks: [{ label: 'OSC', count: 9 }],
     },
   ];
 
@@ -47,15 +42,16 @@ describe('RankHeadcountCard 행 구성', () => {
       { group: '판매조장', label: '주임', count: 2 },
       { group: '판매조장', label: 'OSPM', count: 1 },
     ]);
-    expect(rows).toHaveLength(10);
+    // 판매조장 2 + 판촉직 3 + OSC직 1
+    expect(rows).toHaveLength(6);
   });
 
   it('그래프는 판매조장을 직위 무관 1줄로 합산한다', () => {
     const rows = chartRows(groups);
 
     expect(rows[0]).toEqual({ group: '판매조장', label: '판매조장', count: 3 });
-    // 나머지 그룹은 직위별로 그대로 — 판매조장 2줄이 1줄로 접혀 총 9줄
-    expect(rows).toHaveLength(9);
+    // 나머지 그룹은 직위별로 그대로 — 판매조장 2줄이 1줄로 접혀 총 5줄
+    expect(rows).toHaveLength(5);
   });
 
   it('표와 그래프의 합계가 일치한다', () => {

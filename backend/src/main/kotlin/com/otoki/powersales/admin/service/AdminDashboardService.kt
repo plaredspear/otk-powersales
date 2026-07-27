@@ -371,13 +371,20 @@ class AdminDashboardService(
             )
         }
         // 판촉직 / OSC직 — jobCode 기준. 레이디직은 OSC직에 합산(구 명칭).
+        // 열 구성은 직무별로 다르다 (판촉직 OSPM·OSPE·OSPJ / OSC직 OSC) — StaffRank.forJobCode 참조.
         val promotion = others.filter { it.jobCode == JOB_CODE_PROMOTION }
         if (promotion.isNotEmpty()) {
-            groups += RankGroupCount(JOB_CODE_PROMOTION, buildFixedRanks(promotion))
+            groups += RankGroupCount(
+                group = JOB_CODE_PROMOTION,
+                ranks = buildFixedRanks(promotion, StaffRank.PROMOTION_CODES),
+            )
         }
         val osc = others.filter { it.jobCode in JOB_CODES_OSC }
         if (osc.isNotEmpty()) {
-            groups += RankGroupCount(FemaleStaffJobCode.OSC.code, buildFixedRanks(osc))
+            groups += RankGroupCount(
+                group = FemaleStaffJobCode.OSC.code,
+                ranks = buildFixedRanks(osc, StaffRank.OSC_CODES),
+            )
         }
         return groups
     }
@@ -391,11 +398,20 @@ class AdminDashboardService(
             .sortedWith(compareByDescending<RankCount> { it.count }.thenBy { it.label })
     }
 
-    /** 표준 직위 고정 노출 + 그 외/null 은 '기타' 합산. 인원 0인 표준 직위 열도 유지한다. */
-    private fun buildFixedRanks(employees: List<DashboardEmployeeProjection>): List<RankCount> {
+    /**
+     * 해당 직무의 표준 직위만 고정 노출 + 그 외/null 은 '기타' 합산.
+     *
+     * [standardCodes] 는 직무별 열 집합이다 (판촉직 OSPM·OSPE·OSPJ / OSC직 OSC) — 전체 직위를
+     * 두 그룹에 일괄 노출하면 판촉직에 OSC 열이, OSC직에 OSPM/OSPE/OSPJ 열이 항상 0으로 붙는다.
+     * 인원 0인 표준 직위 열은 유지하고(지점 간 열 구성 고정), '기타' 는 0명이면 열을 만들지 않는다.
+     */
+    private fun buildFixedRanks(
+        employees: List<DashboardEmployeeProjection>,
+        standardCodes: List<String>,
+    ): List<RankCount> {
         val byRank = employees.groupingBy { it.jikwee?.trim() }.eachCount()
-        val standard = StaffRank.ORDERED_CODES.map { RankCount(it, byRank[it] ?: 0) }
-        val etc = employees.count { !StaffRank.contains(it.jikwee) }
+        val standard = standardCodes.map { RankCount(it, byRank[it] ?: 0) }
+        val etc = employees.count { it.jikwee?.trim() !in standardCodes }
         return if (etc > 0) standard + RankCount(StaffRank.ETC_LABEL, etc) else standard
     }
 

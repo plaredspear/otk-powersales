@@ -275,16 +275,34 @@ class AdminDashboardServiceTest {
 
         val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
 
+        // 직위는 직무에 종속된다 — 판촉직 열에 OSC 가 붙지 않는다.
         val promotion = byRank.first { it.group == "판촉직" }
-        // 표준 4개는 0명이어도 열을 유지하고, 수습사원+null 은 '기타' 로 합산
         assertThat(promotion.ranks.map { it.label })
-            .containsExactly("OSPM", "OSPE", "OSPJ", "OSC", "기타")
+            .containsExactly("OSPM", "OSPE", "OSPJ", "기타")
         assertThat(promotion.ranks.first { it.label == "기타" }.count).isEqualTo(2)
 
+        // OSC직 열에도 OSPM/OSPE/OSPJ 가 붙지 않는다.
         val osc = byRank.first { it.group == "OSC직" }
+        assertThat(osc.ranks.map { it.label }).containsExactly("OSC")
         assertThat(osc.ranks.first { it.label == "OSC" }.count).isEqualTo(2)
-        // 기타가 0명이면 열 자체를 만들지 않는다
-        assertThat(osc.ranks.map { it.label }).doesNotContain("기타")
+    }
+
+    @Test
+    @DisplayName("직급별 인원현황 — 직무별 열 집합이 다르다 (판촉직 OSPM·OSPE·OSPJ / OSC직 OSC)")
+    fun rankGroupsColumnsDifferPerJobCode() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikwee = "OSPM"),
+            employee(jobCode = "OSC직", jikwee = "OSC"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+
+        // 두 그룹에 전체 직위를 일괄 노출하면 항상 0인 열이 생긴다 — 그룹별 열 집합으로 방지.
+        assertThat(byRank.first { it.group == "판촉직" }.ranks.map { it.label })
+            .doesNotContain("OSC")
+        assertThat(byRank.first { it.group == "OSC직" }.ranks.map { it.label })
+            .doesNotContain("OSPM", "OSPE", "OSPJ")
     }
 
     @Test
