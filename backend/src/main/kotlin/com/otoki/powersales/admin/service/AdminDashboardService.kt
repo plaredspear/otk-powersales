@@ -325,6 +325,7 @@ class AdminDashboardService(
                 etcBreakdown = positionEtcBreakdown,
             ),
             byAgeGroup = buildAgeGroups(employees, asOf),
+            averageAge = calculateAverageAge(employees, asOf),
             byRank = buildRankGroups(employees),
             asOfDate = resolveBasicStatsAsOfDate(),
         )
@@ -465,6 +466,24 @@ class AdminDashboardService(
             .sortedBy { ageGroupSortKey(it.ageGroup) }
     }
 
+    /**
+     * 평균 만나이 — 연령별 현황 카드 제목에 "(평균연령: NN.N세)" 로 노출한다.
+     *
+     * 생년월일이 없거나 파싱 불가한 사원("미상" 버킷)은 **모수에서 제외**한다 — 0살로 계상하면
+     * 평균이 실제보다 낮아진다. 산출 가능한 사원이 없으면 null 을 반환하고 화면은 표기를 생략한다.
+     *
+     * 기준일은 연령별 버킷([buildAgeGroups])과 동일한 [asOf] 라 두 값이 어긋나지 않는다.
+     */
+    private fun calculateAverageAge(
+        employees: List<DashboardEmployeeProjection>,
+        asOf: LocalDate,
+    ): BigDecimal? {
+        val ages = employees.mapNotNull { calculateAge(it.birthDate, asOf) }
+        if (ages.isEmpty()) return null
+        return BigDecimal(ages.sum())
+            .divide(BigDecimal(ages.size), AVERAGE_AGE_SCALE, RoundingMode.HALF_UP)
+    }
+
     private fun ageGroupLabel(age: Int?): String {
         if (age == null || age < 0) return AGE_GROUP_UNKNOWN
         val decade = (age / 10) * 10
@@ -515,6 +534,9 @@ class AdminDashboardService(
     companion object {
         private val YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM")
         private const val HEADCOUNT_SCALE = 4
+
+        /** 평균연령 소수 자리수 — 화면 "(평균연령: 47.3세)" 표기 정밀도. */
+        private const val AVERAGE_AGE_SCALE = 1
 
         private const val BRANCH_LABEL_ALL = "전체"
 

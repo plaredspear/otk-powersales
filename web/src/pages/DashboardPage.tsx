@@ -44,6 +44,14 @@ function formatThousandWon(v: number): string {
   return Math.round(v / 1000).toLocaleString();
 }
 
+/**
+ * 연령별 현황 카드 제목 — 평균연령을 함께 표기한다.
+ * 생년월일이 없는 사원만 있어 평균을 낼 수 없으면(null) 제목만 노출한다.
+ */
+function ageGroupCardTitle(averageAge: number | null): string {
+  return averageAge == null ? '연령별 현황' : `연령별 현황 (평균연령: ${averageAge.toFixed(1)}세)`;
+}
+
 /** 제목 + 안내 툴팁(info 아이콘). 차트 카드 제목과 탭 라벨이 공유한다. */
 function cardTitle(title: string, desc: string) {
   return (
@@ -72,7 +80,7 @@ const BASIC_CHART_INFO = {
   position:
     '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
   ageGroup:
-    '전일 기준 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
+    '전일 기준 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시하며, 평균연령 계산에서도 제외합니다.',
   rank:
     '전일 기준 재직자를 직급(직위)별로 집계합니다. 현장 배치 가능 인력을 보는 표이므로 휴직자는 제외하며, 이 때문에 위 차트들의 총원(휴직 포함)보다 총합계가 적습니다. 판매조장은 직책 기준으로 분류하며 해당 지점에 있는 직위가 그대로 표시되고, 판촉직은 OSPM/OSPE/OSPJ, OSC직은 OSC로 나누며 그 외 직위는 기타로 합산합니다.',
 } as const;
@@ -618,7 +626,10 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title={cardTitle('연령별 현황', BASIC_CHART_INFO.ageGroup)} extra={cardExtra(ageTotal)}>
+          <Card
+            title={cardTitle(ageGroupCardTitle(b.averageAge), BASIC_CHART_INFO.ageGroup)}
+            extra={cardExtra(ageTotal)}
+          >
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
             {asOfBadge(b.asOfDate)}
           </Card>

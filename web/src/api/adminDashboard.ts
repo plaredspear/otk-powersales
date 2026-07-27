@@ -144,6 +144,11 @@ export interface BasicStats {
   staffType: StaffTypeCount;
   totalByPosition: TotalByPosition;
   byAgeGroup: AgeGroupCount[];
+  /**
+   * 평균 만나이 (소수 1자리). 생년월일이 없는 사원("미상")은 모수에서 제외한다.
+   * 산출 가능한 사원이 없으면 null — 화면은 표기를 생략한다.
+   */
+  averageAge: number | null;
   byRank: RankGroupCount[];
   /** 인원 기준일 (YYYY-MM-DD) — 서버 KST 기준 전일. 각 차트 우측 하단에 표기한다. */
   asOfDate: string;

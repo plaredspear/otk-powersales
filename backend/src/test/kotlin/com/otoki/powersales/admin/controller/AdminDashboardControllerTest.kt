@@ -88,6 +88,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0, etcBreakdown = emptyList()),
             totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0, etcBreakdown = emptyList()),
             byAgeGroup = emptyList(),
+            averageAge = null,
             byRank = emptyList(),
             asOfDate = LocalDate.of(2026, 5, 19),
         )

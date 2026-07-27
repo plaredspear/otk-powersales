@@ -123,6 +123,11 @@ data class BasicStats(
     val staffType: StaffTypeCount,
     val totalByPosition: TotalByPosition,
     val byAgeGroup: List<AgeGroupCount>,
+    /**
+     * 평균 만나이 (소수 1자리, 반올림). 생년월일이 없거나 파싱 불가한 사원("미상")은 모수에서 제외한다.
+     * 나이를 산출할 수 있는 사원이 한 명도 없으면 null.
+     */
+    val averageAge: BigDecimal?,
     val byRank: List<RankGroupCount>,
     val asOfDate: LocalDate
 )

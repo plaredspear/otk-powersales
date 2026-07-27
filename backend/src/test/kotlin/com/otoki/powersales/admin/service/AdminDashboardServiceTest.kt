@@ -363,6 +363,36 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("평균연령 — 생년월일 없는 사원은 모수에서 제외하고 소수 1자리로 반올림한다")
+    fun averageAgeExcludesUnknownBirthDate() {
+        stubEmpty()
+        // 기준일 2026-05-31(선택월 말일). 만 40 / 만 45 / 생년월일 없음
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", birthDate = "1986-01-01"),
+            employee(jobCode = "판촉직", birthDate = "1981-01-01"),
+            employee(jobCode = "판촉직", birthDate = null),
+        )
+
+        val basic = service.getDashboard(emptyList(), "2026-05").basicStats
+
+        // (40 + 45) / 2 = 42.5 — 생년월일 없는 1명을 0살로 계상하면 28.3 이 되어버린다
+        assertThat(basic.averageAge).isEqualByComparingTo(BigDecimal("42.5"))
+        // 연령별 버킷에는 '미상' 으로 남는다 (평균에서만 제외)
+        assertThat(basic.byAgeGroup.map { it.ageGroup }).contains("미상")
+    }
+
+    @Test
+    @DisplayName("평균연령 — 생년월일이 있는 사원이 하나도 없으면 null")
+    fun averageAgeNullWhenNoBirthDate() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", birthDate = null),
+        )
+
+        assertThat(service.getDashboard(emptyList(), "2026-05").basicStats.averageAge).isNull()
+    }
+
+    @Test
     @DisplayName("기본현황 기준일은 서버 KST 전일 — 조회월과 무관하게 고정 시계 기준 전일을 내려준다")
     fun basicStatsAsOfDateIsPreviousDayInSeoul() {
         stubEmpty()
