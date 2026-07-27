@@ -12,7 +12,11 @@ import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
 import com.otoki.powersales.admin.dto.response.WorkTypeCount
+import com.otoki.powersales.admin.dto.response.RankCount
+import com.otoki.powersales.admin.dto.response.RankGroupCount
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffHeadcountFilter
 import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
+import com.otoki.powersales.domain.org.employee.enums.StaffRank
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
@@ -318,8 +322,64 @@ class AdminDashboardService(
                 etcBreakdown = positionEtcBreakdown,
             ),
             byAgeGroup = buildAgeGroups(employees, asOf),
+            byRank = buildRankGroups(employees),
             asOfDate = resolveBasicStatsAsOfDate(),
         )
+    }
+
+    /**
+     * 직급별 인원현황 — 1단 그룹(판매조장/판촉직/OSC직) × 2단 직급([Employee.jikwee]) 교차 집계.
+     *
+     * 그룹 판정 순서가 중요하다: **판매조장을 먼저 떼어낸 뒤** 나머지를 직무코드로 나눈다.
+     * 조장도 jobCode 는 판촉직/OSC직이라, 순서를 바꾸면 조장이 판촉직 열에 중복 계상된다.
+     *
+     * 2단 구성이 그룹마다 다르다:
+     * - **판매조장**: 지점마다 조장의 직위가 달라(운영 실측: OSPM 20 / 주임 12 / OSPE 2 / OSPJ 1 / 과장·대리 각 1)
+     *   실제 존재하는 값만 인원수 내림차순으로 동적 생성한다.
+     * - **판촉직 / OSC직**: [StaffRank] 표준 직위를 고정 순서로 노출하고(0명이어도 열 유지),
+     *   그 외 값·null 은 [StaffRank.ETC_LABEL] 한 칸으로 합산해 지점 간 열 구성을 고정한다.
+     *
+     * 인원이 0인 그룹은 표에서 제외한다 — 해당 지점에 OSC직이 없으면 OSC직 열 자체가 나오지 않는다.
+     */
+    private fun buildRankGroups(employees: List<DashboardEmployeeProjection>): List<RankGroupCount> {
+        val (leaders, others) = employees.partition {
+            it.jikchak?.trim() == FemaleStaffHeadcountFilter.LEADER_JIKCHAK
+        }
+        val groups = mutableListOf<RankGroupCount>()
+
+        if (leaders.isNotEmpty()) {
+            groups += RankGroupCount(
+                group = FemaleStaffHeadcountFilter.LEADER_JIKCHAK,
+                ranks = buildDynamicRanks(leaders),
+            )
+        }
+        // 판촉직 / OSC직 — jobCode 기준. 레이디직은 OSC직에 합산(구 명칭).
+        val promotion = others.filter { it.jobCode == JOB_CODE_PROMOTION }
+        if (promotion.isNotEmpty()) {
+            groups += RankGroupCount(JOB_CODE_PROMOTION, buildFixedRanks(promotion))
+        }
+        val osc = others.filter { it.jobCode in JOB_CODES_OSC }
+        if (osc.isNotEmpty()) {
+            groups += RankGroupCount(FemaleStaffJobCode.OSC.code, buildFixedRanks(osc))
+        }
+        return groups
+    }
+
+    /** 실제 존재하는 직위만 노출 (인원수 내림차순, 동수면 라벨 오름차순). 판매조장 그룹 전용. */
+    private fun buildDynamicRanks(employees: List<DashboardEmployeeProjection>): List<RankCount> {
+        return employees
+            .groupingBy { it.jikwee?.trim()?.takeIf(String::isNotBlank) ?: StaffRank.ETC_LABEL }
+            .eachCount()
+            .map { (label, count) -> RankCount(label, count) }
+            .sortedWith(compareByDescending<RankCount> { it.count }.thenBy { it.label })
+    }
+
+    /** 표준 직위 고정 노출 + 그 외/null 은 '기타' 합산. 인원 0인 표준 직위 열도 유지한다. */
+    private fun buildFixedRanks(employees: List<DashboardEmployeeProjection>): List<RankCount> {
+        val byRank = employees.groupingBy { it.jikwee?.trim() }.eachCount()
+        val standard = StaffRank.ORDERED_CODES.map { RankCount(it, byRank[it] ?: 0) }
+        val etc = employees.count { !StaffRank.contains(it.jikwee) }
+        return if (etc > 0) standard + RankCount(StaffRank.ETC_LABEL, etc) else standard
     }
 
     /**

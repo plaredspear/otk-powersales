@@ -121,11 +121,30 @@ export interface AgeGroupCount {
  * 과거에는 선택월 MFEIS 환산인원 기준의 `byWorkType`(근무형태별 고정/격고/순회) 을 함께 받았으나,
  * 같은 탭 안에서 기준 시점이 섞이는 혼선 때문에 제거했다 — 근무형태별 환산인원은 여사원 투입현황 탭 담당.
  */
+/** 직급별 인원현황 셀 1개 — 직위명(label)과 인원 수(count). */
+export interface RankCount {
+  label: string;
+  count: number;
+}
+
+/**
+ * 직급별 인원현황 1개 그룹 (표의 1단 헤더 = 판매조장 / 판촉직 / OSC직).
+ *
+ * `ranks` 구성이 그룹마다 다르다 — 판매조장은 해당 지점에 실제 존재하는 직위를 동적 생성하고
+ * (지점에 따라 '주임' / 'OSPM' 등), 판촉직·OSC직은 OSPM/OSPE/OSPJ/OSC 를 고정 노출한 뒤
+ * 그 외 값을 '기타' 로 합산한다. 인원 0인 그룹은 응답에서 제외된다.
+ */
+export interface RankGroupCount {
+  group: string;
+  ranks: RankCount[];
+}
+
 export interface BasicStats {
   branchName: string | null;
   staffType: StaffTypeCount;
   totalByPosition: TotalByPosition;
   byAgeGroup: AgeGroupCount[];
+  byRank: RankGroupCount[];
   /** 인원 기준일 (YYYY-MM-DD) — 서버 KST 기준 전일. 각 차트 우측 하단에 표기한다. */
   asOfDate: string;
 }

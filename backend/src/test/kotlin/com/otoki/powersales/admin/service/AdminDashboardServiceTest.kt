@@ -70,13 +70,17 @@ class AdminDashboardServiceTest {
         status: String? = "재직",
         jobCode: String? = null,
         birthDate: String? = null,
+        jikchak: String? = null,
+        jikwee: String? = null,
     ): DashboardEmployeeProjection {
         empSeq++
-        val s = status; val j = jobCode; val b = birthDate
+        val s = status; val j = jobCode; val b = birthDate; val jc = jikchak; val jw = jikwee
         return object : DashboardEmployeeProjection {
             override val status = s
             override val jobCode = j
             override val birthDate = b
+            override val jikchak = jc
+            override val jikwee = jw
         }
     }
 
@@ -231,6 +235,70 @@ class AdminDashboardServiceTest {
     // T3-1 기본현황 근무형태별(고정/격고/순회) 환산인원 SUM 테스트는 제거됨 —
     // 해당 차트가 기준 시점 혼선(현재 시점 vs 선택월)으로 기본 현황에서 빠졌다.
     // 근무형태별 환산인원 집계 검증은 여사원 투입현황(staffDeployment) 테스트가 담당한다.
+
+    @Test
+    @DisplayName("직급별 인원현황 — 판매조장은 jikchak 축으로 먼저 떼어내고 실제 직위를 동적 노출한다")
+    fun rankGroupsLeaderUsesJikchakAndDynamicRanks() {
+        stubEmpty()
+        // 조장도 jobCode 는 판촉직이라, 판매조장을 먼저 분리하지 않으면 판촉직 열에 중복 계상된다.
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikchak = "판매조장", jikwee = "OSPM"),
+            employee(jobCode = "판촉직", jikchak = "판매조장", jikwee = "주임"),
+            employee(jobCode = "판촉직", jikchak = "판매조장", jikwee = "주임"),
+            employee(jobCode = "판촉직", jikchak = null, jikwee = "OSPJ"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+
+        val leader = byRank.first { it.group == "판매조장" }
+        // 인원수 내림차순 — 주임 2 가 OSPM 1 보다 앞
+        assertThat(leader.ranks.map { it.label to it.count })
+            .containsExactly("주임" to 2, "OSPM" to 1)
+        // 조장 3명은 판촉직 열에 중복 계상되지 않는다
+        val promotion = byRank.first { it.group == "판촉직" }
+        assertThat(promotion.ranks.first { it.label == "OSPM" }.count).isEqualTo(0)
+        assertThat(promotion.ranks.first { it.label == "OSPJ" }.count).isEqualTo(1)
+    }
+
+    @Test
+    @DisplayName("직급별 인원현황 — 판촉직/OSC직은 표준 직위 4개를 고정 노출하고 그 외는 '기타' 합산")
+    fun rankGroupsFixedColumnsWithEtc() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikwee = "OSPM"),
+            employee(jobCode = "판촉직", jikwee = "수습사원"),
+            employee(jobCode = "판촉직", jikwee = null),
+            employee(jobCode = "OSC직", jikwee = "OSC"),
+            // 레이디직(구 OSC)은 OSC직 그룹에 합산된다
+            employee(jobCode = "레이디직", jikwee = "OSC"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+
+        val promotion = byRank.first { it.group == "판촉직" }
+        // 표준 4개는 0명이어도 열을 유지하고, 수습사원+null 은 '기타' 로 합산
+        assertThat(promotion.ranks.map { it.label })
+            .containsExactly("OSPM", "OSPE", "OSPJ", "OSC", "기타")
+        assertThat(promotion.ranks.first { it.label == "기타" }.count).isEqualTo(2)
+
+        val osc = byRank.first { it.group == "OSC직" }
+        assertThat(osc.ranks.first { it.label == "OSC" }.count).isEqualTo(2)
+        // 기타가 0명이면 열 자체를 만들지 않는다
+        assertThat(osc.ranks.map { it.label }).doesNotContain("기타")
+    }
+
+    @Test
+    @DisplayName("직급별 인원현황 — 인원 0인 그룹은 표에서 제외한다")
+    fun rankGroupsOmitsEmptyGroups() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikwee = "OSPM"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+
+        assertThat(byRank.map { it.group }).containsExactly("판촉직")
+    }
 
     @Test
     @DisplayName("기본현황 기준일은 서버 KST 전일 — 조회월과 무관하게 고정 시계 기준 전일을 내려준다")

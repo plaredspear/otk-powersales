@@ -123,7 +123,29 @@ data class BasicStats(
     val staffType: StaffTypeCount,
     val totalByPosition: TotalByPosition,
     val byAgeGroup: List<AgeGroupCount>,
+    val byRank: List<RankGroupCount>,
     val asOfDate: LocalDate
+)
+
+/**
+ * 직급별 인원현황 1개 그룹 (표의 1단 헤더 = 판매조장 / 판촉직 / OSC직).
+ *
+ * @property group 그룹명. 판매조장 / 판촉직 / OSC직.
+ * @property ranks 그룹 하위 직급 셀 (표의 2단 헤더 = 직위). 그룹마다 구성이 다르다:
+ *  - **판매조장**: 해당 조회 범위에 실제 존재하는 [com.otoki.powersales.domain.org.employee.entity.Employee.jikwee]
+ *    값을 그대로 동적 생성한다 (지점에 따라 '주임' / 'OSPM' 등으로 달라짐).
+ *  - **판촉직 / OSC직**: 표준 직위([com.otoki.powersales.domain.org.employee.enums.StaffRank]) 를
+ *    고정 순서로 노출하고, 그 외 값·null 은 '기타' 한 칸으로 합산한다 (지점 간 열 구성 고정).
+ */
+data class RankGroupCount(
+    val group: String,
+    val ranks: List<RankCount>
+)
+
+/** 직급별 인원현황 셀 1개 — 직위명(label)과 인원 수(count). */
+data class RankCount(
+    val label: String,
+    val count: Int
 )
 
 /**

@@ -6,6 +6,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import RankHeadcountCard from '@/pages/dashboard/components/RankHeadcountCard';
 import { useAuthStore } from '@/stores/authStore';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import { SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
@@ -72,6 +73,8 @@ const BASIC_CHART_INFO = {
     '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
   ageGroup:
     '전일 기준 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
+  rank:
+    '전일 기준 인원을 직급(직위)별로 집계합니다. 판매조장은 직책 기준으로 분류하며 해당 지점에 있는 직위가 그대로 표시되고, 판촉직·OSC직은 OSPM/OSPE/OSPJ/OSC로 나누며 그 외 직위는 기타로 합산합니다. 판매조장 분류 기준이 달라 총합계가 다른 차트의 총원과 소수 인원 차이가 날 수 있습니다.',
 } as const;
 
 /**
@@ -609,6 +612,15 @@ export default function DashboardPage() {
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
             {asOfBadge(b.asOfDate)}
           </Card>
+        </Col>
+        {/* 직급별 인원현황 — 2단 헤더 표라 열이 많아 전체 폭(span 24)을 쓴다. */}
+        <Col span={24}>
+          <RankHeadcountCard
+            groups={b.byRank}
+            branchName={b.branchName}
+            asOfDate={b.asOfDate}
+            title={cardTitle('인원현황', BASIC_CHART_INFO.rank)}
+          />
         </Col>
       </Row>
     );

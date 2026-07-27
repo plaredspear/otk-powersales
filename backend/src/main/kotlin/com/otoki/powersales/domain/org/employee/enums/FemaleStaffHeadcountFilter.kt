@@ -42,4 +42,15 @@ object FemaleStaffHeadcountFilter {
      * 테스트/시스템 계정을 인원수에서 걷어낸다. 누락하면 실제보다 인원이 부풀려진다.
      */
     val EXCLUDED_NAME_KEYWORDS: List<String> = listOf("테스트", "관리자", "파워세일즈")
+
+    /**
+     * 직급별 인원현황 표의 '판매조장' 그룹 판정값 — [com.otoki.powersales.domain.org.employee.entity.Employee.jikchak]
+     * (직책명) 이 이 값이면 판매조장 열에 계상한다.
+     *
+     * 판정 축이 [ROLES] 의 '조장'([com.otoki.powersales.platform.auth.entity.AppAuthority.LEADER]) 과
+     * 완전히 일치하지는 않는다 (운영 실측: jikchak='판매조장' 36명 중 role='여사원' 1명이 섞여 있고,
+     * role='조장' 이면서 jikchak 이 null 인 2명은 빠진다). 표 헤더 문자열과 축을 일치시키기 위한
+     * 사용자 결정이며, 그 결과 이 표의 총합계는 대시보드 총원과 1명 차이가 날 수 있다.
+     */
+    const val LEADER_JIKCHAK = "판매조장"
 }

@@ -120,6 +120,12 @@ interface DashboardEmployeeProjection {
     val jobCode: String?
     val status: String?
     val birthDate: String?
+
+    /** 직책명 — 직급별 인원현황의 '판매조장' 그룹 판정 축 (`jikchak = '판매조장'`). */
+    val jikchak: String?
+
+    /** 직위명 — 직급별 인원현황의 2단(직급) 축. OSPM/OSPE/OSPJ/OSC 외 값도 존재하는 자유 텍스트. */
+    val jikwee: String?
 }
 
 /**
@@ -131,4 +137,6 @@ data class DashboardEmployeeProjectionDto(
     override val jobCode: String?,
     override val status: String?,
     override val birthDate: String?,
+    override val jikchak: String?,
+    override val jikwee: String?,
 ) : DashboardEmployeeProjection

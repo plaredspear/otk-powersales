@@ -169,6 +169,8 @@ class EmployeeRepositoryCustomImpl(
                     employee.jobCode,
                     employee.status,
                     employee.birthDate,
+                    employee.jikchak,
+                    employee.jikwee,
                 )
             )
             .from(employee)
