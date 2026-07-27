@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.response.AccountTypeCount
 import com.otoki.powersales.admin.dto.response.AgeGroupCount
 import com.otoki.powersales.admin.dto.response.BasicStats
+import com.otoki.powersales.admin.dto.response.BasicStatsByScope
 import com.otoki.powersales.admin.dto.response.ChannelStackRow
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.dto.response.EtcBreakdownItem
@@ -285,6 +286,10 @@ class AdminDashboardService(
      *
      * [ym] 은 집계 모수가 아니라 연령별 현황의 만나이 계산 기준일(선택월 말일)로만 쓴다.
      * 화면은 이 탭에서 조회월 셀렉터를 잠그므로 실질적으로 당월 말일이 된다.
+     *
+     * 집계 기준 토글(재직 / 재직+휴직)을 지원하기 위해 **두 기준을 모두 계산해 내려준다** —
+     * 화면이 전환할 때 재조회가 없다. 조회 자체는 1회이고 메모리에서 두 번 집계한다.
+     * [BasicStats.totalByPosition] 만 토글에서 제외한다(휴직 비율 카드).
      */
     private fun buildBasicStats(
         ym: YearMonth,
@@ -294,17 +299,10 @@ class AdminDashboardService(
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
 
-        // 판촉직/OSC직 (결정 D6 — Employee.jobCode). 레이디직(구 OSC) 은 OSC 세그먼트에 합산한다.
-        // 모수가 레거시 리포트 정합으로 여사원 직무 3값에 한정되므로(findDashboardBasicStatsProjection)
-        // etc 는 통상 0 이다 — 모수 조건이 바뀌었을 때 합계가 총원과 어긋나지 않도록 잔차를 잡는 안전망으로 유지한다.
-        val promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION }
-        val osc = employees.count { it.jobCode in JOB_CODES_OSC }
-        val staffTypeEtcEmployees = employees.filter { it.jobCode !in FemaleStaffJobCode.ALL_CODES }
-        val staffTypeEtcBreakdown = buildEtcBreakdown(staffTypeEtcEmployees.map { it.jobCode })
-
-        // 재직/휴직. 퇴직자는 모수에서 이미 제외됨(findEmployees). etc = status 가 재직/휴직 외이거나 null 인 사원
-        val active = employees.count { it.status == STATUS_ACTIVE }
-        val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
+        // 재직/휴직 비율 — 토글과 무관하게 항상 전체 모수.
+        // 퇴직자는 모수에서 이미 제외됨(findEmployees). etc = status 가 재직/휴직 외이거나 null 인 사원
+        val activeCount = employees.count { it.status == STATUS_ACTIVE }
+        val onLeaveCount = employees.count { it.status == STATUS_ON_LEAVE }
         val positionEtcEmployees = employees.filter {
             it.status != STATUS_ACTIVE && it.status != STATUS_ON_LEAVE
         }
@@ -312,22 +310,42 @@ class AdminDashboardService(
 
         return BasicStats(
             branchName = branchName,
-            staffType = StaffTypeCount(
-                promotion = promotion,
-                osc = osc,
-                etc = staffTypeEtcEmployees.size,
-                etcBreakdown = staffTypeEtcBreakdown,
-            ),
+            active = buildBasicStatsByScope(employees.filter { it.status == STATUS_ACTIVE }, asOf),
+            includingLeave = buildBasicStatsByScope(employees, asOf),
             totalByPosition = TotalByPosition(
-                active = active,
-                onLeave = onLeave,
+                active = activeCount,
+                onLeave = onLeaveCount,
                 etc = positionEtcEmployees.size,
                 etcBreakdown = positionEtcBreakdown,
+            ),
+            asOfDate = resolveBasicStatsAsOfDate(),
+        )
+    }
+
+    /**
+     * 집계 기준 하나(재직 / 재직+휴직)에 대한 수치 묶음.
+     *
+     * 호출부가 모수를 미리 걸러 넘기므로 본 함수는 기준을 알 필요가 없다 — 같은 로직을 두 모수에
+     * 적용해 토글 두 값을 만든다.
+     */
+    private fun buildBasicStatsByScope(
+        employees: List<DashboardEmployeeProjection>,
+        asOf: LocalDate,
+    ): BasicStatsByScope {
+        // 판촉직/OSC직 (결정 D6 — Employee.jobCode). 레이디직(구 OSC) 은 OSC 세그먼트에 합산한다.
+        // 모수가 레거시 리포트 정합으로 여사원 직무 3값에 한정되므로(findDashboardBasicStatsProjection)
+        // etc 는 통상 0 이다 — 모수 조건이 바뀌었을 때 합계가 총원과 어긋나지 않도록 잔차를 잡는 안전망으로 유지한다.
+        val staffTypeEtcEmployees = employees.filter { it.jobCode !in FemaleStaffJobCode.ALL_CODES }
+        return BasicStatsByScope(
+            staffType = StaffTypeCount(
+                promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION },
+                osc = employees.count { it.jobCode in JOB_CODES_OSC },
+                etc = staffTypeEtcEmployees.size,
+                etcBreakdown = buildEtcBreakdown(staffTypeEtcEmployees.map { it.jobCode }),
             ),
             byAgeGroup = buildAgeGroups(employees, asOf),
             averageAge = calculateAverageAge(employees, asOf),
             byRank = buildRankGroups(employees),
-            asOfDate = resolveBasicStatsAsOfDate(),
         )
     }
 
@@ -349,18 +367,9 @@ class AdminDashboardService(
      *
      * 인원이 0인 그룹은 표에서 제외한다 — 해당 지점에 OSC직이 없으면 OSC직 열 자체가 나오지 않는다.
      *
-     * ## 모수: 재직자만 (같은 탭의 다른 차트와 다름)
-     *
-     * 본 표는 **현장 배치 가능 인력**을 보는 용도라 [STATUS_ACTIVE] 만 계상한다. 같은 탭의
-     * 인원현황 도넛 / 총원 도넛 / 연령별은 레거시 리포트(`new_report_72Y`) 정합으로 휴직자를 포함하므로
-     * (퇴직만 제외), **이 표의 총합계는 다른 차트의 총원보다 휴직자 수만큼 적다** (사용자 결정).
-     * 운영 실측 기준 전사 휴직 34명 / 재직 1504명. 화면 툴팁에 사유를 명시한다.
-     *
-     * 쿼리([EmployeeRepository.findDashboardBasicStatsProjection])는 공유하고 여기서만 좁힌다 —
-     * 쿼리를 바꾸면 다른 차트의 모수까지 함께 줄어든다.
+     * 모수는 호출부([buildBasicStatsByScope])가 집계 기준(재직 / 재직+휴직)에 맞춰 걸러 넘긴다.
      */
-    private fun buildRankGroups(all: List<DashboardEmployeeProjection>): List<RankGroupCount> {
-        val employees = all.filter { it.status == STATUS_ACTIVE }
+    private fun buildRankGroups(employees: List<DashboardEmployeeProjection>): List<RankGroupCount> {
         val (leaders, others) = employees.partition {
             it.jikchak?.trim() == FemaleStaffHeadcountFilter.LEADER_JIKCHAK
         }

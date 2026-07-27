@@ -139,10 +139,12 @@ export interface RankGroupCount {
   ranks: RankCount[];
 }
 
-export interface BasicStats {
-  branchName: string | null;
+/**
+ * 집계 기준(재직 / 재직+휴직) 하나에 대한 기본 현황 수치 묶음.
+ * 화면의 '집계 기준' 토글이 둘 중 하나를 골라 렌더링한다 — 두 기준을 모두 받으므로 재조회가 없다.
+ */
+export interface BasicStatsByScope {
   staffType: StaffTypeCount;
-  totalByPosition: TotalByPosition;
   byAgeGroup: AgeGroupCount[];
   /**
    * 평균 만나이 (소수 1자리). 생년월일이 없는 사원("미상")은 모수에서 제외한다.
@@ -150,6 +152,16 @@ export interface BasicStats {
    */
   averageAge: number | null;
   byRank: RankGroupCount[];
+}
+
+export interface BasicStats {
+  branchName: string | null;
+  /** 재직자만 (토글 기본값). */
+  active: BasicStatsByScope;
+  /** 재직 + 휴직 (퇴직만 제외). */
+  includingLeave: BasicStatsByScope;
+  /** 재직/휴직 비율 — 토글과 무관하게 항상 전체 기준 (좁히면 휴직 세그먼트가 0이 되어 무의미). */
+  totalByPosition: TotalByPosition;
   /** 인원 기준일 (YYYY-MM-DD) — 서버 KST 기준 전일. 각 차트 우측 하단에 표기한다. */
   asOfDate: string;
 }

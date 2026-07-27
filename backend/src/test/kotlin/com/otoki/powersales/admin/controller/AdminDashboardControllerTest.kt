@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.response.BasicStats
+import com.otoki.powersales.admin.dto.response.BasicStatsByScope
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
@@ -57,6 +58,14 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
     private fun emptyChart() =
         WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO)
 
+    /** 집계 기준(재직 / 재직+휴직) 한쪽의 빈 수치 묶음. */
+    private fun emptyBasicStatsByScope() = BasicStatsByScope(
+        staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0, etcBreakdown = emptyList()),
+        byAgeGroup = emptyList(),
+        averageAge = null,
+        byRank = emptyList(),
+    )
+
     private fun emptyDashboardResponse(yearMonth: String): DashboardResponse = DashboardResponse(
         salesSummary = SalesSummary(
             yearMonth = yearMonth,
@@ -85,11 +94,11 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         ),
         basicStats = BasicStats(
             branchName = null,
-            staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0, etcBreakdown = emptyList()),
+            // 집계 기준 토글 — 두 기준을 모두 내려준다 (화면이 전환, 재조회 없음)
+            active = emptyBasicStatsByScope(),
+            includingLeave = emptyBasicStatsByScope(),
+            // 토글과 무관하게 항상 전체 기준
             totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0, etcBreakdown = emptyList()),
-            byAgeGroup = emptyList(),
-            averageAge = null,
-            byRank = emptyList(),
             asOfDate = LocalDate.of(2026, 5, 19),
         )
     )
@@ -139,12 +148,15 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.staffDeployment.event.rows").isArray)
                 .andExpect(jsonPath("$.data.staffDeployment.event.rows").isEmpty)
                 .andExpect(jsonPath("$.data.basicStats").exists())
-                .andExpect(jsonPath("$.data.basicStats.staffType.promotion").value(0))
-                .andExpect(jsonPath("$.data.basicStats.staffType.osc").value(0))
+                // 집계 기준 토글 — 두 기준이 모두 내려온다 (화면이 전환, 재조회 없음)
+                .andExpect(jsonPath("$.data.basicStats.active.staffType.promotion").value(0))
+                .andExpect(jsonPath("$.data.basicStats.active.staffType.osc").value(0))
+                .andExpect(jsonPath("$.data.basicStats.includingLeave.staffType.promotion").value(0))
+                .andExpect(jsonPath("$.data.basicStats.active.byAgeGroup").isArray)
+                .andExpect(jsonPath("$.data.basicStats.active.byAgeGroup").isEmpty)
+                // 총원 카드는 토글 밖 (기준별로 나뉘지 않음)
                 .andExpect(jsonPath("$.data.basicStats.totalByPosition.active").value(0))
                 .andExpect(jsonPath("$.data.basicStats.totalByPosition.onLeave").value(0))
-                .andExpect(jsonPath("$.data.basicStats.byAgeGroup").isArray)
-                .andExpect(jsonPath("$.data.basicStats.byAgeGroup").isEmpty)
                 // byWorkType(근무형태별 환산인원) 은 기준 시점 혼선으로 기본 현황에서 제거됨 —
                 // 근무형태별 집계는 여사원 투입현황(staffDeployment) 담당.
                 .andExpect(jsonPath("$.data.basicStats.byWorkType").doesNotExist())

@@ -116,20 +116,40 @@ data class ChannelWorkTypeItem(
  * 같은 탭 안에서 기준 시점이 섞여(현재 시점 vs 선택월) 조회월 셀렉터가 과거 이력 조회처럼
  * 보이는 혼선이 있어 제거했다. 근무형태별 환산인원은 여사원 투입현황 탭이 담당한다.
  *
+ * ## 집계 기준 토글
+ *
+ * 화면 상단의 '집계 기준'(재직 / 재직+휴직) 선택에 따라 [active] 와 [includingLeave] 중 하나를 쓴다.
+ * **두 기준을 모두 내려주므로 토글 전환 시 재조회가 없다.**
+ *
+ * [totalByPosition] 만 토글에서 제외한다 — 휴직 비율을 보는 카드라 '재직' 기준으로 좁히면
+ * 휴직 세그먼트가 항상 0이 되어 차트가 무의미해진다. 항상 전체(퇴직만 제외) 기준이다.
+ *
  * @property asOfDate 화면에 표기할 인원 기준일 — 서버 KST 기준 **전일**([AdminDashboardService.resolveBasicStatsAsOfDate]).
  */
 data class BasicStats(
     val branchName: String?,
-    val staffType: StaffTypeCount,
+    /** 재직자만 집계 (토글 기본값). */
+    val active: BasicStatsByScope,
+    /** 재직 + 휴직 집계 (퇴직만 제외 — 레거시 리포트 `new_report_72Y` 정합). */
+    val includingLeave: BasicStatsByScope,
+    /** 재직/휴직 비율 — 토글과 무관하게 항상 전체 기준. */
     val totalByPosition: TotalByPosition,
+    val asOfDate: LocalDate
+)
+
+/**
+ * 집계 기준(재직 / 재직+휴직) 하나에 대한 기본 현황 수치 묶음.
+ * 화면의 '집계 기준' 토글이 [BasicStats.active] 와 [BasicStats.includingLeave] 중 하나를 골라 렌더링한다.
+ */
+data class BasicStatsByScope(
+    val staffType: StaffTypeCount,
     val byAgeGroup: List<AgeGroupCount>,
     /**
      * 평균 만나이 (소수 1자리, 반올림). 생년월일이 없거나 파싱 불가한 사원("미상")은 모수에서 제외한다.
      * 나이를 산출할 수 있는 사원이 한 명도 없으면 null.
      */
     val averageAge: BigDecimal?,
-    val byRank: List<RankGroupCount>,
-    val asOfDate: LocalDate
+    val byRank: List<RankGroupCount>
 )
 
 /**

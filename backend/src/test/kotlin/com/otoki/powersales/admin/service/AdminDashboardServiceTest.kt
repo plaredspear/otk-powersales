@@ -248,7 +248,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "판촉직", jikchak = null, jikwee = "OSPJ"),
         )
 
-        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
 
         val leader = byRank.first { it.group == "판매조장" }
         // 인원수 내림차순 — 주임 2 가 OSPM 1 보다 앞
@@ -273,7 +273,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "레이디직", jikwee = "OSC"),
         )
 
-        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
 
         // 직위는 직무에 종속된다 — 판촉직 열에 OSC 가 붙지 않는다.
         val promotion = byRank.first { it.group == "판촉직" }
@@ -296,7 +296,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "OSC직", jikwee = "OSC"),
         )
 
-        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
 
         // 두 그룹에 전체 직위를 일괄 노출하면 항상 0인 열이 생긴다 — 그룹별 열 집합으로 방지.
         assertThat(byRank.first { it.group == "판촉직" }.ranks.map { it.label })
@@ -315,7 +315,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "OSC직", jikwee = "OSC"),
         )
 
-        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
 
         // OSC직 열은 조장을 제외한 순수 OSC직 인원만
         val osc = byRank.first { it.group == "OSC직" }
@@ -341,9 +341,9 @@ class AdminDashboardServiceTest {
         val basic = service.getDashboard(emptyList(), "2026-05").basicStats
 
         // 직급별 표는 재직 1명만
-        assertThat(basic.byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(1)
+        assertThat(basic.active.byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(1)
         // 휴직 조장도 제외되므로 판매조장 그룹 자체가 나오지 않는다
-        assertThat(basic.byRank.map { it.group }).containsExactly("판촉직")
+        assertThat(basic.active.byRank.map { it.group }).containsExactly("판촉직")
         // 같은 탭의 다른 차트는 휴직 포함 모수를 유지한다 (퇴직만 제외)
         assertThat(basic.totalByPosition.active + basic.totalByPosition.onLeave + basic.totalByPosition.etc)
             .isEqualTo(4)
@@ -357,9 +357,32 @@ class AdminDashboardServiceTest {
             employee(jobCode = "판촉직", jikwee = "OSPM"),
         )
 
-        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
 
         assertThat(byRank.map { it.group }).containsExactly("판촉직")
+    }
+
+    @Test
+    @DisplayName("집계 기준 토글 — active 는 재직만, includingLeave 는 휴직 포함. 총원 카드는 항상 전체")
+    fun basicStatsProvidesBothScopes() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(status = "재직", jobCode = "판촉직", jikwee = "OSPM"),
+            employee(status = "재직", jobCode = "OSC직", jikwee = "OSC"),
+            employee(status = "휴직", jobCode = "판촉직", jikwee = "OSPJ"),
+        )
+
+        val basic = service.getDashboard(emptyList(), "2026-05").basicStats
+
+        // 재직 기준 — 판촉직 1 + OSC직 1
+        assertThat(basic.active.staffType.promotion).isEqualTo(1)
+        assertThat(basic.active.byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(2)
+        // 재직+휴직 기준 — 판촉직 2 + OSC직 1
+        assertThat(basic.includingLeave.staffType.promotion).isEqualTo(2)
+        assertThat(basic.includingLeave.byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(3)
+        // 총원 카드는 토글과 무관하게 항상 전체 — 좁히면 휴직 세그먼트가 0이 되어 무의미해진다
+        assertThat(basic.totalByPosition.active).isEqualTo(2)
+        assertThat(basic.totalByPosition.onLeave).isEqualTo(1)
     }
 
     @Test
@@ -376,9 +399,9 @@ class AdminDashboardServiceTest {
         val basic = service.getDashboard(emptyList(), "2026-05").basicStats
 
         // (40 + 45) / 2 = 42.5 — 생년월일 없는 1명을 0살로 계상하면 28.3 이 되어버린다
-        assertThat(basic.averageAge).isEqualByComparingTo(BigDecimal("42.5"))
+        assertThat(basic.active.averageAge).isEqualByComparingTo(BigDecimal("42.5"))
         // 연령별 버킷에는 '미상' 으로 남는다 (평균에서만 제외)
-        assertThat(basic.byAgeGroup.map { it.ageGroup }).contains("미상")
+        assertThat(basic.active.byAgeGroup.map { it.ageGroup }).contains("미상")
     }
 
     @Test
@@ -389,7 +412,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "판촉직", birthDate = null),
         )
 
-        assertThat(service.getDashboard(emptyList(), "2026-05").basicStats.averageAge).isNull()
+        assertThat(service.getDashboard(emptyList(), "2026-05").basicStats.active.averageAge).isNull()
     }
 
     @Test
@@ -482,7 +505,7 @@ class AdminDashboardServiceTest {
             )
 
         val result = service.getDashboard(emptyList(), "2026-05")
-        val byAge = result.basicStats.byAgeGroup.associateBy { it.ageGroup }
+        val byAge = result.basicStats.active.byAgeGroup.associateBy { it.ageGroup }
 
         assertThat(byAge["30대"]!!.count).isEqualTo(1)
     }
@@ -500,7 +523,7 @@ class AdminDashboardServiceTest {
 
         val result = service.getDashboard(emptyList(), "2026-05")
 
-        assertThat(result.basicStats.byAgeGroup.first { it.ageGroup == "미상" }.count).isEqualTo(1)
+        assertThat(result.basicStats.active.byAgeGroup.first { it.ageGroup == "미상" }.count).isEqualTo(1)
     }
 
     @Test
@@ -548,11 +571,11 @@ class AdminDashboardServiceTest {
 
         val result = service.getDashboard(emptyList(), "2026-05")
 
-        assertThat(result.basicStats.staffType.promotion).isEqualTo(2)
-        assertThat(result.basicStats.staffType.osc).isEqualTo(2)
-        assertThat(result.basicStats.staffType.etc).isEqualTo(1)
+        assertThat(result.basicStats.active.staffType.promotion).isEqualTo(2)
+        assertThat(result.basicStats.active.staffType.osc).isEqualTo(2)
+        assertThat(result.basicStats.active.staffType.etc).isEqualTo(1)
         // 기타(jobCode="기타") → "기타" 1명 breakdown
-        assertThat(result.basicStats.staffType.etcBreakdown)
+        assertThat(result.basicStats.active.staffType.etcBreakdown)
             .extracting("label", "count")
             .containsExactly(org.assertj.core.groups.Tuple.tuple("기타", 1))
     }
@@ -598,8 +621,8 @@ class AdminDashboardServiceTest {
         assertThat(result.staffDeployment.display.stackKeys).isEmpty()
         assertThat(result.staffDeployment.event.rows).isEmpty()
         assertThat(result.staffDeployment.display.totalHeadcount).isEqualByComparingTo(BigDecimal.ZERO)
-        assertThat(result.basicStats.staffType.promotion).isZero()
-        assertThat(result.basicStats.byAgeGroup).isEmpty()
+        assertThat(result.basicStats.active.staffType.promotion).isZero()
+        assertThat(result.basicStats.active.byAgeGroup).isEmpty()
     }
 
     @Test

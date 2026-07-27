@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, DatePicker, Empty, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
+import { Alert, Card, Col, DatePicker, Empty, Radio, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -76,13 +76,13 @@ function cardTitle(title: string, desc: string) {
  */
 const BASIC_CHART_INFO = {
   staffType:
-    '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장 중 판촉직과 OSC직(구 레이디직 포함)을 직무 기준으로 분류하며, 퇴직자와 테스트 계정은 제외합니다.',
+    '전일 기준, 상단에서 선택한 집계 기준의 인원입니다. 상단 조회월과 무관합니다. 여사원·조장 중 판촉직과 OSC직(구 레이디직 포함)을 직무 기준으로 분류하며, 퇴직자와 테스트 계정은 제외합니다.',
   position:
-    '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
+    '전일 기준 인원입니다. 이 차트는 휴직 비율을 보는 용도라 집계 기준 선택과 무관하게 항상 전체(퇴직 제외)로 표시됩니다. 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다.',
   ageGroup:
-    '전일 기준 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시하며, 평균연령 계산에서도 제외합니다.',
+    '전일 기준, 상단에서 선택한 집계 기준의 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시하며, 평균연령 계산에서도 제외합니다.',
   rank:
-    '전일 기준 재직자를 직급(직위)별로 집계합니다. 현장 배치 가능 인력을 보는 표이므로 휴직자는 제외하며, 이 때문에 위 차트들의 총원(휴직 포함)보다 총합계가 적습니다. 판매조장은 직책 기준으로 분류하며 해당 지점에 있는 직위가 그대로 표시되고, 판촉직은 OSPM/OSPE/OSPJ, OSC직은 OSC로 나누며 그 외 직위는 기타로 합산합니다.',
+    '전일 기준, 상단에서 선택한 집계 기준의 인원을 직급(직위)별로 집계합니다. 판매조장은 직책 기준으로 분류하며 해당 지점에 있는 직위가 그대로 표시되고, 판촉직은 OSPM/OSPE/OSPJ, OSC직은 OSC로 나누며 그 외 직위는 기타로 합산합니다. 판매조장을 별도 열로 빼므로 판촉직 열 인원은 판촉직/OSC직 도넛보다 그만큼 적습니다.',
 } as const;
 
 /**
@@ -345,6 +345,13 @@ const CHART_HEIGHT = 320;
  */
 const BASIC_TAB_KEY = 'basic';
 
+/** 기본 현황 집계 기준 — 재직만 / 재직+휴직(퇴직 제외). */
+type BasicScope = 'active' | 'includingLeave';
+
+/** 집계 기준 토글 안내 — 총원 카드가 토글에서 빠지는 이유를 함께 설명한다. */
+const BASIC_SCOPE_NOTICE =
+  '인원현황·판촉직/OSC직·연령별 현황에 적용됩니다. 총원(재직/휴직)은 휴직 비율을 보는 차트라 항상 전체(퇴직 제외) 기준으로 표시됩니다.';
+
 /**
  * 기본 현황 탭 라벨의 info 아이콘 안내 — 조회월이 잠긴 사유.
  *
@@ -380,6 +387,9 @@ export default function DashboardPage() {
   // 활성 탭 — 기본 현황 탭에서는 조회월 셀렉터를 잠근다(BASIC_TAB_KEY 참조).
   const [activeTab, setActiveTab] = useState<string>('sales');
   const isBasicTab = activeTab === BASIC_TAB_KEY;
+  // 기본 현황 집계 기준 — 기본값은 재직(현장 배치 가능 인력). 서버가 두 기준을 모두 내려주므로
+  // 전환 시 재조회가 없다.
+  const [basicScope, setBasicScope] = useState<BasicScope>('active');
 
   // 시스템 관리자(전사 권한)는 마운트 시 전사 자동 조회를 막고, 지점/전체를 명시 선택해 조회를 눌렀을
   // 때만 실행한다 (무거운 전사 집계의 의도치 않은 자동 트리거 방지). 비-시스템관리자는 권한 스코프가
@@ -578,16 +588,37 @@ export default function DashboardPage() {
   const basicTab = useMemo(() => {
     if (!data) return null;
     const b = data.basicStats;
-    const staffTypeTotal = b.staffType.promotion + b.staffType.osc + b.staffType.etc;
+    // 집계 기준 토글 — 서버가 두 기준을 모두 내려주므로 전환 시 재조회가 없다.
+    const s = basicScope === 'active' ? b.active : b.includingLeave;
+    const staffTypeTotal = s.staffType.promotion + s.staffType.osc + s.staffType.etc;
+    // 총원(재직/휴직)만 토글과 무관하게 항상 전체 기준 — 좁히면 휴직 세그먼트가 0이 되어 무의미.
     const positionTotal = b.totalByPosition.active + b.totalByPosition.onLeave + b.totalByPosition.etc;
-    const ageTotal = b.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
+    const ageTotal = s.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
     return (
+      <>
+        <Space style={{ marginBottom: 16 }} size={8}>
+          <span style={{ color: '#8c8c8c' }}>집계 기준:</span>
+          <Radio.Group
+            value={basicScope}
+            onChange={(e) => setBasicScope(e.target.value as BasicScope)}
+            optionType="button"
+            buttonStyle="solid"
+            size="small"
+            options={[
+              { label: '재직', value: 'active' },
+              { label: '재직+휴직', value: 'includingLeave' },
+            ]}
+          />
+          <Tooltip title={BASIC_SCOPE_NOTICE}>
+            <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
       <Row gutter={[16, 16]}>
         {/* 직급별 인원현황 — 좌측 상단 첫 카드. 2단 헤더 표라 열이 많지만 반폭에 맞춰
             표만 가로 스크롤한다(RankHeadcountCard 내부 overflow-x). */}
         <Col span={12}>
           <RankHeadcountCard
-            groups={b.byRank}
+            groups={s.byRank}
             branchName={b.branchName}
             asOfDate={b.asOfDate}
             title={cardTitle('인원현황', BASIC_CHART_INFO.rank)}
@@ -597,10 +628,10 @@ export default function DashboardPage() {
           <Card title={cardTitle('판촉직/OSC직 인원현황', BASIC_CHART_INFO.staffType)} extra={cardExtra(staffTypeTotal)}>
             <ReactECharts
               option={donutOption([
-                { name: '판촉직', value: b.staffType.promotion },
-                { name: 'OSC직', value: b.staffType.osc },
-                ...(b.staffType.etc > 0
-                  ? [{ name: '기타', value: b.staffType.etc, breakdown: b.staffType.etcBreakdown }]
+                { name: '판촉직', value: s.staffType.promotion },
+                { name: 'OSC직', value: s.staffType.osc },
+                ...(s.staffType.etc > 0
+                  ? [{ name: '기타', value: s.staffType.etc, breakdown: s.staffType.etcBreakdown }]
                   : []),
               ])}
               style={{ height: CHART_HEIGHT, width: '100%' }}
@@ -609,6 +640,7 @@ export default function DashboardPage() {
             {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
+        {/* 총원(재직/휴직) — 휴직 비율을 보는 카드라 집계 기준 토글에서 제외한다. */}
         <Col span={12}>
           <Card title={cardTitle('총원 (재직/휴직)', BASIC_CHART_INFO.position)} extra={cardExtra(positionTotal)}>
             <ReactECharts
@@ -627,16 +659,17 @@ export default function DashboardPage() {
         </Col>
         <Col span={12}>
           <Card
-            title={cardTitle(ageGroupCardTitle(b.averageAge), BASIC_CHART_INFO.ageGroup)}
+            title={cardTitle(ageGroupCardTitle(s.averageAge), BASIC_CHART_INFO.ageGroup)}
             extra={cardExtra(ageTotal)}
           >
-            <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
+            <ReactECharts option={headcountBarOption(ageGroupItems(s.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
             {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
       </Row>
+      </>
     );
-  }, [data]);
+  }, [data, basicScope]);
 
   // 시스템 관리자가 아직 조회하지 않은 상태 — 탭 헤더는 노출하되 각 탭 콘텐츠는 조회 안내로 채운다.
   const beforeSearch = isSystemAdmin && !hasSearched;
