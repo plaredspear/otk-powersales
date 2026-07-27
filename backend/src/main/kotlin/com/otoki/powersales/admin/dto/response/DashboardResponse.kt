@@ -108,12 +108,18 @@ data class ChannelWorkTypeItem(
     val visitingHeadcount: BigDecimal
 )
 
+/**
+ * 기본 현황 — 사원 마스터의 **현재 상태 스냅샷** 집계. 조회월과 무관하다.
+ *
+ * 과거에는 선택월 MFEIS 환산인원 기준의 `byWorkType`(근무형태별 고정/격고/순회) 을 함께 내렸으나,
+ * 같은 탭 안에서 기준 시점이 섞여(현재 시점 vs 선택월) 조회월 셀렉터가 과거 이력 조회처럼
+ * 보이는 혼선이 있어 제거했다. 근무형태별 환산인원은 여사원 투입현황 탭이 담당한다.
+ */
 data class BasicStats(
     val branchName: String?,
     val staffType: StaffTypeCount,
     val totalByPosition: TotalByPosition,
-    val byAgeGroup: List<AgeGroupCount>,
-    val byWorkType: WorkTypeStats
+    val byAgeGroup: List<AgeGroupCount>
 )
 
 /**
@@ -149,9 +155,3 @@ data class AgeGroupCount(
     val count: Int
 )
 
-/** 근무형태(고정/격고/순회)별 환산인원 SUM — MFEIS ConvertedHeadcount__c(Number 18,4) 정합. */
-data class WorkTypeStats(
-    val fixed: BigDecimal,
-    val alternating: BigDecimal,
-    val visiting: BigDecimal
-)

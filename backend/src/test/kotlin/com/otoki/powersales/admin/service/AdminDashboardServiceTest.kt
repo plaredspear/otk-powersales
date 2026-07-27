@@ -213,30 +213,9 @@ class AdminDashboardServiceTest {
         assertThat(sd.all.totalHeadcount).isEqualByComparingTo(BigDecimal("550.0000"))
     }
 
-    @Test
-    @DisplayName("T3-1 기본현황 근무형태별(고정/격고/순회)은 환산인원 SUM — 고정 400+1=401 / 순회 54.9, scale=4")
-    fun basicStatsByWorkTypeUsesConvertedHeadcount() {
-        val rows = listOf(
-            mfeis(wc3 = "고정", headcount = BigDecimal("400")),
-            mfeis(wc3 = "고정", headcount = BigDecimal("1")),
-            mfeis(wc3 = "순회", headcount = BigDecimal("54.9")),
-        )
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(
-                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false, hasTargetData = false,
-            )
-
-        val result = service.getDashboard(emptyList(), "2026-05")
-        val byWorkType = result.basicStats.byWorkType
-
-        assertThat(byWorkType.fixed).isEqualByComparingTo(BigDecimal("401.0000"))
-        assertThat(byWorkType.alternating).isEqualByComparingTo(BigDecimal("0.0000"))
-        assertThat(byWorkType.visiting).isEqualByComparingTo(BigDecimal("54.9000"))
-    }
+    // T3-1 기본현황 근무형태별(고정/격고/순회) 환산인원 SUM 테스트는 제거됨 —
+    // 해당 차트가 기준 시점 혼선(현재 시점 vs 선택월)으로 기본 현황에서 빠졌다.
+    // 근무형태별 환산인원 집계 검증은 여사원 투입현황(staffDeployment) 테스트가 담당한다.
 
     @Test
     @DisplayName("T4/T6 매출 실적 + 전년 대비 — actual 800, lastYear 760 -> ratio ≈ 105.3")

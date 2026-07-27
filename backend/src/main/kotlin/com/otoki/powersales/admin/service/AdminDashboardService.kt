@@ -12,7 +12,6 @@ import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
 import com.otoki.powersales.admin.dto.response.WorkTypeCount
-import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -85,7 +84,7 @@ class AdminDashboardService(
         return DashboardResponse(
             salesSummary = buildSalesSummary(ym, branchName, rows),
             staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes),
-            basicStats = buildBasicStats(ym, branchName, effectiveCodes, rows),
+            basicStats = buildBasicStats(ym, branchName, effectiveCodes),
         )
     }
 
@@ -270,11 +269,16 @@ class AdminDashboardService(
 
     // ------------------- 기본 현황 -------------------
 
+    /**
+     * 기본 현황 — 사원 마스터의 **현재 상태 스냅샷** 집계. 조회월과 무관하다.
+     *
+     * [ym] 은 집계 모수가 아니라 연령별 현황의 만나이 계산 기준일(선택월 말일)로만 쓴다.
+     * 화면은 이 탭에서 조회월 셀렉터를 잠그므로 실질적으로 당월 말일이 된다.
+     */
     private fun buildBasicStats(
         ym: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
-        mfeisRows: List<DashboardDeploymentRow>,
     ): BasicStats {
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
@@ -295,9 +299,6 @@ class AdminDashboardService(
         }
         val positionEtcBreakdown = buildEtcBreakdown(positionEtcEmployees.map { it.status })
 
-        // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 환산인원 SUM (getDashboard 1회 조회분 공유)
-        val byWc3 = mfeisRows.groupBy { it.workingCategory3 }
-
         return BasicStats(
             branchName = branchName,
             staffType = StaffTypeCount(
@@ -313,11 +314,6 @@ class AdminDashboardService(
                 etcBreakdown = positionEtcBreakdown,
             ),
             byAgeGroup = buildAgeGroups(employees, asOf),
-            byWorkType = WorkTypeStats(
-                fixed = sumHeadcount(byWc3[WC3_FIXED].orEmpty()),
-                alternating = sumHeadcount(byWc3[WC3_ALTERNATING].orEmpty()),
-                visiting = sumHeadcount(byWc3[WC3_VISITING].orEmpty()),
-            ),
         )
     }
 

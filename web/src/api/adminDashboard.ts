@@ -114,19 +114,18 @@ export interface AgeGroupCount {
   count: number;
 }
 
-/** 근무형태(고정/격고/순회)별 환산인원 SUM — MFEIS ConvertedHeadcount__c 정합 (소수 가능). */
-export interface WorkTypeStats {
-  fixed: number;
-  alternating: number;
-  visiting: number;
-}
-
+/**
+ * 기본 현황 — 사원 마스터의 현재 상태 스냅샷 집계. 조회월과 무관하다
+ * (화면은 이 탭에서 조회월 셀렉터를 잠근다).
+ *
+ * 과거에는 선택월 MFEIS 환산인원 기준의 `byWorkType`(근무형태별 고정/격고/순회) 을 함께 받았으나,
+ * 같은 탭 안에서 기준 시점이 섞이는 혼선 때문에 제거했다 — 근무형태별 환산인원은 여사원 투입현황 탭 담당.
+ */
 export interface BasicStats {
   branchName: string | null;
   staffType: StaffTypeCount;
   totalByPosition: TotalByPosition;
   byAgeGroup: AgeGroupCount[];
-  byWorkType: WorkTypeStats;
 }
 
 export interface DashboardResponse {

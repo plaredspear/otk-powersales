@@ -7,7 +7,6 @@ import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
-import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
@@ -88,7 +87,6 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0, etcBreakdown = emptyList()),
             totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0, etcBreakdown = emptyList()),
             byAgeGroup = emptyList(),
-            byWorkType = WorkTypeStats(fixed = BigDecimal.ZERO, alternating = BigDecimal.ZERO, visiting = BigDecimal.ZERO)
         )
     )
 
@@ -143,9 +141,9 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.basicStats.totalByPosition.onLeave").value(0))
                 .andExpect(jsonPath("$.data.basicStats.byAgeGroup").isArray)
                 .andExpect(jsonPath("$.data.basicStats.byAgeGroup").isEmpty)
-                .andExpect(jsonPath("$.data.basicStats.byWorkType.fixed").value(0))
-                .andExpect(jsonPath("$.data.basicStats.byWorkType.alternating").value(0))
-                .andExpect(jsonPath("$.data.basicStats.byWorkType.visiting").value(0))
+                // byWorkType(근무형태별 환산인원) 은 기준 시점 혼선으로 기본 현황에서 제거됨 —
+                // 근무형태별 집계는 여사원 투입현황(staffDeployment) 담당.
+                .andExpect(jsonPath("$.data.basicStats.byWorkType").doesNotExist())
         }
 
         @Test

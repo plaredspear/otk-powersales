@@ -58,9 +58,8 @@ function cardTitle(title: string, desc: string) {
 /**
  * 기본 현황 각 그래프의 데이터 집계 기준 안내 문구 (지점 조건은 제외).
  *
- * 각 차트의 **기준 시점**을 반드시 명시한다 — 같은 탭 안에서도 차트마다 기준이 다르기 때문이다
- * (인원현황·총원·연령별 = 현재 시점 사원 마스터 / 근무형태별 = 선택월 MFEIS). 조회월 셀렉터는
- * 이 탭에서 잠겨 있다([BASIC_TAB_KEY]).
+ * 기본 현황 3개 차트는 모두 **사원 마스터의 현재 상태 스냅샷**이라 조회월과 무관하다 — 그래서
+ * 이 탭에서는 조회월 셀렉터를 잠근다([BASIC_TAB_KEY]).
  *
  * 모수는 레거시 SF 홈 대시보드(조장) 인원현황 리포트 정합 — 여사원+조장, 여사원 직무 3값 한정,
  * 퇴직자·테스트 계정 제외 (backend `FemaleStaffHeadcountFilter`).
@@ -72,8 +71,6 @@ const BASIC_CHART_INFO = {
     '조회 시점의 현재 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
   ageGroup:
     '조회 시점의 현재 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
-  workType:
-    '월별 여사원 통합일정의 근무형태(고정·격고·순회)별 환산인원을 합산하여 집계합니다. 이 차트만 조회월 기준이며, 나머지 세 차트는 현재 시점 기준입니다.',
 } as const;
 
 /**
@@ -329,9 +326,8 @@ const CHART_HEIGHT = 320;
  * 리포트에 기간 필터가 없다). 셀렉터가 열려 있으면 과거 이력을 조회할 수 있는 것처럼 보이지만
  * 실제로는 값이 바뀌지 않아 오해를 준다.
  *
- * 단, 같은 탭의 '근무형태별 고정/격고/순회' 는 선택월 MFEIS 를 실제로 사용한다 — 탭 단위로 잠그는
- * 이상 이 차트도 함께 고정되는 것을 감수한다(사용자 결정). 각 차트의 기준 시점은 [BASIC_CHART_INFO]
- * 툴팁에 명시한다.
+ * 이 탭의 3개 차트는 모두 현재 시점 기준이다 — 유일하게 조회월을 쓰던 '근무형태별 고정/격고/순회'
+ * (선택월 MFEIS 환산인원) 는 기준 시점이 섞이는 혼선을 없애기 위해 제거했다(사용자 결정).
  */
 const BASIC_TAB_KEY = 'basic';
 
@@ -550,7 +546,6 @@ export default function DashboardPage() {
     const staffTypeTotal = b.staffType.promotion + b.staffType.osc + b.staffType.etc;
     const positionTotal = b.totalByPosition.active + b.totalByPosition.onLeave + b.totalByPosition.etc;
     const ageTotal = b.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
-    const workTypeTotal = b.byWorkType.fixed + b.byWorkType.alternating + b.byWorkType.visiting;
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
@@ -586,24 +581,6 @@ export default function DashboardPage() {
         <Col span={12}>
           <Card title={cardTitle('연령별 현황', BASIC_CHART_INFO.ageGroup)} extra={cardExtra(ageTotal)}>
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title={cardTitle('근무형태별 고정/격고/순회 인원현황 (환산인원)', BASIC_CHART_INFO.workType)} extra={cardExtra(workTypeTotal, 1)}>
-            <ReactECharts
-              option={headcountBarOption(
-                [
-                  { name: '고정', value: b.byWorkType.fixed },
-                  { name: '격고', value: b.byWorkType.alternating },
-                  { name: '순회', value: b.byWorkType.visiting },
-                ],
-                '#13c2c2',
-                '명',
-                1,
-              )}
-              style={{ height: CHART_HEIGHT, width: '100%' }}
-              notMerge
-            />
           </Card>
         </Col>
       </Row>
