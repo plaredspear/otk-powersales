@@ -26,7 +26,7 @@ class ScheduleListExcelExporter : BaseExcelExporter<ScheduleListItemDto>() {
     // "유효" 는 화면의 신호등(Valid__c 색상) 을 엑셀에서 표현할 수 없어 tooltip 과 동일한
     // 유효데이터(ValidData__c: 유효/예정/종료) 텍스트로 출력한다.
     override val headers = listOf(
-        "유효", "지점명", "사번", "성명", "재직상태", "거래처코드", "거래명", "거래처유형",
+        "유효", "지점명", "사번", "성명", "재직상태", "거래처코드", "거래처명", "거래처유형",
         "근무형태3", "근무형태5", "시작일", "종료일", "거래처상태", "전월매출", "확정",
     )
 

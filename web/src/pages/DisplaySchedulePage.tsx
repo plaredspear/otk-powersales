@@ -113,7 +113,7 @@ function buildListColumns(
   navigate: NavigateFunction,
 ): ColumnsType<ScheduleListItem> {
   // SF 「진열사원 스케줄 마스터」 List View 컬럼 순서 정합:
-  // 유효 · 지점명 · 사번 · 성명 · 재직상태 · 거래처코드 · 거래명 · 거래처유형 · 근무형태3 · 근무형태5
+  // 유효 · 지점명 · 사번 · 성명 · 재직상태 · 거래처코드 · 거래처명 · 거래처유형 · 근무형태3 · 근무형태5
   // · 시작일 · 종료일 · 거래처상태 · 전월매출 · 확정.
   return [
     {
@@ -156,7 +156,7 @@ function buildListColumns(
     },
     { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
     {
-      title: '거래명',
+      title: '거래처명',
       dataIndex: 'accountName',
       key: 'accountName',
       width: 150,
