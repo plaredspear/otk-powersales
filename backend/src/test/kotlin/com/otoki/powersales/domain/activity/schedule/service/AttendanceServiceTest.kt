@@ -1943,10 +1943,11 @@ class AttendanceServiceTest {
             // 다른 거래처에 고정 1건 존재 → 매트릭스상 고정 등록은 기존 고정 ≥ 1 이면 거부
             every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns 1L
 
-            // When & Then
+            // When & Then — 레거시 상황별 메시지: 고정 등록 + 기존 고정 존재
             assertThatThrownBy {
                 attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
+                .hasMessage("해당 사원 및 선택한 날짜에 고정 일정이 이미 존재합니다.")
 
             verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
         }
@@ -2080,12 +2081,101 @@ class AttendanceServiceTest {
             every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.ALTERNATE)) } returns 2L
             every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.PATROL)) } returns 0L
 
-            // When & Then
+            // When & Then — 레거시 상황별 메시지: 격고 등록 + 기존 격고 2건 상한 초과
             assertThatThrownBy {
                 attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
+                .hasMessage("해당 사원 및 선택한 날짜에 격고 일정이 이미 2개 존재합니다.")
 
             verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+        }
+
+        /**
+         * 진열 출근 근무유형3 중복 거부 시 레거시 상황별 메시지 검증 공용 헬퍼.
+         * 등록하려는 유형([registerType]) + 기존 유형별 카운트(fixed/alternate/patrol)를 세팅하고,
+         * 거부 예외 메시지가 [expectedMessage] 와 일치하는지 확인한다. save 는 호출되지 않아야 한다.
+         */
+        private fun assertDisplayDuplicateMessage(
+            registerType: TypeOfWork3,
+            fixed: Long,
+            alternate: Long,
+            patrol: Long,
+            expectedMessage: String,
+        ) {
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minus(10, ChronoUnit.DAYS),
+                endDate = today.plus(10, ChronoUnit.DAYS),
+                typeOfWork3 = registerType,
+                employeeId = userId,
+                accountId = 8938,
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns fixed
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.ALTERNATE)) } returns alternate
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.PATROL)) } returns patrol
+
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
+                .hasMessage(expectedMessage)
+
+            verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+        }
+
+        @Test
+        @DisplayName("레거시 상황별 메시지 — 고정 등록 + 기존 순회 존재: 다른 유형 존재 메시지")
+        fun register_display_fixed_withExistingPatrol_message() {
+            assertDisplayDuplicateMessage(
+                registerType = TypeOfWork3.FIXED, fixed = 0L, alternate = 0L, patrol = 1L,
+                expectedMessage = "동일 날짜와 사원으로 고정이 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다.",
+            )
+        }
+
+        @Test
+        @DisplayName("레거시 상황별 메시지 — 격고 등록 + 기존 고정 존재: 다른 유형 존재 메시지")
+        fun register_display_alternate_withExistingFixed_message() {
+            assertDisplayDuplicateMessage(
+                registerType = TypeOfWork3.GAP, fixed = 1L, alternate = 0L, patrol = 0L,
+                expectedMessage = "동일 날짜와 사원으로 격고가 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다.",
+            )
+        }
+
+        @Test
+        @DisplayName("레거시 상황별 메시지 — 격고 등록 + 기존 격고+순회 공존")
+        fun register_display_alternate_withAlternateAndPatrol_message() {
+            assertDisplayDuplicateMessage(
+                registerType = TypeOfWork3.GAP, fixed = 0L, alternate = 1L, patrol = 1L,
+                expectedMessage = "동일 날짜와 사원으로 이미 격고 일정과 순회일정이 존재하여 일정을 생성할 수 없습니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다.",
+            )
+        }
+
+        @Test
+        @DisplayName("레거시 상황별 메시지 — 순회 등록 + 기존 고정 존재: 다른 유형 존재 메시지")
+        fun register_display_patrol_withExistingFixed_message() {
+            assertDisplayDuplicateMessage(
+                registerType = TypeOfWork3.ROTATION, fixed = 1L, alternate = 0L, patrol = 0L,
+                expectedMessage = "동일 날짜와 사원으로 순회가 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다.",
+            )
+        }
+
+        @Test
+        @DisplayName("레거시 상황별 메시지 — 순회 등록 + 기존 격고 2건 존재")
+        fun register_display_patrol_withTwoAlternate_message() {
+            assertDisplayDuplicateMessage(
+                registerType = TypeOfWork3.ROTATION, fixed = 0L, alternate = 2L, patrol = 0L,
+                expectedMessage = "동일 날짜와 사원으로 이미 2개 격고 일정이 존재하여 순회일정을 생성할 수 없습니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다.",
+            )
         }
 
         @Test

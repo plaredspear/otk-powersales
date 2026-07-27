@@ -564,8 +564,12 @@ class AttendanceService(
         if (existing == null && masterTypeOfWork3 != null) {
             // typeOfWork3 와 workingCategory3 는 picklist 옵션값(고정/격고/순회) 동일 — displayName 으로 변환 후 매칭
             val workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(masterTypeOfWork3.displayName)
-            if (workingCategory3 != null && violatesWorkingCategory3Matrix(employee, today, workingCategory3)) {
-                throw DisplayAttendanceDuplicateException()
+            if (workingCategory3 != null) {
+                // 위배 시 어떤 유형이 이미 존재해 막혔는지 레거시 동등 메시지 반환 (없으면 null)
+                val violationMessage = workingCategory3DuplicateMessage(employee, today, workingCategory3)
+                if (violationMessage != null) {
+                    throw DisplayAttendanceDuplicateException(violationMessage)
+                }
             }
         }
         if (existing != null) {
@@ -599,19 +603,23 @@ class AttendanceService(
 
     /**
      * 근무유형3(고정/격고/순회) 양립 매트릭스 검증 — 레거시 SF
-     * `TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule` 의 신규생성일정 체크(insert 경로) 동등.
+     * `TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule` 의 신규생성일정 체크(DB 비교 블록) 동등.
      *
-     * 동일 사원·날짜의 기존 일정 건수를 유형별로 집계(거래처/출근여부 무관)한 뒤, 등록하려는 유형에 따라:
+     * 동일 사원·날짜의 기존 일정 건수를 유형별로 집계(거래처/출근여부 무관)한 뒤, 등록하려는 유형에 따라
+     * 위배 여부를 판정한다. **위배 시 어떤 유형이 이미 존재해 막혔는지 알려주는 레거시 동등 메시지를 반환하고,
+     * 위배가 없으면 null 을 반환**한다 (레거시는 상황별로 서로 다른 한글 메시지를 addError 한다).
+     *
      *  - 고정: 기존 고정 ≥ 1, 또는 기존 격고 ≥ 1 / 순회 ≥ 1
      *  - 격고: 기존 격고 ≥ 2, 또는 기존 고정 ≥ 1, 또는 (격고 ≥ 1 AND 순회 ≥ 1)
      *  - 순회: 기존 고정 ≥ 1, 또는 기존 격고 ≥ 2
-     * 위 조건에 해당하면 true(중복 거부). 레거시 update 전용 bypass 분기는 출근(insert) 경로에 무관하여 제외.
+     * 레거시 update 전용 bypass 분기는 출근(insert) 경로에 무관하여 제외. 조건 우선순위(먼저 매칭되는 메시지)는
+     * 레거시 addError 순서를 따른다.
      */
-    private fun violatesWorkingCategory3Matrix(
+    private fun workingCategory3DuplicateMessage(
         employee: Employee,
         today: LocalDate,
         category3: WorkingCategory3
-    ): Boolean {
+    ): String? {
         val fixed = teamMemberScheduleRepository
             .countByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, WorkingCategory3.FIXED)
         val alternate = teamMemberScheduleRepository
@@ -620,9 +628,30 @@ class AttendanceService(
             .countByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, WorkingCategory3.PATROL)
 
         return when (category3) {
-            WorkingCategory3.FIXED -> fixed >= 1 || alternate >= 1 || patrol >= 1
-            WorkingCategory3.ALTERNATE -> alternate >= 2 || fixed >= 1 || (alternate >= 1 && patrol >= 1)
-            WorkingCategory3.PATROL -> fixed >= 1 || alternate >= 2
+            // 레거시 :245~256 (고정 등록)
+            WorkingCategory3.FIXED -> when {
+                fixed >= 1 -> "해당 사원 및 선택한 날짜에 고정 일정이 이미 존재합니다."
+                alternate >= 1 || patrol >= 1 ->
+                    "동일 날짜와 사원으로 고정이 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다."
+                else -> null
+            }
+            // 레거시 :232~244 (격고 등록)
+            WorkingCategory3.ALTERNATE -> when {
+                alternate >= 2 -> "해당 사원 및 선택한 날짜에 격고 일정이 이미 2개 존재합니다."
+                fixed >= 1 ->
+                    "동일 날짜와 사원으로 격고가 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다."
+                alternate >= 1 && patrol >= 1 ->
+                    "동일 날짜와 사원으로 이미 격고 일정과 순회일정이 존재하여 일정을 생성할 수 없습니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다."
+                else -> null
+            }
+            // 레거시 :257~268 (순회 등록)
+            WorkingCategory3.PATROL -> when {
+                fixed >= 1 ->
+                    "동일 날짜와 사원으로 순회가 아닌 다른 유형의 일정이 존재합니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다."
+                alternate >= 2 ->
+                    "동일 날짜와 사원으로 이미 2개 격고 일정이 존재하여 순회일정을 생성할 수 없습니다. 다른 유형의 일정을 제거 후 업로드가 필요합니다."
+                else -> null
+            }
         }
     }
 

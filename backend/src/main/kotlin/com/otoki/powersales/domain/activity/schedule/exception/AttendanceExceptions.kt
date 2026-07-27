@@ -126,11 +126,17 @@ class DisplayScheduleNotAssignedException : BusinessException(
 
 /**
  * 진열 출근 중복 (Spec #587 P1-B §1.2 step 4 / Q6).
- * 동일 `(employee_id, working_date, working_category3)` 조합으로 이미 출근 등록됨.
+ * 동일 사원·날짜의 근무유형3(고정/격고/순회) 양립 매트릭스 위배 시 발생.
+ *
+ * 레거시 SF `TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule` (DB 비교 블록) 은
+ * 어떤 유형이 이미 존재해 막혔는지 상황별로 다른 한글 메시지를 addError 한다. 이를 동등하게
+ * 재현하기 위해 메시지를 파라미터로 받는다(기본값 = 유형 무관 포괄 메시지, 재출근 가드용).
  */
-class DisplayAttendanceDuplicateException : BusinessException(
+class DisplayAttendanceDuplicateException(
+    message: String = "동일한 근무유형으로 이미 출근 등록된 일자입니다"
+) : BusinessException(
     errorCode = "ATT_DISPLAY_DUPLICATE",
-    message = "동일한 근무유형으로 이미 출근 등록된 일자입니다",
+    message = message,
     httpStatus = HttpStatus.CONFLICT
 )
 
