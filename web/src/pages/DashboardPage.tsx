@@ -331,6 +331,28 @@ function ageGroupItems(rows: AgeGroupCount[]) {
 const CHART_HEIGHT = 320;
 
 /**
+ * 차트 카드 반응형 폭 — 노트북(lg 이상)은 2열, 태블릿 이하는 1열.
+ *
+ * 도넛/막대 차트는 폭이 좁아지면 라벨과 범례가 겹쳐 읽기 어려워지므로, 반폭을 유지할 최소
+ * 기준을 lg(≥992px)로 잡는다. 그 아래에서는 카드 하나가 전체 폭을 쓰게 해 차트를 온전히 보여준다.
+ * (antd 기본 breakpoint: xs<576 / sm≥576 / md≥768 / lg≥992 / xl≥1200 / xxl≥1600)
+ */
+const CHART_COL_SPAN = { xs: 24, lg: 12 } as const;
+
+/**
+ * 표 기반 카드(인원현황) 반응형 폭 — 2단 헤더 표라 차트보다 폭이 더 필요하다.
+ * xl(≥1200px) 부터 반폭을 쓰고 그 아래는 전체 폭 — lg 구간에서 반폭이면 열이 눌려 가로 스크롤이
+ * 상시 발생한다.
+ */
+const TABLE_COL_SPAN = { xs: 24, xl: 12 } as const;
+
+/**
+ * KPI 숫자 카드(매출현황 상단 3열) 반응형 폭 — 폭이 좁아도 숫자 하나라 잘 견딘다.
+ * 모바일(xs)만 1열, sm 부터 2열, lg 부터 원래의 3열.
+ */
+const KPI_COL_SPAN = { xs: 24, sm: 12, lg: 8 } as const;
+
+/**
  * 기본 현황 탭 key. 이 탭에서는 조회월 셀렉터를 잠근다.
  *
  * 사유: 기본 현황의 인원 집계는 **사원 마스터의 현재 상태 스냅샷**이라 조회월과 무관하다
@@ -437,7 +459,7 @@ export default function DashboardPage() {
           출근등록 거래처 {s.investedAccountCount.toLocaleString()}개
         </div>
         <Row gutter={[16, 16]}>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               {s.hasTargetData ? (
                 <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={formatThousandWon(s.targetAmount)} suffix="천원" />
@@ -446,7 +468,7 @@ export default function DashboardPage() {
               )}
             </Card>
           </Col>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               {s.hasActualData ? (
                 <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={formatThousandWon(s.actualAmount)} suffix="천원" />
@@ -455,7 +477,7 @@ export default function DashboardPage() {
               )}
             </Card>
           </Col>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               <Statistic
                 title={cardTitle('목표 달성률', SALES_CHART_INFO.progress)}
@@ -466,12 +488,12 @@ export default function DashboardPage() {
               />
             </Card>
           </Col>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               <Statistic title={cardTitle('기준 진도율', SALES_CHART_INFO.reference)} value={s.referenceProgressRate} precision={1} suffix="%" />
             </Card>
           </Col>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               {s.hasLastYearData ? (
                 <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={formatThousandWon(s.lastYearAmount)} suffix="천원" />
@@ -480,7 +502,7 @@ export default function DashboardPage() {
               )}
             </Card>
           </Col>
-          <Col span={8}>
+          <Col {...KPI_COL_SPAN}>
             <Card>
               {s.hasLastYearData ? (
                 <Statistic title={cardTitle('전년동월 대비 성장률', SALES_CHART_INFO.lastYearRatio)} value={s.lastYearRatio} precision={1} suffix="%" />
@@ -526,7 +548,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         {/* ② 근무형태별/유통별 인원현황 — 유통 × 진열/행사 그룹막대 */}
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card
             title={cardTitle('전월 근무형태별/유통별 인원현황', DEPLOYMENT_CHART_INFO.channelWorkType1)}
             extra={cardExtra(sd.channelWorkType1.totalHeadcount, 1)}
@@ -535,7 +557,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         {/* ③ 근무형태 비중 — 진열/행사 도넛 */}
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card title={cardTitle('전월 근무형태 비중', DEPLOYMENT_CHART_INFO.workType1Ratio)} extra={cardExtra(workType1Total, 1)}>
             <ReactECharts
               option={donutOption(
@@ -560,7 +582,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         {/* ⑤ 진열 누적 / ⑥ 행사 누적 */}
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card
             title={cardTitle('전월 유통별/근무형태별 여사원현황 (진열)', DEPLOYMENT_CHART_INFO.display)}
             extra={cardExtra(sd.display.totalHeadcount, 1)}
@@ -568,7 +590,7 @@ export default function DashboardPage() {
             <ReactECharts option={channelStackOption(sd.display)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card
             title={cardTitle('전월 유통별/근무형태별 여사원현황 (행사)', DEPLOYMENT_CHART_INFO.event)}
             extra={cardExtra(sd.event.totalHeadcount, 1)}
@@ -614,9 +636,9 @@ export default function DashboardPage() {
           </Tooltip>
         </Space>
       <Row gutter={[16, 16]}>
-        {/* 직급별 인원현황 — 좌측 상단 첫 카드. 2단 헤더 표라 열이 많지만 반폭에 맞춰
-            표만 가로 스크롤한다(RankHeadcountCard 내부 overflow-x). */}
-        <Col span={12}>
+        {/* 직급별 인원현황 — 좌측 상단 첫 카드. 2단 헤더 표라 폭이 더 필요해 xl 부터 반폭.
+            그래도 열이 넘치면 표만 가로 스크롤한다(RankHeadcountCard 내부 overflow-x). */}
+        <Col {...TABLE_COL_SPAN}>
           <RankHeadcountCard
             groups={s.byRank}
             branchName={b.branchName}
@@ -624,7 +646,7 @@ export default function DashboardPage() {
             title={cardTitle('인원현황', BASIC_CHART_INFO.rank)}
           />
         </Col>
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card title={cardTitle('판촉직/OSC직 인원현황', BASIC_CHART_INFO.staffType)} extra={cardExtra(staffTypeTotal)}>
             <ReactECharts
               option={donutOption([
@@ -641,7 +663,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         {/* 총원(재직/휴직) — 휴직 비율을 보는 카드라 집계 기준 토글에서 제외한다. */}
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card title={cardTitle('총원 (재직/휴직)', BASIC_CHART_INFO.position)} extra={cardExtra(positionTotal)}>
             <ReactECharts
               option={donutOption([
@@ -657,7 +679,7 @@ export default function DashboardPage() {
             {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
-        <Col span={12}>
+        <Col {...CHART_COL_SPAN}>
           <Card
             title={cardTitle(ageGroupCardTitle(s.averageAge), BASIC_CHART_INFO.ageGroup)}
             extra={cardExtra(ageTotal)}
