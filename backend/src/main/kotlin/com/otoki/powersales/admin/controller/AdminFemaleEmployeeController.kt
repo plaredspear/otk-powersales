@@ -310,11 +310,11 @@ class AdminFemaleEmployeeController(
      * - 지점 권한자 (지점장 / 조장 / 여사원): 본인 costCenterCode 의 조직 트리 지점 코드 집합.
      *   [BranchCodeExpander] 로 이력 코드(BranchMapping — 동일 지점의 조직 개편 전/후 코드) 까지 확장한다.
      *
-     * 확장한 이력 코드가 실제 필터에 반영되는 범위는 지점 선택 여부에 따라 다르다 —
-     * `DataScope.effectiveBranchCodes` 가 지점 **선택 시** 요청 코드 1건만 `Filtered` 로 남기므로 이력 코드는
-     * IDOR 통과 판정에만 쓰이고, **미선택 시**에는 확장 집합 전체가 필터로 들어간다. (근무기간 조회
-     * [com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService.getMembers] 는 선택 지점
-     * 1건을 확장해 필터에 쓰므로 선택 시 매칭 폭이 본 메서드보다 넓다.)
+     * 여기서 확장한 이력 코드는 **IDOR 통과 판정용**이다 — `DataScope.effectiveBranchCodes` 가 지점
+     * **선택 시** 요청 코드 1건만 `Filtered` 로 남기기 때문에 확장 집합이 그대로 필터가 되지는 않는다.
+     * 실제 조회 필터의 이력 코드 확장은 최종 필터 직전인
+     * [com.otoki.powersales.domain.org.employee.service.AdminEmployeeService.expandBranchCodes] 가
+     * 담당하며, 그래서 지점 선택/미선택 양쪽 모두 확장이 적용된다.
      *
      * **주의**: 반환하는 [DataScope] 는 `branchCodes` / `isAllBranches` 2차원만 채운 **부분 DataScope** 다
      * (`AdminDataScopeService` 가 채우는 sharing policy 차원 — userId / profileFlags / evaluatorRules 등은

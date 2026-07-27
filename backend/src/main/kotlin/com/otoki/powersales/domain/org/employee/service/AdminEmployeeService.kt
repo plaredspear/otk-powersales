@@ -20,6 +20,7 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
@@ -38,7 +39,8 @@ class AdminEmployeeService(
     private val employeeRepository: EmployeeRepository,
     private val employeeListExcelExporter: EmployeeListExcelExporter,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     companion object {
@@ -262,6 +264,28 @@ class AdminEmployeeService(
     }
 
     /**
+     * 지점 보안 필터에 조직 개편 이력 코드를 합쳐 확장한다 (`applyBranchScope = true` 경로 전용).
+     *
+     * 2025-05 SAP 조직 개편으로 지점코드가 전면 재부여되었고(구 5452~/5666~ → 현행 5815~), 개편 이후
+     * 발령을 받지 못한 사원은 [Employee.costCenterCode] 가 옛 코드로 남아 있다. 현행 코드만으로
+     * IN 매칭하면 이들이 목록에서 누락되므로, [BranchCodeExpander] (branch_mapping = SF
+     * `BranchMapping__mdt` 계보 매핑) 로 옛 코드까지 합집합에 넣는다.
+     *
+     * [com.otoki.powersales.admin.dto.DataScope.effectiveBranchCodes] 는 지점을 **선택**하면 요청 코드
+     * 1건만 `Filtered` 로 돌려주므로(`DataScope.kt` 참조), 호출부가 넘긴 확장 집합이 그 단계에서 버려진다.
+     * 그래서 확장은 스코프 산출부가 아니라 **최종 필터 직전인 여기서** 다시 적용해야 선택/미선택 양쪽에
+     * 일관되게 반영된다. 대시보드 기본현황(`AdminDashboardService.expandQueryCodes`) 과 동일한 축이며,
+     * 두 화면의 총원이 일치해야 한다([FemaleStaffHeadcountFilter] 참조).
+     *
+     * 확장은 지점 **보안 필터**에만 적용한다 — `applyBranchScope = false` 인 전사 검색의 표시 필터
+     * (사용자가 고른 지점 그대로 보여주는 용도) 는 확장하지 않는다.
+     */
+    private fun expandBranchCodes(codes: List<String>): List<String> {
+        if (codes.isEmpty()) return codes
+        return branchCodeExpander.expand(codes).toList()
+    }
+
+    /**
      * 현재 페이지 사원들의 최근 출근등록 1건 정보(근무형태/근무거래처) Map<employeeId, info> 조회.
      * 출근등록 이력 0건 사원은 키가 없다.
      */
@@ -319,7 +343,7 @@ class AdminEmployeeService(
                 // 전사 권한 (SYSTEM_ADMIN / 영업지원·본부) — 지점 보안 필터 없음
                 is EffectiveBranchResult.All -> null
                 // 본인 소속 지점(또는 그 안에서 선택한 단일 지점) 으로 제한
-                is EffectiveBranchResult.Filtered -> result.codes
+                is EffectiveBranchResult.Filtered -> expandBranchCodes(result.codes)
                 // 권한 밖 지점 요청 — 빈 결과
                 is EffectiveBranchResult.NoAccess -> return EmployeeListResponse(
                     content = emptyList(), page = page, size = size, totalElements = 0, totalPages = 0
@@ -386,7 +410,7 @@ class AdminEmployeeService(
         val branchFilter: List<String>? = if (applyBranchScope) {
             when (val result = scope.effectiveBranchCodes(requestedBranch)) {
                 is EffectiveBranchResult.All -> { noAccess = false; null }
-                is EffectiveBranchResult.Filtered -> { noAccess = false; result.codes }
+                is EffectiveBranchResult.Filtered -> { noAccess = false; expandBranchCodes(result.codes) }
                 is EffectiveBranchResult.NoAccess -> { noAccess = true; null }
             }
         } else {

@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
@@ -33,11 +34,20 @@ class AdminEmployeeServiceTest {
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
     private val organizationRepository: OrganizationRepository = mockk()
 
+    /**
+     * 지점 코드 확장 — 기본은 항등(입력 그대로) stub.
+     * 조직 개편 이력 코드 확장 자체를 검증하는 테스트만 계보를 별도 stub 한다.
+     */
+    private val branchCodeExpander: BranchCodeExpander = mockk {
+        every { expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+    }
+
     private val adminEmployeeService = AdminEmployeeService(
         employeeRepository,
         EmployeeListExcelExporter(),
         teamMemberScheduleRepository,
         organizationRepository,
+        branchCodeExpander,
     )
 
     init {
@@ -255,6 +265,50 @@ class AdminEmployeeServiceTest {
             )
 
             assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("스코프 적용 - 지점 선택 시에도 조직 개편 이력 코드가 필터에 포함된다 (대시보드와 동일 축)")
+        fun scope_selectedBranch_expandsHistoricalCodes() {
+            val scope = DataScope(branchCodes = listOf("5824"), isAllBranches = false)
+            // 강남2지점(5824) 의 계보 — 조직 개편 이전 코드 5668 (branch_mapping 실데이터 정합)
+            every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
+
+            val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "5824"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            every {
+                employeeRepository.findEmployees(
+                    null, match { it?.toSet() == setOf("5824", "5668") }, null, null, null,
+                    any(), any(), any(), any(), any(),
+                )
+            } returns page
+
+            val result = adminEmployeeService.getEmployees(
+                scope, null, "5824", null, null, 0, 20, applyBranchScope = true,
+            )
+
+            assertThat(result.content).hasSize(1)
+            verify {
+                employeeRepository.findEmployees(
+                    null, match { it?.toSet() == setOf("5824", "5668") }, null, null, null,
+                    any(), any(), any(), any(), any(),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("스코프 미적용(전사 검색) 은 표시 필터를 확장하지 않는다")
+        fun scope_notApplied_doesNotExpandDisplayFilter() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+            every { employeeRepository.findEmployees(null, listOf("5824"), null, null, null, any(), any(), any(), any(), any()) } returns page
+
+            adminEmployeeService.getEmployees(
+                scope, null, "5824", null, null, 0, 20, applyBranchScope = false,
+            )
+
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
         }
 
         @Test
