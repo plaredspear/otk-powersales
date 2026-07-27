@@ -1,10 +1,13 @@
 import client from './client';
 import type { ApiResponse } from './types';
+import type { BranchOption } from '@/components/common/BranchSingleSelect';
 
 export interface UserListParams {
   keyword?: string;
   isActive?: boolean;
   profileId?: number;
+  /** 지점 필터 — 조직코드(User.costCenterCode 축). 미선택이면 전체. */
+  costCenterCode?: string;
   page: number;
   size: number;
 }
@@ -74,6 +77,20 @@ export async function fetchUsers(params: UserListParams): Promise<UserListData> 
   const res = await client.get<ApiResponse<UserListData>>('/api/v1/admin/users', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사용자 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 사용자 관리 필터용 지점 옵션 조회 (전사).
+ *
+ * 사원 목록의 `/admin/employees/branches` (`employee` READ 가드) 대신 `user` READ 로 가드된 동일
+ * 내용의 lookup 을 호출한다. `user` 권한만 가진 관리자도 필터 드롭다운을 채울 수 있다.
+ */
+export async function fetchUserBranches(): Promise<BranchOption[]> {
+  const res = await client.get<ApiResponse<BranchOption[]>>('/api/v1/admin/users/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

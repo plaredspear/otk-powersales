@@ -10,12 +10,14 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 
 /**
- * UserRepositoryCustom QueryDSL 전환 검증 — `findIdsBySfidIn`.
+ * UserRepositoryCustom QueryDSL 검증.
  *
- * SF user sfid → 신규 User.id (sfid, id) 쌍 매핑. 매칭 실패 sfid 는 결과에서 누락되는지 실 DB 로 검증한다.
+ * - `findIdsBySfidIn` — SF user sfid → 신규 User.id (sfid, id) 쌍 매핑. 매칭 실패 sfid 누락 검증.
+ * - `findUsers` — 사용자 관리 화면의 지점(costCenterCode) 필터 동작 검증.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -54,9 +56,57 @@ class UserRepositoryCustomTest {
         assertThat(userRepository.findIdsBySfidIn(emptyList())).isEmpty()
     }
 
+    @Test
+    @DisplayName("findUsers - costCenterCode 필터는 해당 지점 사용자만 반환")
+    fun findUsers_filtersByCostCenterCode() {
+        persistWithBranch("branch.a1", "EMPA1", "5721")
+        persistWithBranch("branch.a2", "EMPA2", "5721")
+        persistWithBranch("branch.b1", "EMPB1", "5722")
+
+        val result = userRepository.findUsers(
+            keyword = null,
+            isActive = null,
+            profileId = null,
+            costCenterCodes = listOf("5721"),
+            pageable = PageRequest.of(0, 20),
+        )
+
+        assertThat(result.content).extracting<String> { it.username }
+            .containsExactlyInAnyOrder("branch.a1", "branch.a2")
+    }
+
+    @Test
+    @DisplayName("findUsers - costCenterCode 가 null 인 사용자는 지점 필터 시 제외, 미필터 시 포함")
+    fun findUsers_excludesNullCostCenterWhenFiltered() {
+        persistWithBranch("branch.a1", "EMPA1", "5721")
+        persistWithBranch("admin.only", "EMPADM", null) // 사원 미매칭 관리자 계정
+
+        val filtered = userRepository.findUsers(
+            keyword = null, isActive = null, profileId = null,
+            costCenterCodes = listOf("5721"), pageable = PageRequest.of(0, 20),
+        )
+        assertThat(filtered.content).extracting<String> { it.username }
+            .containsExactly("branch.a1")
+
+        // 지점 미선택(전체) 이면 costCenterCode 가 null 인 계정도 그대로 노출된다.
+        val unfiltered = userRepository.findUsers(
+            keyword = null, isActive = null, profileId = null,
+            costCenterCodes = null, pageable = PageRequest.of(0, 20),
+        )
+        assertThat(unfiltered.content).extracting<String> { it.username }
+            .containsExactlyInAnyOrder("branch.a1", "admin.only")
+    }
+
     private fun persist(username: String, employeeCode: String, sfid: String?): User {
         val user = User(username = username, employeeCode = employeeCode, password = "x").apply {
             this.sfid = sfid
+        }
+        return em.persistAndFlush(user)
+    }
+
+    private fun persistWithBranch(username: String, employeeCode: String, costCenterCode: String?): User {
+        val user = User(username = username, employeeCode = employeeCode, password = "x").apply {
+            this.costCenterCode = costCenterCode
         }
         return em.persistAndFlush(user)
     }

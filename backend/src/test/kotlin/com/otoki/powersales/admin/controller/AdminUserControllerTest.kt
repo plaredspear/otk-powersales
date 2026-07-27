@@ -14,9 +14,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -74,7 +76,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 totalElements = 1,
                 totalPages = 1
             )
-            every { adminUserService.findUsers(any(), any(), any(), eq(0), eq(20)) } returns response
+            every { adminUserService.findUsers(any(), any(), any(), any(), eq(0), eq(20)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk)
@@ -90,7 +92,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 content = emptyList(),
                 page = 0, size = 10, totalElements = 0, totalPages = 0
             )
-            every { adminUserService.findUsers(eq("kim"), eq(false), any(), eq(0), eq(10)) } returns response
+            every { adminUserService.findUsers(eq("kim"), eq(false), any(), any(), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/users")
@@ -110,7 +112,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 content = emptyList(),
                 page = 0, size = 20, totalElements = 0, totalPages = 0
             )
-            every { adminUserService.findUsers(any(), any(), eq(7L), eq(0), eq(20)) } returns response
+            every { adminUserService.findUsers(any(), any(), eq(7L), any(), eq(0), eq(20)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/users")
@@ -118,6 +120,25 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
+        }
+
+        @Test
+        @DisplayName("성공 - costCenterCode 지점 필터가 서비스로 전달된다")
+        fun getUsers_withCostCenterCode() {
+            val response = AdminUserListResponse(
+                content = emptyList(),
+                page = 0, size = 20, totalElements = 0, totalPages = 0
+            )
+            every { adminUserService.findUsers(any(), any(), any(), eq("5721"), eq(0), eq(20)) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/users")
+                    .param("costCenterCode", "5721")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty)
+
+            verify { adminUserService.findUsers(any(), any(), any(), eq("5721"), eq(0), eq(20)) }
         }
     }
 
@@ -139,6 +160,27 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data[0].id").value(5L))
                 .andExpect(jsonPath("$.data[0].name").value("5.영업사원"))
                 .andExpect(jsonPath("$.data[1].id").value(6L))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/users/branches - 지점 필터 옵션 (user READ 가드)")
+    inner class GetBranches {
+
+        @Test
+        @DisplayName("성공 - branchCode/branchName 옵션 목록 반환")
+        fun getBranches_success() {
+            every { adminUserService.getBranchOptions() } returns listOf(
+                BranchResponse(branchCode = "5721", branchName = "서울1지점"),
+                BranchResponse(branchCode = "5722", branchName = "서울2지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/users/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].branchCode").value("5721"))
+                .andExpect(jsonPath("$.data[0].branchName").value("서울1지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("5722"))
         }
     }
 

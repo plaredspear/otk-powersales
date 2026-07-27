@@ -8,7 +8,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import type { UserSummary } from '@/api/user';
-import { fetchUserProfileOptions } from '@/api/user';
+import { fetchUserBranches, fetchUserProfileOptions } from '@/api/user';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
@@ -28,17 +28,19 @@ export default function UserListPage() {
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   // boolean/number 필터는 string 으로 직렬화 보관, 목록 query 구성 시점에 원 타입으로 변환.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
-    defaultFilters: { keyword: '', isActive: '', profileId: '' },
+    defaultFilters: { keyword: '', isActive: '', profileId: '', costCenterCode: '' },
   });
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [keywordInput, setKeywordInput] = useState(() => filters.keyword);
   const [isActiveInput, setIsActiveInput] = useState(() => filters.isActive);
   const [profileIdInput, setProfileIdInput] = useState(() => filters.profileId);
+  const [costCenterCodeInput, setCostCenterCodeInput] = useState(() => filters.costCenterCode);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
     keyword: filters.keyword || undefined,
     isActive: filters.isActive === '' ? undefined : filters.isActive === 'true',
     profileId: filters.profileId === '' ? undefined : Number(filters.profileId),
+    costCenterCode: filters.costCenterCode || undefined,
     page,
     size,
   });
@@ -48,6 +50,7 @@ export default function UserListPage() {
       keyword: keywordInput,
       isActive: isActiveInput,
       profileId: profileIdInput,
+      costCenterCode: costCenterCodeInput,
     });
   };
 
@@ -59,6 +62,16 @@ export default function UserListPage() {
   const profileOptions = [
     { value: '', label: '프로파일 전체' },
     ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+  ];
+
+  const { data: branches } = useQuery({
+    queryKey: ['admin', 'users', 'branch-options'],
+    queryFn: fetchUserBranches,
+  });
+
+  const branchOptions = [
+    { value: '', label: '지점 전체' },
+    ...(branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName })),
   ];
 
   const handleRowClick = useThrottleClick((id: number) => navigate(`/users/${id}`));
@@ -123,6 +136,17 @@ export default function UserListPage() {
           value={profileIdInput}
           options={profileOptions}
           onChange={setProfileIdInput}
+        />
+        {/* 지점 필터 — User.costCenterCode(조직코드) 축. 옵션 수가 많아 검색 가능하게 둔다. */}
+        <Select
+          style={{ width: 200 }}
+          value={costCenterCodeInput}
+          options={branchOptions}
+          onChange={setCostCenterCodeInput}
+          showSearch
+          optionFilterProp="label"
+          filterOption={(input, option) => (option?.label ?? '').toString().includes(input)}
+          notFoundContent="항목 없음"
         />
         <Input
           placeholder="username / 사번 / 이름 검색"

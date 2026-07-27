@@ -13,7 +13,13 @@ class UserRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : UserRepositoryCustom {
 
-    override fun findUsers(keyword: String?, isActive: Boolean?, profileId: Long?, pageable: Pageable): Page<User> {
+    override fun findUsers(
+        keyword: String?,
+        isActive: Boolean?,
+        profileId: Long?,
+        costCenterCodes: List<String>?,
+        pageable: Pageable
+    ): Page<User> {
         val where = BooleanBuilder()
             .and(user.isDeleted.isNull.or(user.isDeleted.isFalse))
 
@@ -29,6 +35,12 @@ class UserRepositoryCustomImpl(
         }
         if (profileId != null) {
             where.and(user.profileId.eq(profileId))
+        }
+        // 지점 필터 — 사원 목록(EmployeeRepositoryCustomImpl) 과 동일하게 cost_center_code IN 매칭.
+        // User.costCenterCode 는 Employee.cost_center_code 의 derived 캐시라 사원 미매칭 관리자 계정은
+        // null 이며, 지점을 선택하면 그 계정들은 결과에서 빠진다 (전체 선택 시에만 노출).
+        if (!costCenterCodes.isNullOrEmpty()) {
+            where.and(user.costCenterCode.`in`(costCenterCodes))
         }
 
         val content = queryFactory

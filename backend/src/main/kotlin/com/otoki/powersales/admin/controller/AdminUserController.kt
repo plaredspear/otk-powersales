@@ -10,6 +10,7 @@ import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,7 +25,8 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * web admin User 엔티티 관리 화면 컨트롤러.
  *
- * - GET /api/v1/admin/users — 검색/필터/페이지네이션 목록 (USER_READ)
+ * - GET /api/v1/admin/users — 검색/필터(활성/프로파일/지점)/페이지네이션 목록 (USER_READ)
+ * - GET /api/v1/admin/users/branches — 지점 필터 옵션 (USER_READ)
  * - GET /api/v1/admin/users/{userId} — 상세 (USER_READ)
  * - POST /api/v1/admin/users/{userId}/reset-password — 임시 비밀번호 리셋 (USER_WRITE)
  * - PUT  /api/v1/admin/users/{userId}/active — 활성/비활성 토글 (USER_WRITE)
@@ -41,11 +43,24 @@ class AdminUserController(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) isActive: Boolean?,
         @RequestParam(required = false) profileId: Long?,
+        @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<AdminUserListResponse>> {
-        val response = adminUserService.findUsers(keyword, isActive, profileId, page, size)
+        val response = adminUserService.findUsers(keyword, isActive, profileId, costCenterCode, page, size)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 사용자 관리 화면 필터용 지점 옵션 목록 (전사) — `user` READ 로 가드.
+     *
+     * 사원 목록의 `/admin/employees/branches` 는 `employee` READ 가드라 `user` 권한만 가진 관리자가
+     * 403 을 받으므로, 프로파일 옵션과 동일하게 화면 게이팅 권한과 맞춘 lookup 으로 분리한다.
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.READ)
+    fun getBranches(): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(adminUserService.getBranchOptions()))
     }
 
     /**

@@ -12,9 +12,16 @@ interface UserRepositoryCustom {
      * - keyword 가 있으면 username / employee_code / name 부분 일치 (case-insensitive)
      * - isActive 가 null 이 아니면 정확 일치
      * - profileId 가 null 이 아니면 정확 일치 (프로파일 필터)
+     * - costCenterCodes 가 비어있지 않으면 `cost_center_code IN (...)` (지점 필터)
      * - 정렬: name ASC
      */
-    fun findUsers(keyword: String?, isActive: Boolean?, profileId: Long?, pageable: Pageable): Page<User>
+    fun findUsers(
+        keyword: String?,
+        isActive: Boolean?,
+        profileId: Long?,
+        costCenterCodes: List<String>?,
+        pageable: Pageable
+    ): Page<User>
 
     /**
      * Spec #803 — Profile 상세의 부여 사용자 일람.
