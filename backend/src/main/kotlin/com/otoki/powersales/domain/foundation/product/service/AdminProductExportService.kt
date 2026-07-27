@@ -21,8 +21,11 @@ import java.io.ByteArrayOutputStream
  * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회하고 초과분은 잘라낸다 (다른 export 서비스 정합).
  *
  * 레거시 ProductToExcelController.cls 정책:
- * - "출고중지" 상태 제품은 결과에서 제외
  * - 형태구분 (TasteGift) 코드 "1" → "전용", "2" → "범용" 변환
+ * - 레거시는 "출고중지" 상태를 SOQL 에서 무조건 제외했으나 **신규는 제외하지 않는다**. 레거시 화면에는
+ *   제품상태 필터가 없어 그 제외가 유일한 정책이었지만, 신규 목록은 "판매중"/"단종" 필터를 제공하므로
+ *   "단종" 으로 조회한 뒤 내려받으면 항상 0건이 되는 모순이 생긴다. 목록에 보이는 결과와 파일 내용이
+ *   같아야 한다는 원칙을 우선해 조회 조건 결과를 그대로 내보낸다.
  *
  * 신규 컬럼 구성은 명시 컬럼 (FieldSet 동적 컬럼 대신 — feedback_subagent_call_pattern 정책).
  */
@@ -46,7 +49,7 @@ class AdminProductExportService(
             category3 = category3,
             productStatus = productStatus,
             pageable = PageRequest.of(0, EXPORT_MAX_ROWS)
-        ).content.filter { it.productStatus != ProductStatus.OUT_OF_STOCK }
+        ).content
 
         XSSFWorkbook().use { workbook ->
             val sheet = workbook.createSheet("제품")

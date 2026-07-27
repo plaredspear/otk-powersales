@@ -99,6 +99,31 @@ class AdminProductExportServiceTest {
     }
 
     @Test
+    @DisplayName("'단종' 필터 조회 — 출고중지 제품도 행으로 출력 (레거시 하드코딩 제외 미적용)")
+    fun exportByCondition_includesOutOfStock() {
+        stubSearch(
+            createProduct(
+                productCode = "P100",
+                name = "단종 제품",
+                tasteGift = "1",
+                productStatus = ProductStatus.OUT_OF_STOCK
+            )
+        )
+
+        val bytes = service.exportByCondition(
+            keyword = null, category1 = null, category2 = null, category3 = null, productStatus = "단종"
+        )
+
+        WorkbookFactory.create(ByteArrayInputStream(bytes)).use { workbook ->
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(1)
+            val row = sheet.getRow(1)
+            assertThat(row.getCell(0).stringCellValue).isEqualTo("P100")
+            assertThat(row.getCell(9).stringCellValue).isEqualTo("단종")
+        }
+    }
+
+    @Test
     @DisplayName("조회 결과 0건 — 빈 시트 (헤더만)")
     fun exportByCondition_empty() {
         stubSearch()
@@ -122,12 +147,13 @@ class AdminProductExportServiceTest {
     private fun createProduct(
         productCode: String,
         name: String? = null,
-        tasteGift: String? = null
+        tasteGift: String? = null,
+        productStatus: ProductStatus? = ProductStatus.fromDisplayNameOrNull("-")
     ): Product = Product(
         productCode = productCode,
         name = name,
         tasteGift = tasteGift,
         storageCondition = StorageCondition.fromDisplayNameOrNull("실온"),
-        productStatus = ProductStatus.fromDisplayNameOrNull("-")
+        productStatus = productStatus
     )
 }
