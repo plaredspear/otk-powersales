@@ -122,9 +122,10 @@ class AppointmentUserProfileUpdater(
         employee.jikjong = appointment.jikjong
         employee.appointmentDate = appointDate
         employee.ordDetailNode = appointment.ordDetailNode
-        employee.crmWorkStartDate = null
-        // SF PostponedAppointmentBatch.cls:140-141 정합 — 예약 소진 시 참조/예정일 동시 해제.
-        employee.postponedAppointment = null
+        // 예약 필드(crmWorkStartDate/postponedAppointment) 는 건드리지 않는다 — SF 트리거 즉시 경로
+        // (AppointmentTriggerHanlder.cls:131-178) 는 upsert 에 예약 필드를 싣지 않아 기존 값이 유지된다.
+        // 미소진 예약 보유 중 별개 즉시 발령이 오면 예약은 살아남아 발령일에 배치가 반영한다.
+        // 예약 소진은 배치 전용 [applyPostponedAppointment] (cls:140-141) 에서만 수행.
 
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
         applyProfessionalPromotionTeamReset(
@@ -146,6 +147,49 @@ class AppointmentUserProfileUpdater(
         // SF 유예 경로(cls:179-202) 는 AppAuthority/APPLoginActive + 예약 2필드만 기록한다 —
         // 전문행사조 초기화는 즉시 반영 경로 전용이므로 여기서 호출하지 않는다.
         applyJobCodeAuthority(employee, appointment.jobCode, appointment.jikchak)
+    }
+
+    /**
+     * 예약 발령의 발령일 도래 반영 — SF `PostponedAppointmentBatch.cls:100-143` 정합 (배치 전용).
+     *
+     * SF 배치는 트리거 즉시 경로와 필드 구성이 **의도적으로 다르며**, 그 비대칭까지 그대로 재현한다:
+     * - 발령일자는 발령 레코드의 값 그대로 (`cls:102`) — 배치 실행일 아님
+     * - 조직명에 유통총괄1부/2부 prefix 없음 (`cls:104` — 트리거 `cls:160-167` 과 비대칭)
+     * - AppAuthority 판정 코드셋은 A055/A049 만 (`cls:116` 2024-01-02 수정 — 트리거의 A053 미포함)
+     * - 전문행사조 초기화 없음 (트리거 즉시 경로 전용)
+     * - 예약 2필드(참조/예정일) 소진 (`cls:140-141`)
+     * - User(Profile/Role) 갱신 없음 — SF 배치는 UserRole 갱신 코드를 주석 처리(`cls:90-99`)해
+     *   의도적으로 미수행. 사용자 파생 캐시는 다음 발령 인바운드(트리거 경로)에서 따라잡는다.
+     */
+    fun applyPostponedAppointment(
+        employee: Employee,
+        appointment: Appointment,
+        codeMap: Map<String, String>
+    ) {
+        employee.appointmentDate = appointment.appointDate
+        employee.costCenterCode = appointment.afterOrgCode
+        employee.orgName = appointment.afterOrgName
+        employee.jikchak = resolveCode(codeMap, "H20020", appointment.jikchak)
+        employee.jikwee = resolveCode(codeMap, "H20030", appointment.jikwee)
+        employee.jikgub = resolveCode(codeMap, "H20010", appointment.jikgub)
+        employee.workType = resolveCode(codeMap, "H10050", appointment.workType)
+        employee.jobCode = resolveCode(codeMap, "H10060", appointment.jobCode)
+        employee.workArea = appointment.workArea
+        employee.jikjong = appointment.jikjong
+        employee.ordDetailNode = appointment.ordDetailNode
+
+        if (appointment.jobCode == "A055" || appointment.jobCode == "A049") {
+            if (appointment.jikchak == "D0052") {
+                employee.role = AppAuthority.LEADER
+            } else {
+                employee.role = AppAuthority.WOMAN
+            }
+            employee.appLoginActive = true
+        }
+
+        // 유예된 발령정보 초기화 (cls:140-141)
+        employee.postponedAppointment = null
+        employee.crmWorkStartDate = null
     }
 
     internal fun applyJobCodeAuthority(employee: Employee, jobCode: String?, jikchak: String?) {

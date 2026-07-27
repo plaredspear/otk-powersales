@@ -49,7 +49,7 @@ class PostponedAppointmentBatchServiceTest {
         }
 
         @Test
-        @DisplayName("예약 발령 참조 보유 - 참조된 발령을 발령일자 기준으로 반영")
+        @DisplayName("예약 발령 참조 보유 - 배치 전용 반영(applyPostponedAppointment) 호출, User 캐시 미갱신")
         fun appliesReferencedAppointment() {
             val reserved = createAppointment()
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
@@ -59,44 +59,21 @@ class PostponedAppointmentBatchServiceTest {
             val codeMap = mapOf("H10060:A055" to "OSC직")
             every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
             every {
-                appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, reserved, appointmentDate, codeMap
-                )
+                appointmentUserProfileUpdater.applyPostponedAppointment(employee, reserved, codeMap)
             } just runs
-            every { appointmentUserProfileUpdater.updateUserProfileCache(employee) } just runs
 
             service.process(today)
 
-            // 발령일자는 배치 실행일(today) 이 아니라 발령 레코드의 발령일이 적용된다.
             verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, reserved, appointmentDate, codeMap
-                )
+                appointmentUserProfileUpdater.applyPostponedAppointment(employee, reserved, codeMap)
+            }
+            // SF 배치 정합 — 트리거 즉시 경로 함수를 쓰지 않고, User(Profile) 갱신도 하지 않는다
+            // (SF PostponedAppointmentBatch 는 UserRole 갱신을 주석 처리해 의도적으로 미수행).
+            verify(exactly = 0) {
+                appointmentUserProfileUpdater.applyImmediateAppointment(any(), any(), any(), any())
             }
             verify(exactly = 0) {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
-            }
-        }
-
-        @Test
-        @DisplayName("발령일 없음 - 배치 실행일로 fallback")
-        fun nullAppointDateFallsBackToToday() {
-            val reserved = createAppointment(appointDate = null)
-            val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
-            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
-                listOf(employee)
-
-            val codeMap = emptyMap<String, String>()
-            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
-            every {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
-            } just runs
-            every { appointmentUserProfileUpdater.updateUserProfileCache(employee) } just runs
-
-            service.process(today)
-
-            verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+                appointmentUserProfileUpdater.updateUserProfileCache(any())
             }
         }
 

@@ -104,9 +104,33 @@ class AppointmentUserProfileUpdaterTest {
             assertThat(employee.ordDetailNode).isEqualTo("전보")
             assertThat(employee.costCenterCode).isEqualTo("1111")
             assertThat(employee.orgName).isEqualTo("제1영업지점")
-            assertThat(employee.crmWorkStartDate).isNull()
-            // 즉시 반영은 예약 상태를 남기지 않는다 — 예정일과 참조를 함께 소진.
-            assertThat(employee.postponedAppointment).isNull()
+        }
+
+        @Test
+        @DisplayName("즉시 반영 - 기존 예약 필드는 건드리지 않음 (SF cls:131-178 — upsert 에 예약 필드 미포함)")
+        fun immediateKeepsExistingReservation() {
+            // 미소진 예약 보유 중 별개 즉시 발령 수신 — SF 는 예약을 유지해 발령일에 배치가 반영한다.
+            val pendingReservation = createAppointment(
+                afterOrgCode = "9999", afterOrgName = "예약지점",
+                jobCode = "A049", appointDate = LocalDate.of(2026, 4, 1)
+            )
+            val employee = createEmployee().apply {
+                crmWorkStartDate = LocalDate.of(2026, 4, 1)
+                postponedAppointment = pendingReservation
+            }
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+
+            val immediate = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "제1영업지점",
+                jikchak = "D0053", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(immediate), today)
+
+            assertThat(employee.orgName).isEqualTo("제1영업지점")
+            assertThat(employee.crmWorkStartDate).isEqualTo(LocalDate.of(2026, 4, 1))
+            assertThat(employee.postponedAppointment).isSameAs(pendingReservation)
         }
 
         @Test
@@ -414,6 +438,83 @@ class AppointmentUserProfileUpdaterTest {
         fun nullJobCodeKeepsPPT() {
             val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, null, "D0053", "전보")
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+        }
+    }
+
+    @Nested
+    @DisplayName("배치 전용 반영 (applyPostponedAppointment — SF PostponedAppointmentBatch.cls:100-143)")
+    inner class PostponedApplyTests {
+
+        private val codeMap = mapOf(
+            "H20020:D0052" to "판매조장",
+            "H10060:A049" to "판촉직",
+            "H10060:A053" to "레이디직"
+        )
+
+        @Test
+        @DisplayName("발령일 = 레코드값, 조직명 prefix 없음, 예약 소진")
+        fun batchSemantics() {
+            val reserved = createAppointment(
+                afterOrgCode = "3228", afterOrgName = "강남지점",
+                jikchak = "D0052", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 4, 1), ordDetailNode = "조직개편"
+            )
+            val employee = createEmployee().apply {
+                crmWorkStartDate = LocalDate.of(2026, 4, 1)
+                postponedAppointment = reserved
+            }
+
+            updater.applyPostponedAppointment(employee, reserved, codeMap)
+
+            assertThat(employee.appointmentDate).isEqualTo(LocalDate.of(2026, 4, 1))
+            // 트리거(cls:160-167)와 달리 배치(cls:104)는 유통총괄 prefix 를 붙이지 않는다.
+            assertThat(employee.orgName).isEqualTo("강남지점")
+            assertThat(employee.costCenterCode).isEqualTo("3228")
+            assertThat(employee.jikchak).isEqualTo("판매조장")
+            assertThat(employee.jobCode).isEqualTo("판촉직")
+            assertThat(employee.role).isEqualTo(AppAuthority.LEADER)
+            assertThat(employee.appLoginActive).isTrue()
+            // 유예된 발령정보 초기화 (cls:140-141)
+            assertThat(employee.crmWorkStartDate).isNull()
+            assertThat(employee.postponedAppointment).isNull()
+        }
+
+        @Test
+        @DisplayName("A053(레이디직) - 배치는 AppAuthority 미갱신 (cls:116 — 트리거와 비대칭)")
+        fun a053ExcludedFromAuthority() {
+            val reserved = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "지점",
+                jikchak = "D0053", jobCode = "A053",
+                appointDate = LocalDate.of(2026, 4, 1)
+            )
+            val employee = createEmployee(role = null, appLoginActive = false).apply {
+                postponedAppointment = reserved
+            }
+
+            updater.applyPostponedAppointment(employee, reserved, codeMap)
+
+            assertThat(employee.jobCode).isEqualTo("레이디직")
+            assertThat(employee.role).isNull()
+            assertThat(employee.appLoginActive).isFalse()
+        }
+
+        @Test
+        @DisplayName("전문행사조 미초기화 - 배치에는 PPT 로직 없음")
+        fun pptUntouched() {
+            val reserved = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "지점",
+                jikchak = "D0053", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 4, 1), ordDetailNode = "전보"
+            )
+            val employee = createEmployee(
+                role = AppAuthority.WOMAN,
+                professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE
+            ).apply { postponedAppointment = reserved }
+
+            // 트리거 즉시 경로였다면 초기화 조건(A049 + 비D0052 + 전보)이지만, 배치는 건드리지 않는다.
+            updater.applyPostponedAppointment(employee, reserved, codeMap)
+
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }
