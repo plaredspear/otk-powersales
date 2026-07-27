@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListIt
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListMetaResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.dto.DataScope
@@ -108,6 +109,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) periodEnd: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
         @RequestParam(required = false) validData: ScheduleValidData?,
+        @RequestParam(required = false) employmentStatus: ScheduleEmploymentStatus?,
         @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) sortBy: String?,
         @RequestParam(required = false) sortDir: String?,
@@ -115,7 +117,7 @@ class AdminDisplayWorkScheduleController(
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.listSchedules(
             scope, page, size, employeeCode, accountName, accountType, accountStatus, confirmed,
-            typeOfWork3, periodStart, periodEnd, preset, validData, resolveBranchCodes(principal, branchCode), sort
+            typeOfWork3, periodStart, periodEnd, preset, validData, employmentStatus, resolveBranchCodes(principal, branchCode), sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -136,6 +138,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) periodEnd: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
         @RequestParam(required = false) validData: ScheduleValidData?,
+        @RequestParam(required = false) employmentStatus: ScheduleEmploymentStatus?,
         @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) sortBy: String?,
         @RequestParam(required = false) sortDir: String?,
@@ -143,7 +146,7 @@ class AdminDisplayWorkScheduleController(
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.exportAllSchedules(
             scope, employeeCode, accountName, accountType, accountStatus, confirmed,
-            typeOfWork3, periodStart, periodEnd, preset, validData, resolveBranchCodes(principal, branchCode), sort
+            typeOfWork3, periodStart, periodEnd, preset, validData, employmentStatus, resolveBranchCodes(principal, branchCode), sort
         )
         return ExcelResponseUtils.build(result)
     }

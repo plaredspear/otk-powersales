@@ -22121,6 +22121,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "employmentStatus",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED", "RESIGN_PLANNED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "branchCode",
           "required" : false,
           "schema" : {
@@ -22257,6 +22265,14 @@
           "required" : false,
           "schema" : {
             "enum" : [ "VALID", "PLANNED", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employmentStatus",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED", "RESIGN_PLANNED" ],
             "type" : "string"
           }
         }, {

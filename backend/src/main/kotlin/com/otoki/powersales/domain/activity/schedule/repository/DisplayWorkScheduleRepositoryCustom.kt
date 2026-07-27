@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
@@ -89,6 +90,10 @@ interface DisplayWorkScheduleRepositoryCustom {
      * `periodStart`/`periodEnd` 는 **조회 기간과 스케줄 기간의 겹침(overlap) 필터** — 시작일 자체의
      * 범위 검색이 아니라, 스케줄 기간 [startDate, endDate] 이 조회 기간과 하루라도 겹치면 매칭된다
      * (진행 중 스케줄 포함). 각각 null 이면 해당 쪽 조건 생략(열린 구간).
+     *
+     * `employmentStatus` 는 「재직상태」 필터 (SF formula `ValidConditionData__c` 4분류).
+     * 사원 원본 컬럼 `employee.status` (3값) 단순 매칭이 아니라 appLoginActive/종료일까지 포함한
+     * 계산식 매칭이다 — 상세는 [ScheduleEmploymentStatus] 참조.
      */
     fun findScheduleList(
         employeeCode: String?,
@@ -101,6 +106,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
+        employmentStatus: ScheduleEmploymentStatus?,
         branchCodes: List<String>?,
         policyPredicate: Predicate,
         pageable: Pageable

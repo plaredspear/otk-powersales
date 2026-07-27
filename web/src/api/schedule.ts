@@ -100,6 +100,9 @@ export type SchedulePreset =
 /** 유효여부 필터 — 화면 「유효」 신호등 dot 판정(유효/예정/종료)과 1:1 대응 (SF formula ValidData__c). */
 export type ScheduleValidData = 'VALID' | 'PLANNED' | 'END';
 
+/** 재직상태 필터 — SF formula ValidConditionData__c 4분류 (표시값의 날짜 suffix 제외). */
+export type ScheduleEmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'RESIGN_PLANNED';
+
 export interface ScheduleListParams {
   page?: number;
   size?: number;
@@ -115,6 +118,8 @@ export interface ScheduleListParams {
   preset?: SchedulePreset;
   /** 유효여부(유효/예정/종료) — 화면 「유효」 신호등 dot 판정 기준. */
   validData?: ScheduleValidData;
+  /** 재직상태(재직/휴직/퇴직/퇴직예정) — 화면·엑셀 「재직상태」 컬럼 표시값 기준. */
+  employmentStatus?: ScheduleEmploymentStatus;
   /** 지점 스코프 — 스케줄 소속 지점(costCenterCode) 필터. 전사 권한자만 선택 가능(그 외는 본인 지점 자동 스코프). */
   branchCode?: string;
   sortBy?: string;
@@ -239,6 +244,7 @@ export function scheduleExportParams(
   if (params.periodEnd) queryParams.periodEnd = params.periodEnd;
   if (params.preset) queryParams.preset = params.preset;
   if (params.validData) queryParams.validData = params.validData;
+  if (params.employmentStatus) queryParams.employmentStatus = params.employmentStatus;
   if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;
@@ -331,6 +337,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.periodEnd) queryParams.periodEnd = params.periodEnd;
   if (params.preset) queryParams.preset = params.preset;
   if (params.validData) queryParams.validData = params.validData;
+  if (params.employmentStatus) queryParams.employmentStatus = params.employmentStatus;
   if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;

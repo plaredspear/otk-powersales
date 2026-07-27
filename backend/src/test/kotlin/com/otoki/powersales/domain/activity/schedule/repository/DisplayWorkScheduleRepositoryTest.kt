@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.service.internal.ScheduleDisplayStatusCalculator
@@ -630,7 +631,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun search(keyword: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                keyword, null, null, null, null, null, null, null, null, null, null,
+                keyword, null, null, null, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -691,7 +692,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByBranch(branchCodes: List<String>?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, null, null, branchCodes,
+                null, null, null, null, null, null, null, null, null, null, null, branchCodes,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -762,7 +763,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByAccountType(accountType: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, accountType, null, null, null, null, null, null, null, null,
+                null, null, accountType, null, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -844,7 +845,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByAccountStatus(accountStatus: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, accountStatus, null, null, null, null, null, null, null,
+                null, null, null, accountStatus, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -921,7 +922,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByValidData(validData: ScheduleValidData): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, null, validData, null,
+                null, null, null, null, null, null, null, null, null, validData, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -987,6 +988,116 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findScheduleList - 재직상태 필터(employmentStatus) 는 화면 표시값 판정과 일치")
+    inner class FindScheduleListEmploymentStatusFilter {
+
+        private val calculator = ScheduleDisplayStatusCalculator()
+
+        /**
+         * 다양한 (status × appLoginActive × 사원 종료일) 조합의 스케줄을 만들고,
+         * 계산기 [ScheduleDisplayStatusCalculator.employmentStatus] 가 내는 표시값(SF formula
+         * `ValidConditionData__c`) 과 SQL 필터
+         * ([DisplayWorkScheduleRepositoryCustomImpl.buildEmploymentStatusCondition]) 결과가
+         * 모든 케이스에서 일치하는지 교차 검증한다.
+         */
+        private fun persistCase(
+            name: String,
+            status: String?,
+            appLoginActive: Boolean?,
+            empEndDate: LocalDate?,
+        ) {
+            val emp = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "ES-$name", name = name, status = status, appLoginActive = appLoginActive, endDate = empEndDate)
+            )
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = emp,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = today.minusDays(3),
+                    endDate = today.plusDays(3),
+                )
+            )
+        }
+
+        private fun searchByEmploymentStatus(employmentStatus: ScheduleEmploymentStatus): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null, employmentStatus, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("재직/휴직/퇴직/퇴직예정 각 필터 결과가 화면 표시값 분류와 완전 일치")
+        fun matchesCalculatorClassification() {
+            data class Case(
+                val name: String,
+                val status: String?,
+                val appLoginActive: Boolean?,
+                val empEndDate: LocalDate?,
+            )
+
+            val cases = listOf(
+                // 재직 + 활성 → 재직
+                Case("재직활성", "재직", true, null),
+                // 재직 + 활성 + 종료일 과거 (퇴직 조건 미충족 — appLoginActive=true) → 재직
+                Case("재직활성종료일과거", "재직", true, today.minusDays(10)),
+                // 휴직 + 활성 → 휴직
+                Case("휴직활성", "휴직", true, null),
+                // 퇴직 + 종료일 과거 → 퇴직
+                Case("퇴직과거", "퇴직", false, today.minusDays(10)),
+                // 퇴직 + 종료일 미래 → 퇴직예정
+                Case("퇴직미래", "퇴직", false, today.plusDays(10)),
+                // status=재직 이지만 appLoginActive=false + 종료일 과거 → 퇴직 (status 단순 매칭과 갈리는 케이스)
+                Case("비활성과거", "재직", false, today.minusDays(10)),
+                // status=재직 이지만 appLoginActive=false + 종료일 미래 → 퇴직예정
+                Case("비활성미래", "재직", false, today.plusDays(10)),
+                // 휴직 + 비활성 + 종료일 없음 → 휴직 (퇴직/퇴직예정 어느 쪽도 아님)
+                Case("휴직비활성종료일없음", "휴직", false, null),
+                // 퇴직 + 종료일 없음 → 재직 (formula 최종 fallthrough — 종료일 비교 불가)
+                Case("퇴직종료일없음", "퇴직", true, null),
+                // 퇴직 + 종료일이 정확히 오늘 → 재직 (formula 는 < / > 엄격 비교)
+                Case("퇴직오늘", "퇴직", false, today),
+                // status NULL + 활성 → 재직
+                Case("상태없음활성", null, true, null),
+            )
+
+            cases.forEach { c -> persistCase(c.name, c.status, c.appLoginActive, c.empEndDate) }
+            testEntityManager.clear()
+
+            // 계산기 기준 기대 분류 산출 (화면 표시값 진리값). 표시값은 퇴직/퇴직예정에 날짜가
+            // 덧붙으므로 접두사(분류) 기준으로 매칭한다.
+            fun classify(c: Case): ScheduleEmploymentStatus {
+                val display = calculator.employmentStatus(c.status, c.appLoginActive, c.empEndDate, today)
+                return when {
+                    display.startsWith(ScheduleEmploymentStatus.RESIGN_PLANNED.displayName) ->
+                        ScheduleEmploymentStatus.RESIGN_PLANNED
+                    display.startsWith(ScheduleEmploymentStatus.RESIGNED.displayName) ->
+                        ScheduleEmploymentStatus.RESIGNED
+                    display == ScheduleEmploymentStatus.ON_LEAVE.displayName ->
+                        ScheduleEmploymentStatus.ON_LEAVE
+                    else -> ScheduleEmploymentStatus.ACTIVE
+                }
+            }
+
+            val expected: Map<ScheduleEmploymentStatus, List<String>> =
+                ScheduleEmploymentStatus.entries.associateWith { es ->
+                    cases.filter { classify(it) == es }.map { it.name }
+                }
+
+            ScheduleEmploymentStatus.entries.forEach { es ->
+                assertThat(searchByEmploymentStatus(es))
+                    .describedAs("employmentStatus=%s 필터 결과가 화면 표시값 분류와 일치", es.displayName)
+                    .containsExactlyInAnyOrderElementsOf(expected.getValue(es))
+            }
+
+            // 네 분류의 합집합이 전체 케이스와 동일해야 함 (누락/중복 없음).
+            val union = ScheduleEmploymentStatus.entries.flatMap { searchByEmploymentStatus(it) }
+            assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name })
+        }
+    }
+
+    @Nested
     @DisplayName("findScheduleList - 조회기간(periodStart/periodEnd) 은 스케줄 기간과의 겹침 필터")
     inner class FindScheduleListPeriodOverlapFilter {
 
@@ -1009,7 +1120,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun search(start: LocalDate?, end: LocalDate?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, start, end, null, null, null,
+                null, null, null, null, null, null, start, end, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }

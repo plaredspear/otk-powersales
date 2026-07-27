@@ -28,7 +28,7 @@ import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleListMeta } from '@/hooks/schedule/useScheduleListMeta';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
-import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, ScheduleValidData } from '@/api/schedule';
+import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, ScheduleValidData, ScheduleEmploymentStatus } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
@@ -316,6 +316,7 @@ export default function DisplaySchedulePage() {
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(undefined);
+  const [filterEmploymentStatus, setFilterEmploymentStatus] = useState<ScheduleEmploymentStatus | undefined>(undefined);
   const [filterPeriodRange, setFilterPeriodRange] = useState<[string, string] | null>(null);
   const [filterBranchCode, setFilterBranchCode] = useState('');
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
@@ -330,6 +331,7 @@ export default function DisplaySchedulePage() {
     typeOfWork3?: string;
     confirmed?: boolean;
     validData?: ScheduleValidData;
+    employmentStatus?: ScheduleEmploymentStatus;
     periodStart?: string;
     periodEnd?: string;
     branchCode?: string;
@@ -418,6 +420,7 @@ export default function DisplaySchedulePage() {
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
       validData: filterValidData,
+      employmentStatus: filterEmploymentStatus,
       periodStart: filterPeriodRange?.[0],
       periodEnd: filterPeriodRange?.[1],
       branchCode: filterBranchCode || undefined,
@@ -432,6 +435,7 @@ export default function DisplaySchedulePage() {
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterValidData(undefined);
+    setFilterEmploymentStatus(undefined);
     setFilterPeriodRange(null);
     setFilterBranchCode('');
     setSortBy(undefined);
@@ -718,6 +722,19 @@ export default function DisplaySchedulePage() {
             options={filterOptions('validData').map((o) => ({
               label: o.label,
               value: o.value as ScheduleValidData,
+            }))}
+          />
+          <Select
+            placeholder="재직상태"
+            value={filterEmploymentStatus}
+            onChange={(v) => setFilterEmploymentStatus(v)}
+            allowClear
+            style={{ width: 120 }}
+            // 서버 meta value(ACTIVE/ON_LEAVE/RESIGNED/RESIGN_PLANNED)를 그대로 employmentStatus 로 전송.
+            // 표시값은 퇴직/퇴직예정에 사원 종료일이 덧붙지만(예: "퇴직2026-01-15") 필터는 분류만 매칭.
+            options={filterOptions('employmentStatus').map((o) => ({
+              label: o.label,
+              value: o.value as ScheduleEmploymentStatus,
             }))}
           />
           <Select

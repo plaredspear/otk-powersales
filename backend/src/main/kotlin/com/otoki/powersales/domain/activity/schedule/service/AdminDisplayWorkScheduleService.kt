@@ -22,6 +22,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListMe
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
@@ -141,6 +142,12 @@ class AdminDisplayWorkScheduleService(
         val validDataOptions = ScheduleValidData.entries
             .map { ScheduleFilterOption(value = it.name, label = it.displayName) }
 
+        // 재직상태(재직/휴직/퇴직/퇴직예정) — 화면·엑셀 「재직상태」 컬럼 표시값(SF formula
+        // ValidConditionData__c) 의 4분류. 표시값은 퇴직/퇴직예정에 사원 종료일이 덧붙지만
+        // (예: "퇴직2026-01-15") 필터는 날짜 suffix 를 제외한 분류만 값으로 쓴다.
+        val employmentStatusOptions = ScheduleEmploymentStatus.entries
+            .map { ScheduleFilterOption(value = it.name, label = it.displayName) }
+
         // 거래처유형(ABC유형) 옵션 — 월매출(전산실적) 화면과 동일 축·동일 소스. abcTypeCode + abcType 결합
         // 라벨("1110 식품대리점_일반")을 distinct 로 뽑아 Select 옵션으로 제공한다. value=label 로 내려
         // 프론트가 그대로 accountType 쿼리 파라미터로 전송하고, 목록 조회는 동일 라벨을 재현해 정확 일치 매칭한다.
@@ -163,6 +170,7 @@ class AdminDisplayWorkScheduleService(
             ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
             ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
             ScheduleFilterMeta("validData", ScheduleFilterType.SELECT, validDataOptions),
+            ScheduleFilterMeta("employmentStatus", ScheduleFilterType.SELECT, employmentStatusOptions),
             // 조회 기간(periodStart~periodEnd) — 스케줄 기간과의 겹침 필터 (시작일 범위 검색 아님)
             ScheduleFilterMeta("period", ScheduleFilterType.DATE),
         )
@@ -448,6 +456,7 @@ class AdminDisplayWorkScheduleService(
         periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
+        employmentStatus: ScheduleEmploymentStatus?,
         branchCodes: List<String>?,
         sort: Sort,
     ): Page<ScheduleListItemDto> {
@@ -468,7 +477,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, employmentStatus, branchCodes, policyPredicate, pageable
         )
 
         // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
@@ -496,6 +505,7 @@ class AdminDisplayWorkScheduleService(
         periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
+        employmentStatus: ScheduleEmploymentStatus?,
         branchCodes: List<String>?,
         sort: Sort,
     ): ExcelResult {
@@ -512,7 +522,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, employmentStatus, branchCodes, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }
