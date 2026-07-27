@@ -66,6 +66,14 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByEmployeeCodeIn(employeeCodes: List<String>): List<Employee>
 
     /**
+     * 사번 미보유(null) 사원 존재 여부 — SAP 발령 적재의 empCodeExist 산출용.
+     *
+     * SF IF_REST_SAP_Appointment 는 전 사원 EmpCode 집합(null 포함)에 대한 `contains(수신 사번)` 으로
+     * isEmpCodeExist__c 를 판정하므로, 수신 사번이 null 이면 "EmpCode null 사원 존재" 가 곧 contains(null) 결과다.
+     */
+    fun existsByEmployeeCodeIsNull(): Boolean
+
+    /**
      * SF Id(sfid) 목록으로 일괄 조회 — SF fetch sync 의 사원 FK resolve 용.
      */
     fun findBySfidIn(sfids: Collection<String>): List<Employee>
