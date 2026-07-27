@@ -43,7 +43,7 @@ function formatThousandWon(v: number): string {
   return Math.round(v / 1000).toLocaleString();
 }
 
-/** 차트 카드 제목 + 데이터 집계 기준 안내 툴팁(info 아이콘). */
+/** 제목 + 안내 툴팁(info 아이콘). 차트 카드 제목과 탭 라벨이 공유한다. */
 function cardTitle(title: string, desc: string) {
   return (
     <span>
@@ -329,12 +329,19 @@ const CHART_HEIGHT = 320;
  *
  * 이 탭의 3개 차트는 모두 같은 기준일을 쓴다 — 유일하게 조회월을 쓰던 '근무형태별 고정/격고/순회'
  * (선택월 MFEIS 환산인원) 는 기준 시점이 섞이는 혼선을 없애기 위해 제거했다(사용자 결정).
- * 실제 기준일은 각 카드 하단에 표기한다([asOfBadge]).
+ * 실제 기준일은 각 카드 하단에 표기하고([asOfBadge]), 잠금 사유는 탭 라벨의 info 아이콘이
+ * 안내한다([BASIC_TAB_PERIOD_LOCK_NOTICE]).
  */
 const BASIC_TAB_KEY = 'basic';
 
-/** 기본 현황 탭에서 조회월이 잠긴 사유 — 셀렉터 아래에 상시 노출. */
-const BASIC_TAB_PERIOD_LOCK_NOTICE = '기본 현황은 전일 기준입니다';
+/**
+ * 기본 현황 탭 라벨의 info 아이콘 안내 — 조회월이 잠긴 사유.
+ *
+ * 필터 바 안에 문구를 넣으면 지점명/조회월 정렬이 어긋나고 바 높이가 탭마다 달라지므로,
+ * 탭 라벨의 tooltip 으로 안내한다.
+ */
+const BASIC_TAB_PERIOD_LOCK_NOTICE =
+  '기본 현황은 현재 기준으로 조회합니다. 상단 조회월과 무관하며, 각 차트의 인원 기준일은 카드 하단에 표시됩니다.';
 
 /**
  * 기본 현황 차트의 인원 기준일 배지 — 카드 우측 하단에 표기.
@@ -635,7 +642,8 @@ export default function DashboardPage() {
             <span>조회월:</span>
             {/* 기본 현황 탭에서는 조회월을 잠근다 — 인원 집계가 현재 시점 스냅샷이라
                 월을 바꿔도 값이 변하지 않아, 열어 두면 과거 이력 조회로 오해된다.
-                disabled 상태에서는 antd Tooltip 이 뜨지 않으므로 사유를 셀렉터 아래에 직접 노출한다. */}
+                잠금 사유는 탭 라벨의 info 아이콘([BASIC_TAB_PERIOD_LOCK_NOTICE])이 안내한다 —
+                필터 바 안에 문구를 넣으면 지점명/조회월 정렬이 어긋나고 바 높이가 탭마다 달라진다. */}
             <DatePicker
               picker="month"
               value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
@@ -649,11 +657,6 @@ export default function DashboardPage() {
               format="YYYY-MM"
               style={{ width: 140 }}
             />
-            {isBasicTab && (
-              <span style={{ fontSize: 12, color: '#8c8c8c', whiteSpace: 'nowrap' }}>
-                {BASIC_TAB_PERIOD_LOCK_NOTICE}
-              </span>
-            )}
           </Space>
         }
       />
@@ -675,7 +678,12 @@ export default function DashboardPage() {
           items={[
             { key: 'sales', label: '매출현황', children: beforeSearch ? searchPrompt : salesTab },
             { key: 'deployment', label: '여사원 투입현황', children: beforeSearch ? searchPrompt : deploymentTab },
-            { key: BASIC_TAB_KEY, label: '기본 현황', children: beforeSearch ? searchPrompt : basicTab },
+            {
+              key: BASIC_TAB_KEY,
+              // 조회월이 잠긴 사유를 탭 라벨의 info 아이콘으로 안내한다.
+              label: cardTitle('기본 현황', BASIC_TAB_PERIOD_LOCK_NOTICE),
+              children: beforeSearch ? searchPrompt : basicTab,
+            },
           ]}
         />
       </Spin>
