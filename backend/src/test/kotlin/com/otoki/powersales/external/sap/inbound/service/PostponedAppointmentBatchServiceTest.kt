@@ -27,6 +27,9 @@ class PostponedAppointmentBatchServiceTest {
 
     private val today = LocalDate.of(2026, 3, 22)
 
+    /** 발령 레코드의 발령일 — 배치 실행일(today) 과 구분되도록 다른 날짜를 쓴다. */
+    private val appointmentDate = LocalDate.of(2026, 3, 20)
+
     @BeforeEach
     fun setUp() {
         service = PostponedAppointmentBatchService(
@@ -61,15 +64,45 @@ class PostponedAppointmentBatchServiceTest {
             every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc("100234") } returns
                 appointment
             every {
+                appointmentUserProfileUpdater.applyImmediateAppointment(
+                    employee, appointment, appointmentDate, codeMap
+                )
+            } just runs
+
+            service.process(today)
+
+            // 발령일자는 배치 실행일(today) 이 아니라 발령 레코드의 발령일이 적용된다.
+            verify {
+                appointmentUserProfileUpdater.applyImmediateAppointment(
+                    employee, appointment, appointmentDate, codeMap
+                )
+            }
+            verify(exactly = 0) {
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
+            }
+        }
+
+        @Test
+        @DisplayName("발령일 없음 - 배치 실행일로 fallback")
+        fun nullAppointDateFallsBackToToday() {
+            val employee = createEmployee(crmWorkStartDate = today)
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                listOf(employee)
+
+            val codeMap = emptyMap<String, String>()
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
+
+            val appointment = createAppointment(appointDate = null)
+            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc("100234") } returns
+                appointment
+            every {
                 appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
             } just runs
 
             service.process(today)
 
             verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, appointment, today, codeMap
-                )
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
             }
         }
 
@@ -100,13 +133,17 @@ class PostponedAppointmentBatchServiceTest {
             val codeMap = mapOf("H10060:A055" to "OSC직")
             every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
             every {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+                appointmentUserProfileUpdater.applyImmediateAppointment(
+                    employee, reserved, appointmentDate, codeMap
+                )
             } just runs
 
             service.process(today)
 
             verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+                appointmentUserProfileUpdater.applyImmediateAppointment(
+                    employee, reserved, appointmentDate, codeMap
+                )
             }
             // 참조가 있으면 사원코드 기준 최신 발령 조회로 fallback 하지 않는다 —
             // 동일 발령일 다건에서 옛 발령을 집는 사고를 원천 차단하는 지점.
@@ -129,7 +166,8 @@ class PostponedAppointmentBatchServiceTest {
     )
 
     private fun createAppointment(
-        employeeCode: String = "100234"
+        employeeCode: String = "100234",
+        appointDate: LocalDate? = appointmentDate
     ): Appointment = Appointment(
         employeeCode = employeeCode,
         empCodeExist = true,
@@ -137,6 +175,6 @@ class PostponedAppointmentBatchServiceTest {
         afterOrgName = "테스트지점",
         jikchak = "D0052",
         jobCode = "A055",
-        appointDate = LocalDate.of(2026, 3, 20)
+        appointDate = appointDate
     )
 }

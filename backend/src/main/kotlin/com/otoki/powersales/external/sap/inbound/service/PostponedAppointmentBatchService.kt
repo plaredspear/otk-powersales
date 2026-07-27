@@ -54,8 +54,11 @@ class PostponedAppointmentBatchService(
                     continue
                 }
 
+                // SF PostponedAppointmentBatch.cls:102 정합 — 사원의 발령일자는 배치 실행일이 아니라
+                // 발령 레코드의 발령일이다. 실행일을 넣으면 예약분이 반영될 때마다 발령일이 그날로
+                // 덮여, 인사 이력상 존재하지 않는 날짜가 남는다.
                 appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, appointment, today, codeMap
+                    employee, appointment, appointment.appointDate ?: today, codeMap
                 )
                 appointmentUserProfileUpdater.updateUserProfileCache(employee)
                 processedCount++
