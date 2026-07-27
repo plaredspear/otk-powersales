@@ -98,7 +98,16 @@ export default function RankHeadcountCard({
     >
       {/* 좁은 화면에서 열이 많아지면 표만 가로 스크롤 — 페이지 자체는 가로 스크롤되지 않게 한다. */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'center', fontSize: 13 }}>
+        {/* minWidth 로 셀이 과하게 눌리는 것을 막고, 부족하면 wrapper 가 가로 스크롤한다. */}
+        <table
+          style={{
+            borderCollapse: 'collapse',
+            width: '100%',
+            minWidth: 480,
+            textAlign: 'center',
+            fontSize: 13,
+          }}
+        >
           <thead>
             <tr>
               <th rowSpan={2} style={headerCellStyle}>직급</th>
@@ -144,9 +153,10 @@ export default function RankHeadcountCard({
   );
 }
 
+// 반폭(span 12) 카드에 들어가므로 좌우 여백을 최소화한다 — 열이 많으면 표만 가로 스크롤된다.
 const baseCellStyle: React.CSSProperties = {
   border: '1px solid #d9d9d9',
-  padding: '6px 12px',
+  padding: '6px 8px',
   whiteSpace: 'nowrap',
 };
 

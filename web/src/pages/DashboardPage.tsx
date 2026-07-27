@@ -575,6 +575,16 @@ export default function DashboardPage() {
     const ageTotal = b.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
     return (
       <Row gutter={[16, 16]}>
+        {/* 직급별 인원현황 — 좌측 상단 첫 카드. 2단 헤더 표라 열이 많지만 반폭에 맞춰
+            표만 가로 스크롤한다(RankHeadcountCard 내부 overflow-x). */}
+        <Col span={12}>
+          <RankHeadcountCard
+            groups={b.byRank}
+            branchName={b.branchName}
+            asOfDate={b.asOfDate}
+            title={cardTitle('인원현황', BASIC_CHART_INFO.rank)}
+          />
+        </Col>
         <Col span={12}>
           <Card title={cardTitle('판촉직/OSC직 인원현황', BASIC_CHART_INFO.staffType)} extra={cardExtra(staffTypeTotal)}>
             <ReactECharts
@@ -612,15 +622,6 @@ export default function DashboardPage() {
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
             {asOfBadge(b.asOfDate)}
           </Card>
-        </Col>
-        {/* 직급별 인원현황 — 2단 헤더 표라 열이 많아 전체 폭(span 24)을 쓴다. */}
-        <Col span={24}>
-          <RankHeadcountCard
-            groups={b.byRank}
-            branchName={b.branchName}
-            asOfDate={b.asOfDate}
-            title={cardTitle('인원현황', BASIC_CHART_INFO.rank)}
-          />
         </Col>
       </Row>
     );
