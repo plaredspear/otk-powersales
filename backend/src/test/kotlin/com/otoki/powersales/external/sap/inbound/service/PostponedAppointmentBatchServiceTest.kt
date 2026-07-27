@@ -3,7 +3,6 @@ package com.otoki.powersales.external.sap.inbound.service
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
-import com.otoki.powersales.domain.activity.schedule.repository.AppointmentRepository
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -20,7 +19,6 @@ import java.time.LocalDate
 class PostponedAppointmentBatchServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
-    private val appointmentRepository: AppointmentRepository = mockk()
     private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater = mockk()
 
     private lateinit var service: PostponedAppointmentBatchService
@@ -33,7 +31,7 @@ class PostponedAppointmentBatchServiceTest {
     @BeforeEach
     fun setUp() {
         service = PostponedAppointmentBatchService(
-            employeeRepository, appointmentRepository, appointmentUserProfileUpdater
+            employeeRepository, appointmentUserProfileUpdater
         )
     }
 
@@ -51,80 +49,8 @@ class PostponedAppointmentBatchServiceTest {
         }
 
         @Test
-        @DisplayName("정상 처리 - Appointment 조회 후 즉시 반영 수행")
-        fun normalProcess() {
-            val employee = createEmployee(crmWorkStartDate = today)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
-                listOf(employee)
-
-            val codeMap = mapOf("H20020:D0052" to "조장")
-            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
-
-            val appointment = createAppointment()
-            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc("100234") } returns
-                appointment
-            every {
-                appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, appointment, appointmentDate, codeMap
-                )
-            } just runs
-
-            service.process(today)
-
-            // 발령일자는 배치 실행일(today) 이 아니라 발령 레코드의 발령일이 적용된다.
-            verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(
-                    employee, appointment, appointmentDate, codeMap
-                )
-            }
-            verify(exactly = 0) {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
-            }
-        }
-
-        @Test
-        @DisplayName("발령일 없음 - 배치 실행일로 fallback")
-        fun nullAppointDateFallsBackToToday() {
-            val employee = createEmployee(crmWorkStartDate = today)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
-                listOf(employee)
-
-            val codeMap = emptyMap<String, String>()
-            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
-
-            val appointment = createAppointment(appointDate = null)
-            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc("100234") } returns
-                appointment
-            every {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
-            } just runs
-
-            service.process(today)
-
-            verify {
-                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
-            }
-        }
-
-        @Test
-        @DisplayName("Appointment 없음 - crmWorkStartDate만 null 초기화")
-        fun noAppointmentFound() {
-            val employee = createEmployee(crmWorkStartDate = today)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
-                listOf(employee)
-
-            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
-
-            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc("100234") } returns null
-
-            service.process(today)
-
-            assertThat(employee.crmWorkStartDate).isNull()
-        }
-
-        @Test
-        @DisplayName("예약 발령 참조 보유 - 사원코드 조회 없이 참조된 발령을 반영")
-        fun usesPostponedAppointmentReference() {
+        @DisplayName("예약 발령 참조 보유 - 참조된 발령을 발령일자 기준으로 반영")
+        fun appliesReferencedAppointment() {
             val reserved = createAppointment()
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
             every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
@@ -137,18 +63,59 @@ class PostponedAppointmentBatchServiceTest {
                     employee, reserved, appointmentDate, codeMap
                 )
             } just runs
+            every { appointmentUserProfileUpdater.updateUserProfileCache(employee) } just runs
 
             service.process(today)
 
+            // 발령일자는 배치 실행일(today) 이 아니라 발령 레코드의 발령일이 적용된다.
             verify {
                 appointmentUserProfileUpdater.applyImmediateAppointment(
                     employee, reserved, appointmentDate, codeMap
                 )
             }
-            // 참조가 있으면 사원코드 기준 최신 발령 조회로 fallback 하지 않는다 —
-            // 동일 발령일 다건에서 옛 발령을 집는 사고를 원천 차단하는 지점.
             verify(exactly = 0) {
-                appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDescCreatedAtDesc(any())
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+            }
+        }
+
+        @Test
+        @DisplayName("발령일 없음 - 배치 실행일로 fallback")
+        fun nullAppointDateFallsBackToToday() {
+            val reserved = createAppointment(appointDate = null)
+            val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                listOf(employee)
+
+            val codeMap = emptyMap<String, String>()
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
+            every {
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+            } just runs
+            every { appointmentUserProfileUpdater.updateUserProfileCache(employee) } just runs
+
+            service.process(today)
+
+            verify {
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, reserved, today, codeMap)
+            }
+        }
+
+        @Test
+        @DisplayName("참조 없음 - 인사정보 미반영, 예약 표시만 해제")
+        fun noReferenceOnlyClearsReservation() {
+            // SF 는 start 쿼리에서 PostponedAppointment__c != null 로 이런 건을 배제한다.
+            // 신규는 잔여 예약을 정리하기 위해 조회는 하되, 반영 없이 예약 표시만 해제한다.
+            val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = null)
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                listOf(employee)
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
+
+            service.process(today)
+
+            assertThat(employee.crmWorkStartDate).isNull()
+            // 어떤 발령도 추측해서 반영하지 않는다 — 이 추측이 직무코드 회귀 사고의 원인이었다.
+            verify(exactly = 0) {
+                appointmentUserProfileUpdater.applyImmediateAppointment(any(), any(), any(), any())
             }
         }
     }

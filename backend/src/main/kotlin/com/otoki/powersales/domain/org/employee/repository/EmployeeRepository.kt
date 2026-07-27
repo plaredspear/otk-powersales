@@ -99,6 +99,15 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      */
     fun findByRoleAndStatus(role: String, status: String): List<Employee>
 
+    /**
+     * 발령일이 도래한 예약 발령 보유 사원 조회 (연기예약 처리 배치).
+     *
+     * SF `PostponedAppointmentBatch.cls:15` 는 `CRM_WorkStartDate__c = :today` 등호라 배치가 하루
+     * 걸러지면 그 날짜 예약분이 영구 미반영된다. 신규는 `<=` 로 밀린 건도 따라잡는다.
+     *
+     * 반영 대상 판별(참조 보유 여부)은 호출측에서 수행한다 — 참조 없는 잔여 예약은 반영하지 않고
+     * 예약 표시만 해제해야 하므로, 조회 단계에서 배제하면 잔여 데이터가 영구히 남는다.
+     */
     fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
 
     /**
