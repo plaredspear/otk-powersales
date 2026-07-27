@@ -69,11 +69,9 @@ class AppointmentUserProfileUpdater(
                     continue
                 }
 
-                val afterOrgCode = appointment.afterOrgCode
-                if (afterOrgCode == null) {
-                    skippedCount++
-                    continue
-                }
+                // afterOrgCode(발령 조직코드) null 은 게이트 없이 진행한다 — SF
+                // AppointmentTriggerHanlder.cls:101-204 는 사원 존재 외 게이트가 없고,
+                // OrgCode__c null 이면 CostCenterCode__c = null 로 그대로 반영된다.
 
                 val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
                 if (employee == null) {

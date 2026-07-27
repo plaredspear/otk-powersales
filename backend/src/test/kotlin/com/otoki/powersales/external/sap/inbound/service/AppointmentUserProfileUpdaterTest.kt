@@ -435,10 +435,24 @@ class AppointmentUserProfileUpdaterTest {
         }
 
         @Test
-        @DisplayName("afterOrgCode=null -> skip")
-        fun skipWhenAfterOrgCodeNull() {
-            val appointment = createAppointment(afterOrgCode = null)
+        @DisplayName("afterOrgCode=null -> skip 아님, costCenterCode=null 로 그대로 반영 (SF cls:101-204 게이트 없음)")
+        fun afterOrgCodeNullStillApplies() {
+            val employee = createEmployee(costCenterCode = "0000", orgName = "기존지점")
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+
+            val appointment = createAppointment(
+                afterOrgCode = null, afterOrgName = "신규지점",
+                jikchak = "D0053", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 3, 22)
+            )
+
             updater.updateUserProfiles(listOf(appointment), today)
+
+            // SF: OrgCode__c null → CostCenterCode__c = null 저장 + 나머지 인사필드는 정상 반영.
+            assertThat(employee.costCenterCode).isNull()
+            assertThat(employee.orgName).isEqualTo("신규지점")
+            assertThat(employee.jikchak).isEqualTo("사원")
+            assertThat(employee.jobCode).isEqualTo("판촉직")
         }
 
     }
