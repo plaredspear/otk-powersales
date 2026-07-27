@@ -508,44 +508,10 @@ println("[sobject-relation] $sObjectRelationCount 건 → $sObjectRelationCsv")
 // 신규 branch_mapping 테이블 (PK = branch_code) 로 Stage1 적재. 직전엔 BranchMappingMatrix
 // Kotlin object 박제 + 부팅 ApplicationRunner sync 였으나, SharingRule/SObjectSetting 등 다른
 // XML 메타와 동일하게 CSV 적재 경로로 일원화 (코드 박제 제거 + 매 부팅 sync 로그 제거).
-//
-// ## 구 조직코드 교정 (BRANCH_MAPPING_OLD_CODE_FIX)
-//
-// BranchMapping__mdt 의 IncludedBranchCode__c 는 조직 재코딩 이전의 **구 조직코드**를 함께 담아
-// 신/구 코드를 한 지점으로 묶는 역할을 한다 (예: 강북1지점 5815 → "5452,5815").
-// 그런데 강남2지점 / 강남3지점 2건은 구 코드가 **서로 뒤바뀌어** 있다:
-//
-//   | 지점        | mdt 원본       | 올바른 값     |
-//   |------------|---------------|--------------|
-//   | 5823 강남3  | 5459,5823     | 5668,5823    |
-//   | 5824 강남2  | 5668,5824     | 5459,5824    |
-//
-// 근거는 같은 SF org 의 sharing rules — 구/신 코드를 한 쌍으로 묶은 criteriaItems 다:
-//   sharingRules/MonthlyFemaleEmployeeIntegrationSchedule__c: X5459 → "5459,5824"
-//   sharingRules/DisplayWorkScheduleMaster__c:                A54595824 → "5459,5824"
-//   (강남3 은 양쪽 모두 "5668,5823")
-// 규칙 이름 A54595824 자체가 두 코드를 이어붙인 것이라 쌍이 명시적이다.
-// 나머지 30개 지점은 mdt 와 sharing rules 가 일치하므로 교정 대상이 아니다.
-//
-// 증상: 구 코드로 남은 사원(재코딩 이후 발령이 없어 CostCenterCode__c 가 갱신되지 않은 사원)이
-// 지점 필터에서 엉뚱한 지점에 계상되거나 누락된다. 실측 사례 — 강남2지점 인원현황이 SF 리포트
-// 36명 대비 신규 35명 (구 코드 5459 사원 1명이 BranchCodeExpander 확장에서 빠짐).
-// SF 리포트는 OrgName__c(조직명 문자열) 로 그룹핑해 영향을 받지 않지만, 신규는 코드 축이라 갈린다.
-//
-// SF 원본(mdt) 은 수정하지 않는다 — 운영 SF 메타 변경 없이 신규 적재 시점에만 교정한다.
 // =============================================================================
 
 val customMetadataDir = src.resolve("customMetadata")
 val branchMappingCsv = out.resolve("branch-mapping.csv")
-
-/**
- * branchCode → 교정된 includedBranchCodes.
- * mdt 원본의 구 조직코드가 다른 지점 것으로 들어간 항목만 담는다 (sharing rules 기준).
- */
-val BRANCH_MAPPING_OLD_CODE_FIX: Map<String, String> = mapOf(
-    "5823" to "5668,5823", // 강남3지점 — mdt 원본 "5459,5823" (5459 는 강남2 구 코드)
-    "5824" to "5459,5824", // 강남2지점 — mdt 원본 "5668,5824" (5668 는 강남3 구 코드)
-)
 
 // CustomMetadata 의 <values><field>X</field><value>Y</value></values> → field X 의 value Y.
 fun Element.customMetadataValue(field: String): String? =
@@ -554,7 +520,6 @@ fun Element.customMetadataValue(field: String): String? =
         ?.childText("value")
 
 var branchMappingCount = 0
-var branchMappingFixedCount = 0
 CSVWriter(PrintWriter(branchMappingCsv)).use { w ->
     w.writeNext(arrayOf("branchCode", "includedBranchCodes", "label"))
     if (customMetadataDir.isDirectory) {
@@ -565,14 +530,8 @@ CSVWriter(PrintWriter(branchMappingCsv)).use { w ->
                 try {
                     val root = parseXml(file)
                     val branchCode = root.customMetadataValue("BranchCode__c") ?: return@forEach
-                    val rawIncluded = root.customMetadataValue("IncludedBranchCode__c") ?: return@forEach
+                    val includedBranchCodes = root.customMetadataValue("IncludedBranchCode__c") ?: return@forEach
                     val label = root.childText("label") ?: ""
-                    // 구 조직코드 교정 — 원본과 다를 때만 적용/집계 (mdt 가 SF 에서 고쳐지면 자동으로 no-op).
-                    val includedBranchCodes = BRANCH_MAPPING_OLD_CODE_FIX[branchCode] ?: rawIncluded
-                    if (includedBranchCodes != rawIncluded) {
-                        branchMappingFixedCount++
-                        println("[branch-mapping] 구 조직코드 교정: $branchCode($label) \"$rawIncluded\" → \"$includedBranchCodes\"")
-                    }
                     w.writeNext(arrayOf(branchCode, includedBranchCodes, label))
                     branchMappingCount++
                 } catch (_: Exception) {
@@ -581,7 +540,7 @@ CSVWriter(PrintWriter(branchMappingCsv)).use { w ->
             }
     }
 }
-println("[branch-mapping] $branchMappingCount 건 (구 조직코드 교정 $branchMappingFixedCount 건) → $branchMappingCsv")
+println("[branch-mapping] $branchMappingCount 건 → $branchMappingCsv")
 
 // =============================================================================
 // 7) record-type — extract-csv.sh 의 RECORD_TYPE_SOQL 로 이관됨.
@@ -753,7 +712,7 @@ println("  profile-flags.csv         : $profileCount 건")
 println("  permission-set-flags.csv  : $permsetCount 건")
 println("  sobject-setting.csv       : $sObjectSettingCount 건  [spec #791]")
 println("  sobject-relation.csv      : $sObjectRelationCount 건  [spec #791]")
-println("  branch-mapping.csv        : $branchMappingCount 건  [BranchMapping__mdt, 구 조직코드 교정 $branchMappingFixedCount 건]")
+println("  branch-mapping.csv        : $branchMappingCount 건  [BranchMapping__mdt]")
 println("  record-type.csv           : (extract-csv.sh RECORD_TYPE_SOQL 로 이관)  [spec #794]")
 println("  profile-record-type.csv   : $profileRecordTypeCount 건  [spec #794]")
 println("  permission-set-record-type.csv: $permSetRecordTypeCount 건  [spec #794]")
