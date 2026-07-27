@@ -100,15 +100,18 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByRoleAndStatus(role: String, status: String): List<Employee>
 
     /**
-     * 발령일이 도래한 예약 발령 보유 사원 조회 (연기예약 처리 배치).
+     * 발령일이 당일 도래한 예약 발령 사원 조회 (연기예약 처리 배치).
      *
-     * SF `PostponedAppointmentBatch.cls:15` 는 `CRM_WorkStartDate__c = :today` 등호라 배치가 하루
-     * 걸러지면 그 날짜 예약분이 영구 미반영된다. 신규는 `<=` 로 밀린 건도 따라잡는다.
+     * SF `PostponedAppointmentBatch.cls:15` 정합 —
+     * `CRM_WorkStartDate__c = :today AND PostponedAppointment__c != null` 을 그대로 재현한다.
      *
-     * 반영 대상 판별(참조 보유 여부)은 호출측에서 수행한다 — 참조 없는 잔여 예약은 반영하지 않고
-     * 예약 표시만 해제해야 하므로, 조회 단계에서 배제하면 잔여 데이터가 영구히 남는다.
+     * - **등호 조건**: `<=` 로 완화하면 과거 일자 잔여 예약(SF 가 영영 반영하지 않는 죽은 상태 —
+     *   마이그레이션 재유입 포함)까지 반영해 SF 와 어긋난다. SF 동일하게 등호를 쓰며, 배치가 당일
+     *   실행되지 못하면 그 날짜 예약이 미반영으로 남는 것 또한 SF 와 동일한 알려진 동작이다
+     *   (복구는 발령 재수신 또는 수동 정정).
+     * - **참조 non-null**: 참조 없는 예약 잔여는 SF 처럼 조회 단계에서 배제해 건드리지 않는다.
      */
-    fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
+    fun findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(date: LocalDate): List<Employee>
 
     /**
      * 다중 코스트센터 + 역할 + 앱 로그인 활성 + 상태로 사원 조회 (영업지원실 다중 지점 템플릿용)

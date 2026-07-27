@@ -42,7 +42,7 @@ class PostponedAppointmentBatchServiceTest {
         @Test
         @DisplayName("대상 없음 - 아무 처리 없이 종료")
         fun noTargets() {
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
                 emptyList()
 
             service.process(today)
@@ -53,7 +53,7 @@ class PostponedAppointmentBatchServiceTest {
         fun appliesReferencedAppointment() {
             val reserved = createAppointment()
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
                 listOf(employee)
 
             val codeMap = mapOf("H10060:A055" to "OSC직")
@@ -83,7 +83,7 @@ class PostponedAppointmentBatchServiceTest {
         fun nullAppointDateFallsBackToToday() {
             val reserved = createAppointment(appointDate = null)
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
                 listOf(employee)
 
             val codeMap = emptyMap<String, String>()
@@ -101,18 +101,18 @@ class PostponedAppointmentBatchServiceTest {
         }
 
         @Test
-        @DisplayName("참조 없음 - 인사정보 미반영, 예약 표시만 해제")
-        fun noReferenceOnlyClearsReservation() {
-            // SF 는 start 쿼리에서 PostponedAppointment__c != null 로 이런 건을 배제한다.
-            // 신규는 잔여 예약을 정리하기 위해 조회는 하되, 반영 없이 예약 표시만 해제한다.
+        @DisplayName("참조 없음(방어) - 아무것도 수정하지 않고 skip")
+        fun noReferenceSkipsWithoutModification() {
+            // 조회 조건(참조 non-null)상 도달 불가한 방어 경로 — SF 는 이런 건을 아예 조회하지 않고
+            // 영영 건드리지 않으므로, 신규도 예약 표시를 포함해 아무것도 수정하지 않는다.
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = null)
-            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
                 listOf(employee)
             every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
 
             service.process(today)
 
-            assertThat(employee.crmWorkStartDate).isNull()
+            assertThat(employee.crmWorkStartDate).isEqualTo(today)
             // 어떤 발령도 추측해서 반영하지 않는다 — 이 추측이 직무코드 회귀 사고의 원인이었다.
             verify(exactly = 0) {
                 appointmentUserProfileUpdater.applyImmediateAppointment(any(), any(), any(), any())
