@@ -126,6 +126,8 @@ export interface BasicStats {
   staffType: StaffTypeCount;
   totalByPosition: TotalByPosition;
   byAgeGroup: AgeGroupCount[];
+  /** 인원 기준일 (YYYY-MM-DD) — 서버 KST 기준 전일. 각 차트 우측 하단에 표기한다. */
+  asOfDate: string;
 }
 
 export interface DashboardResponse {

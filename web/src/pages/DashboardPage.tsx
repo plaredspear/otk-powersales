@@ -59,18 +59,19 @@ function cardTitle(title: string, desc: string) {
  * 기본 현황 각 그래프의 데이터 집계 기준 안내 문구 (지점 조건은 제외).
  *
  * 기본 현황 3개 차트는 모두 **사원 마스터의 현재 상태 스냅샷**이라 조회월과 무관하다 — 그래서
- * 이 탭에서는 조회월 셀렉터를 잠근다([BASIC_TAB_KEY]).
+ * 이 탭에서는 조회월 셀렉터를 잠그고([BASIC_TAB_KEY]), 대신 인원 기준일을 카드 하단에 표기한다
+ * ([asOfBadge], 서버가 KST 전일로 산출).
  *
  * 모수는 레거시 SF 홈 대시보드(조장) 인원현황 리포트 정합 — 여사원+조장, 여사원 직무 3값 한정,
  * 퇴직자·테스트 계정 제외 (backend `FemaleStaffHeadcountFilter`).
  */
 const BASIC_CHART_INFO = {
   staffType:
-    '조회 시점의 현재 인원입니다. 상단 조회월과 무관합니다. 여사원·조장 중 판촉직과 OSC직(구 레이디직 포함)을 직무 기준으로 분류하며, 퇴직자와 테스트 계정은 제외합니다.',
+    '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장 중 판촉직과 OSC직(구 레이디직 포함)을 직무 기준으로 분류하며, 퇴직자와 테스트 계정은 제외합니다.',
   position:
-    '조회 시점의 현재 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
+    '전일 기준 인원입니다. 상단 조회월과 무관합니다. 여사원·조장의 재직 상태를 재직과 휴직으로 분류하며, 그 외 상태이거나 상태가 없는 사원은 기타로 표시합니다. (퇴직자는 집계에서 제외)',
   ageGroup:
-    '조회 시점의 현재 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
+    '전일 기준 인원입니다. 여사원·조장의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
 } as const;
 
 /**
@@ -326,13 +327,29 @@ const CHART_HEIGHT = 320;
  * 리포트에 기간 필터가 없다). 셀렉터가 열려 있으면 과거 이력을 조회할 수 있는 것처럼 보이지만
  * 실제로는 값이 바뀌지 않아 오해를 준다.
  *
- * 이 탭의 3개 차트는 모두 현재 시점 기준이다 — 유일하게 조회월을 쓰던 '근무형태별 고정/격고/순회'
+ * 이 탭의 3개 차트는 모두 같은 기준일을 쓴다 — 유일하게 조회월을 쓰던 '근무형태별 고정/격고/순회'
  * (선택월 MFEIS 환산인원) 는 기준 시점이 섞이는 혼선을 없애기 위해 제거했다(사용자 결정).
+ * 실제 기준일은 각 카드 하단에 표기한다([asOfBadge]).
  */
 const BASIC_TAB_KEY = 'basic';
 
 /** 기본 현황 탭에서 조회월이 잠긴 사유 — 셀렉터 아래에 상시 노출. */
-const BASIC_TAB_PERIOD_LOCK_NOTICE = '기본 현황은 현재 시점 기준입니다';
+const BASIC_TAB_PERIOD_LOCK_NOTICE = '기본 현황은 전일 기준입니다';
+
+/**
+ * 기본 현황 차트의 인원 기준일 배지 — 카드 우측 하단에 표기.
+ *
+ * 사원 정보를 일별로 수신한다는 전제에서 서버가 KST 기준 전일로 내려준다
+ * (backend `BasicStats.asOfDate`). 클라이언트에서 날짜를 계산하지 않는다 —
+ * 사용자 PC 의 타임존/날짜 설정에 따라 표기가 달라지는 것을 막기 위함.
+ */
+function asOfBadge(asOfDate: string) {
+  return (
+    <div style={{ marginTop: 8, textAlign: 'right', fontSize: 12, color: '#8c8c8c' }}>
+      기준일 [{asOfDate}]
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const today = new Date();
@@ -561,6 +578,7 @@ export default function DashboardPage() {
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge
             />
+            {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
         <Col span={12}>
@@ -576,11 +594,13 @@ export default function DashboardPage() {
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge
             />
+            {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
         <Col span={12}>
           <Card title={cardTitle('연령별 현황', BASIC_CHART_INFO.ageGroup)} extra={cardExtra(ageTotal)}>
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
+            {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
       </Row>

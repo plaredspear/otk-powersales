@@ -10,9 +10,12 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import com.otoki.powersales.platform.common.util.TimeZones
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZonedDateTime
 
 @DisplayName("AdminDashboardService 테스트 (실집계)")
 class AdminDashboardServiceTest {
@@ -21,8 +24,20 @@ class AdminDashboardServiceTest {
     private val employeeRepository = mockk<EmployeeRepository>()
     private val monthlySalesAdminQueryService = mockk<MonthlySalesAdminQueryService>()
 
+    /**
+     * 고정 시계 — 기본 현황 기준일(전일) 검증을 결정론적으로 만든다.
+     * KST 2026-05-20 09:00 로 고정하므로 기준일은 항상 [expectedAsOfDate] (2026-05-19).
+     */
+    private val fixedClock: Clock = Clock.fixed(
+        ZonedDateTime.of(2026, 5, 20, 9, 0, 0, 0, TimeZones.SEOUL_ZONE).toInstant(),
+        TimeZones.SEOUL_ZONE,
+    )
+
+    /** [fixedClock] 기준 전일. */
+    private val expectedAsOfDate: LocalDate = LocalDate.of(2026, 5, 19)
+
     private val service = AdminDashboardService(
-        mfeisRepository, employeeRepository, monthlySalesAdminQueryService,
+        mfeisRepository, employeeRepository, monthlySalesAdminQueryService, fixedClock,
     )
 
     // -- fixtures --
@@ -216,6 +231,19 @@ class AdminDashboardServiceTest {
     // T3-1 기본현황 근무형태별(고정/격고/순회) 환산인원 SUM 테스트는 제거됨 —
     // 해당 차트가 기준 시점 혼선(현재 시점 vs 선택월)으로 기본 현황에서 빠졌다.
     // 근무형태별 환산인원 집계 검증은 여사원 투입현황(staffDeployment) 테스트가 담당한다.
+
+    @Test
+    @DisplayName("기본현황 기준일은 서버 KST 전일 — 조회월과 무관하게 고정 시계 기준 전일을 내려준다")
+    fun basicStatsAsOfDateIsPreviousDayInSeoul() {
+        stubEmpty()
+
+        // 조회월을 과거로 바꿔도 기준일은 서버 '오늘'의 전일이다 (기본현황은 현재 상태 스냅샷).
+        val current = service.getDashboard(emptyList(), "2026-05")
+        val past = service.getDashboard(emptyList(), "2026-01")
+
+        assertThat(current.basicStats.asOfDate).isEqualTo(expectedAsOfDate)
+        assertThat(past.basicStats.asOfDate).isEqualTo(expectedAsOfDate)
+    }
 
     @Test
     @DisplayName("T4/T6 매출 실적 + 전년 대비 — actual 800, lastYear 760 -> ratio ≈ 105.3")

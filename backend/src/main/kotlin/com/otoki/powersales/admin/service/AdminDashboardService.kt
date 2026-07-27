@@ -19,10 +19,12 @@ import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploym
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService.InvestedAccountRef
+import com.otoki.powersales.platform.common.util.TimeZones
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Clock
 import java.time.LocalDate
 import java.time.Period
 import java.time.YearMonth
@@ -54,6 +56,8 @@ class AdminDashboardService(
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val monthlySalesAdminQueryService: MonthlySalesAdminQueryService,
+    // 기본 현황 기준일 계산용 — 클라이언트 로컬 시각이 아닌 서버 KST 기준으로 산출한다.
+    private val clock: Clock,
 ) {
 
     /**
@@ -314,8 +318,26 @@ class AdminDashboardService(
                 etcBreakdown = positionEtcBreakdown,
             ),
             byAgeGroup = buildAgeGroups(employees, asOf),
+            asOfDate = resolveBasicStatsAsOfDate(),
         )
     }
+
+    /**
+     * 기본 현황 화면에 표기할 인원 기준일 — 서버 KST 기준 **전일**.
+     *
+     * 사원 정보를 일별로 수신한다는 전제에서, 사용자에게 "언제 시점의 인원인지" 를 명시하기 위한
+     * 표기 전용 값이다. 집계 조건에는 관여하지 않는다 — 조회 자체는 사원 마스터의 현재 상태를 읽는다
+     * ([findEmployees]).
+     *
+     * 클라이언트 로컬 시각을 쓰면 사용자 PC 의 타임존/날짜 설정에 따라 표기가 달라지므로 서버가 계산한다.
+     *
+     * 주의: SAP 사원 마스터는 실제로는 `POST /api/v1/sap/employee` 실시간 push 로 도착 즉시 반영된다
+     * (`EmployeeUpsertService.upsert`). 따라서 당일 수신분이 이미 집계에 포함된 상태에서 라벨만
+     * 전일로 표기될 수 있다. SAP 측 전송이 일 1회 배치라는 전제 하의 표기이며, 전제가 바뀌면
+     * `sap_inbound_audit` 의 최종 수신 시각을 노출하는 방식으로 교체할 것.
+     */
+    private fun resolveBasicStatsAsOfDate(): LocalDate =
+        LocalDate.now(clock.withZone(TimeZones.SEOUL_ZONE)).minusDays(1)
 
     /**
      * "기타" 항목 세부 내역 — 원본 값(jobCode/status)별 인원 수 집계.

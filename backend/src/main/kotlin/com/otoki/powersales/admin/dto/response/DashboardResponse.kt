@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.dto.response
 
 import java.math.BigDecimal
+import java.time.LocalDate
 
 data class DashboardResponse(
     val salesSummary: SalesSummary,
@@ -114,12 +115,15 @@ data class ChannelWorkTypeItem(
  * 과거에는 선택월 MFEIS 환산인원 기준의 `byWorkType`(근무형태별 고정/격고/순회) 을 함께 내렸으나,
  * 같은 탭 안에서 기준 시점이 섞여(현재 시점 vs 선택월) 조회월 셀렉터가 과거 이력 조회처럼
  * 보이는 혼선이 있어 제거했다. 근무형태별 환산인원은 여사원 투입현황 탭이 담당한다.
+ *
+ * @property asOfDate 화면에 표기할 인원 기준일 — 서버 KST 기준 **전일**([AdminDashboardService.resolveBasicStatsAsOfDate]).
  */
 data class BasicStats(
     val branchName: String?,
     val staffType: StaffTypeCount,
     val totalByPosition: TotalByPosition,
-    val byAgeGroup: List<AgeGroupCount>
+    val byAgeGroup: List<AgeGroupCount>,
+    val asOfDate: LocalDate
 )
 
 /**

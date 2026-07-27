@@ -15,6 +15,7 @@ import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.admin.service.DashboardBranchResolver
 import java.math.BigDecimal
+import java.time.LocalDate
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -87,6 +88,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0, etcBreakdown = emptyList()),
             totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0, etcBreakdown = emptyList()),
             byAgeGroup = emptyList(),
+            asOfDate = LocalDate.of(2026, 5, 19),
         )
     )
 
