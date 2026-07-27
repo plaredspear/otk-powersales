@@ -156,9 +156,9 @@ export interface BasicStatsByScope {
 
 export interface BasicStats {
   branchName: string | null;
-  /** 재직자만 (토글 기본값). */
+  /** 재직자만. */
   active: BasicStatsByScope;
-  /** 재직 + 휴직 (퇴직만 제외). */
+  /** 재직 + 휴직 (퇴직만 제외, 토글 기본값). */
   includingLeave: BasicStatsByScope;
   /** 재직/휴직 비율 — 토글과 무관하게 항상 전체 기준 (좁히면 휴직 세그먼트가 0이 되어 무의미). */
   totalByPosition: TotalByPosition;

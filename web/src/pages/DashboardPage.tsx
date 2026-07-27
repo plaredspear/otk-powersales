@@ -409,9 +409,9 @@ export default function DashboardPage() {
   // 활성 탭 — 기본 현황 탭에서는 조회월 셀렉터를 잠근다(BASIC_TAB_KEY 참조).
   const [activeTab, setActiveTab] = useState<string>('sales');
   const isBasicTab = activeTab === BASIC_TAB_KEY;
-  // 기본 현황 집계 기준 — 기본값은 재직(현장 배치 가능 인력). 서버가 두 기준을 모두 내려주므로
+  // 기본 현황 집계 기준 — 기본값은 재직+휴직(퇴직만 제외). 서버가 두 기준을 모두 내려주므로
   // 전환 시 재조회가 없다.
-  const [basicScope, setBasicScope] = useState<BasicScope>('active');
+  const [basicScope, setBasicScope] = useState<BasicScope>('includingLeave');
 
   // 시스템 관리자(전사 권한)는 마운트 시 전사 자동 조회를 막고, 지점/전체를 명시 선택해 조회를 눌렀을
   // 때만 실행한다 (무거운 전사 집계의 의도치 않은 자동 트리거 방지). 비-시스템관리자는 권한 스코프가
