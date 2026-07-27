@@ -584,7 +584,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - Excel byte 응답 + Content-Disposition")
         fun export_success() {
-            val result = AdminDisplayWorkScheduleService.TemplateResult(
+            val result = ExcelResult(
                 bytes = ByteArray(800),
                 filename = "진열스케줄_20260516_120000.xlsx"
             )

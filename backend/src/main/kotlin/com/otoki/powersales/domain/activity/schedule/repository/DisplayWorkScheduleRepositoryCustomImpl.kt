@@ -133,7 +133,40 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildPresetCondition(preset, today))
             .and(buildValidDataCondition(validData, today))
 
-        val content = queryFactory
+        val content = scheduleListRowQuery(where)
+            .orderBy(*resolveOrder(pageable.sort))
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(displayWorkSchedule.count())
+            .from(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.ownerUser)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
+
+    override fun findScheduleListByIds(ids: List<Long>, policyPredicate: Predicate): List<ScheduleListRow> {
+        if (ids.isEmpty()) return emptyList()
+
+        val where = BooleanBuilder()
+            .and(displayWorkSchedule.id.`in`(ids))
+            .and(isNotDeleted())
+            .and(policyPredicate)
+
+        return scheduleListRowQuery(where).fetch()
+    }
+
+    /**
+     * 목록 projection ([ScheduleListRow]) 공통 쿼리 — 목록 조회 / 선택·검색결과 export 가 공유.
+     * 컬럼 구성이 한 곳에만 있어야 화면 테이블 ↔ 엑셀 정합이 유지된다.
+     */
+    private fun scheduleListRowQuery(where: BooleanBuilder) =
+        queryFactory
             .select(
                 Projections.constructor(
                     ScheduleListRow::class.java,
@@ -169,21 +202,6 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             // inner join 회피. OR 합성이라 ownerUser=null row 도 sharing rule/branch 절로 통과.
             .leftJoin(displayWorkSchedule.ownerUser)
             .where(where)
-            .orderBy(*resolveOrder(pageable.sort))
-            .offset(pageable.offset)
-            .limit(pageable.pageSize.toLong())
-            .fetch()
-
-        val countQuery = queryFactory
-            .select(displayWorkSchedule.count())
-            .from(displayWorkSchedule)
-            .leftJoin(displayWorkSchedule.ownerUser)
-            .where(where)
-
-        return PageableExecutionUtils.getPage(content, pageable) {
-            countQuery.fetchOne() ?: 0L
-        }
-    }
 
     /**
      * SF Formula `ValidData__c = '종료'` 의 신규 단순 매핑.

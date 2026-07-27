@@ -105,6 +105,16 @@ interface DisplayWorkScheduleRepositoryCustom {
     ): Page<ScheduleListRow>
 
     /**
+     * "선택 다운로드" 용 — id 목록에 해당하는 [ScheduleListRow] projection 조회.
+     *
+     * [findScheduleList] 와 동일한 projection/조인 구성을 공유하여 목록 화면 · 검색결과 다운로드 ·
+     * 선택 다운로드 3자의 컬럼 구성이 어긋나지 않게 한다.
+     * `policyPredicate` 밖 id 는 조용히 제외 (목록과 동일 가시 범위), soft-delete 도 제외.
+     * 반환 순서는 미보장 — 호출 측에서 요청 ids 순서로 재정렬한다.
+     */
+    fun findScheduleListByIds(ids: List<Long>, policyPredicate: Predicate): List<ScheduleListRow>
+
+    /**
      * 단건이 SF 가시 범위(`policyPredicate`) 안에 있는지 (soft-delete 제외).
      *
      * 목록과 동일한 가시 범위 Predicate 로 단건 가시성을 평가 (목록↔쓰기 경로 일관성).

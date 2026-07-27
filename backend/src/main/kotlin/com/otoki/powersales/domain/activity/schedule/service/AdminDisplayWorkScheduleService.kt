@@ -78,7 +78,6 @@ class AdminDisplayWorkScheduleService(
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
     private val templateGenerator: ScheduleTemplateGenerator,
-    private val exportGenerator: ScheduleExportGenerator,
     private val listExcelExporter: ScheduleListExcelExporter,
     private val excelParser: ScheduleExcelParser,
     private val uploadValidator: ScheduleUploadValidator,
@@ -252,21 +251,19 @@ class AdminDisplayWorkScheduleService(
      * UC-08 진열마스터 Excel 다운로드 (선택 레코드).
      * 레거시 SF `ExcelIO_ExportDisplayWorkScheduleMaster2.page` (ecio 패키지) 동등 — 선택된 레코드만 export.
      * 입력 순서 보존하여 출력 (사용자가 선택한 순서대로 행 정렬).
+     *
+     * 검색결과 다운로드([exportAllSchedules]) 와 **동일한 컬럼 구성** 이어야 하므로 목록과 같은
+     * [ScheduleListRow] projection + [toListItemDto] 매핑 + [ScheduleListExcelExporter] 를 공유한다
+     * (조회 조건만 ids ↔ 검색 필터로 다름).
      */
-    fun exportSchedules(scope: DataScope, ids: List<Long>): TemplateResult {
+    fun exportSchedules(scope: DataScope, ids: List<Long>): ExcelResult {
         // SF 가시 범위 — scope 밖 ID 는 조용히 제외 (목록과 동일한 evaluator Predicate, SF Sharing Rule row-level filter 동등)
         val policyPredicate = schedulePolicyPredicate(scope)
-        val schedules = scheduleRepository.findAllById(ids)
-            .filter { it.isDeleted != true }
-            .filter { scheduleRepository.existsVisibleById(it.id, policyPredicate) }
-            .associateBy { it.id }
-        val ordered = ids.mapNotNull { schedules[it] }
+        val rowsById = scheduleRepository.findScheduleListByIds(ids, policyPredicate).associateBy { it.id }
+        val items = ids.mapNotNull { rowsById[it] }.map { toListItemDto(it) }
 
-        val bytes = exportGenerator.generate(ordered)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-        val filename = "진열스케줄_${timestamp}.xlsx"
-
-        return TemplateResult(bytes, filename)
+        return listExcelExporter.export(items, "진열스케줄_${timestamp}.xlsx")
     }
 
     fun uploadAndValidate(scope: DataScope, file: MultipartFile): ScheduleUploadResultDto {

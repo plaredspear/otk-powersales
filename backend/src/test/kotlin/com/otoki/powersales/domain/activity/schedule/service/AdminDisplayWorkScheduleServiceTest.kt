@@ -46,7 +46,6 @@ import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberSchedu
 import com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService
 import com.otoki.powersales.domain.activity.schedule.service.MissingCostCenterException
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleExcelParser
-import com.otoki.powersales.domain.activity.schedule.service.ScheduleExportGenerator
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleUploadValidator
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.user.entity.User
@@ -82,7 +81,6 @@ class AdminDisplayWorkScheduleServiceTest {
 
     private val templateGenerator: ScheduleTemplateGenerator = mockk(relaxUnitFun = true)
 
-    private val exportGenerator: ScheduleExportGenerator = mockk(relaxUnitFun = true)
 
     private val excelParser: ScheduleExcelParser = mockk(relaxUnitFun = true)
 
@@ -116,7 +114,6 @@ class AdminDisplayWorkScheduleServiceTest {
         accountRepository,
         organizationRepository,
         templateGenerator,
-        exportGenerator,
         ScheduleListExcelExporter(),
         excelParser,
         uploadValidator,
@@ -157,7 +154,36 @@ class AdminDisplayWorkScheduleServiceTest {
         private const val LEADER_PROFILE_NAME_TEST = "6.조장"
         private const val LEADER_PROFILE_ID_TEST = 60L
         private const val REGISTRANT_EMP_ID_TEST = 500L
+
+        /** 엑셀 "사번" 컬럼 index — 헤더 [유효, 지점명, 사번, ...] 정합. */
+        private const val SABEON_CELL = 2
     }
+
+    /** 선택/검색결과 export 가 공유하는 목록 projection 픽스처. */
+    private fun scheduleListRow(id: Long, employeeCode: String?, employeeName: String?): ScheduleListRow =
+        ScheduleListRow(
+            id = id,
+            employeeId = null,
+            employeeCode = employeeCode,
+            employeeName = employeeName,
+            branchName = null,
+            employeeStatus = null,
+            employeeAppLoginActive = null,
+            employeeEndDate = null,
+            accountId = null,
+            accountCode = null,
+            accountName = null,
+            accountType = null,
+            accountStatusName = null,
+            typeOfWork3 = null,
+            typeOfWork4 = null,
+            typeOfWork5 = null,
+            startDate = null,
+            endDate = null,
+            confirmed = true,
+            costCenterCode = null,
+            lastMonthRevenue = null,
+        )
 
     @Nested
     @DisplayName("getScheduleListMetaStatic - 목록 조회 조건 로드(정적)")
@@ -403,8 +429,6 @@ class AdminDisplayWorkScheduleServiceTest {
     @DisplayName("exportSchedules - 선택 다운로드 (UC-08)")
     inner class ExportSchedulesTests {
 
-        private val userId = 1L
-
         private fun mockAdminScope(): DataScope =
             DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -412,54 +436,64 @@ class AdminDisplayWorkScheduleServiceTest {
         @DisplayName("정상 다운로드 - 선택 ID 순서 보존 + 파일명 패턴")
         fun exportSchedules_success() {
             val scope = mockAdminScope()
-            val s1 = createSchedule(id = 11L)
-            val s2 = createSchedule(id = 12L)
-            every { scheduleRepository.findAllById(listOf(12L, 11L)) } returns listOf(s1, s2)
-            every { exportGenerator.generate(any()) } returns ByteArray(500)
+            // repository 반환 순서(11, 12) 와 무관하게 요청 ids 순서(12, 11) 로 정렬되어야 한다
+            every { scheduleRepository.findScheduleListByIds(listOf(12L, 11L), any()) } returns listOf(
+                scheduleListRow(11L, "20030001", "홍길동"),
+                scheduleListRow(12L, "20030002", "김영희"),
+            )
 
             val result = adminDisplayWorkScheduleService.exportSchedules(scope, listOf(12L, 11L))
 
-            assertThat(result.bytes).hasSize(500)
             assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
-            // 입력 순서대로 (12, 11) entity 가 generator 에 전달되었는지 확인
-            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
-                it.size == 2 && it[0].id == 12L && it[1].id == 11L
-            }) }
+            val workbook = XSSFWorkbook(java.io.ByteArrayInputStream(result.bytes))
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(2)
+            assertThat(sheet.getRow(1).getCell(SABEON_CELL).stringCellValue).isEqualTo("20030002")
+            assertThat(sheet.getRow(2).getCell(SABEON_CELL).stringCellValue).isEqualTo("20030001")
+            workbook.close()
         }
 
         @Test
-        @DisplayName("삭제된 레코드는 제외")
-        fun exportSchedules_excludesDeleted() {
+        @DisplayName("검색결과 다운로드와 동일한 헤더 구성")
+        fun exportSchedules_sameHeadersAsExportAll() {
             val scope = mockAdminScope()
-            val active = createSchedule(id = 11L)
-            val deletedSchedule = createSchedule(id = 12L, isDeleted = true)
-            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(active, deletedSchedule)
-            every { exportGenerator.generate(any()) } returns ByteArray(200)
+            every { scheduleRepository.findScheduleListByIds(listOf(11L), any()) } returns
+                listOf(scheduleListRow(11L, "20030001", "홍길동"))
+            every {
+                scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any())
+            } returns PageImpl(listOf(scheduleListRow(11L, "20030001", "홍길동")), PageRequest.of(0, 50_000), 1)
 
-            adminDisplayWorkScheduleService.exportSchedules(scope, listOf(11L, 12L))
+            val selected = adminDisplayWorkScheduleService.exportSchedules(scope, listOf(11L))
+            val all = adminDisplayWorkScheduleService.exportAllSchedules(
+                scope, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted()
+            )
 
-            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
-                it.size == 1 && it[0].id == 11L
-            }) }
+            assertThat(headerRow(selected.bytes)).isEqualTo(headerRow(all.bytes))
         }
 
         @Test
-        @DisplayName("SF 가시 범위 위반 - 가시 범위 밖 레코드는 조용히 제외")
-        fun exportSchedules_leaderScopeFilter() {
+        @DisplayName("가시 범위 밖 / 삭제 레코드는 repository 단계에서 제외 — 결과 행에도 없음")
+        fun exportSchedules_excludesInvisible() {
             val scope = DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
-            val inScope = DisplayWorkSchedule(id = 11L, costCenterCode = "A10010")
-            val outOfScope = DisplayWorkSchedule(id = 12L, costCenterCode = "B20020")
-            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(inScope, outOfScope)
-            // SF 가시 범위 — id=11 가시, id=12 비가시
-            every { scheduleRepository.existsVisibleById(11L, any()) } returns true
-            every { scheduleRepository.existsVisibleById(12L, any()) } returns false
-            every { exportGenerator.generate(any()) } returns ByteArray(200)
+            // repository 가 policyPredicate + soft-delete 로 걸러 id=11 만 반환
+            every { scheduleRepository.findScheduleListByIds(listOf(11L, 12L), any()) } returns
+                listOf(scheduleListRow(11L, "20030001", "홍길동"))
 
-            adminDisplayWorkScheduleService.exportSchedules(scope, listOf(11L, 12L))
+            val result = adminDisplayWorkScheduleService.exportSchedules(scope, listOf(11L, 12L))
 
-            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
-                it.size == 1 && it[0].id == 11L
-            }) }
+            val workbook = XSSFWorkbook(java.io.ByteArrayInputStream(result.bytes))
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(1)
+            assertThat(sheet.getRow(1).getCell(SABEON_CELL).stringCellValue).isEqualTo("20030001")
+            workbook.close()
+        }
+
+        private fun headerRow(bytes: ByteArray): List<String> {
+            val workbook = XSSFWorkbook(java.io.ByteArrayInputStream(bytes))
+            val header = workbook.getSheetAt(0).getRow(0)
+            val values = (0 until header.lastCellNum).map { header.getCell(it).stringCellValue }
+            workbook.close()
+            return values
         }
     }
 
@@ -470,37 +504,12 @@ class AdminDisplayWorkScheduleServiceTest {
         private fun mockAdminScope(): DataScope =
             DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-        private fun row(id: Long, employeeCode: String?, employeeName: String?): ScheduleListRow =
-            ScheduleListRow(
-                id = id,
-                employeeId = null,
-                employeeCode = employeeCode,
-                employeeName = employeeName,
-                branchName = null,
-                employeeStatus = null,
-                employeeAppLoginActive = null,
-                employeeEndDate = null,
-                accountId = null,
-                accountCode = null,
-                accountName = null,
-                accountType = null,
-                accountStatusName = null,
-                typeOfWork3 = null,
-                typeOfWork4 = null,
-                typeOfWork5 = null,
-                startDate = null,
-                endDate = null,
-                confirmed = true,
-                costCenterCode = null,
-                lastMonthRevenue = null,
-            )
-
         @Test
         @DisplayName("정상 다운로드 - 목록과 동일 필터로 전량 추출 + 파일명 패턴")
         fun exportAll_success() {
             val scope = mockAdminScope()
             val page = PageImpl(
-                listOf(row(1L, "20030001", "홍길동"), row(2L, "20030002", "김영희")),
+                listOf(scheduleListRow(1L, "20030001", "홍길동"), scheduleListRow(2L, "20030002", "김영희")),
                 PageRequest.of(0, 50_000), 2
             )
             every {
@@ -516,8 +525,8 @@ class AdminDisplayWorkScheduleServiceTest {
             val workbook = XSSFWorkbook(java.io.ByteArrayInputStream(result.bytes))
             val sheet = workbook.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(2)
-            assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("20030001")
-            assertThat(sheet.getRow(2).getCell(1).stringCellValue).isEqualTo("20030002")
+            assertThat(sheet.getRow(1).getCell(SABEON_CELL).stringCellValue).isEqualTo("20030001")
+            assertThat(sheet.getRow(2).getCell(SABEON_CELL).stringCellValue).isEqualTo("20030002")
             workbook.close()
         }
 
