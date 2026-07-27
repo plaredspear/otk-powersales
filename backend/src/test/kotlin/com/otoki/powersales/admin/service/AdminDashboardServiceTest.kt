@@ -4,9 +4,11 @@ import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProj
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -25,6 +27,14 @@ class AdminDashboardServiceTest {
     private val monthlySalesAdminQueryService = mockk<MonthlySalesAdminQueryService>()
 
     /**
+     * 지점 코드 확장 — 기본은 항등(입력 그대로) stub. 확장 동작 자체를 검증하는 테스트만
+     * branch_mapping 계보를 별도 stub 한다 (T-EXPAND 계열).
+     */
+    private val branchCodeExpander = mockk<BranchCodeExpander> {
+        every { expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+    }
+
+    /**
      * 고정 시계 — 기본 현황 기준일(전일) 검증을 결정론적으로 만든다.
      * KST 2026-05-20 09:00 로 고정하므로 기준일은 항상 [expectedAsOfDate] (2026-05-19).
      */
@@ -37,7 +47,7 @@ class AdminDashboardServiceTest {
     private val expectedAsOfDate: LocalDate = LocalDate.of(2026, 5, 19)
 
     private val service = AdminDashboardService(
-        mfeisRepository, employeeRepository, monthlySalesAdminQueryService, fixedClock,
+        mfeisRepository, employeeRepository, monthlySalesAdminQueryService, branchCodeExpander, fixedClock,
     )
 
     // -- fixtures --
@@ -669,5 +679,42 @@ class AdminDashboardServiceTest {
         )
 
         assertThat(result.salesSummary.branchName).isEqualTo("서울1지점 외 1개")
+    }
+
+    @Test
+    @DisplayName("T-EXPAND1 지점 코드 확장 — branch_mapping 이력 코드가 세 조회(당월/전월 MFEIS + 기본현황) IN 에 모두 포함")
+    fun expandsQueryCodesWithHistoricalBranchCodes() {
+        stubEmpty()
+        // 강남2지점(5824) 의 계보: 조직 개편 이전 이력 코드 5668 포함 (BranchMapping__mdt 실데이터 정합)
+        every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
+
+        service.getDashboard(listOf("5824"), "2026-05")
+
+        // 당월(5월) + 전월(4월) MFEIS, 기본현황 projection 모두 확장 집합으로 조회
+        verify { mfeisRepository.findDeploymentDashboardRows("2026", "5", match { it.toSet() == setOf("5824", "5668") }) }
+        verify { mfeisRepository.findDeploymentDashboardRows("2026", "4", match { it.toSet() == setOf("5824", "5668") }) }
+        verify { employeeRepository.findDashboardBasicStatsProjection(match { it.toSet() == setOf("5824", "5668") }) }
+    }
+
+    @Test
+    @DisplayName("T-EXPAND2 확장 후에도 지점 라벨은 원본 코드 기준 — 단일 지점이 'OO 외 N개' 로 표기되지 않는다")
+    fun branchLabelUsesOriginalCodesNotExpanded() {
+        stubEmpty()
+        every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
+
+        val result = service.getDashboard(listOf("5824"), "2026-05", mapOf("5824" to "강남2지점"))
+
+        assertThat(result.salesSummary.branchName).isEqualTo("강남2지점")
+    }
+
+    @Test
+    @DisplayName("T-EXPAND3 전건 조회(빈 코드 목록)는 확장하지 않고 그대로 — repository '빈 목록 = 전건' 유지")
+    fun emptyCodesSkipExpansion() {
+        stubEmpty()
+
+        service.getDashboard(emptyList(), "2026-05")
+
+        verify(exactly = 0) { branchCodeExpander.expand(any()) }
+        verify { employeeRepository.findDashboardBasicStatsProjection(match { it.isEmpty() }) }
     }
 }

@@ -20,6 +20,7 @@ import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.enums.StaffRank
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
@@ -50,6 +51,11 @@ import java.time.format.DateTimeFormatter
  * - 여사원 투입현황 탭 차트는 SF 레거시 대시보드(LAST_MONTH 필터)와 동일하게 **모두 전월(마감) 고정**
  *   (결정 D2 를 탭 전체로 확장). 매출현황/기본현황은 yearMonth 토글(당월 기본).
  * - 판촉/OSC 구분: `Employee.jobCode`("판촉직" / "OSC직"·"레이디직") — 레거시 `EmployeeTriggerHandler.cls:47` 정합(결정 D6).
+ * - 지점 매칭은 [BranchCodeExpander] 로 조직 개편(2025-05) 이전 이력 코드까지 확장해 IN 매칭한다 —
+ *   개편 후 발령 미수신 사원(옛 `cost_center_code` 보유)이 계보상 현행 지점에 계상된다.
+ *   여사원 현황 목록(AdminFemaleEmployeeController.resolveBranchScope) / 여사원일정 등과 동일 축.
+ *   레거시 정합: SF 리포트(new_report_72Y)는 OrgName 문자열 축이라 옛 이름 그대로 묶지만, mdt 계보
+ *   (Util.getIncludedBranchCode 사용 화면들)와 동일하게 확장 축을 채택 — 상세 근거는 지점축 차이 명세 문서.
  * - 매출현황 탭(salesSummary): 투입 거래처 기준 실적 + 목표 + 달성률 + 기준진도율(달력일) + 전년 비교.
  *   목표는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계 총합, 달성률 = round(실적/목표×100).
  *   유통별 목표/진도율(channelSales)은 데이터 부재로 빈 리스트.
@@ -62,6 +68,7 @@ class AdminDashboardService(
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val monthlySalesAdminQueryService: MonthlySalesAdminQueryService,
+    private val branchCodeExpander: BranchCodeExpander,
     // 기본 현황 기준일 계산용 — 클라이언트 로컬 시각이 아닌 서버 KST 기준으로 산출한다.
     private val clock: Clock,
 ) {
@@ -72,7 +79,9 @@ class AdminDashboardService(
      * 대시보드 3섹션 집계 — yearMonth 미지정 시 당월.
      *
      * [effectiveCodes] 는 컨트롤러가 [DashboardBranchResolver.effectiveBranchCodes] 로 산출한
-     * 조회 지점 코드 목록(전사 권한자는 34개 화이트리스트, 지점 사용자는 본인 지점). 빈 목록이면 조회 결과 0건.
+     * 조회 지점 코드 목록(전사 권한자는 34개 화이트리스트, 지점 사용자는 본인 지점). 빈 목록이면 전건 조회
+     * (NoAccess 는 컨트롤러가 빈 문자열 sentinel 로 넘겨 0건 보장). 실제 IN 매칭 전에 [expandQueryCodes] 로
+     * 조직 개편 이력 코드까지 확장한다 — 지점명 라벨은 확장 전 원본 코드 기준.
      *
      * 여사원 투입현황은 전 차트 전월(마감) 고정(D2 확장). 매출현황은 실적+기준진도율만(D7).
      */
@@ -85,19 +94,36 @@ class AdminDashboardService(
         val previousYm = ym.minusMonths(1)
         // 조회 조건(지점)을 화면에 노출하기 위한 라벨 — 코드가 아니라 실제 지점명.
         // 단일 지점이면 그 지점명, 복수면 "OO 외 N", effectiveCodes 가 비면(전사 권한 전체) "전체".
+        // 라벨은 확장 전 원본 코드 기준 — 확장 코드가 섞이면 단일 지점이 "OO 외 N" 으로 표기된다.
         val branchName = resolveBranchLabel(effectiveCodes, branchNamesByCode)
+
+        // 조회 코드 확장 — branch_mapping(SF BranchMapping__mdt 계보)의 조직 개편 이전 이력 코드까지
+        // 합집합 IN 매칭. 개편 후 발령 미수신으로 옛 cost_center_code 가 남은 사원/일정 행을
+        // 계보상 현행 지점에 포함한다 (여사원 현황 목록·여사원일정 등과 동일 축).
+        val queryCodes = expandQueryCodes(effectiveCodes)
 
         // 당월 MFEIS 는 매출/기본 두 섹션이 공유 — 1회만 조회해 재사용 (중복 trip 제거).
         // 전월 MFEIS 는 투입현황(D2 확장: 전 차트 전월 마감 고정)에서만 쓰여 해당 빌더가 자체 조회한다.
         val rows = mfeisRepository.findDeploymentDashboardRows(
-            ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
+            ym.year.toString(), ym.monthValue.toString(), queryCodes,
         )
 
         return DashboardResponse(
             salesSummary = buildSalesSummary(ym, branchName, rows),
-            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes),
-            basicStats = buildBasicStats(ym, branchName, effectiveCodes),
+            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, queryCodes),
+            basicStats = buildBasicStats(ym, branchName, queryCodes),
         )
+    }
+
+    /**
+     * 조회 지점 코드에 [BranchCodeExpander] 이력 코드(조직 개편 전/후 계보)를 합쳐 IN 매칭 집합을 만든다.
+     *
+     * - 빈 목록(전사 권한 전체 = 전건 조회)은 확장하지 않는다 — repository 가 "빈 목록 = 전건" 이므로 그대로.
+     * - NoAccess sentinel(빈 문자열 1건)은 branch_mapping 에 없어 확장 결과도 sentinel 그대로 → 0건 유지.
+     */
+    private fun expandQueryCodes(effectiveCodes: List<String>): List<String> {
+        if (effectiveCodes.isEmpty()) return effectiveCodes
+        return branchCodeExpander.expand(effectiveCodes).toList()
     }
 
     // ------------------- 매출현황 (D7: 실적 + 기준진도율) -------------------
