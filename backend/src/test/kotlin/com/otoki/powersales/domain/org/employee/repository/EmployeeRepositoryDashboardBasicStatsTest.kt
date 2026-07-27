@@ -17,7 +17,9 @@ import org.springframework.test.context.ActiveProfiles
  * 대시보드 기본현황 projection 조회([EmployeeRepository.findDashboardBasicStatsProjection]) 통합 테스트.
  *
  * 퇴직자(status='퇴직') 는 재직 현황 모수에서 제외하되, status=NULL 사원은 유지하는지, 그리고
- * 지점 스코프(costCenterCode IN) / 전사(null·empty) 분기가 올바른지 검증한다.
+ * 지점 스코프(**org_name IN** — 레거시 리포트 OrgName 그룹핑 정합) / 전사(null·empty) 분기가
+ * 올바른지 검증한다. 지점 축이 `cost_center_code` 가 아니라 조직명임에 주의 — 같은 대시보드의
+ * 투입현황과 여사원 현황 목록은 코드 축을 쓴다.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -53,15 +55,29 @@ class EmployeeRepositoryDashboardBasicStatsTest {
     }
 
     @Test
-    @DisplayName("지점 스코프 조회 - 지정 costCenterCode 사원만, 그 안에서도 퇴직자는 제외한다")
+    @DisplayName("지점 스코프 조회 - 지정 조직명(org_name) 사원만, 그 안에서도 퇴직자는 제외한다")
     fun branchScopeExcludesResigned() {
-        persist("EMP_C001_ACTIVE", status = "재직", costCenterCode = "C001")
-        persist("EMP_C001_RESIGNED", status = "퇴직", costCenterCode = "C001")
-        persist("EMP_C002_ACTIVE", status = "재직", costCenterCode = "C002")
+        persist("EMP_B1_ACTIVE", status = "재직", costCenterCode = "C001", orgName = "부산1지점")
+        persist("EMP_B1_RESIGNED", status = "퇴직", costCenterCode = "C001", orgName = "부산1지점")
+        persist("EMP_B2_ACTIVE", status = "재직", costCenterCode = "C002", orgName = "부산2지점")
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         assertThat(result.map { it.status }).containsExactly("재직")
+    }
+
+    @Test
+    @DisplayName("지점 스코프는 조직명 기준 - 같은 조직명이면 costCenterCode 가 달라도(옛 코드 잔존) 포함된다")
+    fun branchScopeMatchesByOrgNameNotCode() {
+        // 조직 개편 후 발령 미수신으로 옛 코드(5459)가 남은 사원 — 조직명은 동일
+        persist("EMP_CURRENT", status = "재직", costCenterCode = "5824", orgName = "강남2지점")
+        persist("EMP_OLD_CODE", status = "재직", costCenterCode = "5459", orgName = "강남2지점")
+        // 조직명이 다르면 코드가 스코프와 같아도 제외
+        persist("EMP_OTHER_NAME", status = "재직", costCenterCode = "5824", orgName = "강남3지점")
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("강남2지점"))
+
+        assertThat(result).hasSize(2)
     }
 
     @Test
@@ -84,7 +100,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         persist("EMP_MANAGER", status = "재직", costCenterCode = "C001", role = "지점장")
         persist("EMP_NULL_ROLE", status = "재직", costCenterCode = "C001", role = null)
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         // 조장은 여사원 조직 관리자라 인원현황에 함께 계상된다 (레거시 new_report_72Y 정합).
         assertThat(result).hasSize(2)
@@ -99,7 +115,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         persist("EMP_SALES", status = "재직", costCenterCode = "C001", jobCode = "영업직")
         persist("EMP_NO_JOB", status = "재직", costCenterCode = "C001", jobCode = null)
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         assertThat(result.map { it.jobCode })
             .containsExactlyInAnyOrder("판촉직", "OSC직", "레이디직")
@@ -113,7 +129,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         persist("EMP_ADMIN", status = "재직", costCenterCode = "C001", name = "시스템관리자")
         persist("EMP_PWRS", status = "재직", costCenterCode = "C001", name = "파워세일즈운영")
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         assertThat(result).hasSize(1)
     }
@@ -125,7 +141,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         persist("EMP_NULL_FLAG", status = "재직", costCenterCode = "C001", isDeleted = null)
         persist("EMP_DELETED", status = "재직", costCenterCode = "C001", isDeleted = true)
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         // is_deleted 가 false / null 인 사원만 남는다 (레거시 적재분은 flag 가 null).
         assertThat(result).hasSize(2)
@@ -138,7 +154,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         persist("EMP_OSC", status = "재직", costCenterCode = "C001", jobCode = "OSC직")
         persist("EMP_LADY", status = "재직", costCenterCode = "C001", jobCode = "레이디직")
 
-        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("부산1지점"))
 
         // 레이디직 → OSC직 합산은 서비스 레이어(AdminDashboardService.buildBasicStats) 책임이므로
         // projection 은 원본값을 그대로 노출한다.
@@ -156,13 +172,15 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         jobCode: String? = "판촉직",
         isDeleted: Boolean? = false,
         name: String = employeeCode,
+        // 기본현황 지점 필터 축 — 코드가 아니라 **조직명** 이다 (레거시 리포트 OrgName 그룹핑 정합).
+        orgName: String? = "부산1지점",
     ) {
         testEntityManager.persist(
             Employee(
                 employeeCode = employeeCode,
                 password = "encodedPassword",
                 name = name,
-                orgName = "부산1지점",
+                orgName = orgName,
                 status = status,
                 costCenterCode = costCenterCode,
                 role = role,

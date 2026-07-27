@@ -688,12 +688,52 @@ class AdminDashboardServiceTest {
         // 강남2지점(5824) 의 계보: 조직 개편 이전 이력 코드 5668 포함 (BranchMapping__mdt 실데이터 정합)
         every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
 
-        service.getDashboard(listOf("5824"), "2026-05")
+        service.getDashboard(listOf("5824"), "2026-05", mapOf("5824" to "강남2지점"))
 
-        // 당월(5월) + 전월(4월) MFEIS, 기본현황 projection 모두 확장 집합으로 조회
+        // 당월(5월) + 전월(4월) MFEIS 는 확장 집합(코드 축)으로 조회
         verify { mfeisRepository.findDeploymentDashboardRows("2026", "5", match { it.toSet() == setOf("5824", "5668") }) }
         verify { mfeisRepository.findDeploymentDashboardRows("2026", "4", match { it.toSet() == setOf("5824", "5668") }) }
-        verify { employeeRepository.findDashboardBasicStatsProjection(match { it.toSet() == setOf("5824", "5668") }) }
+    }
+
+    @Test
+    @DisplayName("T-NAME1 기본현황은 조직명 축 — 확장 코드가 아니라 원본 코드의 지점명으로 조회한다")
+    fun basicStatsQueriesByOrgName() {
+        stubEmpty()
+        every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
+
+        service.getDashboard(listOf("5824"), "2026-05", mapOf("5824" to "강남2지점"))
+
+        // 레거시 리포트(new_report_72Y) 의 groupingsDown(OrgName__c) 정합 — 이력 코드는 이름 축과 무관
+        verify { employeeRepository.findDashboardBasicStatsProjection(listOf("강남2지점")) }
+    }
+
+    @Test
+    @DisplayName("T-NAME2 기본현황 — 지점명 매핑 실패 시 전건으로 새지 않는다 (권한 밖/sentinel 방어)")
+    fun basicStatsBlocksWhenBranchNameUnresolved() {
+        stubEmpty()
+
+        // NoAccess sentinel(빈 문자열) — branchNamesByCode 에 없어 변환 결과가 빈다
+        service.getDashboard(listOf(""), "2026-05", mapOf("5824" to "강남2지점"))
+
+        // 빈 목록을 넘기면 repository 가 전건으로 해석하므로, 매칭 0건 sentinel 이어야 한다
+        verify { employeeRepository.findDashboardBasicStatsProjection(match { it.isNotEmpty() && it.none { n -> n == "강남2지점" } }) }
+    }
+
+    @Test
+    @DisplayName("T-NAME3 기본현황 — 복수 지점 선택 시 지점명 목록 전체로 조회한다")
+    fun basicStatsQueriesAllSelectedBranchNames() {
+        stubEmpty()
+        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+
+        service.getDashboard(
+            listOf("5824", "5823"), "2026-05", mapOf("5824" to "강남2지점", "5823" to "강남3지점"),
+        )
+
+        verify {
+            employeeRepository.findDashboardBasicStatsProjection(
+                match { it.toSet() == setOf("강남2지점", "강남3지점") },
+            )
+        }
     }
 
     @Test

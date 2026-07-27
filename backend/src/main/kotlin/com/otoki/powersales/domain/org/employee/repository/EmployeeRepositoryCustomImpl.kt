@@ -148,22 +148,24 @@ class EmployeeRepositoryCustomImpl(
     }
 
     override fun findDashboardBasicStatsProjection(
-        costCenterCodes: List<String>?
+        branchNames: List<String>?
     ): List<DashboardEmployeeProjection> {
         // 레거시 SF 홈 대시보드(조장) 인원현황 리포트(`reports/X00/new_report_72Y.report-meta.xml`) 의
         // 필터 4개를 그대로 재현한다 ([FemaleStaffHeadcountFilter] 참조):
         //   JobCode IN (판촉직,레이디직,OSC직) / Status <> 퇴직 / AppAuthority IN (조장,여사원)
         //   / 사원명에 테스트·관리자·파워세일즈 미포함
-        // 여사원 현황 목록(findEmployees) 과 동일 모수여야 두 화면의 총원이 일치한다.
         // status=NULL 은 레거시 notEqual 의미(퇴직만 배제) 정합으로 포함하며, 재직/휴직 미분류로 계상된다.
+        //
+        // 지점 매칭은 **조직명(org_name)** 축 — 리포트의 groupingsDown(OrgName__c) 정합.
+        // cost_center_code 축을 쓰는 다른 화면(투입현황·여사원 현황 목록) 과 축이 다르다.
         val where = BooleanBuilder()
             .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
             .and(employee.role.`in`(FemaleStaffHeadcountFilter.ROLES))
             .and(employee.jobCode.`in`(FemaleStaffJobCode.ALL_CODES))
             .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
             .and(excludeTestAccountNames())
-        if (!costCenterCodes.isNullOrEmpty()) {
-            where.and(employee.costCenterCode.`in`(costCenterCodes))
+        if (!branchNames.isNullOrEmpty()) {
+            where.and(employee.orgName.`in`(branchNames))
         }
         return queryFactory
             .select(
