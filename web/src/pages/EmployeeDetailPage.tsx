@@ -15,6 +15,7 @@ import type { Employee, EmployeeDetail } from '@/api/employee';
 import { useEmployee } from '@/hooks/employee/useEmployee';
 import { useFemaleEmployeeFormMeta } from '@/hooks/employee/useFemaleEmployeeFormMeta';
 import { usePermission } from '@/hooks/usePermission';
+import AppointmentConfirmModal from '@/pages/employee/components/AppointmentConfirmModal';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import EmployeeRoleModal from '@/pages/employee/components/EmployeeRoleModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
@@ -130,6 +131,7 @@ export default function EmployeeDetailPage() {
   const [roleOpen, setRoleOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
+  const [appointmentConfirmOpen, setAppointmentConfirmOpen] = useState(false);
 
   const { data: employee, isLoading, isError, error, refetch } = useEmployee(employeeId, isFemale);
   // 수정 모달 Select 옵션 — 여사원 진입에서 모달을 연 시점에만 로드 (설정 사원 상세는 전용
@@ -196,6 +198,27 @@ export default function EmployeeDetailPage() {
                 수정 권한만 있으면 활성. AccountViewAll 부여의 유일한 경로. */}
             <Button disabled={!canEdit} onClick={() => setRoleOpen(true)}>
               권한 변경
+            </Button>
+          </Tooltip>
+        )}
+        {/* 발령정보 승인 — SF Quick Action "신규발령확정" 동등. 호출 API 가 employee:EDIT 가드라
+            여사원 현황 진입에서는 미노출 (권한 변경과 동일 정책). SAP 발령 자체를 반영하는 액션이라
+            origin=SAP 사원도 대상이다 (수정 버튼과 달리 origin 게이트 없음). */}
+        {!isFemale && (
+          <Tooltip
+            title={
+              !canEdit
+                ? '수정 권한이 없습니다'
+                : !employee.postponedAppointment
+                  ? '승인할 유예된 발령정보가 없습니다'
+                  : ''
+            }
+          >
+            <Button
+              disabled={!canEdit || !employee.postponedAppointment}
+              onClick={() => setAppointmentConfirmOpen(true)}
+            >
+              발령정보 승인
             </Button>
           </Tooltip>
         )}
@@ -335,6 +358,20 @@ export default function EmployeeDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="총 연차">{employee.totalAnnualLeave ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="사용 연차">{employee.usedAnnualLeave ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="유예된 발령" span={2}>
+            {employee.postponedAppointment ? (
+              <>
+                <Tag color="orange">반영 대기</Tag>
+                발령일 {employee.postponedAppointment.appointDate ?? '-'} ·{' '}
+                {employee.postponedAppointment.afterOrgName ?? '-'}
+                {employee.postponedAppointment.ordDetailNode
+                  ? ` · ${employee.postponedAppointment.ordDetailNode}`
+                  : ''}
+              </>
+            ) : (
+              '-'
+            )}
+          </Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -355,6 +392,13 @@ export default function EmployeeDetailPage() {
           employee={employee}
           open={true}
           onClose={() => setRoleOpen(false)}
+        />
+      )}
+      {!isFemale && appointmentConfirmOpen && (
+        <AppointmentConfirmModal
+          employee={employee}
+          open={true}
+          onClose={() => setAppointmentConfirmOpen(false)}
         />
       )}
       {passwordOpen && (

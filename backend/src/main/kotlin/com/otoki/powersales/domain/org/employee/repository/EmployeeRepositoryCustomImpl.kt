@@ -31,6 +31,9 @@ class EmployeeRepositoryCustomImpl(
         return queryFactory
             .selectFrom(employee)
             .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            // 유예 발령 참조는 사원 상세 응답(PostponedAppointmentSummary)에 포함된다 — LAZY 미초기화로
+            // DTO 가 null 이 되는 enhancement 함정을 피하기 위해 fetch join 으로 즉시 로드.
+            .leftJoin(employee.postponedAppointment).fetchJoin()
             .where(employee.id.eq(id))
             .fetchOne()
     }

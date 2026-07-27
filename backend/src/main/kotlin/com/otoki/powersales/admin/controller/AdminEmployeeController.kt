@@ -16,6 +16,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.admin.service.AdminEmployeeAppointmentConfirmService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
@@ -46,6 +47,7 @@ class AdminEmployeeController(
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
     private val adminEmployeeUpdateService: AdminEmployeeUpdateService,
     private val adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService,
+    private val adminEmployeeAppointmentConfirmService: AdminEmployeeAppointmentConfirmService,
     private val sfPermissionInspectionService: SfPermissionInspectionService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
 ) {
@@ -269,6 +271,21 @@ class AdminEmployeeController(
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
         val response = adminEmployeeUpdateService.updateEmployeeRole(employeeId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "사원 권한이 수정되었습니다"))
+    }
+
+    /**
+     * 발령정보 승인 — 유예된 발령 참조를 날짜 게이트 없이 즉시 반영.
+     *
+     * 레거시 SF Quick Action "신규발령확정" (`ManualConfirmPostponedAppController`) 동등.
+     * 예정일이 지나 소진 배치가 집지 않는 예약의 유일한 구제 경로. 유예 발령 참조 부재 시 409.
+     */
+    @PostMapping("/{employeeId}/confirm-postponed-appointment")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
+    fun confirmPostponedAppointment(
+        @PathVariable employeeId: Long
+    ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
+        val response = adminEmployeeAppointmentConfirmService.confirmPostponedAppointment(employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "유예된 발령정보가 반영되었습니다"))
     }
 
     @PostMapping("/{employeeId}/reset-device")

@@ -54,6 +54,7 @@ const employee: EmployeeDetail = {
   crmWorkStartDate: null,
   totalAnnualLeave: null,
   usedAnnualLeave: null,
+  postponedAppointment: null,
 };
 
 /**

@@ -10108,8 +10108,29 @@
       },
       "BasicStats" : {
         "properties" : {
+          "active" : {
+            "$ref" : "#/components/schemas/BasicStatsByScope"
+          },
+          "asOfDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "branchName" : {
             "type" : [ "string", "null" ]
+          },
+          "includingLeave" : {
+            "$ref" : "#/components/schemas/BasicStatsByScope"
+          },
+          "totalByPosition" : {
+            "$ref" : "#/components/schemas/TotalByPosition"
+          }
+        },
+        "type" : "object"
+      },
+      "BasicStatsByScope" : {
+        "properties" : {
+          "averageAge" : {
+            "type" : [ "number", "null" ]
           },
           "byAgeGroup" : {
             "items" : {
@@ -10117,14 +10138,14 @@
             },
             "type" : "array"
           },
-          "byWorkType" : {
-            "$ref" : "#/components/schemas/WorkTypeStats"
+          "byRank" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RankGroupCount"
+            },
+            "type" : "array"
           },
           "staffType" : {
             "$ref" : "#/components/schemas/StaffTypeCount"
-          },
-          "totalByPosition" : {
-            "$ref" : "#/components/schemas/TotalByPosition"
           }
         },
         "type" : "object"
@@ -11344,6 +11365,13 @@
           },
           "phone" : {
             "type" : [ "string", "null" ]
+          },
+          "postponedAppointment" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PostponedAppointmentSummary"
+            }, {
+              "type" : "null"
+            } ]
           },
           "professionalPromotionTeam" : {
             "type" : [ "string", "null" ]
@@ -15402,6 +15430,24 @@
         },
         "type" : "object"
       },
+      "PostponedAppointmentSummary" : {
+        "properties" : {
+          "afterOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "appointDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "appointmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "ordDetailNode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "PreviewResponse" : {
         "properties" : {
           "missing" : {
@@ -16689,6 +16735,32 @@
           },
           "value" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RankCount" : {
+        "properties" : {
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RankGroupCount" : {
+        "properties" : {
+          "group" : {
+            "type" : "string"
+          },
+          "ranks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RankCount"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -19810,20 +19882,6 @@
         },
         "type" : "object"
       },
-      "WorkTypeStats" : {
-        "properties" : {
-          "alternating" : {
-            "type" : "number"
-          },
-          "fixed" : {
-            "type" : "number"
-          },
-          "visiting" : {
-            "type" : "number"
-          }
-        },
-        "type" : "object"
-      },
       "WorkingDayMasterListItem" : {
         "properties" : {
           "createdAt" : {
@@ -20023,7 +20081,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_7",
+        "operationId" : "getBranches_8",
         "responses" : {
           "200" : {
             "content" : {
@@ -20981,7 +21039,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_6",
+        "operationId" : "getBranches_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -21817,7 +21875,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -23073,7 +23131,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -23382,6 +23440,33 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/confirm-postponed-appointment" : {
+      "post" : {
+        "operationId" : "confirmPostponedAppointment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -23995,6 +24080,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "jobCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -24163,6 +24255,13 @@
         }, {
           "in" : "query",
           "name" : "professionalPromotionTeam",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "jobCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -25160,7 +25259,7 @@
     },
     "/api/v1/admin/inspection-themes/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -26799,7 +26898,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -28952,7 +29051,7 @@
     },
     "/api/v1/admin/sales-progress-rate-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -33580,7 +33679,7 @@
     },
     "/api/v1/admin/team-schedule/branches" : {
       "get" : {
-        "operationId" : "getBranches",
+        "operationId" : "getBranches_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -33873,6 +33972,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "costCenterCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -33896,6 +34002,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminUserListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-user-controller" ]
+      }
+    },
+    "/api/v1/admin/users/branches" : {
+      "get" : {
+        "operationId" : "getBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },

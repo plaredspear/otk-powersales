@@ -64,3 +64,15 @@ class InvalidProfessionalPromotionTeamException(value: String) : BusinessExcepti
     message = "전문행사조에 들어갈 수 없는 값이 입력되어 있습니다. 오타 등을 확인하시기 바랍니다 (입력값=$value)",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 발령정보 승인 대상 없음 — 사원에게 유예된 발령 참조(postponedAppointment)가 없는 상태.
+ *
+ * 레거시 SF `ManualConfirmPostponedAppController.checkPostponedAppointment` 가 Quick Action 모달에서
+ * 사전 차단하던 상태의 서버측 가드.
+ */
+class PostponedAppointmentNotFoundException(employeeId: Long) : BusinessException(
+    errorCode = "POSTPONED_APPOINTMENT_NOT_FOUND",
+    message = "승인할 유예된 발령정보가 없습니다 (id=$employeeId)",
+    httpStatus = HttpStatus.CONFLICT
+)

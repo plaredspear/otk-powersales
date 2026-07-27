@@ -192,6 +192,55 @@ class AppointmentUserProfileUpdater(
         employee.crmWorkStartDate = null
     }
 
+    /**
+     * 유예 발령의 관리자 수동 승인 반영 — SF `ManualConfirmPostponedAppController.confirmPostponedAppointment`
+     * (cls 전문) 정합. web admin 사원 상세의 "발령정보 승인" 액션 전용.
+     *
+     * SF 수동 확정은 트리거 즉시 경로·소진 배치와 또 다른 **제3의 필드 구성**이며, 비대칭까지 그대로 재현한다:
+     * - 날짜 게이트 없음 — 예정일(crmWorkStartDate)이 미래든 이미 지났든 참조된 발령을 즉시 반영
+     * - 조직명에 유통총괄1부/2부 prefix 없음 (배치와 같고 트리거와 다름)
+     * - 직책은 조건부 반영: 현재 직책 보유 시 변환 반영 / 현재 null 이면 발령 직책이 D0098·D0051 일 때만
+     *   반영 / 그 외 미갱신 (SF 2023-04-10/06-02 수정 이력 그대로)
+     * - 직위/직급/직군/직무코드는 [resolveCodeStrict] — 코드 null 또는 SystemCodeMaster 미등재 시
+     *   **액션 전체 실패** (SF 는 sysCodeMapGroup.get(그룹) null 의 uncaught NPE 로 update DML 전에 죽는다)
+     * - OrdDetailNode / AppAuthority / APPLoginActive / 전문행사조 **미반영** (SF 수동 확정에 해당 코드 없음)
+     * - 예약 2필드(참조/예정일) 소진
+     * - EmpCode 재대입(cls `e.DKRetail__EmpCode__c = a.EmployeeCode__c`) 은 미재현 — 신규 employeeCode 는
+     *   불변(val)이며, SF 도 참조 발령의 사번은 예약 시점 사원 본인 사번이라 실차이 없음
+     *
+     * User(Profile) 갱신은 SF 가 `AppointmentTriggerHanlder.updateUser`(@future) 를 호출하므로 **수행 대상** —
+     * 호출자가 [updateUserProfileCache] 를 이어서 호출한다 (배치와 달리 미생략).
+     */
+    fun applyManualConfirmAppointment(
+        employee: Employee,
+        appointment: Appointment,
+        codeMap: Map<String, String>
+    ) {
+        // 유예된 발령정보 초기화 (SF 코드 순서 그대로 — 동일 트랜잭션이라 순서는 결과 무관)
+        employee.crmWorkStartDate = null
+        employee.postponedAppointment = null
+
+        employee.appointmentDate = appointment.appointDate
+        employee.costCenterCode = appointment.afterOrgCode
+        employee.orgName = appointment.afterOrgName
+
+        val currentJikchak = employee.jikchak
+        if (currentJikchak != null) {
+            if (currentJikchak != "") {
+                employee.jikchak = resolveCodeStrict(codeMap, "H20020", appointment.jikchak)
+            }
+        } else if (appointment.jikchak == "D0098" || appointment.jikchak == "D0051") {
+            employee.jikchak = resolveCodeStrict(codeMap, "H20020", appointment.jikchak)
+        }
+
+        employee.jikwee = resolveCodeStrict(codeMap, "H20030", appointment.jikwee)
+        employee.jikgub = resolveCodeStrict(codeMap, "H20010", appointment.jikgub)
+        employee.workType = resolveCodeStrict(codeMap, "H10050", appointment.workType)
+        employee.jobCode = resolveCodeStrict(codeMap, "H10060", appointment.jobCode)
+        employee.workArea = appointment.workArea
+        employee.jikjong = appointment.jikjong
+    }
+
     internal fun applyJobCodeAuthority(employee: Employee, jobCode: String?, jikchak: String?) {
         if (jobCode == null || jobCode !in PROMOTION_JOB_CODES) return
 
@@ -244,6 +293,23 @@ class AppointmentUserProfileUpdater(
     internal fun resolveCode(codeMap: Map<String, String>, groupCode: String, detailCode: String?): String? {
         if (detailCode == null) return null
         return codeMap["$groupCode:$detailCode"]
+    }
+
+    /**
+     * SystemCodeMaster 코드 → 한글명 **엄격** 변환 — 수동 발령 승인 전용.
+     *
+     * SF `ManualConfirmPostponedAppController` 정합 — 변환 대상 코드는 null 삼항 가드 없이
+     * `sysCodeMapGroup.get(그룹).get(코드)` 로 직접 접근하므로, 코드가 null 이거나 SystemCodeMaster
+     * 미등재면 그룹 맵 자체가 조회되지 않아 uncaught NPE 로 **액션 전체가 update DML 전에 실패**한다.
+     * 신규도 동일하게 예외를 던져 아무 필드도 반영되지 않은 채 실패시킨다 (트리거/배치의
+     * [resolveCode] null 저장과 다른 의도적 비대칭).
+     */
+    internal fun resolveCodeStrict(codeMap: Map<String, String>, groupCode: String, detailCode: String?): String {
+        if (detailCode == null) {
+            throw IllegalStateException("발령 코드 변환 실패 — 발령 레코드 코드 누락: group=$groupCode")
+        }
+        return codeMap["$groupCode:$detailCode"]
+            ?: throw IllegalStateException("발령 코드 변환 실패 — SystemCodeMaster 미등재: group=$groupCode, code=$detailCode")
     }
 
     internal fun loadSystemCodeMap(): Map<String, String> {

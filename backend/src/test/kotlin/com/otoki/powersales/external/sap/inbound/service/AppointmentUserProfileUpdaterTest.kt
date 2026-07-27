@@ -520,6 +520,123 @@ class AppointmentUserProfileUpdaterTest {
     }
 
     @Nested
+    @DisplayName("수동 확정 반영 - applyManualConfirmAppointment (SF ManualConfirmPostponedAppController 정합)")
+    inner class ManualConfirmApplyTests {
+
+        private val codeMap = mapOf(
+            "H20020:D0052" to "판매조장",
+            "H20020:D0098" to "지점장",
+            "H20030:W0010" to "사원",
+            "H20010:G0030" to "3급",
+            "H10050:T0010" to "영업직",
+            "H10060:A049" to "판촉직"
+        )
+
+        private fun confirmAppointment(
+            jikchak: String? = "D0052",
+            appointDate: LocalDate = LocalDate.of(2026, 3, 1)
+        ) = createAppointment(
+            afterOrgCode = "3228", afterOrgName = "강남지점",
+            jikchak = jikchak, jikwee = "W0010", jikgub = "G0030",
+            workType = "T0010", jobCode = "A049",
+            workArea = "서울", jikjong = "영업",
+            appointDate = appointDate, ordDetailNode = "조직개편"
+        )
+
+        @Test
+        @DisplayName("전 필드 반영 + 예약 소진 + prefix 없음 - OrdDetailNode/권한/PPT 미반영 (제3 변형)")
+        fun manualConfirmSemantics() {
+            val reserved = confirmAppointment()
+            val employee = createEmployee(
+                role = null, appLoginActive = false,
+                professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE
+            ).apply {
+                jikchak = "기존직책"
+                ordDetailNode = "기존발령명"
+                crmWorkStartDate = LocalDate.of(2026, 3, 1) // 예정일이 이미 지난 예약 — 날짜 게이트 없음
+                postponedAppointment = reserved
+            }
+
+            updater.applyManualConfirmAppointment(employee, reserved, codeMap)
+
+            assertThat(employee.appointmentDate).isEqualTo(LocalDate.of(2026, 3, 1))
+            assertThat(employee.costCenterCode).isEqualTo("3228")
+            // 트리거(cls:160-167)와 달리 수동 확정은 유통총괄 prefix 를 붙이지 않는다.
+            assertThat(employee.orgName).isEqualTo("강남지점")
+            assertThat(employee.jikchak).isEqualTo("판매조장")
+            assertThat(employee.jikwee).isEqualTo("사원")
+            assertThat(employee.jikgub).isEqualTo("3급")
+            assertThat(employee.workType).isEqualTo("영업직")
+            assertThat(employee.jobCode).isEqualTo("판촉직")
+            assertThat(employee.workArea).isEqualTo("서울")
+            assertThat(employee.jikjong).isEqualTo("영업")
+            // SF 수동 확정에는 OrdDetailNode 반영 코드가 없다 (배치 cls:112 와 비대칭).
+            assertThat(employee.ordDetailNode).isEqualTo("기존발령명")
+            // SF 수동 확정에는 AppAuthority/APPLoginActive 부여 로직이 없다 (유예 등록 시 이미 선부여됨).
+            assertThat(employee.role).isNull()
+            assertThat(employee.appLoginActive).isFalse()
+            // PPT 미초기화 (트리거 즉시 경로 전용).
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+            // 유예된 발령정보 초기화.
+            assertThat(employee.crmWorkStartDate).isNull()
+            assertThat(employee.postponedAppointment).isNull()
+        }
+
+        @Test
+        @DisplayName("직책 분기 - 현재 직책 null + 발령 직책 D0098/D0051 이면 반영")
+        fun jikchakAssignedWhenNullAndPromotionToManager() {
+            val reserved = confirmAppointment(jikchak = "D0098")
+            val employee = createEmployee().apply { jikchak = null }
+
+            updater.applyManualConfirmAppointment(employee, reserved, codeMap)
+
+            assertThat(employee.jikchak).isEqualTo("지점장")
+        }
+
+        @Test
+        @DisplayName("직책 분기 - 현재 직책 null + 발령 직책이 D0098/D0051 외면 미갱신")
+        fun jikchakUntouchedWhenNullAndOtherCode() {
+            val reserved = confirmAppointment(jikchak = "D0052")
+            val employee = createEmployee().apply { jikchak = null }
+
+            updater.applyManualConfirmAppointment(employee, reserved, codeMap)
+
+            // SF cls 분기 그대로 — 일반사원(현 직책 없음)의 비승급 발령은 직책을 건드리지 않는다.
+            assertThat(employee.jikchak).isNull()
+        }
+
+        @Test
+        @DisplayName("직책 분기 - 현재 직책 빈 문자열이면 미갱신 (SF 내부 '' 가드 그대로)")
+        fun jikchakUntouchedWhenEmptyString() {
+            val reserved = confirmAppointment(jikchak = "D0052")
+            val employee = createEmployee().apply { jikchak = "" }
+
+            updater.applyManualConfirmAppointment(employee, reserved, codeMap)
+
+            assertThat(employee.jikchak).isEqualTo("")
+        }
+
+        @Test
+        @DisplayName("코드 변환 실패(미등재/null) - 액션 전체 예외 (SF uncaught NPE 정합, 트리거/배치 null 저장과 비대칭)")
+        fun strictCodeResolutionFails() {
+            val unmapped = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "지점",
+                jikchak = "D0052", jikwee = "W9999", // W9999 미등재
+                jikgub = "G0030", workType = "T0010", jobCode = "A049",
+                appointDate = LocalDate.of(2026, 4, 1)
+            )
+            val employee = createEmployee().apply {
+                jikchak = "기존직책"
+                postponedAppointment = unmapped
+            }
+
+            org.junit.jupiter.api.assertThrows<IllegalStateException> {
+                updater.applyManualConfirmAppointment(employee, unmapped, codeMap)
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("스킵 케이스")
     inner class SkipTests {
 

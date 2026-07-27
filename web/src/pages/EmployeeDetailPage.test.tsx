@@ -48,6 +48,7 @@ const sapEmployee: EmployeeDetail = {
   appVersionCode: null,
   appPlatform: null,
   appVersionSeenAt: null,
+  postponedAppointment: null,
 };
 
 vi.mock('@/hooks/employee/useEmployeeWorkHistory', () => ({
@@ -72,6 +73,10 @@ vi.mock('@/hooks/employee/useEmployee', () => ({
     isPending: false,
   }),
   useManualRegisterEmployee: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useConfirmPostponedAppointment: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
@@ -137,6 +142,32 @@ describe('EmployeeDetailPage', () => {
   it('설정 사원 상세 진입 -> 「권한 변경」 버튼 노출', () => {
     renderPage();
     expect(screen.getByRole('button', { name: '권한 변경' })).toBeInTheDocument();
+  });
+
+  it('유예 발령 없음 -> 「발령정보 승인」 버튼 비활성', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: '발령정보 승인' })).toBeDisabled();
+  });
+
+  it('유예 발령 보유 -> 「발령정보 승인」 버튼 활성 + 근무 정보에 반영 대기 표시', () => {
+    sapEmployee.postponedAppointment = {
+      appointmentId: 7,
+      appointDate: '2026-03-01',
+      afterOrgName: '강남지점',
+      ordDetailNode: '조직개편',
+    };
+    try {
+      renderPage();
+      expect(screen.getByRole('button', { name: '발령정보 승인' })).toBeEnabled();
+      expect(screen.getByText('반영 대기')).toBeInTheDocument();
+    } finally {
+      sapEmployee.postponedAppointment = null;
+    }
+  });
+
+  it('여사원 현황 진입 -> 「발령정보 승인」 버튼 미노출 (호출 API 가 employee:EDIT 가드)', () => {
+    renderPage(true);
+    expect(screen.queryByRole('button', { name: '발령정보 승인' })).not.toBeInTheDocument();
   });
 
   it('여사원 현황 진입 -> 「권한 변경」 버튼 미노출 (호출 API 가 employee:EDIT 가드)', () => {

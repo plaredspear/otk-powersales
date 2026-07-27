@@ -4,6 +4,7 @@ import {
   updateEmployee,
   updateEmployeeRole,
   manualRegisterEmployee,
+  confirmPostponedAppointment,
   type EmployeeDetail,
   type EmployeeUpdateRequest,
   type EmployeeManualRegisterRequest,
@@ -36,6 +37,20 @@ export function useUpdateEmployeeRole() {
   const queryClient = useQueryClient();
   return useMutation<EmployeeDetail, Error, { employeeId: number; role: AppAuthority }>({
     mutationFn: ({ employeeId, role }) => updateEmployeeRole(employeeId, role),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employee', vars.employeeId] });
+    },
+  });
+}
+
+/**
+ * 발령정보 승인 — 유예된 발령 참조를 즉시 반영 (SF Quick Action "신규발령확정" 동등).
+ */
+export function useConfirmPostponedAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation<EmployeeDetail, Error, { employeeId: number }>({
+    mutationFn: ({ employeeId }) => confirmPostponedAppointment(employeeId),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'employee', vars.employeeId] });

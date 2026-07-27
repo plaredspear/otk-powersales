@@ -161,7 +161,11 @@ data class EmployeeDetailResponse(
     val crmWorkType: String?,
     val crmWorkStartDate: String?,
     val totalAnnualLeave: String?,
-    val usedAnnualLeave: String?
+    val usedAnnualLeave: String?,
+
+    // -- 유예 발령 (SF PostponedAppointment__c Lookup 대응) --
+    // 존재 시 "발령정보 승인" 액션 활성 (SF Quick Action checkPostponedAppointment 동등).
+    val postponedAppointment: PostponedAppointmentSummary?
 ) {
     companion object {
         fun from(employee: Employee): EmployeeDetailResponse = EmployeeDetailResponse(
@@ -204,7 +208,25 @@ data class EmployeeDetailResponse(
             crmWorkType = employee.crmWorkType?.name,
             crmWorkStartDate = employee.crmWorkStartDate?.toString(),
             totalAnnualLeave = employee.totalAnnualLeave?.toPlainString(),
-            usedAnnualLeave = employee.usedAnnualLeave?.toPlainString()
+            usedAnnualLeave = employee.usedAnnualLeave?.toPlainString(),
+            postponedAppointment = employee.postponedAppointment?.let {
+                PostponedAppointmentSummary(
+                    appointmentId = it.id,
+                    appointDate = it.appointDate?.toString(),
+                    afterOrgName = it.afterOrgName,
+                    ordDetailNode = it.ordDetailNode
+                )
+            }
         )
     }
 }
+
+/**
+ * 유예 발령 요약 — 사원 상세의 "발령정보 승인" 액션 판정/안내용.
+ */
+data class PostponedAppointmentSummary(
+    val appointmentId: Long,
+    val appointDate: String?,
+    val afterOrgName: String?,
+    val ordDetailNode: String?
+)

@@ -14,6 +14,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.exception.EmployeeLoginInactiveException
 import com.otoki.powersales.domain.org.employee.exception.EmployeeNotFoundException
+import com.otoki.powersales.admin.service.AdminEmployeeAppointmentConfirmService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
@@ -47,6 +48,7 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
     @MockkBean private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
     @MockkBean private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
+    @MockkBean private lateinit var adminEmployeeAppointmentConfirmService: AdminEmployeeAppointmentConfirmService
     @MockkBean private lateinit var sfPermissionInspectionService: SfPermissionInspectionService
     @MockkBean private lateinit var employeeWorkHistoryService: EmployeeWorkHistoryService
 

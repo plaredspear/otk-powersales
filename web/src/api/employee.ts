@@ -134,6 +134,17 @@ export interface EmployeeDetail {
   crmWorkStartDate: string | null;
   totalAnnualLeave: string | null;
   usedAnnualLeave: string | null;
+
+  // 유예 발령 — 존재 시 「발령정보 승인」 액션 활성 (SF Quick Action checkPostponedAppointment 동등)
+  postponedAppointment: PostponedAppointmentSummary | null;
+}
+
+/** 유예 발령 요약 — 「발령정보 승인」 액션 판정/안내용. 백엔드 PostponedAppointmentSummary 와 1:1. */
+export interface PostponedAppointmentSummary {
+  appointmentId: number;
+  appointDate: string | null;
+  afterOrgName: string | null;
+  ordDetailNode: string | null;
 }
 
 export interface EmployeeUpdateRequest {
@@ -464,6 +475,23 @@ export async function updateEmployeeRole(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 권한 수정에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 발령정보 승인 — 유예된 발령 참조를 날짜 게이트 없이 즉시 반영.
+ *
+ * 레거시 SF Quick Action "신규발령확정"(ManualConfirmPostponedAppController) 동등.
+ * 예정일이 지나 자정 소진 배치(당일 등호 조회)가 영영 집지 않는 예약의 유일한 구제 경로.
+ * employee:EDIT 권한으로 가드, 유예 발령 참조가 없으면 409.
+ */
+export async function confirmPostponedAppointment(employeeId: number): Promise<EmployeeDetail> {
+  const res = await client.post<ApiResponse<EmployeeDetail>>(
+    `/api/v1/admin/employees/${employeeId}/confirm-postponed-appointment`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '발령정보 승인에 실패했습니다');
   }
   return res.data.data;
 }
