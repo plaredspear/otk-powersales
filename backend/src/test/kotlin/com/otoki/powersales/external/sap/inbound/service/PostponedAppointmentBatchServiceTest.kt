@@ -13,13 +13,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.transaction.PlatformTransactionManager
 import java.time.LocalDate
+import java.util.Optional
 
 @DisplayName("PostponedAppointmentBatchService 테스트 (#692)")
 class PostponedAppointmentBatchServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater = mockk()
+    private val transactionManager: PlatformTransactionManager = mockk(relaxed = true)
 
     private lateinit var service: PostponedAppointmentBatchService
 
@@ -31,8 +34,16 @@ class PostponedAppointmentBatchServiceTest {
     @BeforeEach
     fun setUp() {
         service = PostponedAppointmentBatchService(
-            employeeRepository, appointmentUserProfileUpdater
+            employeeRepository, appointmentUserProfileUpdater, transactionManager
         )
+    }
+
+    private fun stubEmployees(vararg employees: Employee) {
+        every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
+            employees.toList()
+        employees.forEach { employee ->
+            every { employeeRepository.findById(employee.id) } returns Optional.of(employee)
+        }
     }
 
     @Nested
@@ -53,8 +64,7 @@ class PostponedAppointmentBatchServiceTest {
         fun appliesReferencedAppointment() {
             val reserved = createAppointment()
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = reserved)
-            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
-                listOf(employee)
+            stubEmployees(employee)
 
             val codeMap = mapOf("H10060:A055" to "OSC직")
             every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
@@ -83,8 +93,7 @@ class PostponedAppointmentBatchServiceTest {
             // 조회 조건(참조 non-null)상 도달 불가한 방어 경로 — SF 는 이런 건을 아예 조회하지 않고
             // 영영 건드리지 않으므로, 신규도 예약 표시를 포함해 아무것도 수정하지 않는다.
             val employee = createEmployee(crmWorkStartDate = today, postponedAppointment = null)
-            every { employeeRepository.findByCrmWorkStartDateAndPostponedAppointmentIsNotNull(today) } returns
-                listOf(employee)
+            stubEmployees(employee)
             every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
 
             service.process(today)
@@ -95,14 +104,40 @@ class PostponedAppointmentBatchServiceTest {
                 appointmentUserProfileUpdater.applyImmediateAppointment(any(), any(), any(), any())
             }
         }
+
+        @Test
+        @DisplayName("한 행 반영 실패 - 실패 행만 skip, 나머지 행은 정상 반영 (SF allOrNone=false 행 격리)")
+        fun rowFailureIsolated() {
+            val reserved1 = createAppointment(employeeCode = "100001")
+            val reserved2 = createAppointment(employeeCode = "100002")
+            val failing = createEmployee(id = 1L, employeeCode = "100001", crmWorkStartDate = today, postponedAppointment = reserved1)
+            val healthy = createEmployee(id = 2L, employeeCode = "100002", crmWorkStartDate = today, postponedAppointment = reserved2)
+            stubEmployees(failing, healthy)
+
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
+            every {
+                appointmentUserProfileUpdater.applyPostponedAppointment(failing, reserved1, any())
+            } throws RuntimeException("반영 실패")
+            every {
+                appointmentUserProfileUpdater.applyPostponedAppointment(healthy, reserved2, any())
+            } just runs
+
+            service.process(today)
+
+            // 실패 행이 나머지 행의 반영을 막지 않는다.
+            verify {
+                appointmentUserProfileUpdater.applyPostponedAppointment(healthy, reserved2, any())
+            }
+        }
     }
 
     private fun createEmployee(
+        id: Long = 1L,
         employeeCode: String = "100234",
         crmWorkStartDate: LocalDate? = null,
         postponedAppointment: Appointment? = null
     ): Employee = Employee(
-        id = 1L,
+        id = id,
         employeeCode = employeeCode,
         name = "테스트사원",
         crmWorkStartDate = crmWorkStartDate,
