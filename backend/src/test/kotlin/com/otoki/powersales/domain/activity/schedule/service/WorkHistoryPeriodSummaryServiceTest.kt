@@ -66,11 +66,15 @@ class WorkHistoryPeriodSummaryServiceTest {
     inner class AccountSummary {
 
         // B그룹(통합일정 지표) 모수 조회 — 기본은 빈 리스트. B그룹 검증 테스트만 개별 override.
+        // 연차 합계도 기본 0 — 연차 검증 테스트만 개별 override.
         @BeforeEach
         fun setUpBMetricsPopulation() {
             every {
                 repository.findAttendedSchedulesByEmployeeAndMonth(any(), any(), any())
             } returns emptyList()
+            every {
+                repository.countAnnualLeaveDaysForPeriodByEmployee(any(), any(), any(), any())
+            } returns 0
         }
 
         private fun namedAccount(id: Long, name: String): Account {
@@ -116,24 +120,47 @@ class WorkHistoryPeriodSummaryServiceTest {
         }
 
         @Test
-        @DisplayName("거래처 미연결 행(연차 등)은 accountName=null 1행으로 묶어 맨 뒤에 둔다")
-        fun groupsNullAccountLast() {
+        @DisplayName("연차는 거래처별 표가 아니라 사원 단위 합계(annualLeaveDays)로 제공한다")
+        fun exposesAnnualLeaveAsEmployeeLevelTotal() {
             val emp = employee()
+            // 거래처별 표의 모수는 출근 등록된 근무 행 — 연차 행은 여기에 들어오지 않는다.
             every {
                 repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
             } returns listOf(
-                schedule(emp, null, LocalDate.of(2026, 6, 1), WorkingType.ANNUAL_LEAVE, null),
-                schedule(emp, null, LocalDate.of(2026, 6, 2), WorkingType.ALT_HOLIDAY, null),
                 schedule(emp, namedAccount(1, "이마트 원주점"), LocalDate.of(2026, 6, 3)),
             )
+            every {
+                repository.countAnnualLeaveDaysForPeriodByEmployee(any(), any(), any(), any())
+            } returns 3
 
             val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
 
-            assertThat(res.items).hasSize(2)
-            assertThat(res.items.last().accountName).isNull()
-            assertThat(res.items.last().totalWorkingDays).isEqualTo(2)
-            assertThat(res.items.last().annualLeaveDays).isEqualTo(1)
-            assertThat(res.items.last().altHolidayDays).isEqualTo(1)
+            assertThat(res.items).hasSize(1)
+            assertThat(res.items.single().accountName).isEqualTo("이마트 원주점")
+            assertThat(res.annualLeaveDays).isEqualTo(3)
+        }
+
+        @Test
+        @DisplayName("연차 합계 조회에도 사번 trim 과 지점 스코프를 동일하게 전달한다")
+        fun passesTrimmedCodeAndScopeToAnnualLeaveCount() {
+            val codeSlot = slot<String>()
+            val codesSlot = slot<List<String>>()
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns emptyList()
+            every {
+                repository.countAnnualLeaveDaysForPeriodByEmployee(
+                    capture(codeSlot), any(), any(), capture(codesSlot)
+                )
+            } returns 2
+
+            val res = service.getAccountSummary(branchScope("A001"), "  20230016 ", "2026-06", "2026-06")
+
+            assertThat(codeSlot.captured).isEqualTo("20230016")
+            assertThat(codesSlot.captured).containsExactly("A001")
+            // 근무 행이 없어도 연차 합계는 반환된다.
+            assertThat(res.items).isEmpty()
+            assertThat(res.annualLeaveDays).isEqualTo(2)
         }
 
         @Test
@@ -315,6 +342,9 @@ class WorkHistoryPeriodSummaryServiceTest {
             every {
                 repository.findAttendedSchedulesByEmployeeAndMonth(any(), any(), any())
             } returns emptyList()
+            every {
+                repository.countAnnualLeaveDaysForPeriodByEmployee(any(), any(), any(), any())
+            } returns 0
 
             // 2026-01 ~ 2026-06 = 포함 6개월
             val res = service.getAccountSummary(allScope, "20230016", "2026-01", "2026-06")

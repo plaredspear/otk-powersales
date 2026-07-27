@@ -205,6 +205,22 @@ interface TeamMemberScheduleRepositoryCustom {
     ): List<TeamMemberSchedule>
 
     /**
+     * 기간별 근무내역(개인) 연차 일수 — 특정 여사원 1명의 기간 내 연차 근무일 수.
+     *
+     * 연차 행은 거래처(account) 도 출근등록(attendanceLog) 도 없어 거래처별 집계
+     * ([findWorkHistoryForPeriodByEmployee]) 의 모수에 들어오지 않는다. 사원 단위 요약으로 별도 조회한다.
+     * 필터: employee.employeeCode 정확일치, workingDate ∈ [from, to], workingType = ANNUAL_LEAVE,
+     *       branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점).
+     * 같은 날 연차 행이 중복 생성돼도 1일로 세도록 근무일 distinct 로 집계한다.
+     */
+    fun countAnnualLeaveDaysForPeriodByEmployee(
+        employeeCode: String,
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+    ): Int
+
+    /**
      * 판매여사원 일일 안전점검 현황 조회 (Spec #841 — SF Report `new_report_wce`/`new_report_oJO` 이식).
      * `team_member_schedule` ⋈ employee ⋈ account.
      * 필터: workingDate = date, traversalFlag='O' (순회/점검 대상), yesChkCnt IS NOT NULL (점검 완료),

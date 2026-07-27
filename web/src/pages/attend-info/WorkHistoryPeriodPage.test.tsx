@@ -87,6 +87,8 @@ describe('WorkHistoryPeriodPage', () => {
         employeeCode: '20230016',
         employeeName: '홍길동',
         totalCount: 2,
+        // 연차는 거래처가 없어 items 가 아니라 사원 단위 합계로 온다.
+        annualLeaveDays: 1,
         items: [
           {
             accountName: '이마트 원주점',
@@ -98,26 +100,22 @@ describe('WorkHistoryPeriodPage', () => {
             displayDays: 2,
             eventDays: 1,
             workDays: 3,
-            annualLeaveDays: 0,
-            altHolidayDays: 0,
             totalInputCount: 2,
             equivalentWorkingDays: '2.5000',
             monthlyStats: [],
           },
           {
-            accountName: null,
-            accountExternalKey: null,
-            accountBranchName: null,
-            distributionChannelLabel: null,
-            abcTypeLabel: null,
+            accountName: '홈플러스 원주점',
+            accountExternalKey: 'A0002',
+            accountBranchName: '원주1지점',
+            distributionChannelLabel: '02 대형마트(3대)',
+            abcTypeLabel: '6112 홈플러스',
             totalWorkingDays: 1,
-            displayDays: 0,
+            displayDays: 1,
             eventDays: 0,
-            workDays: 0,
-            annualLeaveDays: 1,
-            altHolidayDays: 0,
-            totalInputCount: 0,
-            equivalentWorkingDays: '0.0000',
+            workDays: 1,
+            totalInputCount: 1,
+            equivalentWorkingDays: '0.5000',
             monthlyStats: [],
           },
         ],
@@ -134,8 +132,10 @@ describe('WorkHistoryPeriodPage', () => {
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
       await waitFor(() => {
         expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
-        expect(screen.getByText('(거래처 미지정)')).toBeInTheDocument();
+        expect(screen.getByText('홈플러스 원주점')).toBeInTheDocument();
         expect(screen.getByText('총 2개 거래처')).toBeInTheDocument();
+        // 연차는 거래처별 표가 아니라 헤더의 사원 단위 요약으로 표시된다.
+        expect(screen.getByText('연차 1일')).toBeInTheDocument();
       });
       expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ employeeCode: '20230016' });
     });

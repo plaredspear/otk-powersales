@@ -6,19 +6,20 @@ import java.math.BigDecimal
  * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
  *
  * 좌측 패널에서 여사원을 선택하면 선택한 기간(시작년월~종료년월) 내 근무 행을
- * 거래처(account) 단위로 그룹핑해 제공한다. 거래처 미연결 행(연차/대휴 등)은
- * accountName=null 1행으로 묶는다.
+ * 거래처(account) 단위로 그룹핑해 제공한다. 모수는 출근 등록된 근무 행이므로 모든 행이
+ * 거래처를 가진다 — 연차는 거래처가 없어 이 표가 아니라 사원 단위 요약
+ * ([WorkHistoryEmployeeAccountResponse.annualLeaveDays]) 으로 제공한다.
  */
 data class WorkHistoryAccountStat(
-    /** 거래처명 (Account.name). 거래처 미연결 행 묶음이면 null. */
+    /** 거래처명 (Account.name). */
     val accountName: String?,
-    /** 거래처 코드 (Account.externalKey). 거래처 미연결이면 null. */
+    /** 거래처 코드 (Account.externalKey). */
     val accountExternalKey: String?,
-    /** 거래처 지점명 (Account.branchName). 거래처 미연결이면 null. */
+    /** 거래처 지점명 (Account.branchName). */
     val accountBranchName: String?,
-    /** 유통형태 (Account.distributionChannelLabel — 거래처상태코드 + 거래처유형). 미연결이면 null. */
+    /** 유통형태 (Account.distributionChannelLabel — 거래처상태코드 + 거래처유형). */
     val distributionChannelLabel: String?,
-    /** 거래처유형 (Account.abcTypeLabel — ABC유형코드 + ABC유형). 미연결이면 null. */
+    /** 거래처유형 (Account.abcTypeLabel — ABC유형코드 + ABC유형). */
     val abcTypeLabel: String?,
     /** 총 근무일수 (출근 등록된 일정 행 수). */
     val totalWorkingDays: Int,
@@ -28,19 +29,13 @@ data class WorkHistoryAccountStat(
     val eventDays: Int,
     /** 구분(WorkingType)별 일수 — 근무. */
     val workDays: Int,
-    /** 구분(WorkingType)별 일수 — 연차. */
-    val annualLeaveDays: Int,
-    /** 구분(WorkingType)별 일수 — 대휴. */
-    val altHolidayDays: Int,
     /**
      * 총 투입횟수 — 통합일정(MFEIS) 정의 동등. 이 거래처 내 (근무유형 조합)별 distinct 근무일 수의 합.
-     * 거래처 미연결 행은 0.
      */
     val totalInputCount: Int = 0,
     /**
      * 총 환산근무일수 — 통합일정(MFEIS) 정의 동등. Σ(1/N), N = 그날 사원의 (거래처 무관) 출근 row 수.
      * 기간 조회면 각 월의 환산근무일수를 합산한다 (환산근무일수는 합산 가능). scale 4 HALF_UP.
-     * 거래처 미연결 행은 0.
      */
     val equivalentWorkingDays: BigDecimal = BigDecimal.ZERO,
     /**
@@ -91,4 +86,10 @@ data class WorkHistoryEmployeeAccountResponse(
     val employeeName: String?,
     val items: List<WorkHistoryAccountStat>,
     val totalCount: Int,
+    /**
+     * 기간 내 연차 일수 (사원 단위 합계, distinct 근무일).
+     *
+     * 연차는 거래처가 없어 거래처별 표([items])에 담을 수 없으므로 여기에 별도로 제공한다.
+     */
+    val annualLeaveDays: Int = 0,
 )

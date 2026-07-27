@@ -37,8 +37,9 @@ class WorkHistoryPeriodSummaryService(
      * 기간 검증은 yyyy-MM / 2020~2099 / 순서 / 최대 6개월.
      * 지점 스코프: scope.isAllBranches 면 무제한, 아니면 scope.branchCodes 로 제한 —
      * 스코프 밖 여사원의 사번을 지정해도 조회 행이 없어 빈 결과가 된다.
-     * 거래처 미연결 행(연차/대휴 등)은 accountName=null 1행으로 묶는다.
-     * 정렬: 총 근무일수 내림차순 → 거래처명 오름차순, 거래처 미연결 행은 맨 뒤.
+     * 연차는 거래처도 출근등록도 없어 거래처별 표의 모수에 들어오지 않으므로,
+     * 사원 단위 합계(annualLeaveDays)로 별도 조회해 응답 최상위에 담는다.
+     * 정렬: 총 근무일수 내림차순 → 거래처명 오름차순.
      */
     fun getAccountSummary(
         scope: DataScope,
@@ -56,10 +57,24 @@ class WorkHistoryPeriodSummaryService(
         }
 
         val branchCodes = if (scope.isAllBranches) emptyList() else scope.branchCodes
-        val schedules = if (!scope.isAllBranches && branchCodes.isEmpty()) {
+        val outOfScope = !scope.isAllBranches && branchCodes.isEmpty()
+        val schedules = if (outOfScope) {
             emptyList()
         } else {
             teamMemberScheduleRepository.findWorkHistoryForPeriodByEmployee(
+                employeeCode = trimmedCode,
+                from = fromYm.atDay(1),
+                to = toYm.atEndOfMonth(),
+                branchCodes = branchCodes,
+            )
+        }
+
+        // 연차는 거래처(account)·출근등록(attendanceLog) 이 모두 없어 위 조회 모수에 들어오지 않는다.
+        // 거래처별 표와 분리된 사원 단위 요약으로 별도 집계한다.
+        val annualLeaveDays = if (outOfScope) {
+            0
+        } else {
+            teamMemberScheduleRepository.countAnnualLeaveDaysForPeriodByEmployee(
                 employeeCode = trimmedCode,
                 from = fromYm.atDay(1),
                 to = toYm.atEndOfMonth(),
@@ -94,16 +109,13 @@ class WorkHistoryPeriodSummaryService(
                     displayDays = s.displayDays,
                     eventDays = s.eventDays,
                     workDays = s.workDays,
-                    annualLeaveDays = s.annualLeaveDays,
-                    altHolidayDays = s.altHolidayDays,
                     totalInputCount = b?.totalInputCount ?: 0,
                     equivalentWorkingDays = b?.equivalentWorkingDays ?: BigDecimal.ZERO,
                     monthlyStats = b?.monthlyStats ?: emptyList(),
                 )
             }
             .sortedWith(
-                compareBy<WorkHistoryAccountStat> { it.accountName == null && it.accountExternalKey == null }
-                    .thenByDescending { it.totalWorkingDays }
+                compareByDescending<WorkHistoryAccountStat> { it.totalWorkingDays }
                     .thenBy { it.accountName ?: "" },
             )
 
@@ -114,6 +126,7 @@ class WorkHistoryPeriodSummaryService(
             employeeName = schedules.firstOrNull()?.employee?.name,
             items = items,
             totalCount = items.size,
+            annualLeaveDays = annualLeaveDays,
         )
     }
 
@@ -242,8 +255,6 @@ class WorkHistoryPeriodSummaryService(
         displayDays = rows.count { it.workingCategory1 == WorkingCategory1.DISPLAY },
         eventDays = rows.count { it.workingCategory1 == WorkingCategory1.EVENT },
         workDays = rows.count { it.workingType == WorkingType.WORK },
-        annualLeaveDays = rows.count { it.workingType == WorkingType.ANNUAL_LEAVE },
-        altHolidayDays = rows.count { it.workingType == WorkingType.ALT_HOLIDAY },
     )
 
     private data class Stat(
@@ -252,8 +263,6 @@ class WorkHistoryPeriodSummaryService(
         val displayDays: Int,
         val eventDays: Int,
         val workDays: Int,
-        val annualLeaveDays: Int,
-        val altHolidayDays: Int,
     )
 
     private fun parseYearMonth(value: String, paramName: String): YearMonth {

@@ -180,26 +180,25 @@ export async function fetchAttendInfoMembers(branchCode?: string): Promise<TeamM
 /**
  * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
  * 좌측 패널에서 여사원을 선택하면 선택 기간 내 근무 행을 거래처 단위로 그룹핑해 표시.
- * 거래처 미연결 행(연차/대휴 등)은 accountName=null 1행으로 묶인다.
+ * 모수는 출근 등록된 근무 행이라 모든 행이 거래처를 가진다 — 연차는 거래처가 없어
+ * 이 표가 아니라 사원 단위 요약(WorkHistoryEmployeeAccountResponse.annualLeaveDays)으로 제공된다.
  */
 export interface WorkHistoryAccountStat {
-  /** 거래처명. 거래처 미연결 행 묶음이면 null. */
+  /** 거래처명. */
   accountName: string | null;
-  /** 거래처 코드 (externalKey). 거래처 미연결이면 null. */
+  /** 거래처 코드 (externalKey). */
   accountExternalKey: string | null;
-  /** 거래처 지점명. 거래처 미연결이면 null. */
+  /** 거래처 지점명. */
   accountBranchName: string | null;
-  /** 유통형태 (거래처상태코드 + 거래처유형). 거래처 미연결이면 null. */
+  /** 유통형태 (거래처상태코드 + 거래처유형). */
   distributionChannelLabel: string | null;
-  /** 거래처유형 (ABC유형코드 + ABC유형). 거래처 미연결이면 null. */
+  /** 거래처유형 (ABC유형코드 + ABC유형). */
   abcTypeLabel: string | null;
   totalWorkingDays: number;
   displayDays: number;
   eventDays: number;
   workDays: number;
-  annualLeaveDays: number;
-  altHolidayDays: number;
-  /** 총 투입횟수 (통합일정 정의). 거래처 미연결이면 0. */
+  /** 총 투입횟수 (통합일정 정의). */
   totalInputCount: number;
   /** 총 환산근무일수 (통합일정 정의, Σ(1/N) 기간 합). 문자열(BigDecimal) 또는 숫자. */
   equivalentWorkingDays: string | number;
@@ -240,6 +239,11 @@ export interface WorkHistoryEmployeeAccountResponse {
   employeeName: string | null;
   items: WorkHistoryAccountStat[];
   totalCount: number;
+  /**
+   * 기간 내 연차 일수 (사원 단위 합계). 연차는 거래처가 없어 거래처별 표에 담기지 않고
+   * 여기에 별도로 제공된다.
+   */
+  annualLeaveDays: number;
 }
 
 export interface FetchWorkHistoryEmployeeAccountParams {

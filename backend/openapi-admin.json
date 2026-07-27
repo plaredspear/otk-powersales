@@ -19766,14 +19766,6 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
-          "altHolidayDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "annualLeaveDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "displayDays" : {
             "format" : "int32",
             "type" : "integer"
@@ -19811,6 +19803,10 @@
       },
       "WorkHistoryEmployeeAccountResponse" : {
         "properties" : {
+          "annualLeaveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "employeeCode" : {
             "type" : "string"
           },

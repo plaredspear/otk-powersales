@@ -84,8 +84,6 @@ const columns: ColumnsType<WorkHistoryAccountStat> = [
   numericColumn('진열', 'displayDays', 80),
   numericColumn('행사', 'eventDays', 80),
   numericColumn('근무', 'workDays', 80),
-  numericColumn('연차', 'annualLeaveDays', 80),
-  numericColumn('대휴', 'altHolidayDays', 80),
   {
     title: '총 투입횟수',
     dataIndex: 'totalInputCount',
@@ -182,6 +180,12 @@ export default function PeriodAccountBreakdown({
         <Text type="secondary" style={{ marginLeft: 8 }}>
           {fromYearMonth} ~ {toYearMonth} 거래처별 근무내역
         </Text>
+        {/* 연차는 거래처가 없어 아래 거래처별 표에 담기지 않는다. 사원 단위 합계로 여기에 표시. */}
+        {data && (
+          <Tag color={data.annualLeaveDays > 0 ? 'orange' : 'default'} style={{ marginLeft: 8 }}>
+            연차 {formatNumber(data.annualLeaveDays)}일
+          </Tag>
+        )}
       </div>
 
       {isError && (

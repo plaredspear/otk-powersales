@@ -617,6 +617,27 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun countAnnualLeaveDaysForPeriodByEmployee(
+        employeeCode: String,
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+    ): Int {
+        return queryFactory
+            .select(teamMemberSchedule.workingDate.countDistinct())
+            .from(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee)
+            .where(
+                employee.employeeCode.eq(employeeCode),
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE),
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .fetchOne()
+            ?.toInt() ?: 0
+    }
+
     override fun findSafetyCheckReport(
         date: LocalDate,
         branchCodes: List<String>,
