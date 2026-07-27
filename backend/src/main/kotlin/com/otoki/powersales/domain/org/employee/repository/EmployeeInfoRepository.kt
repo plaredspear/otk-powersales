@@ -62,4 +62,29 @@ interface EmployeeInfoRepository : JpaRepository<EmployeeInfo, Long> {
         """
     )
     fun clearPushBadgeCount(@Param("employeeId") employeeId: Long): Int
+
+    /**
+     * 지정 토큰을 보유한 **다른** 사원들의 fcmToken 을 해제(null)한다 (토큰 등록 시점).
+     *
+     * FCM 토큰은 단말 1대에 1개이고 본 서비스는 "한 계정 = 한 단말" 기준이므로, 하나의 토큰이
+     * 두 사원에 동시에 매달려서는 안 된다. 그러나 로그아웃 없이 계정을 바꿔 로그인하면
+     * (앱 삭제 후 재설치 / 세션 만료 / 강제 로그아웃) 이전 사원의 행에 같은 토큰이 그대로 남아,
+     * 같은 단말로 두 사원분의 푸시가 발송될 수 있다. 새 사원이 토큰을 등록하는 시점에
+     * 이전 소유자의 토큰을 비워 소유권을 이전한다.
+     *
+     * @return 해제된 행 수 (정상 흐름에서는 0, 로그아웃 없이 계정 전환 시 1)
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+        """
+        UPDATE EmployeeInfo ei
+           SET ei.fcmToken = NULL
+         WHERE ei.fcmToken = :token
+           AND ei.employeeId <> :employeeId
+        """
+    )
+    fun releaseFcmTokenFromOtherEmployees(
+        @Param("token") token: String,
+        @Param("employeeId") employeeId: Long
+    ): Int
 }
