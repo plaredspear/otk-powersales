@@ -14,12 +14,15 @@ export interface FetchEmployeesParams {
 }
 
 /**
- * 여사원 현황 페이지 전용 — role 은 backend 에서 여사원+조장으로 고정되므로 제외.
+ * 여사원 현황 페이지 전용 — role 은 backend 에서 여사원으로 고정되므로 제외.
  */
 export interface FetchFemaleEmployeesParams {
   status?: string;
   costCenterCode?: string;
   keyword?: string;
+  // 직무 — 판촉직 / OSC직. 대시보드 "판촉직/OSC직 인원현황" 도넛과 동일한 jobCode 축이며,
+  // 'OSC직' 은 구 명칭 '레이디직' 을 함께 조회한다. 미지정이면 전체.
+  jobCode?: string;
   // 근무형태1(진열/행사) / 근무형태3(고정/격고/순회) — 최근 출근등록 1건 기준 필터.
   workType1?: string;
   workType3?: string;

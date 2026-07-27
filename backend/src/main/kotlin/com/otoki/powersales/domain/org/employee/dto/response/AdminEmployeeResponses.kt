@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.org.employee.dto.response
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import java.time.LocalDate
 
 data class EmployeeListResponse(
@@ -49,16 +50,19 @@ data class EmployeeListItem(
 ) {
     companion object {
         /**
-         * 직종명 표시값 — 직위(jikwee) 기준 파생.
-         * - OSPM/OSPE/OSPJ → "판촉직", OSC → "OSC직"
-         * - 그 외/미매핑 직위는 원본 [Employee.jikjong] 값을 그대로 노출 (fallback).
+         * 직종명 표시값 — 직무코드([Employee.jobCode]) 기준 파생.
+         *
+         * - "판촉직" → "판촉직", "OSC직"·"레이디직"(구 OSC) → "OSC직"
+         * - 그 외/null 은 원본 [Employee.jikjong] 값을 그대로 노출 (fallback).
+         *
+         * 과거에는 직위([Employee.jikwee]) 의 OSPM/OSPE/OSPJ → 판촉직, OSC → OSC직 매핑으로 파생했으나,
+         * SF 레거시는 `jikwee` 를 직군 판정에 사용한 적이 없고 `DKRetail__JobCode__c` 단일 축을 쓴다
+         * (`EmployeeTriggerHandler.cls:47`, `AttendInfoTriggerHandler.cls:74-76`). 목록의 직무 필터 및
+         * 대시보드 "판촉직/OSC직 인원현황" 도넛과 표시값이 어긋나지 않도록 판정 축을 jobCode 로 통일했다
+         * (사용자 결정).
          */
         private fun deriveJikjong(employee: Employee): String? =
-            when (employee.jikwee?.trim()?.uppercase()) {
-                "OSPM", "OSPE", "OSPJ" -> "판촉직"
-                "OSC" -> "OSC직"
-                else -> employee.jikjong
-            }
+            FemaleStaffJobCode.normalizeOrNull(employee.jobCode) ?: employee.jikjong
 
         fun from(
             employee: Employee,

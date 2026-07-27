@@ -47,8 +47,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     companion object {
-        /** 여사원 현황 컨트롤러가 전달하는 role 목록 (여사원 + 조장) — 컨트롤러 상수와 동일. */
-        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+        /**
+         * 여사원 현황 컨트롤러가 전달하는 role 목록 (여사원 단일) — 컨트롤러 상수와 동일.
+         * 조장([AppAuthority.LEADER]) 은 대시보드 "판촉직/OSC직 인원현황" 도넛과 모수를 맞추기 위해 제외한다.
+         */
+        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN)
 
         /**
          * 서비스가 내려주는 정적 메타 stub — 지점(costCenterCode) 은 포함하지 않는다.
@@ -165,7 +168,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.content[0].workType1").value("진열"))
             .andExpect(jsonPath("$.data.content[0].workType3").value("고정"))
 
-        // 여사원 현황은 여사원+조장 role + 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
+        // 여사원 현황은 여사원 role + 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
         verify(exactly = 1) {
             adminEmployeeService.getEmployees(
                 any(), any(), any(), any(), any(), any(), any(),
@@ -347,7 +350,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/female-employees/export - 검색 필터가 여사원+조장 role + 본인 지점 스코프로 전달")
+    @DisplayName("GET /api/v1/admin/female-employees/export - 검색 필터가 여사원 role + 본인 지점 스코프로 전달")
     fun exportFemaleEmployees_filterParams() {
         val result = ExcelResult(bytes = ByteArray(10), filename = "여사원현황.xlsx")
         every {

@@ -14,6 +14,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormO
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
@@ -90,17 +91,23 @@ class AdminEmployeeService(
         val promotionTeamGeneral: Boolean,
         // "행사조 전체" — 일반(미배정) 을 제외한, 전문행사조가 배정된 모든 사원.
         val promotionTeamAssignedOnly: Boolean,
+        // 직무(판촉직/OSC직) — OSC직은 구 명칭 '레이디직' 을 포함한 집합. null 이면 미적용.
+        val jobCodes: Set<String>?,
     )
 
     /**
-     * 근무형태1/근무형태3/전문행사조 문자열 필터를 파싱. 유효하지 않은 근무형태 값은 [IllegalArgumentException].
+     * 근무형태1/근무형태3/전문행사조/직무 문자열 필터를 파싱. 유효하지 않은 근무형태 값은 [IllegalArgumentException].
      * 전문행사조는 '일반'(미배정) 을 [ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME] 로 받아 IS NULL 필터로 변환하고,
      * 그 외 유효하지 않은 값은 매칭 실패로 간주해 무시(빈 결과가 아닌 미적용)하지 않고 명시적으로 예외 처리한다.
+     *
+     * 직무는 [FemaleStaffJobCode.matchingCodesOrNull] 로 매칭 집합을 산출한다 — 'OSC직' 선택 시
+     * 구 명칭 '레이디직' 이 함께 포함되어, 대시보드 인원현황 도넛의 OSC 세그먼트와 모수가 일치한다.
      */
     private fun parseSearchFilters(
         workType1: String?,
         workType3: String?,
         professionalPromotionTeam: String?,
+        jobCode: String? = null,
     ): EmployeeSearchFilters {
         val wt1 = workType1?.takeIf { it.isNotBlank() }?.let {
             WorkingCategory1.fromDisplayNameOrNull(it)
@@ -117,7 +124,11 @@ class AdminEmployeeService(
             ProfessionalPromotionTeamType.fromDisplayNameOrNull(it)
                 ?: throw IllegalArgumentException("유효하지 않은 전문행사조: $it")
         }
-        return EmployeeSearchFilters(wt1, wt3, ppt, general, assignedOnly)
+        val jobCodes = jobCode?.takeIf { it.isNotBlank() }?.let {
+            FemaleStaffJobCode.matchingCodesOrNull(it)
+                ?: throw IllegalArgumentException("유효하지 않은 직무: $it")
+        }
+        return EmployeeSearchFilters(wt1, wt3, ppt, general, assignedOnly, jobCodes)
     }
 
     /**
@@ -183,8 +194,15 @@ class AdminEmployeeService(
         ) + ProfessionalPromotionTeamType.entries
             .map { FemaleEmployeeFilterOption(value = it.displayName, label = it.displayName) }
 
+        // 직무 필터 — 대시보드 "판촉직/OSC직 인원현황" 도넛과 동일한 2분류.
+        // 구 명칭 '레이디직' 은 별도 선택지로 노출하지 않고 'OSC직' 선택 시 함께 조회된다
+        // ([FemaleStaffJobCode.OSC_CODES]) — 도넛의 OSC 세그먼트 합산 방식과 정합.
+        val jobCodeOptions = listOf(FemaleStaffJobCode.PROMOTION, FemaleStaffJobCode.OSC)
+            .map { FemaleEmployeeFilterOption(value = it.code, label = it.code) }
+
         val filters = listOf(
             FemaleEmployeeFilterMeta("status", FemaleEmployeeFilterType.SELECT, statusOptions),
+            FemaleEmployeeFilterMeta("jobCode", FemaleEmployeeFilterType.SELECT, jobCodeOptions),
             FemaleEmployeeFilterMeta("workType1", FemaleEmployeeFilterType.SELECT, workType1Options),
             FemaleEmployeeFilterMeta("workType3", FemaleEmployeeFilterType.SELECT, workType3Options),
             FemaleEmployeeFilterMeta(
@@ -289,8 +307,10 @@ class AdminEmployeeService(
         workType1: String? = null,
         workType3: String? = null,
         professionalPromotionTeam: String? = null,
+        // 직무(판촉직/OSC직) — 대시보드 인원현황 도넛과 동일한 jobCode 축. blank/null 이면 미적용.
+        jobCode: String? = null,
     ): EmployeeListResponse {
-        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam)
+        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val branchFilter: List<String>? = if (applyBranchScope) {
             when (val result = scope.effectiveBranchCodes(requestedBranch)) {
@@ -314,7 +334,7 @@ class AdminEmployeeService(
             status, branchFilter, keyword, role, roles,
             workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
             filters.promotionTeamAssignedOnly,
-            pageable,
+            pageable, filters.jobCodes,
         )
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
@@ -353,8 +373,10 @@ class AdminEmployeeService(
         workType1: String? = null,
         workType3: String? = null,
         professionalPromotionTeam: String? = null,
+        // 직무(판촉직/OSC직) — 목록과 동일 축. blank/null 이면 미적용.
+        jobCode: String? = null,
     ): ExcelResult {
-        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam)
+        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val noAccess: Boolean
         val branchFilter: List<String>? = if (applyBranchScope) {
@@ -377,8 +399,8 @@ class AdminEmployeeService(
             val employees = employeeRepository.findEmployees(
                 status, branchFilter, keyword, role, roles,
                 workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
-            filters.promotionTeamAssignedOnly,
-                pageable,
+                filters.promotionTeamAssignedOnly,
+                pageable, filters.jobCodes,
             ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->

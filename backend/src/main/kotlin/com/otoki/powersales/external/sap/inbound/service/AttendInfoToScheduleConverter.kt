@@ -1,6 +1,7 @@
 package com.otoki.powersales.external.sap.inbound.service
 
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
@@ -165,7 +166,7 @@ class AttendInfoToScheduleConverter(
         private const val STATUS_DELETE = "Y"
         private val STATUS_TARGETS = setOf(STATUS_NEW, STATUS_DELETE)
         private val ANNUAL_LEAVE_TYPE = WorkingType.ANNUAL_LEAVE
-        private val TARGET_JOB_CODES = setOf("판촉직", "레이디직", "OSC직")
+        private val TARGET_JOB_CODES = FemaleStaffJobCode.ALL_CODES
         // 연차 스케줄 등록 차단 status (Employee.status 는 H10010 라벨 변환값). 레거시는 퇴직·휴직 모두 차단.
         private val BLOCKED_STATUSES = setOf("퇴직", "휴직")
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")

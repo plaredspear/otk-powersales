@@ -130,8 +130,11 @@ class EmployeeRepositoryCustomImpl(
         costCenterCodes: List<String>?
     ): List<DashboardEmployeeProjection> {
         // 여사원(role='여사원')만 집계 — 조장/지점장/관리직 제외.
+        // 여사원 현황 목록(findEmployees + AdminFemaleEmployeeController.FEMALE_EMPLOYEE_ROLES) 과
+        // 동일한 모수 축이다: role='여사원' + 삭제 제외. 두 화면의 총원이 어긋나지 않도록 함께 유지한다.
         // 퇴직자(status='퇴직') 제외. status=NULL 은 재직/휴직 미분류로 유지하기 위해 포함한다.
         val where = BooleanBuilder()
+            .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
             .and(employee.role.eq(AppAuthority.WOMAN))
             .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
         if (!costCenterCodes.isNullOrEmpty()) {
@@ -161,7 +164,8 @@ class EmployeeRepositoryCustomImpl(
         promotionTeam: ProfessionalPromotionTeamType?,
         promotionTeamGeneral: Boolean,
         promotionTeamAssignedOnly: Boolean,
-        pageable: Pageable
+        pageable: Pageable,
+        jobCodes: Set<String>?,
     ): Page<Employee> {
         // 근무형태 필터가 걸렸으나 매칭 사원이 0명이면 빈 결과 — employee.id IN (empty) 의 DB/QueryDSL
         // 렌더링에 의존하지 않고 명시적으로 빈 페이지를 반환한다(프로젝트 빈 컬렉션 IN 방어 패턴 정합).
@@ -189,6 +193,11 @@ class EmployeeRepositoryCustomImpl(
         }
         if (!roles.isNullOrEmpty()) {
             where.and(employee.role.`in`(roles))
+        }
+        // 직무 필터(판촉직/OSC직) — 대시보드 인원현황 도넛과 동일한 jobCode 축.
+        // OSC직 선택 시 구 명칭 '레이디직' 이 포함된 집합이 전달된다(서비스 레이어에서 확장).
+        if (!jobCodes.isNullOrEmpty()) {
+            where.and(employee.jobCode.`in`(jobCodes))
         }
         // 전문행사조 필터 — '일반'(미배정) 은 IS NULL 뿐 아니라, SF 레거시가 정규화 없이 적재한
         // '일반'·'해당없음' 문자열 행도 함께 조회한다 (화면 목록이 이 값들을 '일반'으로 표시하는 것과 정합).

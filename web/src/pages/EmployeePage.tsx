@@ -25,10 +25,11 @@ const STATUS_TAG: Record<string, string> = {
   퇴직: 'red',
 };
 
-// 필터 옵션(재직상태 / 근무형태1 / 근무형태3 / 전문행사조 / 지점) 은 `/meta` 응답이 단일 출처.
+// 필터 옵션(재직상태 / 직무 / 근무형태1 / 근무형태3 / 전문행사조 / 지점) 은 `/meta` 응답이 단일 출처.
 // value '' = 전체(미필터) 선택지는 화면에서만 붙인다 (서버는 실제 필터값만 내려줌).
 const ALL_OPTION_LABEL: Record<string, string> = {
   status: '상태 전체',
+  jobCode: '직무 전체',
   workType1: '근무형태 전체',
   workType3: '세부 전체',
   // 빈 값('') = 완전 전체(일반 포함). '일반 제외'는 서버 meta 의 '행사조 전체' 옵션이 담당한다.
@@ -45,9 +46,10 @@ const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사�
 const LATEST_ATTENDANCE_NOTICE =
   '가장 최근에 출근등록한 1건의 정보입니다. 출근등록 이력이 없으면 "-" 로 표시됩니다.';
 
-// 직종명 표시 기준 — 직위(jikwee) 기준 파생. backend AdminEmployeeResponses.deriveJikjong 정합.
+// 직종명 표시 기준 — 직무코드(jobCode) 기준 파생. backend AdminEmployeeResponses.deriveJikjong 정합.
+// 대시보드 "판촉직/OSC직 인원현황" 도넛 및 직무 필터와 동일한 판정 축.
 const JIKJONG_NOTICE =
-  '직위 기준으로 표시됩니다. OSPM/OSPE/OSPJ → "판촉직", OSC → "OSC직" 으로 변환되며, 그 외 직위는 원본 직종명을 그대로 표시합니다.';
+  '직무코드 기준으로 표시됩니다. "레이디직"(구 OSC) 은 "OSC직" 으로 표시되며, 판촉직/OSC직 외 직무는 원본 직종명을 그대로 표시합니다.';
 
 // 컬럼 헤더에 설명 info 아이콘(hover tooltip)을 붙인다.
 const headerWithInfo = (title: string, tooltip: string) => (
@@ -74,17 +76,19 @@ export default function EmployeePage() {
       status: '',
       costCenterCode: '',
       keyword: '',
+      jobCode: '',
       workType1: '',
       workType3: '',
       professionalPromotionTeam: '',
     },
     defaultPageSize,
   });
-  const { status, costCenterCode, keyword, workType1, workType3, professionalPromotionTeam } = filters;
+  const { status, costCenterCode, keyword, jobCode, workType1, workType3, professionalPromotionTeam } = filters;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [statusInput, setStatusInput] = useState(status);
   const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
   const [keywordInput, setKeywordInput] = useState(keyword);
+  const [jobCodeInput, setJobCodeInput] = useState(jobCode);
   const [workType1Input, setWorkType1Input] = useState(workType1);
   const [workType3Input, setWorkType3Input] = useState(workType3);
   const [pptInput, setPptInput] = useState(professionalPromotionTeam);
@@ -102,6 +106,7 @@ export default function EmployeePage() {
       status: statusInput,
       costCenterCode: costCenterCodeInput,
       keyword: keywordInput,
+      jobCode: jobCodeInput,
       workType1: workType1Input,
       workType3: nextWorkType3,
       professionalPromotionTeam: pptInput,
@@ -137,6 +142,7 @@ export default function EmployeePage() {
     status: status || undefined,
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
+    jobCode: jobCode || undefined,
     workType1: workType1 || undefined,
     workType3: workType3 || undefined,
     professionalPromotionTeam: professionalPromotionTeam || undefined,
@@ -153,6 +159,7 @@ export default function EmployeePage() {
         ...(status ? { status } : {}),
         ...(costCenterCode ? { costCenterCode } : {}),
         ...(keyword ? { keyword } : {}),
+        ...(jobCode ? { jobCode } : {}),
         ...(workType1 ? { workType1 } : {}),
         ...(workType3 ? { workType3 } : {}),
         ...(professionalPromotionTeam ? { professionalPromotionTeam } : {}),
@@ -234,7 +241,7 @@ export default function EmployeePage() {
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
-    // 직종명 — 직위(jikwee) 기준 파생값 (OSPM/OSPE/OSPJ→판촉직, OSC→OSC직). backend 가 계산해 내려준다.
+    // 직종명 — 직무코드(jobCode) 기준 파생값 (레이디직→OSC직). backend 가 계산해 내려준다.
     { title: headerWithInfo('직종명', JIKJONG_NOTICE), dataIndex: 'jikjong', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '직위', dataIndex: 'jikwee', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '직급', dataIndex: 'jikgub', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
@@ -347,6 +354,14 @@ export default function EmployeePage() {
           value={statusInput ?? ''}
           options={optionsWithAll('status')}
           onChange={setStatusInput}
+        />
+        {/* 직무(판촉직/OSC직) — 대시보드 인원현황 도넛과 동일한 jobCode 축.
+            'OSC직' 은 구 명칭 '레이디직' 을 함께 조회한다 (서버 FemaleStaffJobCode.OSC_CODES). */}
+        <Select
+          style={{ width: 140 }}
+          value={jobCodeInput ?? ''}
+          options={optionsWithAll('jobCode')}
+          onChange={setJobCodeInput}
         />
         <Select
           style={{ width: 140 }}

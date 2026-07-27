@@ -87,6 +87,10 @@ interface EmployeeRepositoryCustom {
      * @param promotionTeamAssignedOnly  '행사조 전체'(일반 제외 = 배정된 모든 조) 필터 여부. true 면
      *                                   `professionalPromotionTeam IS NOT NULL AND NOT IN 레거시 미배정 값`.
      *                                   [promotionTeam] / [promotionTeamGeneral] 과 상호배타.
+     * @param jobCodes  직무(판촉직/OSC직) 필터 — `employee.jobCode IN :jobCodes`. null/빈 집합이면 미적용.
+     *                  OSC직 선택 시 구 명칭 '레이디직' 을 함께 포함한 집합이 전달된다
+     *                  ([com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode.OSC_CODES]).
+     *                  대시보드 "판촉직/OSC직 인원현황" 도넛과 동일한 판정 축(jobCode)이다.
      */
     fun findEmployees(
         status: String?,
@@ -98,7 +102,8 @@ interface EmployeeRepositoryCustom {
         promotionTeam: ProfessionalPromotionTeamType? = null,
         promotionTeamGeneral: Boolean = false,
         promotionTeamAssignedOnly: Boolean = false,
-        pageable: Pageable
+        pageable: Pageable,
+        jobCodes: Set<String>? = null,
     ): Page<Employee>
 
     /**

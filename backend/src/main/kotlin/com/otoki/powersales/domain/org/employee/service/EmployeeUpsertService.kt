@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.enums.Gender
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
@@ -263,7 +264,7 @@ class EmployeeUpsertService(
 
         // SF EmployeeTrigger.lockingFlagException 보호 대상. jobCode 는 H10060 라벨 변환 후 한글값.
         // (2024-01-02 레이디직 → OSC직 명칭 변경, 하위호환으로 레이디직 유지)
-        private val PROTECTED_JOB_CODES = setOf("판촉직", "레이디직", "OSC직")
+        private val PROTECTED_JOB_CODES = FemaleStaffJobCode.ALL_CODES
         // role 은 AppAuthority picklist 한글 raw value (여사원 / 조장).
         private val PROTECTED_APP_AUTHORITIES = setOf("여사원", "조장")
         private const val STATUS_RETIRED = "퇴직"

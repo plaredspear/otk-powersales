@@ -35,8 +35,9 @@ import java.time.YearMonth
 import java.time.format.DateTimeParseException
 
 /**
- * 여사원 현황 페이지 전용 — role 은 [AppAuthority.WOMAN] ("여사원") + [AppAuthority.LEADER] ("조장") 로 고정.
- * 조장은 여사원 조직을 관리하는 직책이라 여사원 현황에 함께 노출한다.
+ * 여사원 현황 페이지 전용 — role 은 [AppAuthority.WOMAN] ("여사원") 로 고정.
+ * 조장([AppAuthority.LEADER]) 은 대시보드 인원현황 도넛과 모수를 맞추기 위해 제외한다
+ * ([FEMALE_EMPLOYEE_ROLES] 참조).
  *
  * 권한 관리 (`/settings/admin-accounts`) 등 전체 role 을 보여야 하는 화면은
  * [AdminEmployeeController.getEmployees] 를 그대로 사용하고, 본 endpoint 는
@@ -70,8 +71,15 @@ class AdminFemaleEmployeeController(
 ) {
 
     companion object {
-        /** 여사원 현황에 노출할 직책 — 여사원 + 조장(여사원 조직 관리자). */
-        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+        /**
+         * 여사원 현황에 노출할 직책 — [AppAuthority.WOMAN] ("여사원") 단일.
+         *
+         * 과거에는 조장([AppAuthority.LEADER]) 을 함께 노출했으나, 대시보드 "판촉직/OSC직 인원현황"
+         * 도넛과 모수를 일치시키기 위해 여사원 단일로 좁혔다 (사용자 결정). 대시보드 집계
+         * ([com.otoki.powersales.admin.service.AdminDashboardService] · `findDashboardBasicStatsProjection`)
+         * 도 동일하게 `role = '여사원'` 이므로 두 화면의 총원이 같아진다.
+         */
+        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN)
 
         /** 권한 밖 지점 요청 시 사용 — `branchCodes` 가 비어 `effectiveBranchCodes` 가 NoAccess 로 판정한다. */
         private val NO_ACCESS_SCOPE = DataScope(branchCodes = emptyList(), isAllBranches = false)
@@ -141,6 +149,9 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false) workType3: String?,
         // 전문행사조 — 조명(라면세일조 등) 또는 '일반'(미배정). blank 면 전체.
         @RequestParam(required = false) professionalPromotionTeam: String?,
+        // 직무 — 판촉직 / OSC직. 대시보드 "판촉직/OSC직 인원현황" 도넛과 동일한 jobCode 축이며,
+        // 'OSC직' 은 구 명칭 '레이디직' 을 함께 조회한다. blank 면 전체.
+        @RequestParam(required = false) jobCode: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
@@ -165,6 +176,7 @@ class AdminFemaleEmployeeController(
             workType1 = workType1,
             workType3 = workType3,
             professionalPromotionTeam = professionalPromotionTeam,
+            jobCode = jobCode,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -180,6 +192,7 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false) workType1: String?,
         @RequestParam(required = false) workType3: String?,
         @RequestParam(required = false) professionalPromotionTeam: String?,
+        @RequestParam(required = false) jobCode: String?,
     ): ResponseEntity<ByteArray> {
         // 권한 밖 지점 요청이면 NO_ACCESS_SCOPE (branchCodes 비어 있음) → 서비스가 NoAccess 로 판정해
         // 헤더만 있는 빈 엑셀을 반환한다 (목록의 빈 결과와 동일 취급).
@@ -194,6 +207,7 @@ class AdminFemaleEmployeeController(
             workType1 = workType1,
             workType3 = workType3,
             professionalPromotionTeam = professionalPromotionTeam,
+            jobCode = jobCode,
         )
         return ExcelResponseUtils.build(result)
     }

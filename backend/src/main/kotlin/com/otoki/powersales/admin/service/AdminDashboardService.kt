@@ -13,6 +13,7 @@ import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
 import com.otoki.powersales.admin.dto.response.WorkTypeCount
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
@@ -280,10 +281,8 @@ class AdminDashboardService(
 
         // 판촉직/OSC직 (결정 D6 — Employee.jobCode). etc = 두 직군 외/null (모수는 사원 전체로 일치)
         val promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION }
-        val osc = employees.count { it.jobCode == JOB_CODE_OSC || it.jobCode == JOB_CODE_LADY }
-        val staffTypeEtcEmployees = employees.filter {
-            it.jobCode != JOB_CODE_PROMOTION && it.jobCode != JOB_CODE_OSC && it.jobCode != JOB_CODE_LADY
-        }
+        val osc = employees.count { it.jobCode in JOB_CODES_OSC }
+        val staffTypeEtcEmployees = employees.filter { it.jobCode !in FemaleStaffJobCode.ALL_CODES }
         val staffTypeEtcBreakdown = buildEtcBreakdown(staffTypeEtcEmployees.map { it.jobCode })
 
         // 재직/휴직. 퇴직자는 모수에서 이미 제외됨(findEmployees). etc = status 가 재직/휴직 외이거나 null 인 사원
@@ -427,9 +426,9 @@ class AdminDashboardService(
         private const val STATUS_ACTIVE = "재직"
         private const val STATUS_ON_LEAVE = "휴직"
 
-        // 판촉/OSC 판별값 (Employee.jobCode — 결정 D6)
-        private const val JOB_CODE_PROMOTION = "판촉직"
-        private const val JOB_CODE_OSC = "OSC직"
-        private const val JOB_CODE_LADY = "레이디직" // 구 OSC (SAP A053, 2023-01-02 이전)
+        // 판촉/OSC 판별값 (Employee.jobCode — 결정 D6). 여사원 현황 목록 필터/직종명 표시와 동일 축.
+        private val JOB_CODE_PROMOTION = FemaleStaffJobCode.PROMOTION.code
+        // OSC직 + 구 명칭 레이디직 (SAP A053, 2024-01-02 개명 이전 적재분)
+        private val JOB_CODES_OSC = FemaleStaffJobCode.OSC_CODES
     }
 }

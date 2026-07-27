@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionActionStatus
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
+import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -201,7 +202,7 @@ data class AdminSuggestionDetailResponse(
         }
 
         /** SF EmployeeCategory__c formula 의 '여사원' 판정 JobCode 집합. */
-        private val FEMALE_STAFF_JOB_CODES = setOf("OSC직", "판촉직", "레이디직")
+        private val FEMALE_STAFF_JOB_CODES = FemaleStaffJobCode.ALL_CODES
 
         /** SF ProductCategory__c formula 의 '냉동/냉장' 판정 StoreCondition 집합. */
         private val COLD_STORE_CONDITIONS = setOf("냉동", "냉장", "만두")

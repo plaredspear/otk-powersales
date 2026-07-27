@@ -89,11 +89,41 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         assertThat(result).hasSize(1)
     }
 
+    @Test
+    @DisplayName("삭제된 사원(is_deleted=true) 은 모수에서 제외한다 - 여사원 현황 목록과 동일 축")
+    fun excludesDeleted() {
+        persist("EMP_LIVE", status = "재직", costCenterCode = "C001")
+        persist("EMP_NULL_FLAG", status = "재직", costCenterCode = "C001", isDeleted = null)
+        persist("EMP_DELETED", status = "재직", costCenterCode = "C001", isDeleted = true)
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+
+        // is_deleted 가 false / null 인 사원만 남는다 (레거시 적재분은 flag 가 null).
+        assertThat(result).hasSize(2)
+    }
+
+    @Test
+    @DisplayName("직무코드는 그대로 내려준다 - 레이디직(구 OSC) 원본값 보존")
+    fun exposesRawJobCode() {
+        persist("EMP_PROMOTION", status = "재직", costCenterCode = "C001", jobCode = "판촉직")
+        persist("EMP_OSC", status = "재직", costCenterCode = "C001", jobCode = "OSC직")
+        persist("EMP_LADY", status = "재직", costCenterCode = "C001", jobCode = "레이디직")
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+
+        // 레이디직 → OSC직 합산은 서비스 레이어(AdminDashboardService.buildBasicStats) 책임이므로
+        // projection 은 원본값을 그대로 노출한다.
+        assertThat(result.map { it.jobCode })
+            .containsExactlyInAnyOrder("판촉직", "OSC직", "레이디직")
+    }
+
     private fun persist(
         employeeCode: String,
         status: String?,
         costCenterCode: String?,
         role: String? = "여사원",
+        jobCode: String? = null,
+        isDeleted: Boolean? = false,
     ) {
         testEntityManager.persist(
             Employee(
@@ -104,7 +134,8 @@ class EmployeeRepositoryDashboardBasicStatsTest {
                 status = status,
                 costCenterCode = costCenterCode,
                 role = role,
-            )
+                isDeleted = isDeleted,
+            ).apply { this.jobCode = jobCode }
         )
         testEntityManager.flush()
     }

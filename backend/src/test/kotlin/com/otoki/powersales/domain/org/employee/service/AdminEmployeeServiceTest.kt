@@ -73,29 +73,88 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("직종명은 직위(jikwee) 기준 파생 - OSPM/OSPE/OSPJ→판촉직, OSC→OSC직, 미매핑은 원본 jikjong")
-        fun jikjong_derivedFromJikwee() {
+        @DisplayName("직종명은 직무코드(jobCode) 기준 파생 - 레이디직→OSC직, 판촉/OSC 외는 원본 jikjong")
+        fun jikjong_derivedFromJobCode() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            // 판정 축은 jobCode 단일 — jikwee 는 어떤 값이든 결과에 영향을 주지 않는다
+            // (과거 jikwee 기준 파생에서 전환. 대시보드 인원현황 도넛과 동일 축).
             val employees = listOf(
-                createEmployee(employeeCode = "1", name = "A").apply { jikwee = "OSPM"; jikjong = "원본M" },
-                createEmployee(employeeCode = "2", name = "B").apply { jikwee = "OSPE"; jikjong = "원본E" },
-                createEmployee(employeeCode = "3", name = "C").apply { jikwee = "ospj"; jikjong = "원본J" },
-                createEmployee(employeeCode = "4", name = "D").apply { jikwee = "OSC"; jikjong = "원본C" },
-                createEmployee(employeeCode = "5", name = "E").apply { jikwee = "기타"; jikjong = "관리직" },
-                createEmployee(employeeCode = "6", name = "F").apply { jikwee = null; jikjong = null },
+                createEmployee(employeeCode = "1", name = "A").apply { jobCode = "판촉직"; jikwee = "OSC"; jikjong = "원본M" },
+                createEmployee(employeeCode = "2", name = "B").apply { jobCode = "OSC직"; jikwee = "OSPM"; jikjong = "원본C" },
+                // 구 OSC (SAP A053, 2024-01-02 개명 이전 적재분) → OSC직 으로 흡수
+                createEmployee(employeeCode = "3", name = "C").apply { jobCode = "레이디직"; jikwee = null; jikjong = "원본L" },
+                createEmployee(employeeCode = "4", name = "D").apply { jobCode = "영업직"; jikwee = "OSPE"; jikjong = "관리직" },
+                createEmployee(employeeCode = "5", name = "E").apply { jobCode = null; jikwee = "OSPJ"; jikjong = null },
             )
-            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 6L)
-            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 5L)
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
             val jikjongByCode = result.content.associate { it.employeeCode to it.jikjong }
-            assertThat(jikjongByCode["1"]).isEqualTo("판촉직") // OSPM
-            assertThat(jikjongByCode["2"]).isEqualTo("판촉직") // OSPE
-            assertThat(jikjongByCode["3"]).isEqualTo("판촉직") // ospj (대소문자 무시)
-            assertThat(jikjongByCode["4"]).isEqualTo("OSC직")  // OSC
-            assertThat(jikjongByCode["5"]).isEqualTo("관리직")  // 미매핑 → 원본 jikjong
-            assertThat(jikjongByCode["6"]).isNull()            // 직위·원본 모두 없음
+            assertThat(jikjongByCode["1"]).isEqualTo("판촉직")
+            assertThat(jikjongByCode["2"]).isEqualTo("OSC직")
+            assertThat(jikjongByCode["3"]).isEqualTo("OSC직")  // 레이디직 → OSC직 흡수
+            assertThat(jikjongByCode["4"]).isEqualTo("관리직")  // 여사원 직무 외 → 원본 jikjong
+            assertThat(jikjongByCode["5"]).isNull()            // jobCode·원본 모두 없음
+        }
+
+        @Test
+        @DisplayName("직무 필터 - 'OSC직' 선택 시 구 명칭 '레이디직' 을 포함한 집합으로 조회")
+        fun jobCodeFilter_oscIncludesLady() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+            every {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null, any(), any(), any(), any(), any(),
+                    jobCodes = setOf("OSC직", "레이디직"),
+                )
+            } returns page
+
+            adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20, jobCode = "OSC직")
+
+            verify {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null, any(), any(), any(), any(), any(),
+                    jobCodes = setOf("OSC직", "레이디직"),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("직무 필터 - '판촉직' 은 단일 값 집합으로 조회")
+        fun jobCodeFilter_promotionSingleValue() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+            every {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null, any(), any(), any(), any(), any(),
+                    jobCodes = setOf("판촉직"),
+                )
+            } returns page
+
+            adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20, jobCode = "판촉직")
+
+            verify {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null, any(), any(), any(), any(), any(),
+                    jobCodes = setOf("판촉직"),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("직무 필터 - 유효하지 않은 값은 IllegalArgumentException")
+        fun jobCodeFilter_invalidValue() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            assertThatThrownBy {
+                adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20, jobCode = "레이디직")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+
+            assertThatThrownBy {
+                adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20, jobCode = "없는직무")
+            }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
         @Test
