@@ -4,7 +4,6 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.foundation.product.dto.request.InventorySearchRequest
-import com.otoki.powersales.domain.foundation.product.dto.request.ProductExportRequest
 import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResponse
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductDetail
@@ -169,13 +168,29 @@ class AdminProductController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
-    @PostMapping("/export-excel")
+    /**
+     * 제품 목록 엑셀 다운로드 — 화면 체크 선택이 아니라 **조회 조건 결과 전체**가 대상.
+     *
+     * 파라미터는 [getProducts] 와 동일 (page/size 제외) — 목록에 보이는 결과와 파일 내용이 같아야 하므로
+     * 서비스도 같은 검색 술어를 재사용한다.
+     */
+    @GetMapping("/export-excel")
     @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
-    fun exportSelectedProductsExcel(
-        @Valid @RequestBody request: ProductExportRequest
+    fun exportProductsExcel(
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false) category1: String?,
+        @RequestParam(required = false) category2: String?,
+        @RequestParam(required = false) category3: String?,
+        @RequestParam(required = false) productStatus: String?
     ): ResponseEntity<ByteArrayResource> {
-        val bytes = adminProductExportService.exportSelectedProducts(request.productCodes!!)
-        val fileName = URLEncoder.encode("선택제품.xlsx", StandardCharsets.UTF_8)
+        val bytes = adminProductExportService.exportByCondition(
+            keyword = keyword,
+            category1 = category1,
+            category2 = category2,
+            category3 = category3,
+            productStatus = productStatus
+        )
+        val fileName = URLEncoder.encode("제품.xlsx", StandardCharsets.UTF_8)
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.CONTENT_DISPOSITION,

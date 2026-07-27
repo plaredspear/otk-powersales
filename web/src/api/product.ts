@@ -216,11 +216,5 @@ export async function searchInventory(
   return res.data.data;
 }
 
-export async function downloadProductsExcel(productCodes: string[]): Promise<Blob> {
-  const res = await client.post(
-    '/api/v1/admin/products/export-excel',
-    { productCodes },
-    { responseType: 'blob' },
-  );
-  return res.data as Blob;
-}
+/** 제품 목록 엑셀 다운로드 엔드포인트 — 조회 조건 결과 전체가 대상 (화면 체크 선택과 무관). */
+export const PRODUCTS_EXPORT_EXCEL_PATH = '/api/v1/admin/products/export-excel';

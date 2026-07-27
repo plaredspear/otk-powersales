@@ -4,7 +4,9 @@ import type { ColumnsType } from 'antd/es/table';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
-import { downloadProductsExcel, type Product } from '@/api/product';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { PRODUCTS_EXPORT_EXCEL_PATH, type Product } from '@/api/product';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
@@ -58,7 +60,7 @@ export default function ProductPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const { run: runExcelDownload, downloading } = useExcelDownload();
   const setInventoryTargets = useProductInventorySearchStore((s) => s.setTargets);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useProducts({
@@ -147,28 +149,19 @@ export default function ProductPage() {
     setCompareModalOpen(true);
   };
 
-  const handleDownloadExcel = async () => {
-    if (selectedRowKeys.length === 0) {
-      message.warning('선택된 제품이 없습니다.');
-      return;
-    }
-    setDownloading(true);
-    try {
-      const blob = await downloadProductsExcel(selectedRowKeys.map(String));
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = '선택제품.xlsx';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      message.error((err as Error)?.message || '엑셀 다운로드에 실패했습니다');
-    } finally {
-      setDownloading(false);
-    }
-  };
+  // 체크 선택과 무관하게 **현재 조회 조건 결과 전체**를 내려받는다 — 목록 조회와 동일 파라미터 전달.
+  const handleDownloadExcel = () =>
+    runExcelDownload(PRODUCTS_EXPORT_EXCEL_PATH, '제품.xlsx', {
+      params: {
+        keyword: keyword || undefined,
+        category1: category1 || undefined,
+        category2: category2 || undefined,
+        category3: category3 || undefined,
+        productStatus: productStatus || undefined,
+      },
+      totalCount: data?.totalElements ?? 0,
+      maxRows: EXCEL_EXPORT_MAX_ROWS,
+    });
 
   const columns: ColumnsType<Product> = [
     {
@@ -341,12 +334,8 @@ export default function ProductPage() {
         >
           선택제품 보기 ({selectedRowKeys.length})
         </Button>
-        <Button
-          disabled={selectedRowKeys.length === 0}
-          loading={downloading}
-          onClick={handleDownloadExcel}
-        >
-          엑셀변환
+        <Button loading={downloading} onClick={handleDownloadExcel}>
+          엑셀다운로드
         </Button>
       </Space>
 

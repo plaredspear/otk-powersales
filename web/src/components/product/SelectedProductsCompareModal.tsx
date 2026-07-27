@@ -16,7 +16,8 @@ interface Props {
  * UC-05: 선택제품 비교 보기 모달.
  *
  * 레거시 SelectProductViewPage 의 FieldSet 동적 컬럼 대신 명시 컬럼 채택.
- * 엑셀 다운로드는 ProductPage 의 [엑셀변환] 버튼이 별도로 담당.
+ * 엑셀 다운로드는 ProductPage 의 [엑셀다운로드] 버튼이 별도로 담당 (대상은 체크 선택이 아니라
+ * 조회 조건 결과 전체 — 본 모달의 선택 제품과는 무관).
  */
 export default function SelectedProductsCompareModal({ open, onClose, products }: Props) {
   const columns: ColumnsType<Product> = [

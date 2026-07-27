@@ -23,12 +23,3 @@ data class InventorySearchRequest(
     @field:NotNull(message = "납기일을 입력해주세요")
     val deliveryRequestDate: LocalDate?
 )
-
-/**
- * 선택 제품 엑셀 다운로드 요청 (UC-05).
- */
-data class ProductExportRequest(
-    @field:NotEmpty(message = "선택된 제품이 없습니다")
-    @field:Size(max = 200, message = "최대 200건까지만 내려받을 수 있습니다")
-    val productCodes: List<String>?
-)

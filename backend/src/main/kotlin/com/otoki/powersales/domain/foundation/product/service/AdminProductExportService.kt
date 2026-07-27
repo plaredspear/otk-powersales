@@ -7,12 +7,18 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
 
 /**
- * 선택 제품 엑셀 내려받기 (UC-05).
+ * 제품 목록 엑셀 내려받기 (UC-05).
+ *
+ * 대상은 **화면에서 체크한 제품이 아니라 현재 조회 조건에 해당하는 전체 제품** — 목록 조회
+ * ([com.otoki.powersales.domain.foundation.product.service.AdminProductService.getProducts]) 와
+ * 동일한 `searchForAdmin` 술어를 재사용해 화면 결과와 파일 내용이 어긋나지 않게 한다.
+ * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회하고 초과분은 잘라낸다 (다른 export 서비스 정합).
  *
  * 레거시 ProductToExcelController.cls 정책:
  * - "출고중지" 상태 제품은 결과에서 제외
@@ -26,12 +32,24 @@ class AdminProductExportService(
     private val productRepository: ProductRepository
 ) {
 
-    fun exportSelectedProducts(productCodes: List<String>): ByteArray {
-        val products = productRepository.findByProductCodeIn(productCodes)
-            .filter { it.productStatus != ProductStatus.OUT_OF_STOCK }
+    fun exportByCondition(
+        keyword: String?,
+        category1: String?,
+        category2: String?,
+        category3: String?,
+        productStatus: String?
+    ): ByteArray {
+        val products = productRepository.searchForAdmin(
+            keyword = keyword,
+            category1 = category1,
+            category2 = category2,
+            category3 = category3,
+            productStatus = productStatus,
+            pageable = PageRequest.of(0, EXPORT_MAX_ROWS)
+        ).content.filter { it.productStatus != ProductStatus.OUT_OF_STOCK }
 
         XSSFWorkbook().use { workbook ->
-            val sheet = workbook.createSheet("선택제품")
+            val sheet = workbook.createSheet("제품")
             val headerStyle = createHeaderStyle(workbook)
 
             val headerRow = sheet.createRow(0)
@@ -83,6 +101,9 @@ class AdminProductExportService(
     }
 
     companion object {
+        /** 다른 목록 export 서비스와 동일한 단일 조회 상한. 초과분은 잘라낸다. */
+        const val EXPORT_MAX_ROWS = 50_000
+
         private val HEADERS = listOf(
             "제품코드", "제품명", "카테고리1", "카테고리2", "카테고리3",
             "보관방법", "단위", "출시일", "표준출고가", "제품상태", "형태구분"

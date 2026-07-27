@@ -22124,20 +22124,6 @@
         "required" : [ "alarmDate", "expirationDate" ],
         "type" : "object"
       },
-      "ProductExportRequest" : {
-        "properties" : {
-          "productCodes" : {
-            "items" : {
-              "type" : "string"
-            },
-            "maxItems" : 200,
-            "minItems" : 0,
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "productCodes" ],
-        "type" : "object"
-      },
       "ProductListItem" : {
         "properties" : {
           "category1" : {
@@ -35232,18 +35218,46 @@
       }
     },
     "/api/v1/admin/products/export-excel" : {
-      "post" : {
-        "operationId" : "exportSelectedProductsExcel",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ProductExportRequest"
-              }
-            }
-          },
-          "required" : true
-        },
+      "get" : {
+        "operationId" : "exportProductsExcel",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category1",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

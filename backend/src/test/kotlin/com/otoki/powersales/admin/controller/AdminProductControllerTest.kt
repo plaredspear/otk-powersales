@@ -10,7 +10,6 @@ import com.otoki.powersales.domain.foundation.product.dto.response.ProductDetail
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResponse
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResultItem
 import com.otoki.powersales.domain.foundation.product.dto.request.InventorySearchRequest
-import com.otoki.powersales.domain.foundation.product.dto.request.ProductExportRequest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -382,39 +381,48 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/products/export-excel - 엑셀 다운로드 (UC-05)")
+    @DisplayName("GET /api/v1/admin/products/export-excel - 엑셀 다운로드 (UC-05)")
     inner class ExportExcel {
 
-        private val objectMapper = ObjectMapper()
-
         @Test
-        @DisplayName("성공 - .xlsx 바이트 응답 + Content-Disposition")
+        @DisplayName("성공 - 조회 조건 무지정 시 전체 대상 + Content-Disposition")
         fun exportExcel_success() {
             // controller 후처리: Content-Disposition 헤더 + body bytes 매핑 (가드레일 5.3) — verbatim 유지
             val xlsxBytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
-            every { adminProductExportService.exportSelectedProducts(eq(listOf("P001", "P002"))) } returns xlsxBytes
-            val request = ProductExportRequest(productCodes = listOf("P001", "P002"))
+            every {
+                adminProductExportService.exportByCondition(
+                    keyword = null, category1 = null, category2 = null,
+                    category3 = null, productStatus = null
+                )
+            } returns xlsxBytes
 
-            mockMvc.perform(
-                post("/api/v1/admin/products/export-excel")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
+            mockMvc.perform(get("/api/v1/admin/products/export-excel"))
                 .andExpect(status().isOk)
                 .andExpect(header().exists("Content-Disposition"))
                 .andExpect(content().bytes(xlsxBytes))
         }
 
         @Test
-        @DisplayName("실패 - 빈 productCodes -> 400")
-        fun exportExcel_empty() {
-            val body = """{"productCodes":[]}"""
+        @DisplayName("성공 - 조회 조건이 서비스로 그대로 전달")
+        fun exportExcel_passesFilters() {
+            val xlsxBytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
+            every {
+                adminProductExportService.exportByCondition(
+                    keyword = "라면", category1 = "면류", category2 = "봉지면",
+                    category3 = "매운맛", productStatus = "판매중"
+                )
+            } returns xlsxBytes
+
             mockMvc.perform(
-                post("/api/v1/admin/products/export-excel")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(body)
+                get("/api/v1/admin/products/export-excel")
+                    .param("keyword", "라면")
+                    .param("category1", "면류")
+                    .param("category2", "봉지면")
+                    .param("category3", "매운맛")
+                    .param("productStatus", "판매중")
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().isOk)
+                .andExpect(content().bytes(xlsxBytes))
         }
     }
 }
