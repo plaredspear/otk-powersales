@@ -9,11 +9,10 @@ import type { ApiResponse } from './types';
  */
 
 export interface FetchErpOrdersParams {
-  keyword?: string;
+  /** 주문번호 정확일치 (부분 일치 아님 — 대용량 테이블 LIKE 스캔 회피) */
+  sapOrderNumber?: string;
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
-  orderDateFrom?: string;
-  orderDateTo?: string;
   page?: number;
   size?: number;
 }
@@ -21,7 +20,6 @@ export interface FetchErpOrdersParams {
 export interface ErpOrder {
   id: number;
   sapOrderNumber: string;
-  refSapOrderNumber: string | null;
   sapAccountCode: string | null;
   sapAccountName: string | null;
   deliveryRequestDate: string | null;

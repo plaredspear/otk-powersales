@@ -21,11 +21,12 @@ data class AdminErpOrderListResponse(
 
 /**
  * ERP주문 목록 1행 — 헤더 요약 필드.
+ *
+ * 참조주문번호(`refSapOrderNumber`)는 목록에서 제외한다 — 상세(`AdminErpOrderDetailResponse`)에서만 노출.
  */
 data class AdminErpOrderListItem(
     val id: Long,
     val sapOrderNumber: String,
-    val refSapOrderNumber: String?,
     val sapAccountCode: String?,
     val sapAccountName: String?,
     val deliveryRequestDate: LocalDate?,
@@ -40,7 +41,6 @@ data class AdminErpOrderListItem(
         fun from(order: ErpOrder): AdminErpOrderListItem = AdminErpOrderListItem(
             id = order.id,
             sapOrderNumber = order.sapOrderNumber,
-            refSapOrderNumber = order.refSapOrderNumber,
             sapAccountCode = order.sapAccountCode,
             sapAccountName = order.sapAccountName,
             deliveryRequestDate = order.deliveryRequestDate,

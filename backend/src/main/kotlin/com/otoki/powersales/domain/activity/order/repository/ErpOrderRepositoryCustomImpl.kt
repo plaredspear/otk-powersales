@@ -55,29 +55,18 @@ open class ErpOrderRepositoryCustomImpl(
     }
 
     override fun findAdminErpOrders(
-        keyword: String?,
+        sapOrderNumber: String?,
         deliveryDateFrom: LocalDate?,
         deliveryDateTo: LocalDate?,
-        orderDateFrom: LocalDate?,
-        orderDateTo: LocalDate?,
         pageable: Pageable
     ): Page<ErpOrder> {
         val where = BooleanBuilder()
             .and(erpOrder.isDeleted.isNull.or(erpOrder.isDeleted.eq(false)))
 
-        keyword?.takeIf { it.isNotBlank() }?.trim()?.let { kw ->
-            where.and(
-                erpOrder.sapOrderNumber.containsIgnoreCase(kw)
-                    .or(erpOrder.sapAccountCode.containsIgnoreCase(kw))
-                    .or(erpOrder.sapAccountName.containsIgnoreCase(kw))
-                    .or(erpOrder.employeeName.containsIgnoreCase(kw))
-                    .or(erpOrder.employeeCode.containsIgnoreCase(kw))
-            )
-        }
+        // 정확일치 — UNIQUE 인덱스(erp_order_sap_order_number_key) 를 그대로 사용한다.
+        sapOrderNumber?.takeIf { it.isNotBlank() }?.trim()?.let { where.and(erpOrder.sapOrderNumber.eq(it)) }
         deliveryDateFrom?.let { where.and(erpOrder.deliveryRequestDate.goe(it)) }
         deliveryDateTo?.let { where.and(erpOrder.deliveryRequestDate.loe(it)) }
-        orderDateFrom?.let { where.and(erpOrder.orderDate.goe(it)) }
-        orderDateTo?.let { where.and(erpOrder.orderDate.loe(it)) }
 
         val content = queryFactory
             .selectFrom(erpOrder)

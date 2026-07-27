@@ -17,7 +17,7 @@ import java.time.LocalDate
  *
  * SAP 인바운드(#561)가 적재한 `erp_order` / `erp_order_product` 데이터를 web admin 에 노출하는 read-only 서비스.
  * 거래처별 모바일 조회([ClientOrderQueryService])와 달리 거래처 제약 없이 전체 ERP주문을 대상으로
- * 키워드/기간 필터로 조회한다.
+ * 주문번호 정확일치 / 납기일 기간 필터로 조회한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -35,11 +35,9 @@ class AdminErpOrderService(
      * ERP주문 목록 조회 — 최신 주문(id DESC) 순 페이징.
      */
     fun getErpOrders(
-        keyword: String?,
+        sapOrderNumber: String?,
         deliveryDateFrom: LocalDate?,
         deliveryDateTo: LocalDate?,
-        orderDateFrom: LocalDate?,
-        orderDateTo: LocalDate?,
         page: Int?,
         size: Int?
     ): AdminErpOrderListResponse {
@@ -49,11 +47,9 @@ class AdminErpOrderService(
 
         val pageable = PageRequest.of(resolvedPage, resolvedSize)
         val orders = erpOrderRepository.findAdminErpOrders(
-            keyword = keyword,
+            sapOrderNumber = sapOrderNumber,
             deliveryDateFrom = deliveryDateFrom,
             deliveryDateTo = deliveryDateTo,
-            orderDateFrom = orderDateFrom,
-            orderDateTo = orderDateTo,
             pageable = pageable
         )
 

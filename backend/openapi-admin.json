@@ -1993,9 +1993,6 @@
           "orderTypeNm" : {
             "type" : [ "string", "null" ]
           },
-          "refSapOrderNumber" : {
-            "type" : [ "string", "null" ]
-          },
           "sapAccountCode" : {
             "type" : [ "string", "null" ]
           },
@@ -23628,10 +23625,10 @@
         "operationId" : "getErpOrders",
         "parameters" : [ {
           "in" : "query",
-          "name" : "keyword",
+          "name" : "sapOrderNumber",
           "required" : false,
           "schema" : {
-            "maxLength" : 50,
+            "maxLength" : 80,
             "minLength" : 1,
             "type" : "string"
           }
@@ -23646,22 +23643,6 @@
         }, {
           "in" : "query",
           "name" : "deliveryDateTo",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "orderDateFrom",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "orderDateTo",
           "required" : false,
           "schema" : {
             "format" : "date",

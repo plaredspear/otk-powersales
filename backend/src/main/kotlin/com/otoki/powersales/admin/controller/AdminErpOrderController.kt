@@ -39,20 +39,16 @@ class AdminErpOrderController(
     @RequiresSfPermission(entity = "erp_order", operation = SfPermissionOperation.READ)
     fun getErpOrders(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false) @Size(min = 1, max = 80) sapOrderNumber: String?,
         @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) deliveryDateFrom: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) deliveryDateTo: LocalDate?,
-        @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) orderDateFrom: LocalDate?,
-        @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) orderDateTo: LocalDate?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AdminErpOrderListResponse>> {
         val response = adminErpOrderService.getErpOrders(
-            keyword = keyword,
+            sapOrderNumber = sapOrderNumber,
             deliveryDateFrom = deliveryDateFrom,
             deliveryDateTo = deliveryDateTo,
-            orderDateFrom = orderDateFrom,
-            orderDateTo = orderDateTo,
             page = page,
             size = size
         )

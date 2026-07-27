@@ -41,10 +41,10 @@ class AdminErpOrderServiceTest {
                 createOrder(id = 1, sapOrderNumber = "0300000001"),
             )
             every {
-                erpOrderRepository.findAdminErpOrders(any(), any(), any(), any(), any(), any())
+                erpOrderRepository.findAdminErpOrders(any(), any(), any(), any())
             } returns PageImpl(orders, PageRequest.of(0, 20), 2)
 
-            val result = service.getErpOrders(null, null, null, null, null, 0, 20)
+            val result = service.getErpOrders(null, null, null, 0, 20)
 
             assertThat(result.content).hasSize(2)
             assertThat(result.content[0].sapOrderNumber).isEqualTo("0300000002")
@@ -58,26 +58,22 @@ class AdminErpOrderServiceTest {
         @DisplayName("정상 - 필터 인자가 repository 로 그대로 전달된다")
         fun passesFilters() {
             every {
-                erpOrderRepository.findAdminErpOrders(any(), any(), any(), any(), any(), any())
+                erpOrderRepository.findAdminErpOrders(any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
             service.getErpOrders(
-                keyword = "홍길동",
+                sapOrderNumber = "0300000050",
                 deliveryDateFrom = LocalDate.of(2026, 5, 1),
                 deliveryDateTo = LocalDate.of(2026, 5, 31),
-                orderDateFrom = LocalDate.of(2026, 4, 1),
-                orderDateTo = LocalDate.of(2026, 4, 30),
                 page = 0,
                 size = 20,
             )
 
             verify {
                 erpOrderRepository.findAdminErpOrders(
-                    keyword = "홍길동",
+                    sapOrderNumber = "0300000050",
                     deliveryDateFrom = LocalDate.of(2026, 5, 1),
                     deliveryDateTo = LocalDate.of(2026, 5, 31),
-                    orderDateFrom = LocalDate.of(2026, 4, 1),
-                    orderDateTo = LocalDate.of(2026, 4, 30),
                     pageable = any(),
                 )
             }
@@ -88,10 +84,10 @@ class AdminErpOrderServiceTest {
         fun defaultsPagination() {
             val pageableSlot = slot<Pageable>()
             every {
-                erpOrderRepository.findAdminErpOrders(any(), any(), any(), any(), any(), capture(pageableSlot))
+                erpOrderRepository.findAdminErpOrders(any(), any(), any(), capture(pageableSlot))
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getErpOrders(null, null, null, null, null, null, null)
+            service.getErpOrders(null, null, null, null, null)
 
             assertThat(pageableSlot.captured.pageNumber).isEqualTo(0)
             assertThat(pageableSlot.captured.pageSize).isEqualTo(20)
@@ -100,14 +96,14 @@ class AdminErpOrderServiceTest {
         @Test
         @DisplayName("에러 - page 음수면 InvalidOrderParameterException")
         fun negativePage() {
-            assertThatThrownBy { service.getErpOrders(null, null, null, null, null, -1, 20) }
+            assertThatThrownBy { service.getErpOrders(null, null, null, -1, 20) }
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
 
         @Test
         @DisplayName("에러 - size 가 최대(100) 초과면 InvalidOrderParameterException")
         fun oversizePage() {
-            assertThatThrownBy { service.getErpOrders(null, null, null, null, null, 0, 101) }
+            assertThatThrownBy { service.getErpOrders(null, null, null, 0, 101) }
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
     }

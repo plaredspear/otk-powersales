@@ -31,8 +31,10 @@ const DATE_FORMAT = 'YYYY-MM-DD';
 /**
  * 기준정보 > ERP주문 조회 목록 페이지 (`/erp-orders`).
  *
- * SAP 인바운드가 적재한 `erp_order` 를 조회 노출. 주문번호/거래처/주문자 키워드 + 납기일·주문일 기간으로
- * 필터. 조회 전용 (등록/수정/삭제 없음).
+ * SAP 인바운드가 적재한 `erp_order` 를 조회 노출. 주문번호 정확일치 + 납기일 기간으로 필터.
+ * 조회 전용 (등록/수정/삭제 없음).
+ *
+ * 주문번호는 정확일치 — 거래처/주문자를 포함한 다중 컬럼 부분 일치는 인덱스를 타지 못해 조회가 지연됐다.
  */
 export default function ErpOrderPage() {
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤.
@@ -40,16 +42,16 @@ export default function ErpOrderPage() {
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
-      keyword: '',
+      sapOrderNumber: '',
       deliveryDateFrom: '',
       deliveryDateTo: '',
-      orderDateFrom: '',
-      orderDateTo: '',
     },
   });
 
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
-  const [keywordInput, setKeywordInput] = useState<string | undefined>(() => filters.keyword || undefined);
+  const [orderNumberInput, setOrderNumberInput] = useState<string | undefined>(
+    () => filters.sapOrderNumber || undefined,
+  );
   const [deliveryRange, setDeliveryRange] = useState<[Dayjs | null, Dayjs | null] | null>(() =>
     filters.deliveryDateFrom || filters.deliveryDateTo
       ? [
@@ -58,31 +60,19 @@ export default function ErpOrderPage() {
         ]
       : null,
   );
-  const [orderRange, setOrderRange] = useState<[Dayjs | null, Dayjs | null] | null>(() =>
-    filters.orderDateFrom || filters.orderDateTo
-      ? [
-          filters.orderDateFrom ? dayjs(filters.orderDateFrom) : null,
-          filters.orderDateTo ? dayjs(filters.orderDateTo) : null,
-        ]
-      : null,
-  );
 
   const handleSearch = () => {
     setFilters({
-      keyword: keywordInput ?? '',
+      sapOrderNumber: orderNumberInput?.trim() ?? '',
       deliveryDateFrom: deliveryRange?.[0]?.format(DATE_FORMAT) ?? '',
       deliveryDateTo: deliveryRange?.[1]?.format(DATE_FORMAT) ?? '',
-      orderDateFrom: orderRange?.[0]?.format(DATE_FORMAT) ?? '',
-      orderDateTo: orderRange?.[1]?.format(DATE_FORMAT) ?? '',
     });
   };
 
   const { data, isLoading, isError, error, refetch, isFetching } = useErpOrders({
-    keyword: filters.keyword || undefined,
+    sapOrderNumber: filters.sapOrderNumber || undefined,
     deliveryDateFrom: filters.deliveryDateFrom || undefined,
     deliveryDateTo: filters.deliveryDateTo || undefined,
-    orderDateFrom: filters.orderDateFrom || undefined,
-    orderDateTo: filters.orderDateTo || undefined,
     page,
     size,
   });
@@ -94,7 +84,6 @@ export default function ErpOrderPage() {
       width: 150,
       render: (val: string, order: ErpOrder) => <DetailLink to={`/erp-orders/${order.id}`}>{val}</DetailLink>,
     },
-    { title: '참조주문번호', dataIndex: 'refSapOrderNumber', width: 130, render: (val: string | null) => val ?? '-' },
     { title: '거래처코드', dataIndex: 'sapAccountCode', width: 110, render: (val: string | null) => val ?? '-' },
     { title: '거래처명', dataIndex: 'sapAccountName', width: 180, ellipsis: true, render: (val: string | null) => val ?? '-' },
     { title: '납기일', dataIndex: 'deliveryRequestDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
@@ -142,22 +131,17 @@ export default function ErpOrderPage() {
       >
         <Space wrap>
           <Input
-            placeholder="주문번호 / 거래처 / 주문자 검색"
+            placeholder="주문번호 검색"
             allowClear
-            style={{ width: 260 }}
-            value={keywordInput ?? ''}
-            onChange={(e) => setKeywordInput(e.target.value || undefined)}
+            style={{ width: 200 }}
+            value={orderNumberInput ?? ''}
+            onChange={(e) => setOrderNumberInput(e.target.value || undefined)}
             onPressEnter={handleSearch}
           />
           <DatePicker.RangePicker
             placeholder={['납기일 시작', '납기일 종료']}
             value={deliveryRange ?? undefined}
             onChange={(range) => setDeliveryRange(range ? [range[0], range[1]] : null)}
-          />
-          <DatePicker.RangePicker
-            placeholder={['주문일 시작', '주문일 종료']}
-            value={orderRange ?? undefined}
-            onChange={(range) => setOrderRange(range ? [range[0], range[1]] : null)}
           />
           <Button type="primary" onClick={handleSearch}>
             조회

@@ -128,7 +128,7 @@ class ErpOrderRepositoryTest {
         @Test
         @DisplayName("필터 없으면 삭제 제외 전체를 id DESC 로 반환한다")
         fun noFilter_returnsAllExceptDeleted() {
-            val result = erpOrderRepository.findAdminErpOrders(null, null, null, null, null, adminPageable)
+            val result = erpOrderRepository.findAdminErpOrders(null, null, null, adminPageable)
 
             // setUp 3건(0300000001~3) 모두 반환. 최신(id DESC) 순.
             assertThat(result.totalElements).isEqualTo(3)
@@ -138,19 +138,24 @@ class ErpOrderRepositoryTest {
         }
 
         @Test
-        @DisplayName("keyword 로 주문번호/거래처명/주문자명 부분 일치 조회한다")
-        fun keyword_matchesMultipleFields() {
+        @DisplayName("주문번호는 정확일치로만 조회한다 (부분 일치/거래처명/주문자명 미매칭)")
+        fun sapOrderNumber_exactMatchOnly() {
             persistNamedOrder("0300000050", sapAccountName = "홍길동마트", employeeName = "김영업")
 
             assertThat(
-                erpOrderRepository.findAdminErpOrders("홍길동", null, null, null, null, adminPageable).totalElements,
+                erpOrderRepository.findAdminErpOrders("0300000050", null, null, adminPageable).totalElements,
             ).isEqualTo(1)
+            // 부분 일치 미지원 — 인덱스 미사용 LIKE 스캔 제거
             assertThat(
-                erpOrderRepository.findAdminErpOrders("김영업", null, null, null, null, adminPageable).totalElements,
-            ).isEqualTo(1)
+                erpOrderRepository.findAdminErpOrders("0000050", null, null, adminPageable).totalElements,
+            ).isZero()
+            // 거래처명/주문자명은 더 이상 검색 대상이 아니다
             assertThat(
-                erpOrderRepository.findAdminErpOrders("0300000050", null, null, null, null, adminPageable).totalElements,
-            ).isEqualTo(1)
+                erpOrderRepository.findAdminErpOrders("홍길동마트", null, null, adminPageable).totalElements,
+            ).isZero()
+            assertThat(
+                erpOrderRepository.findAdminErpOrders("김영업", null, null, adminPageable).totalElements,
+            ).isZero()
         }
 
         @Test
@@ -158,22 +163,10 @@ class ErpOrderRepositoryTest {
         fun deliveryDateRange() {
             // setUp: 0300000001=6/10, 0300000002=6/11, 0300000003=null
             val result = erpOrderRepository.findAdminErpOrders(
-                null, LocalDate.of(2026, 6, 11), LocalDate.of(2026, 6, 11), null, null, adminPageable,
+                null, LocalDate.of(2026, 6, 11), LocalDate.of(2026, 6, 11), adminPageable,
             )
 
             assertThat(result.content.map { it.sapOrderNumber }).containsExactly("0300000002")
-        }
-
-        @Test
-        @DisplayName("주문생성일 기간으로 조회한다")
-        fun orderDateRange() {
-            persistOrderWithOrderDate("0300000060", LocalDate.of(2026, 4, 15))
-
-            val result = erpOrderRepository.findAdminErpOrders(
-                null, null, null, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), adminPageable,
-            )
-
-            assertThat(result.content.map { it.sapOrderNumber }).containsExactly("0300000060")
         }
 
         @Test
@@ -186,7 +179,7 @@ class ErpOrderRepositoryTest {
             testEntityManager.persistAndFlush(deleted)
 
             val numbers = erpOrderRepository
-                .findAdminErpOrders(null, null, null, null, null, adminPageable)
+                .findAdminErpOrders(null, null, null, adminPageable)
                 .content.map { it.sapOrderNumber }
 
             assertThat(numbers).doesNotContain("0300000099")
