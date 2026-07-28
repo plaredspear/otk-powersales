@@ -156,7 +156,7 @@ export function useRunLeaderProfileFlags() {
 }
 
 /**
- * 조장 ERP주문/조직마스터 권한 회수 Mutation 훅.
+ * 조장 화면 권한 회수 Mutation 훅 (ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무).
  *
  * `useRunLeaderProfileFlags` 와 달리 대상 키만 제거하므로 `is_locally_modified=TRUE` 인 운영 편집분에도
  * 강제 적용된다 (다른 권한은 보존). backend 가 권한 캐시를 자동 invalidate 한다.

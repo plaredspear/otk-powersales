@@ -80,8 +80,11 @@ object LeaderProfileFlagsSeed {
 //   제거해도 다른 화면에 파급이 없다. 조장은 조직마스터 화면을 보지 않는다.
 // - `ERP_Order__c` / `ERP_OrderProduct__c` (ERP주문, 가드 entity `erp_order`) — menuConfig 의 ERP주문
 //   메뉴 게이팅과 AdminErpOrderController 목록/상세 가드가 함께 닫힌다.
-// 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체공휴일(`DKRetail__AlternativeHoliday__c`)
+// - `DKRetail__CommuteLog__c` (근무 등록현황, 가드 entity `attendance_log`) — AdminAttendanceLogController
+//   목록/상세 가드. 모바일 출근 기록 자체(AttendanceLog 적재/조회)와는 별개로 web admin 화면만 닫는다.
+// 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체휴무(`DKRetail__AlternativeHoliday__c`)
 // 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
+// 근무 관련이라도 `AttendInfo__c` (entity `attend_info`) 는 별개 자원이라 근무 등록현황 화면과 무관하다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
 {
   "Account": { "allowRead": true },
@@ -100,7 +103,6 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
   "DKRetail__Promotion__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "MonthlySalesHistory__c": { "allowRead": true },
   "PushMessageReceiver__c": { "allowRead": true },
-  "DKRetail__CommuteLog__c": { "allowRead": true },
   "AccountCategoryMaster__c": { "allowRead": true },
   "DKRetail__OrderRequest__c": { "allowRead": true },
   "DKRetail__SiteAcitivity__c": { "allowRead": true },

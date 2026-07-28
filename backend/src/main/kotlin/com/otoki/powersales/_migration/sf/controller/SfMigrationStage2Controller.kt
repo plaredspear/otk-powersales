@@ -240,8 +240,8 @@ class SfMigrationStage2Controller(
      * 본 endpoint 는 [com.otoki.powersales._migration.sf.service.SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS]
      * **키만 제거**해 다른 운영 편집분을 보존한다. 그래서 dirty row 에도 안전하게 강제 적용한다 (사용자 결정).
      *
-     * 대상: `ERP_Order__c` / `ERP_OrderProduct__c` (가드 entity `erp_order`) + `Org__c` (가드 entity
-     * `organization`). 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다.
+     * 대상: ERP주문(`erp_order`) / 조직마스터(`organization`) / 근무 등록현황(`attendance_log`) /
+     * 대체휴무(`alternative_holiday`). 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다.
      *
      * 실행 순서: `fk` → `fk-natural-key` 이후 (profile_flags.profile_id 가 채워진 뒤). 멱등.
      */

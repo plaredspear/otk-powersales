@@ -836,19 +836,36 @@ export default function SfMigrationPage() {
         )}
       </Card>
 
-      <Card title="조장 ERP주문/조직마스터 권한 회수 (6.조장)" style={{ marginTop: 24 }}>
+      <Card title="조장 화면 권한 회수 (6.조장)" style={{ marginTop: 24 }}>
         <Paragraph type="secondary">
-          조장(<Text code>6.조장</Text>) 의 <Text code>object_permissions</Text> 에서{' '}
-          <Text code>ERP_Order__c</Text> · <Text code>ERP_OrderProduct__c</Text> (ERP주문) 과{' '}
-          <Text code>Org__c</Text> (조직마스터) 키를 <Text strong>제거</Text>한다. 제거 시 메뉴 게이팅과
-          API 가드(<Text code>erp_order</Text> / <Text code>organization</Text>)가 함께 닫힌다.
-          <br />
+          조장(<Text code>6.조장</Text>) 의 <Text code>object_permissions</Text> 에서 아래 키를{' '}
+          <Text strong>제거</Text>한다. 제거 시 메뉴 게이팅과 API 가드가 함께 닫힌다.
+        </Paragraph>
+        <ul style={{ margin: '0 0 16px', paddingLeft: 20, color: 'rgba(0,0,0,0.45)' }}>
+          <li>
+            ERP주문 — <Text code>ERP_Order__c</Text> · <Text code>ERP_OrderProduct__c</Text>{' '}
+            (가드 <Text code>erp_order</Text>)
+          </li>
+          <li>
+            조직마스터 — <Text code>Org__c</Text> (가드 <Text code>organization</Text>)
+          </li>
+          <li>
+            근무 등록현황 — <Text code>DKRetail__CommuteLog__c</Text> (가드{' '}
+            <Text code>attendance_log</Text>)
+          </li>
+          <li>
+            대체휴무 — <Text code>DKRetail__AlternativeHoliday__c</Text> (가드{' '}
+            <Text code>alternative_holiday</Text>)
+          </li>
+        </ul>
+        <Paragraph type="secondary">
           위 <Text strong>조장 ProfileFlags 권한 적용</Text> 과 달리 object_permissions 전체를 덮어쓰지
           않고 <Text strong>대상 키만 제거</Text>하므로, <Text code>is_locally_modified = TRUE</Text> 인
           web admin 편집분에도 <Text strong>강제 적용</Text>된다 — 다른 권한 편집은 보존된다.
           <br />
           공휴일 관리(<Text code>HolidayMaster__c</Text>) / 영업일관리마스터
           (<Text code>WorkingDayMaster__c</Text>) 는 조장 권한이 애초에 없어 회수 대상이 아니다.
+          근무 관련이라도 <Text code>AttendInfo__c</Text> 는 별개 자원이라 건드리지 않는다.
           <br />
           실행 순서: <Text code>FK Resolve</Text> → <Text code>Natural Key FK</Text> 이후 (profile_flags
           의 profile_id 가 채워진 뒤). 이미 제거된 상태면 적용 row 0 — <Text strong>멱등</Text>.

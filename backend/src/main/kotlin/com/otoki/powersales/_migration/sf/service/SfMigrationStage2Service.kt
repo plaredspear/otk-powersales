@@ -56,8 +56,19 @@ class SfMigrationStage2Service(
          *
          * - `ERP_Order__c` / `ERP_OrderProduct__c` → 가드 entity `erp_order` (ERP주문 목록/상세)
          * - `Org__c` → 가드 entity `organization` (조직마스터 조회)
+         * - `DKRetail__CommuteLog__c` → 가드 entity `attendance_log` (근무 등록현황 목록/상세)
+         * - `DKRetail__AlternativeHoliday__c` → 가드 entity `alternative_holiday` (대체휴무)
+         *
+         * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
+         * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
          */
-        val REVOKED_LEADER_OBJECT_KEYS = listOf("ERP_Order__c", "ERP_OrderProduct__c", "Org__c")
+        val REVOKED_LEADER_OBJECT_KEYS = listOf(
+            "ERP_Order__c",
+            "ERP_OrderProduct__c",
+            "Org__c",
+            "DKRetail__CommuteLog__c",
+            "DKRetail__AlternativeHoliday__c",
+        )
 
         /**
          * `leader-password-reset` substep 의 profile 무관 초기화 대상 사번 (사용자 지정).
@@ -673,6 +684,8 @@ class SfMigrationStage2Service(
      * ## 대상 키
      * - `ERP_Order__c` / `ERP_OrderProduct__c` — ERP주문 (가드 entity `erp_order`)
      * - `Org__c` — 조직마스터 (가드 entity `organization`)
+     * - `DKRetail__CommuteLog__c` — 근무 등록현황 (가드 entity `attendance_log`)
+     * - `DKRetail__AlternativeHoliday__c` — 대체휴무 (가드 entity `alternative_holiday`)
      *
      * 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) 은 애초에 SoT 에 없어 회수 대상이 아니다.
      *
