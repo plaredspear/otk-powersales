@@ -55,6 +55,22 @@ class EmployeeRepositoryDashboardBasicStatsTest {
     }
 
     @Test
+    @DisplayName("발령명 '면직' 사원은 상태가 재직이어도 모수에서 제외한다 (여사원 현황 재직 조회와 동일 판정)")
+    fun excludesDismissedEvenWhenStatusActive() {
+        persist("EMP_ACTIVE", status = "재직", costCenterCode = "C001")
+        // 면직 발령을 받고도 status 가 갱신되지 않은 사원 — 재직 인원으로 세면 안 된다.
+        persist("EMP_DISMISSED", status = "재직", costCenterCode = "C001", ordDetailNode = "면직")
+        persist("EMP_LEAVE_DISMISSED", status = "휴직", costCenterCode = "C001", ordDetailNode = "면직")
+        // 면직이 아닌 발령명은 영향 없음.
+        persist("EMP_REORG", status = "재직", costCenterCode = "C001", ordDetailNode = "조직개편")
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(null)
+
+        assertThat(result).hasSize(2)
+        assertThat(result.map { it.status }).containsOnly("재직")
+    }
+
+    @Test
     @DisplayName("지점 스코프 조회 - 지정 지점코드(cost_center_code) 사원만, 그 안에서도 퇴직자는 제외한다")
     fun branchScopeExcludesResigned() {
         persist("EMP_B1_ACTIVE", status = "재직", costCenterCode = "C001", orgName = "부산1지점")
@@ -187,6 +203,8 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         name: String = employeeCode,
         // 지점 필터 축은 costCenterCode 다 — orgName 은 필터에 관여하지 않는 표시용 값.
         orgName: String? = "부산1지점",
+        // 발령명 — '면직' 이면 상태와 무관하게 모수에서 빠진다 (DismissalPolicy).
+        ordDetailNode: String? = null,
     ) {
         testEntityManager.persist(
             Employee(
@@ -198,7 +216,10 @@ class EmployeeRepositoryDashboardBasicStatsTest {
                 costCenterCode = costCenterCode,
                 role = role,
                 isDeleted = isDeleted,
-            ).apply { this.jobCode = jobCode }
+            ).apply {
+                this.jobCode = jobCode
+                this.ordDetailNode = ordDetailNode
+            }
         )
         testEntityManager.flush()
     }

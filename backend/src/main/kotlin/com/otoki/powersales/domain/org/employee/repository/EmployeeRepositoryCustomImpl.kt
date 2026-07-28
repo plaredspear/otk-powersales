@@ -179,6 +179,10 @@ class EmployeeRepositoryCustomImpl(
         //   / 사원명에 테스트·관리자·파워세일즈 미포함
         // status=NULL 은 레거시 notEqual 의미(퇴직만 배제) 정합으로 포함하며, 재직/휴직 미분류로 계상된다.
         //
+        // 여기에 레거시에 없는 조건 1개를 더한다(deviation) — 발령명 '면직' 사원 제외([DismissalPolicy]).
+        // 면직 발령을 받고도 status 가 '재직' 으로 남은 사원이 재직 인원으로 부풀려지는 것을 막으며,
+        // 여사원 현황 목록의 재직 조회와 동일한 판정이라 두 화면의 인원이 어긋나지 않는다.
+        //
         // 지점 매칭은 **cost_center_code** 축 — 투입현황·매출현황·여사원 현황 목록과 동일하다.
         // 호출부가 BranchCodeExpander 로 조직 개편 이력 코드까지 확장해 넘긴다.
         // (레거시 리포트는 OrgName__c 그룹핑이었으나, 조직명 재배치/소멸분이 어긋나 코드 축으로 통일했다.)
@@ -187,6 +191,11 @@ class EmployeeRepositoryCustomImpl(
             .and(employee.role.`in`(FemaleStaffHeadcountFilter.ROLES))
             .and(employee.jobCode.`in`(FemaleStaffJobCode.ALL_CODES))
             .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
+            // 면직 = 퇴직 취급. 발령명 NULL 행이 3값 논리로 탈락하지 않도록 IS NULL 을 함께 허용한다.
+            .and(
+                employee.ordDetailNode.isNull
+                    .or(employee.ordDetailNode.ne(DismissalPolicy.ORD_DETAIL_NODE))
+            )
             .and(excludeTestAccountNames())
         if (!branchCodes.isNullOrEmpty()) {
             where.and(employee.costCenterCode.`in`(branchCodes))

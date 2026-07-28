@@ -13,6 +13,10 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
  * |---|---|
  * | `DKRetail__JobCode__c` equals `판촉직,레이디직,OSC직` | [FemaleStaffJobCode.ALL_CODES] |
  * | `DKRetail__Status__c` notEqual `퇴직` | `status IS NULL OR status <> '퇴직'` (호출부) |
+ *
+ * 여기에 레거시에 없는 조건 1개를 더한다(deviation, 2026-07-29 사용자 결정) — 발령명 '면직' 사원 제외
+ * ([DismissalPolicy]). 면직 발령을 받고도 `status` 가 '재직' 으로 남은 사원이 재직 인원에 계상되는 것을
+ * 막는다. 여사원 현황 목록의 재직 조회와 동일한 판정이라 두 화면의 인원이 어긋나지 않는다.
  * | `DKRetail__AppAuthority__c` equals `조장,여사원` | [ROLES] |
  * | 사원명 notContain `테스트,관리자,파워세일즈` | [EXCLUDED_NAME_KEYWORDS] |
  *

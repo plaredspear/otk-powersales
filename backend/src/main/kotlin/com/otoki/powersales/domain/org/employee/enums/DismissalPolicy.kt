@@ -17,10 +17,14 @@ package com.otoki.powersales.domain.org.employee.enums
  *   (원본 `status` 를 '퇴직' 으로 덮어쓴 것처럼 보이지 않도록 괄호 표기).
  *
  * ## 적용 범위
- * 여사원 현황 목록/엑셀([com.otoki.powersales.admin.controller.AdminFemaleEmployeeController]) 에만
- * 적용한다. 전체 사원 관리·lookup 은 SAP 원본 상태를 그대로 보여주고, 대시보드 기본현황 모수
- * ([FemaleStaffHeadcountFilter] — `status <> 퇴직`) 도 손대지 않는다. 즉 면직자가 재직으로 남아 있으면
- * 대시보드 인원수에는 계속 계상되며, 이는 사용자가 인지한 상태의 의도적 범위 제한이다.
+ * - 여사원 현황 목록/엑셀 ([com.otoki.powersales.admin.controller.AdminFemaleEmployeeController]):
+ *   조회 필터 + 상태 표시
+ * - 투입현황 대시보드 기본현황 모수
+ *   ([com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findDashboardBasicStatsProjection]):
+ *   면직자를 모수에서 제외 — 두 화면의 재직 인원이 어긋나지 않도록 함께 적용한다
+ *   ([FemaleStaffHeadcountFilter] 참조).
+ *
+ * 전체 사원 관리·lookup 은 적용 대상이 아니다 — SAP 원본 상태를 그대로 노출한다.
  */
 object DismissalPolicy {
 
