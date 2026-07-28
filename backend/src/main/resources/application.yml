@@ -268,13 +268,13 @@ app:
         # 레거시 mdt 실측은 2000 이었으나 timeout 회피 위해 기본 1000 으로 축소.
         chunk-size: ${ORORA_MATERIALIZE_CHUNK_SIZE:1000}
       daily:
-        cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 30 4 * * *}
+        cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 0 6 * * *}
       monthly:
         # 매주 목요일 + 매월 3일 05:00 KST 전월 재적재 — 전월 재마감(정산/반품 조정)을 자동 추적.
         # 레거시는 익월 초 1회(매월 3일 분포) + 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라 주기
         # 재적재로 자동 흡수 (멱등 upsert 라 반복 실행 무해). 목요일은 레거시 CronTrigger 정합, 3일은 익월 초
         # 최초 적재 시점 보존. Spring cron 은 day-of-month+day-of-week 동시 지정이 AND 라 2개 cron 으로
-        # 분리 (목요일인 3일은 같은 시각 발화 → ShedLock 이 1회만 실행). 일매출(04:30) 과 30분 간격으로 ORORA 부하 분산.
+        # 분리 (목요일인 3일은 같은 시각 발화 → ShedLock 이 1회만 실행). 일매출(06:00) 과 1시간 간격으로 ORORA 부하 분산.
         # 환경변수 override 없이 yml 값으로 고정 — 스케줄 변경은 코드 배포로만 (과거 EB 환경변수 잔존 시 의도치 않은 override 방지).
         cron: 0 0 5 * * THU
         day3-cron: 0 0 5 3 * *
@@ -489,7 +489,7 @@ app:
         enabled: true
       expire:
         enabled: true
-    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매주 목요일 + 매월 3일 05:00 — 전월 재적재로 재마감 자동 추적).
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 06:00 / 월매출 매주 목요일 + 매월 3일 05:00 — 전월 재적재로 재마감 자동 추적).
     orora:
       daily:
         enabled: true
@@ -573,7 +573,7 @@ app:
         enabled: true
       expire:
         enabled: true
-    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매주 목요일 + 매월 3일 05:00 — 전월 재적재로 재마감 자동 추적).
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 06:00 / 월매출 매주 목요일 + 매월 3일 05:00 — 전월 재적재로 재마감 자동 추적).
     orora:
       daily:
         enabled: true

@@ -48,7 +48,7 @@ object DashboardScheduledJobTargets {
         Target(PostponedAppointmentBatch.JOB_NAME, "연기예약 처리", "매일 자정"),
         Target(SalesProgressRateMasterSyncBatch.JOB_NAME, "목표마스터 sync", "매시간 정각"),
         Target(ClaimMasterSyncBatch.JOB_NAME, "클레임 업데이트", "매시간 정각"),
-        Target(OroraDailySalesMaterializeBatch.JOB_NAME, "ORORA 일매출", "매일 04:30"),
+        Target(OroraDailySalesMaterializeBatch.JOB_NAME, "ORORA 일매출", "매일 06시"),
         Target(
             OroraMonthlySalesMaterializeBatch.JOB_NAME,
             "ORORA 월매출",

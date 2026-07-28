@@ -26,7 +26,7 @@ class OroraDailySalesMaterializeBatch(
 ) {
 
     // 기본값은 레거시 SF CronTrigger "오로라 일별 데이터 수신" `0 0 11 ? * 1,2,3,4,5,6,7` (매일 11:00 Asia/Seoul) 정합.
-    // 실 운영은 application.yml `app.batch.orora.daily.cron` 이 override (현재 매일 04:30 KST).
+    // 실 운영은 application.yml `app.batch.orora.daily.cron` 이 override (현재 매일 06:00 KST).
     // JVM/컨테이너 TZ=Asia/Seoul (Dockerfile) 이므로 zone 명시 없이 KST 로 발화.
     @Scheduled(cron = "\${app.batch.orora.daily.cron:0 0 11 * * *}")
     // lockAtMostFor=PT2H: 다중 인스턴스 환경에서 거래처 chunk(≈50개) 누적 처리가 길어져도
