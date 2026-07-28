@@ -371,6 +371,28 @@ export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsRespons
 }
 
 /**
+ * Stage 2 — 조장(6.조장) 의 ERP주문 / 조직마스터 권한 회수.
+ *
+ * `runLeaderProfileFlags` 는 object_permissions 전체를 SoT JSON 으로 덮어써서 `is_locally_modified=TRUE`
+ * 인 web admin 편집분을 skip 하지만, 본 endpoint 는 **대상 키만 제거**하므로 다른 운영 편집분을 보존한 채
+ * dirty row 에도 강제 적용된다.
+ *
+ * 대상: `ERP_Order__c` / `ERP_OrderProduct__c` (가드 entity `erp_order`) + `Org__c` (가드 entity
+ * `organization`). 공휴일/영업일 마스터는 조장 권한이 애초에 없어 대상이 아니다. 멱등.
+ */
+export async function runLeaderErpOrgRevoke(): Promise<LeaderProfileFlagsResponse> {
+  const res = await client.post<ApiResponse<LeaderProfileFlagsResponse>>(
+    '/api/v1/admin/sf-migration/stage2/leader-erp-org-revoke',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'ERP주문/조직마스터 권한 회수에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
+
+/**
  * Sharing Recalc — OWD / RecordType / FLS / SharingRule 관련 cache 일괄 무효화 (spec #792).
  *
  * cut-over 최종 단계에서 Stage 2 substep 을 모두 마친 뒤 1회 실행한다. 데이터 재계산이 아니라

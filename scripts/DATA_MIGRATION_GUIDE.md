@@ -120,6 +120,7 @@ cd scripts/sf-data-migration
 | 5 | **UserRole Hierarchy 재계산** | depth / all_subordinate_ids / ancestor_path. **Natural Key FK 해소 완료 후** |
 | 6 | **Derived 캐시 동기화 (Stage 2-B)** | Employee.cost_center_code → User / ProfessionalPromotionTeamMaster 백필 |
 | — | **비밀번호 해시 (Stage 2-C)** | 사번 기반 초기 평문 `{사번}@pwrs` → BCrypt hash. **`password IS NULL OR ''` 인 row 만** (`POST .../stage2/password`) |
+| 7 | **조장 ERP주문/조직마스터 권한 회수** | `6.조장` 의 `ERP_Order__c`/`ERP_OrderProduct__c`/`Org__c` 키 제거. **dirty row 에도 강제 적용**(대상 키만 제거라 다른 편집분 보존) (`POST .../stage2/leader-erp-org-revoke`) |
 | 최종 | **조장/지정 사번 비밀번호 초기화** | profile `6.조장` + 지정 사번 8명. **기존 비밀번호도 덮어씀**(가드 없음) — 화면 **최하단 카드** (`POST .../stage2/leader-password-reset`) |
 
 > **두 비밀번호 카드의 차이** — Stage 2-C 는 미설정 row 만 채우는 **적재**용(멱등), 최하단 카드는 이미 쓰던 비밀번호까지 되돌리는 **초기화**용(반복 적용). 후자는 `profile_id` 가 확정된 뒤(FK Resolve → Natural Key FK → User Profile 정합 이후) 실행해야 조장 대상이 정확히 잡히므로 Stage 2 최종 단계에 둔다. 대상 사번은 backend `SfMigrationStage2Service.MANUAL_PASSWORD_RESET_EMPLOYEE_CODES` 상수에서 관리한다.

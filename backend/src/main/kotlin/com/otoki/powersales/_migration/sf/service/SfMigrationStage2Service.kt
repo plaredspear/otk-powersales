@@ -48,6 +48,18 @@ class SfMigrationStage2Service(
         val LEADER_FLAGS_TARGET_PROFILE_NAMES = setOf("6.조장")
 
         /**
+         * `leader-erp-org-revoke` substep 이 조장 `object_permissions` 에서 **제거**할 SF object key.
+         *
+         * [com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed] 의 `6.조장` SoT 에서도
+         * 동일하게 제외되어 있다 — 본 집합은 **이미 운영 DB 에 적재된 권한을 회수**하는 축이다
+         * (SoT 수정만으로는 dirty row 가 갱신되지 않으므로).
+         *
+         * - `ERP_Order__c` / `ERP_OrderProduct__c` → 가드 entity `erp_order` (ERP주문 목록/상세)
+         * - `Org__c` → 가드 entity `organization` (조직마스터 조회)
+         */
+        val REVOKED_LEADER_OBJECT_KEYS = listOf("ERP_Order__c", "ERP_OrderProduct__c", "Org__c")
+
+        /**
          * `leader-password-reset` substep 의 profile 무관 초기화 대상 사번 (사용자 지정).
          *
          * 조장 profile 이 아니지만 cut-over 시 비밀번호 초기화가 필요한 계정을 명시 열거한다.
@@ -641,6 +653,73 @@ class SfMigrationStage2Service(
 
         return SfMigrationStage2Response(
             substep = "leaderProfileFlags",
+            results = results,
+            totalRowsAffected = results.sumOf { it.rowsAffected },
+        )
+    }
+
+    /**
+     * 조장(`6.조장`) 의 ERP주문 / 조직마스터 권한 회수 — **`is_locally_modified` 무시하고 강제 적용**.
+     *
+     * ## 왜 leader-profile-flags 와 분리하는가
+     * [runLeaderProfileFlags] 는 `object_permissions` **전체를 SoT JSON 으로 덮어쓰므로**,
+     * `is_locally_modified=TRUE` 인 web admin 편집분에 적용하면 운영에서 조정한 다른 권한까지
+     * 함께 되돌아간다. 그래서 그쪽은 dirty row 를 skip 하는 정책을 유지한다.
+     *
+     * 본 substep 은 [REVOKED_LEADER_OBJECT_KEYS] **키만 JSON 에서 제거**한다 (jsonb `-` 연산자).
+     * 나머지 키는 손대지 않으므로 dirty row 에 적용해도 운영 편집분이 보존된다 — 그래서 가드 없이
+     * 강제 적용해도 안전하다 (사용자 결정).
+     *
+     * ## 대상 키
+     * - `ERP_Order__c` / `ERP_OrderProduct__c` — ERP주문 (가드 entity `erp_order`)
+     * - `Org__c` — 조직마스터 (가드 entity `organization`)
+     *
+     * 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) 은 애초에 SoT 에 없어 회수 대상이 아니다.
+     *
+     * 멱등 — 이미 제거된 키는 jsonb `-` 가 no-op 이라 재실행해도 결과가 같다. 적용 후 권한 캐시는
+     * 컨트롤러가 invalidate 한다 ([runLeaderProfileFlags] 와 동일 정책).
+     */
+    @Transactional
+    fun runLeaderErpOrgPermissionRevoke(): SfMigrationStage2Response {
+        val results = mutableListOf<SubstepResult>()
+
+        for (profileName in LEADER_FLAGS_TARGET_PROFILE_NAMES) {
+            // jsonb `-` (key 제거) 를 키마다 연쇄 적용한다. 존재하지 않는 키는 no-op 이라 멱등.
+            // is_locally_modified 가드 없음 — 키 단위 제거라 다른 편집분을 건드리지 않는다.
+            //
+            // SQL 작성 제약 2가지:
+            // 1. jsonb 의 `?|` (key-exists-any) 를 쓰지 않는다 — Hibernate native query 파서가 `?` 를 JDBC
+            //    ordinal 파라미터로 오인해 named 파라미터와 혼용 오류(ParameterRecognitionException).
+            //    대신 "제거 결과가 원본과 다른가"(IS DISTINCT FROM) 로 동등하게 변경 대상을 판별한다.
+            // 2. `- CAST(:keys AS text[])` 배열 형태를 쓰지 않는다 — H2(MODE=PostgreSQL) 가 text[] 캐스팅을
+            //    파싱하지 못해 통합 테스트가 깨진다. 키를 개별 named 파라미터로 연쇄 제거해 양쪽 호환.
+            val removalExpr = REVOKED_LEADER_OBJECT_KEYS.indices
+                .fold("pf.object_permissions") { expr, i -> "($expr - :key$i)" }
+            val query = em.createNativeQuery(
+                """
+                UPDATE powersales.profile_flags pf
+                SET object_permissions = $removalExpr
+                FROM powersales.profile p
+                WHERE p.profile_id = pf.profile_id
+                  AND p.name = :profileName
+                  AND pf.object_permissions IS NOT NULL
+                  AND $removalExpr IS DISTINCT FROM pf.object_permissions
+                """.trimIndent()
+            )
+            REVOKED_LEADER_OBJECT_KEYS.forEachIndexed { i, key -> query.setParameter("key$i", key) }
+            val updated = query
+                .setParameter("profileName", profileName)
+                .executeUpdate()
+
+            results += SubstepResult(
+                label = "profile_flags['$profileName'] ERP주문/조직마스터 권한 회수 " +
+                    "(${REVOKED_LEADER_OBJECT_KEYS.joinToString(", ")})",
+                rowsAffected = updated,
+            )
+        }
+
+        return SfMigrationStage2Response(
+            substep = "leaderErpOrgPermissionRevoke",
             results = results,
             totalRowsAffected = results.sumOf { it.rowsAffected },
         )

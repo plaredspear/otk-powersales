@@ -234,6 +234,32 @@ class SfMigrationStage2Controller(
     }
 
     /**
+     * 조장(`6.조장`) 의 ERP주문 / 조직마스터 권한 **회수** — `is_locally_modified` 무시 강제 적용.
+     *
+     * `leader-profile-flags` 는 object_permissions 전체를 SoT JSON 으로 덮어쓰므로 dirty row 를 skip 하지만,
+     * 본 endpoint 는 [com.otoki.powersales._migration.sf.service.SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS]
+     * **키만 제거**해 다른 운영 편집분을 보존한다. 그래서 dirty row 에도 안전하게 강제 적용한다 (사용자 결정).
+     *
+     * 대상: `ERP_Order__c` / `ERP_OrderProduct__c` (가드 entity `erp_order`) + `Org__c` (가드 entity
+     * `organization`). 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다.
+     *
+     * 실행 순서: `fk` → `fk-natural-key` 이후 (profile_flags.profile_id 가 채워진 뒤). 멱등.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/leader-erp-org-revoke")
+    fun runLeaderErpOrgPermissionRevoke(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runLeaderErpOrgPermissionRevoke()
+        if (response.totalRowsAffected > 0) {
+            // profile_flags 직접 UPDATE — leader-profile-flags 와 동일 범위로 권한 캐시 무효화.
+            cacheManager.getCache(CacheConfig.CACHE_PROFILE_FLAGS)?.clear()
+            cacheManager.getCache(CacheConfig.CACHE_PERMISSION_MATRIX)?.clear()
+            adminPermissionCache.invalidateAll()
+            adminDataScopeCache.invalidateAll()
+            log.info("[leader-erp-org-revoke] 권한 캐시 invalidate — rowsAffected={}", response.totalRowsAffected)
+        }
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * User.profile_id 를 SF User.ProfileId(=profile_sfid) 기준으로 최종 정합.
      *
      * SAP 인바운드 provisioning fallback(`5.영업사원`/`9. Staff`)이 profile_id 를 선점하면 일반 FK Resolve 의

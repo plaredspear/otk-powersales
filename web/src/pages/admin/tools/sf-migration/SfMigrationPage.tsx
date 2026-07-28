@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import {
   useFkResolvableTables,
   useFkResolveProgress,
+  useRunLeaderErpOrgRevoke,
   useRunLeaderPasswordReset,
   useRunLeaderProfileFlags,
   useRunNaturalKeyFkResolve,
@@ -100,6 +101,7 @@ export default function SfMigrationPage() {
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
+  const runLeaderErpOrgRevokeMutation = useRunLeaderErpOrgRevoke();
   const runPasswordHashMutation = useRunPasswordHash();
   const runLeaderPasswordResetMutation = useRunLeaderPasswordReset();
   const runSharingRecalcMutation = useRunSharingRecalcAll();
@@ -143,6 +145,10 @@ export default function SfMigrationPage() {
   const leaderProfileFlagsResult = runLeaderProfileFlagsMutation.data;
   const leaderProfileFlagsError = runLeaderProfileFlagsMutation.error as Error | null;
   const leaderProfileFlagsPending = runLeaderProfileFlagsMutation.isPending;
+
+  const leaderErpOrgRevokeResult = runLeaderErpOrgRevokeMutation.data;
+  const leaderErpOrgRevokeError = runLeaderErpOrgRevokeMutation.error as Error | null;
+  const leaderErpOrgRevokePending = runLeaderErpOrgRevokeMutation.isPending;
 
   const passwordHashResult = runPasswordHashMutation.data;
   const passwordHashError = runPasswordHashMutation.error as Error | null;
@@ -825,6 +831,93 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={leaderProfileFlagsResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="조장 ERP주문/조직마스터 권한 회수 (6.조장)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          조장(<Text code>6.조장</Text>) 의 <Text code>object_permissions</Text> 에서{' '}
+          <Text code>ERP_Order__c</Text> · <Text code>ERP_OrderProduct__c</Text> (ERP주문) 과{' '}
+          <Text code>Org__c</Text> (조직마스터) 키를 <Text strong>제거</Text>한다. 제거 시 메뉴 게이팅과
+          API 가드(<Text code>erp_order</Text> / <Text code>organization</Text>)가 함께 닫힌다.
+          <br />
+          위 <Text strong>조장 ProfileFlags 권한 적용</Text> 과 달리 object_permissions 전체를 덮어쓰지
+          않고 <Text strong>대상 키만 제거</Text>하므로, <Text code>is_locally_modified = TRUE</Text> 인
+          web admin 편집분에도 <Text strong>강제 적용</Text>된다 — 다른 권한 편집은 보존된다.
+          <br />
+          공휴일 관리(<Text code>HolidayMaster__c</Text>) / 영업일관리마스터
+          (<Text code>WorkingDayMaster__c</Text>) 는 조장 권한이 애초에 없어 회수 대상이 아니다.
+          <br />
+          실행 순서: <Text code>FK Resolve</Text> → <Text code>Natural Key FK</Text> 이후 (profile_flags
+          의 profile_id 가 채워진 뒤). 이미 제거된 상태면 적용 row 0 — <Text strong>멱등</Text>.
+        </Paragraph>
+
+        <Space>
+          <Button
+            danger
+            type="primary"
+            loading={leaderErpOrgRevokePending}
+            disabled={leaderErpOrgRevokePending}
+            onClick={() => {
+              runLeaderErpOrgRevokeMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {leaderErpOrgRevokeError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="권한 회수 실패"
+            description={leaderErpOrgRevokeError.message}
+            closable
+            onClose={() => {
+              runLeaderErpOrgRevokeMutation.reset();
+            }}
+          />
+        )}
+
+        {leaderErpOrgRevokeResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{leaderErpOrgRevokeResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적용 row">
+                {leaderErpOrgRevokeResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {leaderErpOrgRevokeResult.totalRowsAffected === 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적용된 row 가 없습니다"
+                description="이미 회수된 상태이거나(멱등), profile_flags 의 profile_id 가 아직 채워지지 않았을 수 있습니다 (FK Resolve / Natural Key FK 선행 필요)."
+              />
+            )}
+            <ResizableTable<LeaderProfileFlagsSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={leaderErpOrgRevokeResult.results}
             />
           </div>
         )}

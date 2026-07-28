@@ -3,6 +3,7 @@ import {
   getFkResolvableTables,
   getFkResolveProgress,
   getSharingRecalcStatus,
+  runLeaderErpOrgRevoke,
   runLeaderPasswordReset,
   runLeaderProfileFlags,
   runNaturalKeyFkResolve,
@@ -151,6 +152,18 @@ export function useRunUserProfileSfidReconcile() {
 export function useRunLeaderProfileFlags() {
   return useMutation<LeaderProfileFlagsResponse>({
     mutationFn: runLeaderProfileFlags,
+  });
+}
+
+/**
+ * 조장 ERP주문/조직마스터 권한 회수 Mutation 훅.
+ *
+ * `useRunLeaderProfileFlags` 와 달리 대상 키만 제거하므로 `is_locally_modified=TRUE` 인 운영 편집분에도
+ * 강제 적용된다 (다른 권한은 보존). backend 가 권한 캐시를 자동 invalidate 한다.
+ */
+export function useRunLeaderErpOrgRevoke() {
+  return useMutation<LeaderProfileFlagsResponse>({
+    mutationFn: runLeaderErpOrgRevoke,
   });
 }
 

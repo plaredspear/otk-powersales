@@ -74,12 +74,18 @@ object LeaderProfileFlagsSeed {
 }
 
 // dev 실측 조장(6.조장) object_permissions — present-key sparse 형식 (미기재 비트 = false).
+//
+// ## 의도적 미기재 (사용자 결정)
+// - `Org__c` (조직마스터, 가드 entity `organization`) — AdminOrganizationController 조회 1곳 단독 가드라
+//   제거해도 다른 화면에 파급이 없다. 조장은 조직마스터 화면을 보지 않는다.
+// - `ERP_Order__c` / `ERP_OrderProduct__c` (ERP주문, 가드 entity `erp_order`) — menuConfig 의 ERP주문
+//   메뉴 게이팅과 AdminErpOrderController 목록/상세 가드가 함께 닫힌다.
+// 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체공휴일(`DKRetail__AlternativeHoliday__c`)
+// 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
 {
-  "Org__c": { "allowRead": true },
   "Account": { "allowRead": true },
   "Theme__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
-  "ERP_Order__c": { "allowRead": true },
   "AttendInfo__c": { "allowRead": true },
   "UploadFile__c": { "allowRead": true },
   "PushMessage__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
@@ -87,7 +93,6 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
   "ProductBarcode__c": { "allowRead": true },
   "DKRetail__Claim__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "DKRetail__Notice__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
-  "ERP_OrderProduct__c": { "allowRead": true },
   "DKRetail__Product__c": { "allowRead": true },
   "DailySalesHistory__c": { "allowRead": true },
   "DKRetail__Employee__c": { "allowEdit": true, "allowRead": false },

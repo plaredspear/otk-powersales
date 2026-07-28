@@ -605,7 +605,19 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(boolOf("SELECT permissions_view_all_data FROM powersales.profile_flags")).isFalse()
         assertThat(boolOf("SELECT permissions_modify_all_data FROM powersales.profile_flags")).isFalse()
         assertThat(strOf("SELECT object_permissions FROM powersales.profile_flags")).contains("Account")
+        // ERP주문 / 조직마스터는 SoT 에서 제외됨 (사용자 결정) — 적용 결과에도 없어야 한다.
+        val applied = strOf("SELECT object_permissions FROM powersales.profile_flags")
+        assertThat(applied).doesNotContain("ERP_Order__c")
+        assertThat(applied).doesNotContain("ERP_OrderProduct__c")
+        assertThat(applied).doesNotContain("Org__c")
     }
+
+    // leader-erp-org-revoke substep 의 실행 검증은 통합 테스트로 작성하지 않는다 —
+    // jsonb `-` (key 제거) 연산자가 PostgreSQL 전용이라 H2(MODE=PostgreSQL, object_permissions=VARCHAR)
+    // 에서 "Feature not supported: CHARACTER VARYING -" 로 실패한다. SfMigrationStage2FkServiceTest 가
+    // UPDATE FROM + LEFT JOIN 미지원으로 통합 테스트를 생략한 것과 동일한 선례.
+    // 회수 대상 키 집합의 정합은 아래 SoT 단위 검증(LeaderProfileFlagsSeedRevokedKeysTest)이 담당하고,
+    // 실제 실행은 PostgreSQL dev 환경에서 수동 검증한다.
 
     @Test
     @Transactional
