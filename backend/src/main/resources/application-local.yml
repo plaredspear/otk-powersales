@@ -30,6 +30,18 @@ spring:
       - io.awspring.cloud.autoconfigure.s3.S3TransferManagerAutoConfiguration
       - io.awspring.cloud.autoconfigure.s3.S3CrtAsyncClientAutoConfiguration
 
+  # Spring Cloud AWS 리전 — local 개발 머신에는 AWS_REGION 도, ~/.aws/config 의
+  # default 프로파일도 없는 경우가 많아 SecretsManagerClient 빈 생성이
+  # DefaultAwsRegionProviderChain 해석 실패(SdkClientException)로 깨진다.
+  # S3 처럼 auto-config 를 exclude 로 나열하는 대신 stub 리전을 박아 두는 전략을
+  # 쓴다 (test 프로파일과 동일한 이유 — application-test.yml 주석 참조).
+  # local 에서는 spring.config.import(aws-secretsmanager:) 가 dev/prod document
+  # 에만 있으므로 client 빈이 생겨도 실제 AWS 호출은 일어나지 않는다.
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:ap-northeast-2}
+
   datasource:
     driver-class-name: org.postgresql.Driver
     # currentSchema 파라미터로 connection 단계에서 search_path 를 powersales 로
