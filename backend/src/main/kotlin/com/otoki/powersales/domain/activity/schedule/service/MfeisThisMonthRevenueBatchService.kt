@@ -22,7 +22,8 @@ import java.time.YearMonth
  * 이라 한 row 라도 update 실패 시 전체 롤백 + 예외 전파 → ScheduledJobRunner 가 FAILURE 로 기록
  * (row 별 try/catch 로 실패를 삼키지 않음 — 운영 인지 가능).
  *
- * cron 사용자 결정 (#680 Q15 옵션 1): `0 0 3 1 * ?` 매월 1일 03:00.
+ * cron: `0 5 8 * * *` 매일 08:05 (레거시 SF `UpdateThisMonthRevenueBatch` 운영 실측 정합).
+ * 전월분을 매일 재계산하는 멱등 연산 — 상세 경위는 [MfeisThisMonthRevenueBatch] 주석 참조.
  * ShedLock (#680 Q13 옵션 1): chunk 200 + `PT30M / PT5M`.
  *
  * `MfeisThisMonthRevenueBatch` entry 클래스가 ScheduledJobRunner 위임 + audit log

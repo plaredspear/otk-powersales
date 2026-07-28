@@ -60,14 +60,14 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = DisplayMasterLastMonthRevenueBatch.JOB_NAME,
-            cron = "\${app.batch.display.last-month-revenue.cron:0 0 2 * * *}",
-            description = "진열마스터 전월 매출 일괄 갱신 (기본 매일 02시) — legacy UpdateLastMonthRevenueBatch 동등",
+            cron = "\${app.batch.display.last-month-revenue.cron:0 0 8 * * *}",
+            description = "진열마스터 전월 매출 일괄 갱신 (기본 매일 08시) — legacy UpdateLastMonthRevenueBatch 동등 (SF 운영 cron 매일 08:00 Asia/Seoul 정합)",
             beanType = DisplayMasterLastMonthRevenueBatch::class.java,
         ),
         Entry(
             jobName = MfeisThisMonthRevenueBatch.JOB_NAME,
-            cron = "\${app.batch.mfeis.this-month-revenue.cron:0 0 3 1 * ?}",
-            description = "여사원 통합일정 전월 평균매출 일괄 갱신 (기본 매월 1일 03시) — legacy UpdateThisMonthRevenueBatch 동등",
+            cron = "\${app.batch.mfeis.this-month-revenue.cron:0 5 8 * * *}",
+            description = "여사원 통합일정 전월 평균매출 일괄 갱신 (기본 매일 08시 05분) — legacy UpdateThisMonthRevenueBatch 동등 (SF 운영 cron 매일 08:05 Asia/Seoul 정합)",
             beanType = MfeisThisMonthRevenueBatch::class.java,
         ),
         Entry(
@@ -90,8 +90,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = PostponedAppointmentBatch.JOB_NAME,
-            cron = "0 0 0 * * *",
-            description = "연기된 SAP 예약 일괄 처리 (매일 자정)",
+            cron = "0 50 0 * * *",
+            description = "연기된 SAP 예약 일괄 처리 (매일 00시 50분) — SF \"발령정보 스케줄\" 운영 cron (매일 00:50 Asia/Seoul) 정합",
             beanType = PostponedAppointmentBatch::class.java,
         ),
         Entry(
