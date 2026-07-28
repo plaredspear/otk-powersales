@@ -29959,7 +29959,7 @@
           "name" : "employmentStatus",
           "required" : false,
           "schema" : {
-            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED", "RESIGN_PLANNED" ],
+            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED" ],
             "type" : "string"
           }
         }, {
@@ -30107,7 +30107,7 @@
           "name" : "employmentStatus",
           "required" : false,
           "schema" : {
-            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED", "RESIGN_PLANNED" ],
+            "enum" : [ "ACTIVE", "ON_LEAVE", "RESIGNED" ],
             "type" : "string"
           }
         }, {
