@@ -19,10 +19,13 @@ import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 
+// 상태 태그 색. '퇴직(면직)' 은 서버가 발령명 '면직' 사원에게 부여하는 파생 표시값으로,
+// 퇴직과 동일 취급하므로 같은 색을 쓴다 (backend DismissalPolicy.DISPLAY_STATUS).
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
   휴직: 'orange',
   퇴직: 'red',
+  '퇴직(면직)': 'red',
 };
 
 // 상태 필터 기본값 — 화면 진입 시 재직자만 조회한다 (backend EmploymentStatus.ACTIVE.code 와 동일 값).
@@ -192,7 +195,8 @@ export default function EmployeePage() {
     {
       title: '상태',
       dataIndex: 'status',
-      width: 80,
+      // '퇴직(면직)' 파생 표시값이 줄바꿈되지 않도록 확보한 폭.
+      width: 110,
       align: 'center',
       render: (val: string | null) =>
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',

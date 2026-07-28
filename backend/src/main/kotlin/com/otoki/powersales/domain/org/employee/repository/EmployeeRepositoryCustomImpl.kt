@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.org.employee.repository
 
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.org.employee.enums.FemaleStaffHeadcountFilter
 import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
@@ -147,6 +148,28 @@ class EmployeeRepositoryCustomImpl(
         return predicate
     }
 
+    /**
+     * 재직상태 필터 술어 — [treatDismissalAsResigned] 면 발령명 '면직' 을 퇴직과 동일 취급한다
+     * ([DismissalPolicy] 참조, 여사원 현황 화면 전용).
+     *
+     * - 퇴직 조회: `status = '퇴직' OR ord_detail_node = '면직'` (상태가 아직 재직인 면직자 포함)
+     * - 재직/휴직 조회: `status = ? AND (ord_detail_node IS NULL OR ord_detail_node <> '면직')`
+     *   — SQL 3값 논리상 `<>` 만 쓰면 NULL 행이 통째로 탈락하므로 IS NULL 을 함께 허용한다.
+     */
+    private fun statusPredicate(status: String, treatDismissalAsResigned: Boolean): BooleanBuilder {
+        val predicate = BooleanBuilder()
+        if (!treatDismissalAsResigned) {
+            return predicate.and(employee.status.eq(status))
+        }
+        val dismissed = employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
+        return if (status == EmploymentStatus.RESIGNED.code) {
+            predicate.and(employee.status.eq(status).or(dismissed))
+        } else {
+            predicate.and(employee.status.eq(status))
+                .and(employee.ordDetailNode.isNull.or(dismissed.not()))
+        }
+    }
+
     override fun findDashboardBasicStatsProjection(
         branchCodes: List<String>?
     ): List<DashboardEmployeeProjection> {
@@ -197,6 +220,7 @@ class EmployeeRepositoryCustomImpl(
         pageable: Pageable,
         jobCodes: Set<String>?,
         femaleStaffHeadcountScope: Boolean,
+        treatDismissalAsResigned: Boolean,
     ): Page<Employee> {
         // 근무형태 필터가 걸렸으나 매칭 사원이 0명이면 빈 결과 — employee.id IN (empty) 의 DB/QueryDSL
         // 렌더링에 의존하지 않고 명시적으로 빈 페이지를 반환한다(프로젝트 빈 컬렉션 IN 방어 패턴 정합).
@@ -208,7 +232,7 @@ class EmployeeRepositoryCustomImpl(
             .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
 
         if (status != null) {
-            where.and(employee.status.eq(status))
+            where.and(statusPredicate(status, treatDismissalAsResigned))
         }
         if (branchCodes != null) {
             where.and(employee.costCenterCode.`in`(branchCodes))

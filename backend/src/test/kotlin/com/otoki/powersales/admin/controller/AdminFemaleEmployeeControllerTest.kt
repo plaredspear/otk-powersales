@@ -149,7 +149,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.getEmployees(
                 any(), any(), any(), any(), any(), any(), any(),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns response
 
@@ -170,7 +170,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.getEmployees(
                 any(), any(), any(), any(), any(), any(), any(),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         }
     }
@@ -190,7 +190,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 role = any(), page = any(), size = any(), applyBranchScope = eq(true),
                 roles = eq(FEMALE_EMPLOYEE_ROLES), workType1 = any(), workType3 = any(),
                 professionalPromotionTeam = any(), jobCode = any(),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns EmployeeListResponse(emptyList(), 0, 20, 0, 0)
 
@@ -221,7 +221,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 role = any(), page = any(), size = any(), applyBranchScope = eq(true),
                 roles = eq(FEMALE_EMPLOYEE_ROLES), workType1 = any(), workType3 = any(),
                 professionalPromotionTeam = any(), jobCode = any(),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns EmployeeListResponse(emptyList(), 0, 20, 0, 0)
 
@@ -363,7 +363,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.getEmployees(
                 any(), eq("재직"), eq("A001"), eq("김"), any(), eq(0), eq(10),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns response
 
@@ -388,7 +388,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.exportEmployees(
                 any(), any(), any(), any(), any(),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns result
 
@@ -411,7 +411,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.exportEmployees(
                 any(), eq("재직"), eq("A001"), eq("김"), any(),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns result
 
@@ -427,7 +427,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.exportEmployees(
                 any(), eq("재직"), eq("A001"), eq("김"), any(),
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
-                femaleStaffHeadcountScope = eq(true),
+                femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         }
     }
@@ -444,7 +444,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 scope = capture(scopeSlot), status = any(), costCenterCode = any(), keyword = any(),
                 role = any(), applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
                 workType1 = any(), workType3 = any(), professionalPromotionTeam = any(),
-                jobCode = any(), femaleStaffHeadcountScope = eq(true),
+                jobCode = any(), femaleStaffHeadcountScope = eq(true), treatDismissalAsResigned = eq(true),
             )
         } returns ExcelResult(bytes = ByteArray(10), filename = "여사원현황.xlsx")
 

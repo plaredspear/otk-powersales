@@ -339,6 +339,9 @@ class AdminEmployeeService(
         jobCode: String? = null,
         // 여사원 인원현황 모수(레거시 리포트 정합)로 좁힐지 — 여사원 현황 화면만 true.
         femaleStaffHeadcountScope: Boolean = false,
+        // 발령명 '면직' 을 퇴직과 동일 취급할지 (조회 필터 + 상태 표시) — 여사원 현황 화면만 true.
+        // [DismissalPolicy] 참조.
+        treatDismissalAsResigned: Boolean = false,
     ): EmployeeListResponse {
         val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
@@ -364,7 +367,7 @@ class AdminEmployeeService(
             status, branchFilter, keyword, role, roles,
             workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
             filters.promotionTeamAssignedOnly,
-            pageable, filters.jobCodes, femaleStaffHeadcountScope,
+            pageable, filters.jobCodes, femaleStaffHeadcountScope, treatDismissalAsResigned,
         )
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
@@ -374,7 +377,10 @@ class AdminEmployeeService(
         return EmployeeListResponse(
             content = userPage.content.map { emp ->
                 val info = attendanceInfo[emp.id]
-                EmployeeListItem.from(emp, today, info?.workingCategory1, info?.workingCategory3, info?.accountName, info?.accountCode)
+                EmployeeListItem.from(
+                    emp, today, info?.workingCategory1, info?.workingCategory3,
+                    info?.accountName, info?.accountCode, treatDismissalAsResigned,
+                )
             },
             page = page,
             size = size,
@@ -407,6 +413,8 @@ class AdminEmployeeService(
         jobCode: String? = null,
         // 여사원 인원현황 모수(레거시 리포트 정합)로 좁힐지 — 목록과 동일하게 전달해야 건수가 일치한다.
         femaleStaffHeadcountScope: Boolean = false,
+        // 발령명 '면직' 을 퇴직과 동일 취급할지 — 목록과 동일하게 전달해야 내용이 일치한다 ([DismissalPolicy]).
+        treatDismissalAsResigned: Boolean = false,
     ): ExcelResult {
         val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam, jobCode)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
@@ -432,12 +440,15 @@ class AdminEmployeeService(
                 status, branchFilter, keyword, role, roles,
                 workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
                 filters.promotionTeamAssignedOnly,
-                pageable, filters.jobCodes, femaleStaffHeadcountScope,
+                pageable, filters.jobCodes, femaleStaffHeadcountScope, treatDismissalAsResigned,
             ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->
                 val info = attendanceInfo[emp.id]
-                EmployeeListItem.from(emp, today, info?.workingCategory1, info?.workingCategory3, info?.accountName, info?.accountCode)
+                EmployeeListItem.from(
+                    emp, today, info?.workingCategory1, info?.workingCategory3,
+                    info?.accountName, info?.accountCode, treatDismissalAsResigned,
+                )
             }
         }
 

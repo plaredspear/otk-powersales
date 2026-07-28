@@ -124,6 +124,9 @@ interface EmployeeRepositoryCustom {
         pageable: Pageable,
         jobCodes: Set<String>? = null,
         femaleStaffHeadcountScope: Boolean = false,
+        // 발령명 '면직' 을 퇴직과 동일 취급할지 — 여사원 현황 화면 전용
+        // ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy]). [status] 필터에만 영향.
+        treatDismissalAsResigned: Boolean = false,
     ): Page<Employee>
 
     /**

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.org.employee.dto.response
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import java.time.LocalDate
 
@@ -72,11 +73,18 @@ data class EmployeeListItem(
             workType3: String? = null,
             workAccountName: String? = null,
             workAccountCode: String? = null,
+            // 발령명 '면직' 을 퇴직으로 표시할지 — 여사원 현황 화면 전용 ([DismissalPolicy]).
+            // 전체 사원 관리/lookup 은 false 로 SAP 원본 상태를 그대로 노출한다.
+            treatDismissalAsResigned: Boolean = false,
         ): EmployeeListItem = EmployeeListItem(
             id = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name,
-            status = employee.status,
+            status = if (treatDismissalAsResigned) {
+                DismissalPolicy.displayStatus(employee.status, employee.ordDetailNode)
+            } else {
+                employee.status
+            },
             gender = employee.gender?.displayName,
             orgName = employee.orgName,
             costCenterCode = employee.costCenterCode,

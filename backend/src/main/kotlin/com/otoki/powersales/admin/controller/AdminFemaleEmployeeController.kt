@@ -185,6 +185,10 @@ class AdminFemaleEmployeeController(
             // 레거시 인원현황 리포트 정합 모수 — 여사원 직무 3값 한정 + 테스트/시스템 계정 제외.
             // 대시보드 기본현황 집계와 동일 모수라 두 화면의 총원이 일치한다.
             femaleStaffHeadcountScope = true,
+            // 발령명 '면직' 은 퇴직과 동일 취급 (퇴직 조회에 포함 / 재직·휴직 조회에서 제외,
+            // 상태는 '퇴직(면직)' 으로 표시) — 여사원 현황 전용
+            // ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy]).
+            treatDismissalAsResigned = true,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -219,6 +223,10 @@ class AdminFemaleEmployeeController(
             // 레거시 인원현황 리포트 정합 모수 — 여사원 직무 3값 한정 + 테스트/시스템 계정 제외.
             // 대시보드 기본현황 집계와 동일 모수라 두 화면의 총원이 일치한다.
             femaleStaffHeadcountScope = true,
+            // 발령명 '면직' 은 퇴직과 동일 취급 (퇴직 조회에 포함 / 재직·휴직 조회에서 제외,
+            // 상태는 '퇴직(면직)' 으로 표시) — 여사원 현황 전용
+            // ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy]).
+            treatDismissalAsResigned = true,
         )
         return ExcelResponseUtils.build(result)
     }
