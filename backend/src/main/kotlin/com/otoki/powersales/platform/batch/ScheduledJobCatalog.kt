@@ -36,8 +36,8 @@ object ScheduledJobCatalog {
     val ENTRIES: List<Entry> = listOf(
         Entry(
             jobName = AgreementWordCycleBatch.JOB_NAME,
-            cron = "0 0 9 * * *",
-            description = "동의 약관 단어 주기 리셋 (매일 09시)",
+            cron = "0 0 0 * * *",
+            description = "동의 약관 단어 주기 리셋 (매일 00시)",
             beanType = AgreementWordCycleBatch::class.java,
         ),
         Entry(
