@@ -234,13 +234,17 @@ class AdminFemaleEmployeeController(
     /**
      * 여사원 단건 상세 조회 — [AdminEmployeeController.getEmployee] 와 동일 응답이나
      * `female_employee` 권한으로 가드. 여사원 현황에서 행 클릭 시 호출.
+     *
+     * 상태 표시는 목록과 동일하게 발령명 '면직' 을 '퇴직(면직)' 으로 보정한다
+     * ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy]) — 목록에서 퇴직(면직)으로
+     * 본 사원이 상세에서 재직으로 보이는 불일치를 막는다. 전체 사원 관리 상세는 원본 유지.
      */
     @GetMapping("/{employeeId}")
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
     fun getFemaleEmployee(
         @PathVariable employeeId: Long,
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
-        val response = adminEmployeeService.getEmployee(employeeId)
+        val response = adminEmployeeService.getEmployee(employeeId, treatDismissalAsResigned = true)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

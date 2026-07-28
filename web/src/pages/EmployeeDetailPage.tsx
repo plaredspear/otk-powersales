@@ -52,10 +52,13 @@ function toEmployeeListItem(detail: EmployeeDetail): Employee {
   };
 }
 
+// 상태 태그 색. '퇴직(면직)' 은 여사원 현황 상세에서 서버가 발령명 '면직' 사원에게 부여하는
+// 파생 표시값으로, 퇴직과 동일 취급하므로 같은 색을 쓴다 (backend DismissalPolicy.DISPLAY_STATUS).
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
   휴직: 'orange',
   퇴직: 'red',
+  '퇴직(면직)': 'red',
 };
 
 const ORIGIN_TAG: Record<string, { color: string; label: string }> = {

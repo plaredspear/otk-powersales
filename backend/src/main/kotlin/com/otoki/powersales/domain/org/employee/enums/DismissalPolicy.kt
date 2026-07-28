@@ -19,6 +19,8 @@ package com.otoki.powersales.domain.org.employee.enums
  * ## 적용 범위
  * - 여사원 현황 목록/엑셀 ([com.otoki.powersales.admin.controller.AdminFemaleEmployeeController]):
  *   조회 필터 + 상태 표시
+ * - 여사원 현황 상세 (같은 컨트롤러의 `getFemaleEmployee`): 상태 표시만 — 목록에서 '퇴직(면직)' 으로
+ *   본 사원이 상세에서 '재직' 으로 보이지 않도록 맞춘다. 전체 사원 관리 상세는 원본 유지.
  * - 투입현황 대시보드 기본현황 모수
  *   ([com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findDashboardBasicStatsProjection]):
  *   면직자를 모수에서 제외 — 두 화면의 재직 인원이 어긋나지 않도록 함께 적용한다

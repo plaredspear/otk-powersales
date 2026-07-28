@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
@@ -518,6 +519,23 @@ class AdminEmployeeServiceTest {
             assertThat(result.name).isEqualTo("김여사")
             assertThat(result.jobCode).isEqualTo("판촉직")
             assertThat(result.homePhone).isEqualTo("010-1234-5678")
+        }
+
+        @Test
+        @DisplayName("발령명 '면직' -> treatDismissalAsResigned=true 면 '퇴직(면직)', 기본값이면 원본 상태")
+        fun dismissalDisplayStatus() {
+            val employee = createEmployee(id = 43L, employeeCode = "10000100", name = "면직자")
+                .apply {
+                    status = "재직"
+                    ordDetailNode = DismissalPolicy.ORD_DETAIL_NODE
+                }
+            every { employeeRepository.findWithEmployeeInfoById(43L) } returns employee
+
+            // 여사원 현황 상세 — 목록과 동일 표기
+            assertThat(adminEmployeeService.getEmployee(43L, treatDismissalAsResigned = true).status)
+                .isEqualTo(DismissalPolicy.DISPLAY_STATUS)
+            // 전체 사원 관리 상세 — SAP 원본 상태 그대로
+            assertThat(adminEmployeeService.getEmployee(43L).status).isEqualTo("재직")
         }
 
         @Test

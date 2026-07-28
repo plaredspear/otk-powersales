@@ -177,12 +177,21 @@ data class EmployeeDetailResponse(
     val postponedAppointment: PostponedAppointmentSummary?
 ) {
     companion object {
-        fun from(employee: Employee): EmployeeDetailResponse = EmployeeDetailResponse(
+        fun from(
+            employee: Employee,
+            // 발령명 '면직' 을 퇴직으로 표시할지 — 여사원 현황 상세 전용 ([DismissalPolicy], 목록과 동일 표기).
+            // 전체 사원 관리/발령 승인은 false 로 SAP 원본 상태를 그대로 노출한다.
+            treatDismissalAsResigned: Boolean = false,
+        ): EmployeeDetailResponse = EmployeeDetailResponse(
             id = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name,
             gender = employee.gender?.displayName,
-            status = employee.status,
+            status = if (treatDismissalAsResigned) {
+                DismissalPolicy.displayStatus(employee.status, employee.ordDetailNode)
+            } else {
+                employee.status
+            },
             birthDate = employee.birthDate,
             startDate = employee.startDate?.toString(),
             endDate = employee.endDate?.toString(),

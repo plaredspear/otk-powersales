@@ -459,9 +459,10 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/female-employees/{id} - 여사원 단건 상세 조회 (employee READ 와 동일 응답)")
+    @DisplayName("GET /api/v1/admin/female-employees/{id} - 여사원 단건 상세 조회 (면직→퇴직 표기 보정 적용)")
     fun getFemaleEmployee_success() {
-        every { adminEmployeeService.getEmployee(7L) } returns mockk(relaxed = true) {
+        // 목록과 동일하게 발령명 '면직' 을 '퇴직(면직)' 으로 표기해야 하므로 플래그가 true 로 전달된다.
+        every { adminEmployeeService.getEmployee(7L, treatDismissalAsResigned = true) } returns mockk(relaxed = true) {
             every { id } returns 7L
         }
 
@@ -469,7 +470,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
 
-        verify(exactly = 1) { adminEmployeeService.getEmployee(7L) }
+        verify(exactly = 1) { adminEmployeeService.getEmployee(7L, treatDismissalAsResigned = true) }
     }
 
     @Test

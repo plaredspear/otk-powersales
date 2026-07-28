@@ -461,9 +461,14 @@ class AdminEmployeeService(
      *
      * 레거시 SF 표준 레코드 상세 페이지 동등. employee_info join 으로 단말/비밀번호 변경 필요 여부 등도 함께 로드.
      */
-    fun getEmployee(employeeId: Long): EmployeeDetailResponse {
+    fun getEmployee(
+        employeeId: Long,
+        // 발령명 '면직' 을 퇴직으로 표시할지 — 여사원 현황 상세만 true ([DismissalPolicy]).
+        // 목록이 '퇴직(면직)' 으로 보여준 사원을 상세에서 '재직' 으로 보여주지 않도록 맞춘다.
+        treatDismissalAsResigned: Boolean = false,
+    ): EmployeeDetailResponse {
         val employee = employeeRepository.findWithEmployeeInfoById(employeeId)
             ?: throw EmployeeNotFoundException(employeeId)
-        return EmployeeDetailResponse.from(employee)
+        return EmployeeDetailResponse.from(employee, treatDismissalAsResigned)
     }
 }
