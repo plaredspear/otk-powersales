@@ -25,6 +25,9 @@ const STATUS_TAG: Record<string, string> = {
   퇴직: 'red',
 };
 
+// 상태 필터 기본값 — 화면 진입 시 재직자만 조회한다 (backend EmploymentStatus.ACTIVE.code 와 동일 값).
+const DEFAULT_STATUS = '재직';
+
 // 필터 옵션(재직상태 / 직무 / 근무형태1 / 근무형태3 / 전문행사조 / 지점) 은 `/meta` 응답이 단일 출처.
 // value '' = 전체(미필터) 선택지는 화면에서만 붙인다 (서버는 실제 필터값만 내려줌).
 const ALL_OPTION_LABEL: Record<string, string> = {
@@ -73,7 +76,9 @@ export default function EmployeePage() {
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
-      status: '',
+      // 상태 기본값 '재직' — 현황 조회의 대부분이 재직자 대상이라 진입 시 재직만 보여준다.
+      // '상태 전체'('') 는 기본값과 다르므로 URL 에 남아 뒤로가기/새로고침에도 유지된다.
+      status: DEFAULT_STATUS,
       costCenterCode: '',
       keyword: '',
       jobCode: '',

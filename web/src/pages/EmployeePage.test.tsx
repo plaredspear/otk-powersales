@@ -8,19 +8,24 @@ import { entityPermissionKey, systemPermissionKey } from '@/hooks/usePermission'
 import type { Employee } from '@/api/employee';
 
 // 여사원 목록 hook 은 본 테스트와 무관하므로 고정 데이터를 반환하도록 mock 한다.
+// 전달된 조회 파라미터는 기본 필터(상태 '재직') 검증을 위해 캡처한다.
+const femaleEmployeesParams = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }));
 vi.mock('@/hooks/employee/useEmployees', () => ({
-  useFemaleEmployees: () => ({
-    data: {
-      content: [activeEmployee, inactiveEmployee],
-      page: 0,
-      size: 20,
-      totalElements: 2,
-      totalPages: 1,
-    },
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  }),
+  useFemaleEmployees: (params: Record<string, unknown>) => {
+    femaleEmployeesParams.current = params;
+    return {
+      data: {
+        content: [activeEmployee, inactiveEmployee],
+        page: 0,
+        size: 20,
+        totalElements: 2,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+  },
 }));
 
 // 조회 조건 로드(`/meta`) hook — 지점 옵션 개수에 따라 Select/Tag 분기를 검증하므로 테스트별로 교체한다.
@@ -222,7 +227,7 @@ describe('EmployeePage 조회 조건 로드 (/meta 단일 응답)', () => {
     renderPage();
 
     // 각 셀렉터의 기본값('' = 전체) 라벨이 표시된다 — 옵션 본문은 meta 응답이 단일 출처.
-    expect(screen.getByText('상태 전체')).toBeInTheDocument();
+    // 상태만 예외로 '재직' 이 기본 선택(아래 별도 검증).
     expect(screen.getByText('근무형태 전체')).toBeInTheDocument();
     expect(screen.getByText('세부 전체')).toBeInTheDocument();
     // 전문행사조 셀렉터의 빈 값('') 기본 라벨은 '전체'(일반 포함 완전 전체) — '일반 제외'는 meta 의 '행사조 전체' 옵션.
@@ -235,6 +240,15 @@ describe('EmployeePage 조회 조건 로드 (/meta 단일 응답)', () => {
 
     expect(screen.queryByText('지점 (전체)')).not.toBeInTheDocument();
     // '전체' 선택지는 화면이 붙이므로 meta 부재에도 표시된다.
-    expect(screen.getByText('상태 전체')).toBeInTheDocument();
+    expect(screen.getByText('근무형태 전체')).toBeInTheDocument();
+  });
+
+  it("상태 셀렉터 기본 선택은 '재직' 이고 목록도 재직으로 조회한다", () => {
+    listMetaResult.current = listMeta([{ value: 'A001', label: '서울1지점' }]);
+    renderPage();
+
+    // 상태만 빈 값('상태 전체') 이 아니라 '재직' 이 기본 선택 — 목록 조회도 동일 조건으로 나간다.
+    expect(screen.queryByText('상태 전체')).not.toBeInTheDocument();
+    expect(femaleEmployeesParams.current?.status).toBe('재직');
   });
 });

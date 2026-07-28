@@ -98,7 +98,10 @@ export function useListQueryParams<F extends Record<string, string | undefined>>
 
       if (patch.filters) {
         for (const [key, value] of Object.entries(patch.filters)) {
-          const isDefault = value === undefined || value === '' || value === defaultFilters[key as keyof F];
+          // 기본값과 같은 값만 URL 에서 생략한다. 빈 문자열('' = 전체) 도 "기본값이 '' 인 필터" 에서만
+          // 생략 대상 — 기본값이 비어있지 않은 필터(예: 여사원 현황의 상태 기본 '재직') 에서는
+          // ''(전체) 가 사용자의 명시적 선택이므로 URL 에 남겨야 기본값으로 되살아나지 않는다.
+          const isDefault = value === undefined || value === defaultFilters[key as keyof F];
           if (isDefault) {
             next.delete(key);
           } else {

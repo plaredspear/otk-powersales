@@ -74,6 +74,30 @@ describe('useListQueryParams', () => {
     expect(result.current.search).not.toContain('status=');
   });
 
+  // 기본값이 비어있지 않은 필터(예: 여사원 현황의 상태 기본 '재직') — ''(전체) 는 사용자의 명시적
+  // 선택이므로 URL 에 남아야 하고, 기본값으로 되살아나면 안 된다.
+  it('기본값이 비어있지 않은 필터에 빈 문자열을 주면 URL 에 남아 기본값으로 되돌아가지 않는다', () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <MemoryRouter initialEntries={['/list']}>{children}</MemoryRouter>
+    );
+    const { result } = renderHook(
+      () => {
+        const list = useListQueryParams({ defaultFilters: { status: '재직', keyword: '' } });
+        const location = useLocation();
+        return { ...list, search: location.search };
+      },
+      { wrapper },
+    );
+    expect(result.current.filters.status).toBe('재직');
+    act(() => result.current.setFilter('status', ''));
+    expect(result.current.filters.status).toBe('');
+    expect(result.current.search).toContain('status=');
+    // 다시 기본값을 고르면 URL 에서 제거된다.
+    act(() => result.current.setFilter('status', '재직'));
+    expect(result.current.filters.status).toBe('재직');
+    expect(result.current.search).not.toContain('status=');
+  });
+
   it('setFilters 는 여러 필터를 동시 반영하고 page 를 0 으로 리셋', () => {
     const { result } = renderHook(useHarness, { wrapper: makeWrapper('/list?page=4') });
     act(() => result.current.setFilters({ status: '재직', keyword: '김' }));
