@@ -182,6 +182,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                     employee.status,
                     employee.appLoginActive,
                     employee.endDate,
+                    // 발령명 — 면직자 재직상태 표시 보정([DismissalPolicy]) 입력값
+                    employee.ordDetailNode,
                     account.id,
                     account.externalKey,
                     account.name,

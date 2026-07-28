@@ -20,6 +20,8 @@ import java.time.LocalDate
  * `employeeStatus` / `employeeAppLoginActive` / `employeeEndDate` 는 재직상태 (SF formula `ValidConditionData__c`)
  * 를 Service 의 [com.otoki.powersales.domain.activity.schedule.service.internal.ScheduleDisplayStatusCalculator.employmentStatus]
  * 로 계산하기 위한 raw 입력값 (목록↔상세 동일 계산 재사용).
+ * `employeeOrdDetailNode` 는 발령명 — 면직자의 재직상태 표시 보정
+ * ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy]) 입력값이다.
  */
 data class ScheduleListRow(
     val id: Long,
@@ -30,6 +32,7 @@ data class ScheduleListRow(
     val employeeStatus: String?,
     val employeeAppLoginActive: Boolean?,
     val employeeEndDate: LocalDate?,
+    val employeeOrdDetailNode: String?,
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,

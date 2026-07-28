@@ -10,6 +10,7 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.foundation.account.repository.AccountDistributionAbcPairRow
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
@@ -170,6 +171,7 @@ class AdminDisplayWorkScheduleServiceTest {
             employeeStatus = null,
             employeeAppLoginActive = null,
             employeeEndDate = null,
+            employeeOrdDetailNode = null,
             accountId = null,
             accountCode = null,
             accountName = null,
@@ -1150,15 +1152,20 @@ class AdminDisplayWorkScheduleServiceTest {
             accountCode: String? = null,
             accountName: String? = null,
             confirmed: Boolean? = false,
+            employeeId: Long? = null,
+            employeeStatus: String? = null,
+            employeeAppLoginActive: Boolean? = null,
+            employeeOrdDetailNode: String? = null,
         ): ScheduleListRow = ScheduleListRow(
             id = id,
-            employeeId = null,
+            employeeId = employeeId,
             employeeCode = employeeCode,
             employeeName = employeeName,
             branchName = null,
-            employeeStatus = null,
-            employeeAppLoginActive = null,
+            employeeStatus = employeeStatus,
+            employeeAppLoginActive = employeeAppLoginActive,
             employeeEndDate = null,
+            employeeOrdDetailNode = employeeOrdDetailNode,
             accountId = null,
             accountCode = accountCode,
             accountName = accountName,
@@ -1198,6 +1205,31 @@ class AdminDisplayWorkScheduleServiceTest {
             assertThat(result.content[0].employeeName).isEqualTo("홍길동")
             assertThat(result.content[0].accountCode).isEqualTo("SAP001")
             assertThat(result.content[0].accountName).isEqualTo("이마트 성수점")
+        }
+
+        @Test
+        @DisplayName("재직상태 - 발령명 '면직' 은 계산값이 재직이어도 '퇴직(면직)' 으로 표기")
+        fun listSchedules_dismissalDisplayStatus() {
+            val scope = mockAdminScope()
+            // status='재직' + 로그인 활성 + 종료일 없음 → formula 계산값은 "재직" 이지만 발령은 면직.
+            val dismissed = scheduleRow(
+                id = 1L, employeeId = 10L, employeeName = "면직자",
+                employeeStatus = "재직", employeeAppLoginActive = true,
+                employeeOrdDetailNode = DismissalPolicy.ORD_DETAIL_NODE,
+            )
+            val normal = scheduleRow(
+                id = 2L, employeeId = 11L, employeeName = "재직자",
+                employeeStatus = "재직", employeeAppLoginActive = true,
+            )
+            val page = PageImpl(listOf(dismissed, normal), PageRequest.of(0, 20), 2)
+
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
+            every { teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(listOf(1L, 2L)) } returns emptyMap()
+
+            val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+
+            assertThat(result.content[0].employmentStatus).isEqualTo(DismissalPolicy.DISPLAY_STATUS)
+            assertThat(result.content[1].employmentStatus).isEqualTo("재직")
         }
 
         @Test

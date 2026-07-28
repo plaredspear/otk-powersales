@@ -52,6 +52,7 @@ import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -553,9 +554,14 @@ class AdminDisplayWorkScheduleService(
             employeeCode = row.employeeCode ?: "",
             employeeName = row.employeeName ?: "",
             branchName = row.branchName,
+            // 재직상태 — formula 계산값에 면직 보정을 얹는다([DismissalPolicy], 여사원 현황과 동일 표기).
+            // 면직자는 status 갱신이 늦어 "재직" 으로 계산되더라도 '퇴직(면직)' 으로 노출한다.
             employmentStatus = if (row.employeeId != null) {
-                displayStatusCalculator.employmentStatus(
-                    row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate
+                DismissalPolicy.displayStatus(
+                    displayStatusCalculator.employmentStatus(
+                        row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate
+                    ),
+                    row.employeeOrdDetailNode,
                 )
             } else {
                 null
@@ -604,7 +610,11 @@ class AdminDisplayWorkScheduleService(
         val employee = schedule.employee
         val account = schedule.account
 
-        val employmentStatus = displayStatusCalculator.employmentStatus(employee)
+        // 목록과 동일하게 면직 보정을 얹는다 ([DismissalPolicy]) — 두 화면 표기가 어긋나지 않도록.
+        val employmentStatus = DismissalPolicy.displayStatus(
+            displayStatusCalculator.employmentStatus(employee),
+            employee?.ordDetailNode,
+        )
         val validData = displayStatusCalculator.validData(employee, schedule.startDate, schedule.endDate)
         val valid = displayStatusCalculator.validLight(validData)?.let { light ->
             when (light) {
