@@ -6,7 +6,7 @@ package com.otoki.powersales.domain.org.employee.enums
  * SF prod 메타상 `Jikwee__c` 는 `type=string`, `length=40` 의 **자유 텍스트**(picklist 아님) 라
  * 값이 강제되지 않는다. 운영 데이터에는 아래 값 외에도 `수습사원` / `대리` / `사원` / `과장` / null 이
  * 섞여 있으므로, 각 그룹의 해당 직위를 고정 노출하고 나머지는 [ETC_LABEL] 한 칸으로 합산한다
- * (지점 간 열 구성을 고정해 비교 가능하게 유지).
+ * (지점 간 열 구성을 고정해 비교 가능하게 유지). 단 `수습사원` 은 [normalize] 로 [OSPJ] 에 흡수한다.
  *
  * ## 직무별로 쓰는 직위가 다르다
  *
@@ -32,8 +32,23 @@ enum class StaffRank(val code: String) {
         /** OSC직 열 — 직위 1종. */
         val OSC_CODES: List<String> = listOf(OSC.code)
 
-        /** 표준 직위 외 값(수습사원·대리·사원·과장 등)과 null 을 합산하는 열 라벨. */
+        /** 표준 직위 외 값(대리·사원·과장 등)과 null 을 합산하는 열 라벨. */
         const val ETC_LABEL = "기타"
+
+        /**
+         * 표준 직위로 흡수하는 비표준 직위명.
+         *
+         * 수습사원은 판촉직 신입 단계라 별도 열('기타')로 떼지 않고 [OSPJ] 에 합산한다.
+         */
+        private val ALIASES: Map<String, String> = mapOf("수습사원" to OSPJ.code)
+
+        /**
+         * 직위명을 표준 직위로 정규화한다. [ALIASES] 에 없으면 원문 그대로 반환.
+         *
+         * 인원현황 표의 열 판정은 항상 본 함수를 거친 값으로 한다 — 판촉직·OSC직의 고정 열 합산과
+         * 판매조장의 동적 열 라벨이 같은 기준을 쓰게 하기 위함.
+         */
+        fun normalize(jikwee: String): String = ALIASES[jikwee] ?: jikwee
 
         /**
          * 직무코드에 해당하는 표준 직위 열 목록.

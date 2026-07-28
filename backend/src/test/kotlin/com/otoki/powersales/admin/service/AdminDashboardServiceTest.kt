@@ -276,7 +276,7 @@ class AdminDashboardServiceTest {
         stubEmpty()
         every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
             employee(jobCode = "판촉직", jikwee = "OSPM"),
-            employee(jobCode = "판촉직", jikwee = "수습사원"),
+            employee(jobCode = "판촉직", jikwee = "대리"),
             employee(jobCode = "판촉직", jikwee = null),
             employee(jobCode = "OSC직", jikwee = "OSC"),
             // 레이디직(구 OSC)은 OSC직 그룹에 합산된다
@@ -295,6 +295,27 @@ class AdminDashboardServiceTest {
         val osc = byRank.first { it.group == "OSC직" }
         assertThat(osc.ranks.map { it.label }).containsExactly("OSC")
         assertThat(osc.ranks.first { it.label == "OSC" }.count).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("직급별 인원현황 — 수습사원은 '기타' 가 아니라 OSPJ 에 합산된다")
+    fun rankGroupsProbationCountsAsOspj() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikwee = "OSPJ"),
+            employee(jobCode = "판촉직", jikwee = "수습사원"),
+            // 판매조장(동적 열)도 같은 기준으로 정규화된다
+            employee(jobCode = "판촉직", jikchak = "판매조장", jikwee = "수습사원"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.active.byRank
+
+        val promotion = byRank.first { it.group == "판촉직" }
+        assertThat(promotion.ranks.first { it.label == "OSPJ" }.count).isEqualTo(2)
+        assertThat(promotion.ranks.map { it.label }).doesNotContain("기타", "수습사원")
+
+        val leader = byRank.first { it.group == "판매조장" }
+        assertThat(leader.ranks.map { it.label to it.count }).containsExactly("OSPJ" to 1)
     }
 
     @Test

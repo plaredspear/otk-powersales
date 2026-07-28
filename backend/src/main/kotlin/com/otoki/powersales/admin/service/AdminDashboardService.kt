@@ -469,7 +469,7 @@ class AdminDashboardService(
     /** 실제 존재하는 직위만 노출 (인원수 내림차순, 동수면 라벨 오름차순). 판매조장 그룹 전용. */
     private fun buildDynamicRanks(employees: List<DashboardEmployeeProjection>): List<RankCount> {
         return employees
-            .groupingBy { it.jikwee?.trim()?.takeIf(String::isNotBlank) ?: StaffRank.ETC_LABEL }
+            .groupingBy { rankLabelOf(it) ?: StaffRank.ETC_LABEL }
             .eachCount()
             .map { (label, count) -> RankCount(label, count) }
             .sortedWith(compareByDescending<RankCount> { it.count }.thenBy { it.label })
@@ -486,11 +486,19 @@ class AdminDashboardService(
         employees: List<DashboardEmployeeProjection>,
         standardCodes: List<String>,
     ): List<RankCount> {
-        val byRank = employees.groupingBy { it.jikwee?.trim() }.eachCount()
+        val byRank = employees.groupingBy { rankLabelOf(it) }.eachCount()
         val standard = standardCodes.map { RankCount(it, byRank[it] ?: 0) }
-        val etc = employees.count { it.jikwee?.trim() !in standardCodes }
+        val etc = employees.count { rankLabelOf(it) !in standardCodes }
         return if (etc > 0) standard + RankCount(StaffRank.ETC_LABEL, etc) else standard
     }
+
+    /**
+     * 사원의 직위 열 라벨 — 공백 정리 + 표준 직위 정규화(수습사원 → OSPJ). 값이 없으면 null.
+     *
+     * 고정 열(판촉직·OSC직)과 동적 열(판매조장)이 같은 기준으로 묶이도록 단일 진입점으로 둔다.
+     */
+    private fun rankLabelOf(employee: DashboardEmployeeProjection): String? =
+        employee.jikwee?.trim()?.takeIf(String::isNotBlank)?.let(StaffRank::normalize)
 
     /**
      * 기본 현황 화면에 표기할 인원 기준일 — 서버 KST 기준 **전일**.
