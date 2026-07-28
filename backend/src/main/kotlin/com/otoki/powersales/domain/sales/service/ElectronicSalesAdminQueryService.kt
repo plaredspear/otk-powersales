@@ -4,7 +4,10 @@ import com.otoki.pos.repository.ElectronicSalesCustomerRow
 import com.otoki.pos.repository.LiveTotSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductLookupFilterOptions
+import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.service.AdminProductService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.config.CacheConfig
@@ -14,9 +17,12 @@ import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDe
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardFilterOptionsResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductAdvancedItem
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductAdvancedResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductLookupItem
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -56,6 +62,8 @@ class ElectronicSalesAdminQueryService(
     private val accountRepository: AccountRepository,
     private val liveTotSalesDailyRepository: LiveTotSalesDailyRepository,
     private val productRepository: ProductRepository,
+    /** 제품 고급 검색 필터 옵션의 분류 트리 재사용 — 제품 관리 화면과 동일한 조립 규칙을 공유한다. */
+    private val adminProductService: AdminProductService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -229,6 +237,78 @@ class ElectronicSalesAdminQueryService(
                     barcode = it.barcode ?: "",
                 )
             }
+    }
+
+    /**
+     * 조회 조건의 제품 고급 검색 — 키워드 + 대/중/소분류 + 제품상태 조합 (페이징).
+     *
+     * [searchProducts] (드롭다운 빠른 검색) 이 상위 [PRODUCT_LOOKUP_LIMIT] 건만 반환해 결과가 많은
+     * 키워드에서 뒤쪽 제품에 도달할 수 없는 문제를 해소한다 — 행사마스터 제품 고급 검색과 동일 목적.
+     *
+     * 대상 집합은 드롭다운과 동일하게 소비자 바코드 보유 제품 한정 이다. 바코드가 없으면
+     * POS `UPC_CD IN` 필터에 사용할 수 없어 선택해도 항상 매출 0 건이 되므로, 헛선택을 원천 차단한다.
+     *
+     * 대분류/제품상태는 목록 조회(`/list`) 의 필터 축에는 없지만, 고급 검색은 필터 자체가 아니라
+     * 선택 결과(productIds) 만 목록에 전달하므로 축 불일치 문제가 없다.
+     *
+     * 응답에 대표 바코드를 포함해 화면이 드롭다운과 동일한 제품 라벨을 만들 수 있게 한다.
+     */
+    fun searchProductsAdvanced(
+        keyword: String?,
+        category1: String?,
+        category2: String?,
+        category3: String?,
+        productStatus: String?,
+        page: Int,
+        size: Int,
+    ): ElectronicSalesProductAdvancedResponse {
+        val pageable = PageRequest.of(page, size)
+        val productPage = productRepository.searchForElectronicSalesAdvanced(
+            keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },
+            category1 = category1,
+            category2 = category2,
+            category3 = category3,
+            productStatus = productStatus,
+            pageable = pageable,
+        )
+        return ElectronicSalesProductAdvancedResponse(
+            content = productPage.content.map { row ->
+                val p = row.product
+                ElectronicSalesProductAdvancedItem(
+                    id = p.id,
+                    productCode = p.productCode,
+                    name = p.name,
+                    barcode = row.barcode,
+                    category1 = p.productCategory1,
+                    category2 = p.productCategory2,
+                    category3 = p.productCategory3,
+                    standardUnitPrice = p.standardUnitPrice,
+                    unit = p.unit,
+                    storageCondition = p.storageCondition?.displayName,
+                    // 저장값이 아니라 화면 표시명 — 값이 없으면 "판매중", `출고중지` 는 "단종".
+                    productStatus = p.productStatus?.label ?: ProductStatus.DEFAULT_LABEL,
+                    launchDate = p.launchDate?.toString(),
+                )
+            },
+            page = page,
+            size = size,
+            totalElements = productPage.totalElements,
+            totalPages = productPage.totalPages,
+        )
+    }
+
+    /**
+     * 제품 고급 검색 모달의 필터 드롭다운 옵션 — 대/중/소분류 트리 + 제품상태.
+     *
+     * 기존 [getFilterOptions] 의 `categories` 는 중/소분류 2단이라 고급 검색의 대분류 필터를 채울 수
+     * 없어 별도로 공급한다. `/api/v1/admin/products/lookup-filter-options` 는 promotion.READ 가드라
+     * 재사용 불가 — 본 화면 도메인 권한(`monthly_sales_history`) 으로 가드된 endpoint 가 필요하다.
+     */
+    fun getProductLookupFilterOptions(): ProductLookupFilterOptions {
+        return ProductLookupFilterOptions(
+            categories = adminProductService.getCategories(),
+            productStatuses = ProductStatus.labels(),
+        )
     }
 
     // ------------------- helpers -------------------

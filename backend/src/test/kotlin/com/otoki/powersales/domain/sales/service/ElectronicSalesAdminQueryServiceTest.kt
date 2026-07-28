@@ -7,9 +7,14 @@ import com.otoki.pos.repository.LiveTotSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountDistributionAbcPairRow
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.dto.response.Category2Node
+import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.CategoryGroupRow
+import com.otoki.powersales.domain.foundation.product.repository.ElectronicSalesProductAdvancedRow
 import com.otoki.powersales.domain.foundation.product.repository.ElectronicSalesProductLookupRow
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.service.AdminProductService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.exception.BusinessException
@@ -21,6 +26,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -30,7 +37,15 @@ class ElectronicSalesAdminQueryServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val posRepository: LiveTotSalesDailyRepository = mockk()
     private val productRepository: ProductRepository = mockk()
-    private val service = ElectronicSalesAdminQueryService(accountRepository, posRepository, productRepository)
+
+    /** 제품 고급 검색 필터 옵션 전용 협력자 — 본 테스트가 다루는 목록/상세 경로에서는 호출되지 않는다. */
+    private val adminProductService: AdminProductService = mockk()
+    private val service = ElectronicSalesAdminQueryService(
+        accountRepository,
+        posRepository,
+        productRepository,
+        adminProductService,
+    )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -473,5 +488,110 @@ class ElectronicSalesAdminQueryServiceTest {
         assertThat(result).hasSize(1)
         assertThat(result.first().productId).isEqualTo(10L)
         assertThat(result.first().barcode).isEqualTo("880001")
+    }
+
+    @Test
+    @DisplayName("searchProductsAdvanced — 공백 키워드는 null 로 정규화되어 분류 필터만 적용된다")
+    fun searchProductsAdvancedNormalizesBlankKeyword() {
+        val pageable = PageRequest.of(0, 20)
+        every {
+            productRepository.searchForElectronicSalesAdvanced(
+                keyword = null,
+                category1 = "면류",
+                category2 = null,
+                category3 = null,
+                productStatus = null,
+                pageable = pageable,
+            )
+        } returns PageImpl(emptyList(), pageable, 0)
+
+        val result = service.searchProductsAdvanced(
+            keyword = "   ",
+            category1 = "면류",
+            category2 = null,
+            category3 = null,
+            productStatus = null,
+            page = 0,
+            size = 20,
+        )
+
+        assertThat(result.totalElements).isZero()
+        verify {
+            productRepository.searchForElectronicSalesAdvanced(
+                keyword = null,
+                category1 = "면류",
+                category2 = null,
+                category3 = null,
+                productStatus = null,
+                pageable = pageable,
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("searchProductsAdvanced — 키워드 trim 후 전달 + page/size 는 요청값 그대로 반환")
+    fun searchProductsAdvancedTrimsKeywordAndEchoesPaging() {
+        val pageable = PageRequest.of(1, 20)
+        val row = ElectronicSalesProductAdvancedRow(
+            product = Product(
+                name = "진라면",
+                productCode = "P100",
+                productCategory1 = "면류",
+                productCategory2 = "라면",
+                productCategory3 = "봉지",
+            ),
+            barcode = "880001",
+        )
+        every {
+            productRepository.searchForElectronicSalesAdvanced(
+                keyword = "진라면",
+                category1 = null,
+                category2 = null,
+                category3 = null,
+                productStatus = "판매중",
+                pageable = pageable,
+            )
+        } returns PageImpl(listOf(row), pageable, 21)
+
+        val result = service.searchProductsAdvanced(
+            keyword = " 진라면 ",
+            category1 = null,
+            category2 = null,
+            category3 = null,
+            productStatus = "판매중",
+            page = 1,
+            size = 20,
+        )
+
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content.first().name).isEqualTo("진라면")
+        // 화면 라벨이 드롭다운과 동일해지도록 대표 바코드를 그대로 전달한다.
+        assertThat(result.content.first().barcode).isEqualTo("880001")
+        // 제품상태 저장값이 없으면 표시명 "판매중" 으로 내려간다.
+        assertThat(result.content.first().productStatus).isEqualTo("판매중")
+        // page/size 는 Page 객체가 아니라 요청값을 그대로 반환한다 (기존 lookup 응답 계약 정합).
+        assertThat(result.page).isEqualTo(1)
+        assertThat(result.size).isEqualTo(20)
+        assertThat(result.totalElements).isEqualTo(21)
+        assertThat(result.totalPages).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("getProductLookupFilterOptions — 분류 트리 + 제품상태 표시명 결합")
+    fun productLookupFilterOptionsCombinesCategoriesAndStatuses() {
+        every { adminProductService.getCategories() } returns listOf(
+            CategoryTree(
+                category1 = "면류",
+                children = listOf(Category2Node(category2 = "라면", children = listOf("봉지"))),
+            ),
+        )
+
+        val result = service.getProductLookupFilterOptions()
+
+        assertThat(result.categories).hasSize(1)
+        assertThat(result.categories.first().category1).isEqualTo("면류")
+        assertThat(result.categories.first().children.first().children).containsExactly("봉지")
+        // 저장값("-"/"출고중지") 이 아니라 화면 표시명을 내려준다.
+        assertThat(result.productStatuses).containsExactly("판매중", "단종")
     }
 }

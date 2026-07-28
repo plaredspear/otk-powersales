@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.foundation.product.repository
 
 import com.otoki.powersales.domain.foundation.product.entity.Product
-import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.domain.foundation.product.entity.QProductBarcode.Companion.productBarcode
+import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Expression
 import com.querydsl.core.types.OrderSpecifier
@@ -44,6 +44,23 @@ class ProductRepositoryCustomImpl(
         return unitMatchedBarcodeExists
             .and(product.productCategory3.`in`(ORDERABLE_CATEGORY3))
             .and(product.productStatus.isNull)
+    }
+
+    /**
+     * 제품상태 필터 — 파라미터는 화면 표시명("판매중"/"단종") 으로 들어온다.
+     *
+     * PLACEHOLDER("-" → "판매중") 은 저장값이 없는(null) 제품을 가리키므로 eq 가 아니라 isNull 로
+     * 평가해야 한다 — 저장값 "-" 는 운영 데이터에 없지만, 있더라도 같은 "판매중" 집합에 포함시킨다.
+     * 미지정(null/blank) 이거나 알 수 없는 표시명이면 필터를 적용하지 않는다(null 반환).
+     */
+    private fun productStatusFilter(productStatus: String?): BooleanExpression? {
+        if (productStatus.isNullOrBlank()) return null
+        val status = ProductStatus.fromLabelOrNull(productStatus) ?: return null
+        return if (status == ProductStatus.PLACEHOLDER) {
+            product.productStatus.isNull.or(product.productStatus.eq(status))
+        } else {
+            product.productStatus.eq(status)
+        }
     }
 
     /**
@@ -134,18 +151,7 @@ class ProductRepositoryCustomImpl(
         if (!category3.isNullOrBlank()) {
             builder.and(product.productCategory3.eq(category3))
         }
-        if (!productStatus.isNullOrBlank()) {
-            // 필터 파라미터는 화면 표시명("판매중"/"단종") 으로 들어온다. "판매중" 은 저장값이 없는
-            // (null) 제품을 가리키므로 eq 가 아니라 isNull 로 평가해야 한다 — PLACEHOLDER("-") 는
-            // 운영 데이터에 존재하지 않지만, 있더라도 같은 "판매중" 집합에 포함시킨다.
-            ProductStatus.Companion.fromLabelOrNull(productStatus)?.let {
-                if (it.label == ProductStatus.DEFAULT_LABEL) {
-                    builder.and(product.productStatus.isNull.or(product.productStatus.eq(it)))
-                } else {
-                    builder.and(product.productStatus.eq(it))
-                }
-            }
-        }
+        productStatusFilter(productStatus)?.let { builder.and(it) }
 
         val content = queryFactory
             .selectFrom(product)
@@ -401,6 +407,94 @@ class ProductRepositoryCustomImpl(
                     barcode = tuple.get(representativeBarcode),
                 )
             }
+    }
+
+    override fun searchForElectronicSalesAdvanced(
+        keyword: String?,
+        category1: String?,
+        category2: String?,
+        category3: String?,
+        productStatus: String?,
+        pageable: Pageable,
+    ): Page<ElectronicSalesProductAdvancedRow> {
+        val builder = BooleanBuilder()
+
+        builder.and(product.isDeleted.isNull.or(product.isDeleted.eq(false)))
+
+        // 소비자 바코드 보유 제품 한정 — 드롭다운 빠른 검색(searchForElectronicSales) 과 동일 집합.
+        // JOIN 대신 EXISTS 를 쓰는 이유: 제품당 바코드가 여러 건이라 JOIN 시 중복 행이 생겨
+        // 페이징 total 이 부풀고 offset 이 어긋난다.
+        val barcodeExists = JPAExpressions.selectOne()
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.barcode.isNotNull,
+            )
+            .exists()
+        builder.and(barcodeExists)
+
+        if (!keyword.isNullOrBlank()) {
+            val lowerPattern = "%${keyword.lowercase()}%"
+            val rawPattern = "%$keyword%"
+            // 소비자 바코드 부분일치는 EXISTS 서브쿼리로 — 위와 같은 이유(중복 행 방지).
+            val barcodeLikeExists = JPAExpressions.selectOne()
+                .from(productBarcode)
+                .where(
+                    productBarcode.productId.eq(product.id),
+                    productBarcode.barcode.like(rawPattern),
+                )
+                .exists()
+            builder.and(
+                product.name.lower().like(lowerPattern)
+                    .or(product.productCode.lower().like(lowerPattern))
+                    .or(barcodeLikeExists)
+            )
+        }
+
+        if (!category1.isNullOrBlank()) {
+            builder.and(product.productCategory1.eq(category1))
+        }
+        if (!category2.isNullOrBlank()) {
+            builder.and(product.productCategory2.eq(category2))
+        }
+        if (!category3.isNullOrBlank()) {
+            builder.and(product.productCategory3.eq(category3))
+        }
+        productStatusFilter(productStatus)?.let { builder.and(it) }
+
+        // 대표 바코드는 SELECT 절 상관 서브쿼리로 함께 가져온다 — JOIN 이면 바코드 다건 제품이
+        // 행 증식을 일으켜 페이징이 어긋난다. min() 으로 단일 스칼라를 보장한다.
+        val representativeBarcode = JPAExpressions
+            .select(productBarcode.barcode.min())
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.barcode.isNotNull,
+            )
+
+        val content = queryFactory
+            .select(product, representativeBarcode)
+            .from(product)
+            .where(builder)
+            .orderBy(product.name.asc(), product.productCode.asc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+            .map { tuple ->
+                ElectronicSalesProductAdvancedRow(
+                    product = tuple.get(product)!!,
+                    barcode = tuple.get(representativeBarcode),
+                )
+            }
+
+        val countQuery = queryFactory
+            .select(product.count())
+            .from(product)
+            .where(builder)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
     }
 
     override fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow> {

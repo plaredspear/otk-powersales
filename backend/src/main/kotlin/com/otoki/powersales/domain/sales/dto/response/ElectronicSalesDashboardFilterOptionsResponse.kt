@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.sales.dto.response
 
+import java.math.BigDecimal
+
 /**
  * 전산실적 대시보드 조회 조건 옵션 — 유통형태 / 거래처유형 / 제품 중·소분류.
  *
@@ -33,4 +35,41 @@ data class ElectronicSalesProductLookupItem(
     val name: String?,
     val productCode: String?,
     val barcode: String,
+)
+
+/**
+ * 전산실적/POS 제품 고급 검색 응답 (페이징).
+ *
+ * 드롭다운 빠른 검색([ElectronicSalesProductLookupItem])이 상위 N건만 반환해 결과가 많은 키워드에서
+ * 뒤쪽 제품에 도달할 수 없는 문제를 해소한다. 제품 관리 화면의 `ProductListResponse` 를 쓰지 않고
+ * 전용 DTO 를 두는 이유는 [ElectronicSalesProductAdvancedItem] 의 `barcode` 때문이다.
+ */
+data class ElectronicSalesProductAdvancedResponse(
+    val content: List<ElectronicSalesProductAdvancedItem>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+/**
+ * 제품 고급 검색 결과 1건 — 결과 그리드 표시 컬럼 + 대표 바코드.
+ *
+ * [barcode] 는 화면이 드롭다운과 동일한 `제품명 (제품코드 / 바코드)` 라벨을 만들 수 있게 함께
+ * 내린다. 검색 대상이 바코드 보유 제품 한정이므로 항상 값이 존재한다 (방어적으로 nullable 유지).
+ * `productStatus` 는 저장값이 아니라 화면 표시명("판매중"/"단종") 이다.
+ */
+data class ElectronicSalesProductAdvancedItem(
+    val id: Long,
+    val productCode: String?,
+    val name: String?,
+    val barcode: String?,
+    val category1: String?,
+    val category2: String?,
+    val category3: String?,
+    val standardUnitPrice: BigDecimal?,
+    val unit: String?,
+    val storageCondition: String?,
+    val productStatus: String?,
+    val launchDate: String?,
 )

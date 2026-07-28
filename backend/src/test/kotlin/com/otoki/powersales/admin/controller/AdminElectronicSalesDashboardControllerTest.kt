@@ -3,11 +3,16 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.domain.foundation.product.dto.response.Category2Node
+import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductLookupFilterOptions
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardFilterOptionsResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductAdvancedItem
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductAdvancedResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductLookupItem
 import com.otoki.powersales.domain.sales.service.ElectronicSalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.ElectronicSalesDashboardExcelExporter
@@ -26,6 +31,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @WebMvcTest(AdminElectronicSalesDashboardController::class)
@@ -189,5 +195,92 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data[0].productId").value(10))
             .andExpect(jsonPath("$.data[0].barcode").value("880001"))
+    }
+
+    @Test
+    @DisplayName("GET /product-lookup/advanced - 키워드 + 분류/상태 필터를 그대로 전달하고 페이징 응답 반환")
+    fun productLookupAdvanced() {
+        every {
+            queryService.searchProductsAdvanced(
+                keyword = "진라면",
+                category1 = "면류",
+                category2 = "라면",
+                category3 = "봉지",
+                productStatus = "판매중",
+                page = 1,
+                size = 20,
+            )
+        } returns ElectronicSalesProductAdvancedResponse(
+            content = listOf(
+                ElectronicSalesProductAdvancedItem(
+                    id = 10,
+                    productCode = "P100",
+                    name = "진라면",
+                    barcode = "880001",
+                    category1 = "면류",
+                    category2 = "라면",
+                    category3 = "봉지",
+                    standardUnitPrice = BigDecimal("1200"),
+                    unit = "EA",
+                    storageCondition = "실온",
+                    productStatus = "판매중",
+                    launchDate = "2020-01-01",
+                ),
+            ),
+            page = 1,
+            size = 20,
+            totalElements = 21,
+            totalPages = 2,
+        )
+
+        mockMvc.perform(
+            get("/api/v1/admin/sales/electronic/product-lookup/advanced")
+                .param("keyword", "진라면")
+                .param("category1", "면류")
+                .param("category2", "라면")
+                .param("category3", "봉지")
+                .param("productStatus", "판매중")
+                .param("page", "1")
+                .param("size", "20"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content[0].id").value(10))
+            .andExpect(jsonPath("$.data.content[0].name").value("진라면"))
+            // 화면 라벨이 드롭다운과 동일해지도록 바코드를 함께 내린다.
+            .andExpect(jsonPath("$.data.content[0].barcode").value("880001"))
+            .andExpect(jsonPath("$.data.totalElements").value(21))
+
+        verify {
+            queryService.searchProductsAdvanced(
+                keyword = "진라면",
+                category1 = "면류",
+                category2 = "라면",
+                category3 = "봉지",
+                productStatus = "판매중",
+                page = 1,
+                size = 20,
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("GET /product-lookup/filter-options - 대/중/소분류 트리 + 제품상태 응답")
+    fun productLookupFilterOptions() {
+        every { queryService.getProductLookupFilterOptions() } returns ProductLookupFilterOptions(
+            categories = listOf(
+                CategoryTree(
+                    category1 = "면류",
+                    children = listOf(Category2Node(category2 = "라면", children = listOf("봉지"))),
+                ),
+            ),
+            productStatuses = listOf("판매중", "단종"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/sales/electronic/product-lookup/filter-options"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.categories[0].category1").value("면류"))
+            .andExpect(jsonPath("$.data.categories[0].children[0].category2").value("라면"))
+            .andExpect(jsonPath("$.data.categories[0].children[0].children[0]").value("봉지"))
+            .andExpect(jsonPath("$.data.productStatuses[0]").value("판매중"))
     }
 }

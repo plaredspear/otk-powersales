@@ -223,3 +223,107 @@ export async function fetchProductLookup(keyword: string): Promise<ElectronicSal
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('제품 검색', res));
   return res.data.data;
 }
+
+/**
+ * 제품 고급 검색 키워드 최소 길이 — backend `@Size(min = 1)` 보다 강한 화면 정책.
+ *
+ * 1자 키워드는 매칭이 과도해 페이징 전체를 훑게 되므로 화면에서 2자 이상으로 제한한다.
+ * 이 값 미만이면 분류/상태 필터가 하나라도 있어야 검색이 실행된다.
+ */
+export const PRODUCT_ADVANCED_MIN_KEYWORD_LENGTH = 2;
+
+/** 제품 고급 검색 조건 — 키워드 + 대/중/소분류 + 제품상태 조합. */
+export interface ElectronicSalesProductAdvancedSearchParams {
+  keyword?: string;
+  category1?: string;
+  category2?: string;
+  category3?: string;
+  productStatus?: string;
+  page?: number;
+  size?: number;
+}
+
+/** 제품 고급 검색 결과 1건 — 그리드 표시용 상세 컬럼 + 대표 바코드. */
+export interface ElectronicSalesProductAdvancedItem {
+  id: number;
+  productCode: string | null;
+  name: string | null;
+  /**
+   * 대표 바코드 — 드롭다운과 동일한 `제품명 (제품코드 / 바코드)` 라벨을 만들기 위해 함께 내려온다.
+   * 검색 대상이 바코드 보유 제품 한정이라 사실상 항상 값이 있다.
+   */
+  barcode: string | null;
+  category1: string | null;
+  category2: string | null;
+  category3: string | null;
+  standardUnitPrice: number | null;
+  unit: string | null;
+  storageCondition: string | null;
+  productStatus: string | null;
+  launchDate: string | null;
+}
+
+export interface ElectronicSalesProductAdvancedSearchResponse {
+  content: ElectronicSalesProductAdvancedItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+/**
+ * 제품 고급 검색 — 키워드 + 대/중/소분류 + 제품상태 조합 (페이징).
+ *
+ * 드롭다운 빠른 검색([fetchProductLookup])이 상위 50건만 반환해 결과가 많은 키워드에서 뒤쪽
+ * 제품에 도달할 수 없는 문제를 해소한다. 검색 대상은 드롭다운과 동일한 소비자 바코드 보유 제품 한정.
+ */
+export async function fetchProductAdvancedSearch(
+  params: ElectronicSalesProductAdvancedSearchParams,
+): Promise<ElectronicSalesProductAdvancedSearchResponse> {
+  const res = await client.get<ApiResponse<ElectronicSalesProductAdvancedSearchResponse>>(
+    `${BASE}/product-lookup/advanced`,
+    {
+      params: {
+        ...(params.keyword ? { keyword: params.keyword } : {}),
+        ...(params.category1 ? { category1: params.category1 } : {}),
+        ...(params.category2 ? { category2: params.category2 } : {}),
+        ...(params.category3 ? { category3: params.category3 } : {}),
+        ...(params.productStatus ? { productStatus: params.productStatus } : {}),
+        ...(params.page !== undefined ? { page: params.page } : {}),
+        ...(params.size !== undefined ? { size: params.size } : {}),
+      },
+    },
+  );
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('제품 고급 검색', res));
+  return res.data.data;
+}
+
+/** 제품 고급 검색 모달의 필터 드롭다운 옵션 — 대/중/소분류 트리 + 제품상태. */
+export interface ElectronicSalesCategory2Node {
+  category2: string;
+  children: string[];
+}
+
+export interface ElectronicSalesCategoryTree {
+  category1: string;
+  children: ElectronicSalesCategory2Node[];
+}
+
+export interface ElectronicSalesProductLookupFilterOptions {
+  categories: ElectronicSalesCategoryTree[];
+  /** 제품상태 화면 표시명 ("판매중"/"단종") — 저장값이 아니며 검색 파라미터도 같은 표시명. */
+  productStatuses: string[];
+}
+
+/**
+ * 제품 고급 검색 모달의 필터 옵션 조회 — 모달 오픈 시에만 호출.
+ *
+ * 기존 [fetchFilterOptions] 의 categories 는 중/소분류 2단이라 대분류 필터를 채울 수 없어 분리한다.
+ */
+export async function fetchProductLookupFilterOptions(): Promise<ElectronicSalesProductLookupFilterOptions> {
+  const res = await client.get<ApiResponse<ElectronicSalesProductLookupFilterOptions>>(
+    `${BASE}/product-lookup/filter-options`,
+  );
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('제품 검색 조건 옵션', res));
+  return res.data.data;
+}

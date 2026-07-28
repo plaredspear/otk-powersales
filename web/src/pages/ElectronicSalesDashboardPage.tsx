@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Card, Col, DatePicker, Input, Row, Select, Statistic, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
@@ -8,10 +8,10 @@ import {
   exportListParams,
   fetchFilterOptions,
   fetchList,
-  fetchProductLookup,
   type ElectronicSalesDashboardListItem,
-  type ElectronicSalesProductLookupItem,
 } from '@/api/electronicSalesDashboard';
+import SalesProductSelector from '@/components/product/SalesProductSelector';
+import { useSalesProductSelector } from '@/hooks/sales/useSalesProductSelector';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { buildListPagination } from '@/lib/listPagination';
@@ -56,7 +56,8 @@ export default function ElectronicSalesDashboardPage() {
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<ElectronicSalesProductLookupItem[]>([]);
+  // 제품 선택 — 드롭다운 빠른 검색 + 고급 검색 모달. POS 매출 화면과 동일 훅/위젯을 공유한다.
+  const productSelector = useSalesProductSelector();
   const [category2, setCategory2] = useState<string | undefined>(undefined);
   const [category3, setCategory3] = useState<string | undefined>(undefined);
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
@@ -121,42 +122,6 @@ export default function ElectronicSalesDashboardPage() {
     ).map((c3) => ({ value: c3, label: c3 }));
   }, [filterOptions, category2]);
 
-  // 제품 검색 — 입력 300ms 디바운스 후 제품명/제품코드/바코드 부분일치 조회 (최대 50건).
-  const [productKeyword, setProductKeyword] = useState('');
-  const productDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const handleProductSearch = (value: string) => {
-    clearTimeout(productDebounceRef.current);
-    productDebounceRef.current = setTimeout(() => setProductKeyword(value.trim()), 300);
-  };
-  const productLookupQuery = useQuery({
-    queryKey: ['electronicSalesDashboard', 'product-lookup', productKeyword],
-    queryFn: () => fetchProductLookup(productKeyword),
-    enabled: productKeyword.length > 0,
-    staleTime: 60 * 1000,
-  });
-
-  // 선택된 제품 + 현재 검색 결과를 병합해 옵션 구성 — 선택 항목의 라벨이 검색어 변경 후에도 유지.
-  const productOptions = useMemo(() => {
-    const byId = new Map<number, ElectronicSalesProductLookupItem>();
-    selectedProducts.forEach((p) => byId.set(p.productId, p));
-    (productLookupQuery.data ?? []).forEach((p) => {
-      if (!byId.has(p.productId)) byId.set(p.productId, p);
-    });
-    return [...byId.values()].map((p) => ({
-      value: p.productId,
-      label: `${p.name ?? '-'} (${p.productCode ?? '-'} / ${p.barcode})`,
-      item: p,
-    }));
-  }, [selectedProducts, productLookupQuery.data]);
-
-  const handleProductChange = (ids: number[]) => {
-    const pool = new Map<number, ElectronicSalesProductLookupItem>();
-    productOptions.forEach((o) => pool.set(o.value, o.item));
-    setSelectedProducts(
-      ids.map((id) => pool.get(id)).filter((p): p is ElectronicSalesProductLookupItem => p != null),
-    );
-  };
-
   const listQuery = useQuery({
     queryKey: ['electronicSalesDashboard', 'list', queryParams, page, pageSize, sort],
     queryFn: () => {
@@ -194,7 +159,7 @@ export default function ElectronicSalesDashboardPage() {
       customerKeyword: customerKeyword.trim() || undefined,
       distributionChannels,
       accountTypes,
-      productIds: selectedProducts.map((p) => p.productId),
+      productIds: productSelector.productIds,
       category2,
       category3,
     });
@@ -398,25 +363,7 @@ export default function ElectronicSalesDashboardPage() {
             <div>
               <span>제품 (제품명/제품코드/바코드):</span>
               <div style={{ marginTop: 4 }}>
-                <Select
-                  mode="multiple"
-                  value={selectedProducts.map((p) => p.productId)}
-                  onChange={handleProductChange}
-                  onSearch={handleProductSearch}
-                  options={productOptions}
-                  placeholder="검색 후 추가 (미선택 시 전체)"
-                  // 폭 고정 — 가변 폭(minWidth~maxWidth) + responsive 조합은 임계 폭 근처에서
-                  // 태그 펼침(폭 확장)↔접힘(폭 축소)이 무한 반복되며 화면이 깜빡인다(flickering).
-                  style={{ width: 320 }}
-                  maxTagCount="responsive"
-                  allowClear
-                  showSearch
-                  filterOption={false}
-                  loading={productLookupQuery.isFetching}
-                  notFoundContent={
-                    productKeyword ? '검색 결과 없음' : '제품명, 제품코드 또는 바코드를 입력하세요'
-                  }
-                />
+                <SalesProductSelector selector={productSelector} width={320} />
               </div>
             </div>
             <div>

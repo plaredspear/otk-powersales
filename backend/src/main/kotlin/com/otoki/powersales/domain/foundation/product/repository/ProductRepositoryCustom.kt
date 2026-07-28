@@ -92,7 +92,38 @@ interface ProductRepositoryCustom {
      * 단종/비발주 제품의 과거 실적도 대상.
      */
     fun searchForElectronicSales(keyword: String, limit: Long): List<ElectronicSalesProductLookupRow>
+
+    /**
+     * 전산실적/POS 매출 조회 조건의 제품 고급 검색 — 키워드 + 대/중/소분류 + 제품상태 조합 (페이징).
+     *
+     * [searchForElectronicSales] (드롭다운 빠른 검색) 의 페이징 + 분류/상태 필터 확장판.
+     * 검색 축과 대상 집합은 드롭다운과 동일하게 유지한다:
+     *  - 소비자 바코드 보유 제품만 (바코드가 없으면 POS `UPC_CD IN` 필터에 사용 불가 → 항상 매출 0 건)
+     *  - 키워드는 제품명/제품코드/소비자 바코드 OR 부분일치
+     *    (제품 관리 화면의 `searchForAdmin` 은 물류 바코드를 쓰지만, POS 매출 집계 키는 소비자 바코드다)
+     *  - 발주가능(가정/업소·활성) 필터는 적용하지 않는다 — 단종/비발주 제품의 과거 실적도 조회 대상
+     */
+    fun searchForElectronicSalesAdvanced(
+        keyword: String?,
+        category1: String?,
+        category2: String?,
+        category3: String?,
+        productStatus: String?,
+        pageable: Pageable,
+    ): Page<ElectronicSalesProductAdvancedRow>
 }
+
+/**
+ * 전산실적/POS 제품 고급 검색 결과 1건 — 그리드 표시 컬럼 + 대표 바코드(min).
+ *
+ * 바코드를 함께 내리는 이유: 화면의 제품 선택 드롭다운 라벨이 `제품명 (제품코드 / 바코드)` 형식이라,
+ * 고급 검색으로 담은 제품만 바코드를 몰라 라벨이 달라지는 것을 막는다. 검색 대상이 바코드 보유
+ * 제품 한정이므로 항상 값이 존재한다.
+ */
+data class ElectronicSalesProductAdvancedRow(
+    val product: Product,
+    val barcode: String?,
+)
 
 /** 전산실적 제품 검색 결과 1건 — 대표 바코드(min)와 함께 반환. */
 data class ElectronicSalesProductLookupRow(
