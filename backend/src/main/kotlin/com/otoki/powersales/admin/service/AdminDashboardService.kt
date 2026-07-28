@@ -51,14 +51,14 @@ import java.time.format.DateTimeFormatter
  * - 여사원 투입현황 탭 차트는 SF 레거시 대시보드(LAST_MONTH 필터)와 동일하게 **모두 전월(마감) 고정**
  *   (결정 D2 를 탭 전체로 확장). 매출현황/기본현황은 yearMonth 토글(당월 기본).
  * - 판촉/OSC 구분: `Employee.jobCode`("판촉직" / "OSC직"·"레이디직") — 레거시 `EmployeeTriggerHandler.cls:47` 정합(결정 D6).
- * - **지점 매칭 축이 섹션마다 다르다** (사용자 결정 2026-07-28):
- *   - 투입현황 / 매출현황(MFEIS 기반): `cost_center_code` + [BranchCodeExpander] 이력 코드 확장.
- *     조직 개편(2025-05) 후 발령 미수신 사원(옛 코드 보유)을 계보상 현행 지점에 계상한다.
- *     여사원 현황 목록 / 여사원일정 등과 동일 축.
- *   - **기본현황**: `org_name`(조직명 문자열) 정확 일치. 레거시 리포트 `new_report_72Y` 의
- *     `groupingsDown = OrgName__c` 정합 — 그 리포트 수치와 일치시키기 위한 선택이다.
- *   두 축은 옛 코드/옛 조직명이 남은 사원에서 결과가 갈린다 (조직명이 재배치된 지점은 계보와
- *   다른 지점에 계상되고, 소멸한 조직명은 어느 지점에도 잡히지 않는다). 상세는 지점축 차이 명세 문서.
+ * - **지점 매칭 축은 3섹션 공통** — `cost_center_code` + [BranchCodeExpander] 이력 코드 확장.
+ *   조직 개편(2025-05) 후 발령 미수신 사원(옛 코드 보유)을 계보상 현행 지점에 계상한다.
+ *   여사원 현황 목록 / 여사원일정 등과 동일 축.
+ *
+ *   기본현황은 본래 `org_name`(조직명 문자열) 정확 일치였다 — 레거시 리포트 `new_report_72Y` 의
+ *   `groupingsDown = OrgName__c` 정합. 그러나 조직명이 재배치된 지점은 계보와 다른 지점에 계상되고
+ *   소멸한 조직명은 어느 지점에도 잡히지 않아, 같은 화면의 다른 두 섹션과 수치가 갈렸다.
+ *   코드 축으로 통일해 이 차이를 없앴다 (사용자 결정 2026-07-28).
  * - 매출현황 탭(salesSummary): 투입 거래처 기준 실적 + 목표 + 달성률 + 기준진도율(달력일) + 전년 비교.
  *   목표는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계 총합, 달성률 = round(실적/목표×100).
  *   유통별 목표/진도율(channelSales)은 데이터 부재로 빈 리스트.
@@ -111,12 +111,10 @@ class AdminDashboardService(
             ym.year.toString(), ym.monthValue.toString(), queryCodes,
         )
 
-        val branchNames = resolveBasicStatsBranchNames(effectiveCodes, branchNamesByCode)
-
         return DashboardResponse(
             salesSummary = buildSalesSummary(ym, branchName, rows),
             staffDeployment = buildStaffDeployment(ym, previousYm, branchName, queryCodes),
-            basicStats = buildBasicStats(ym, branchName, branchNames),
+            basicStats = buildBasicStats(ym, branchName, queryCodes),
         )
     }
 
@@ -129,28 +127,6 @@ class AdminDashboardService(
     private fun expandQueryCodes(effectiveCodes: List<String>): List<String> {
         if (effectiveCodes.isEmpty()) return effectiveCodes
         return branchCodeExpander.expand(effectiveCodes).toList()
-    }
-
-    /**
-     * 기본현황 전용 — 조회 지점 코드를 **조직명**으로 변환한다 (레거시 리포트의 OrgName 그룹핑 정합).
-     *
-     * 이력 코드 확장([expandQueryCodes]) 을 거치지 않은 **원본 코드**를 변환한다. 이름 축은 계보가
-     * 아니라 문자열 일치로 묶으므로 확장 코드를 넣어봐야 [branchNamesByCode] 에 없어 버려지고,
-     * 옛 조직명을 가진 사원은 그 옛 이름 그대로 집계된다(= 레거시 리포트와 동일 동작).
-     *
-     * 빈 목록은 그대로 넘겨 전건 조회가 되게 한다 — 단, **매핑 실패를 전건으로 흘리면 안 된다**:
-     * NoAccess sentinel(빈 문자열) 이나 화이트리스트 밖 코드는 지점명이 없어 변환 결과가 비는데,
-     * 그대로 두면 "빈 목록 = 전사" 규칙에 걸려 권한 밖 데이터가 노출된다. 그래서 입력이 비어 있지
-     * 않은데 변환 결과가 비면 매칭 0건 sentinel 을 돌려준다.
-     */
-    private fun resolveBasicStatsBranchNames(
-        effectiveCodes: List<String>,
-        branchNamesByCode: Map<String, String>,
-    ): List<String> {
-        if (effectiveCodes.isEmpty()) return emptyList()
-        val names = effectiveCodes.mapNotNull { branchNamesByCode[it] }.distinct()
-        // 변환 실패(권한 밖/sentinel) → 전건 조회로 새지 않도록 매칭 불가 값으로 막는다.
-        return names.ifEmpty { listOf(NO_MATCH_BRANCH_NAME) }
     }
 
     // ------------------- 매출현황 (D7: 실적 + 기준진도율) -------------------
@@ -344,15 +320,15 @@ class AdminDashboardService(
      * 화면이 전환할 때 재조회가 없다. 조회 자체는 1회이고 메모리에서 두 번 집계한다.
      * [BasicStats.totalByPosition] 만 토글에서 제외한다(휴직 비율 카드).
      *
-     * 지점 매칭은 [branchNames](조직명) 축 — 같은 응답의 투입현황/매출현황이 쓰는 코드 축과 다르다
-     * ([resolveBasicStatsBranchNames] 참조).
+     * 지점 매칭은 [queryCodes](cost_center_code, 이력 코드 확장 포함) 축 — 같은 응답의
+     * 투입현황/매출현황과 동일하다 ([expandQueryCodes] 참조).
      */
     private fun buildBasicStats(
         ym: YearMonth,
         branchName: String?,
-        branchNames: List<String>,
+        queryCodes: List<String>,
     ): BasicStats {
-        val employees = findEmployees(branchNames)
+        val employees = findEmployees(queryCodes)
         val asOf = ym.atEndOfMonth()
 
         // 재직/휴직 비율 — 토글과 무관하게 항상 전체 모수.
@@ -598,11 +574,11 @@ class AdminDashboardService(
         else "${names.first()} 외 ${names.size - 1}개"
     }
 
-    private fun findEmployees(branchNames: List<String>): List<DashboardEmployeeProjection> {
+    private fun findEmployees(queryCodes: List<String>): List<DashboardEmployeeProjection> {
         // 기본현황은 jobCode/status/birthDate 만 쓰므로 projection 으로 적재 (entity 전 컬럼 회피).
         // 퇴직자는 재직 현황 모수에서 제외 (repository 쿼리 레벨). empty → 전사 조회.
-        // 인자는 지점 **코드**가 아니라 **조직명** 목록이다 ([resolveBasicStatsBranchNames]).
-        return employeeRepository.findDashboardBasicStatsProjection(branchNames)
+        // 인자는 지점 **코드**(cost_center_code, 이력 코드 확장 포함) 목록이다 ([expandQueryCodes]).
+        return employeeRepository.findDashboardBasicStatsProjection(queryCodes)
     }
 
     companion object {
@@ -614,12 +590,6 @@ class AdminDashboardService(
 
         private const val BRANCH_LABEL_ALL = "전체"
 
-        /**
-         * 기본현황 지점명 변환 실패 시 쓰는 매칭 0건 sentinel — `org_name` 에 존재할 수 없는 값.
-         * 빈 목록을 넘기면 repository 가 전건 조회로 해석하므로, 권한 밖 요청이 전사 노출로
-         * 새는 것을 막는다 ([resolveBasicStatsBranchNames]).
-         */
-        private const val NO_MATCH_BRANCH_NAME = " __NO_MATCH__"
 
         private const val ACCOUNT_TYPE_UNKNOWN = "미상"
         private const val AGE_GROUP_UNKNOWN = "미상"

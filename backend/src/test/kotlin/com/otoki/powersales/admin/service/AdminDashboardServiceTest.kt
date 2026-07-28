@@ -717,32 +717,41 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T-NAME1 기본현황은 조직명 축 — 확장 코드가 아니라 원본 코드의 지점명으로 조회한다")
-    fun basicStatsQueriesByOrgName() {
+    @DisplayName("T-CODE1 기본현황은 지점코드 축 — 확장된 이력 코드까지 포함해 조회한다")
+    fun basicStatsQueriesByBranchCode() {
         stubEmpty()
         every { branchCodeExpander.expand(listOf("5824")) } returns setOf("5824", "5668")
 
         service.getDashboard(listOf("5824"), "2026-05", mapOf("5824" to "강남2지점"))
 
-        // 레거시 리포트(new_report_72Y) 의 groupingsDown(OrgName__c) 정합 — 이력 코드는 이름 축과 무관
-        verify { employeeRepository.findDashboardBasicStatsProjection(listOf("강남2지점")) }
+        // 투입현황/매출현황과 동일 축 — 조직 개편 전 코드(5668)가 남은 사원도 현행 지점에 계상
+        verify {
+            employeeRepository.findDashboardBasicStatsProjection(
+                match { it.toSet() == setOf("5824", "5668") },
+            )
+        }
     }
 
     @Test
-    @DisplayName("T-NAME2 기본현황 — 지점명 매핑 실패 시 전건으로 새지 않는다 (권한 밖/sentinel 방어)")
-    fun basicStatsBlocksWhenBranchNameUnresolved() {
+    @DisplayName("T-CODE2 기본현황 — NoAccess sentinel 은 전건으로 새지 않는다")
+    fun basicStatsBlocksWhenNoAccess() {
         stubEmpty()
+        // NoAccess sentinel(빈 문자열) — branch_mapping 에 없어 확장 결과도 sentinel 그대로
+        every { branchCodeExpander.expand(listOf("")) } returns setOf("")
 
-        // NoAccess sentinel(빈 문자열) — branchNamesByCode 에 없어 변환 결과가 빈다
         service.getDashboard(listOf(""), "2026-05", mapOf("5824" to "강남2지점"))
 
-        // 빈 목록을 넘기면 repository 가 전건으로 해석하므로, 매칭 0건 sentinel 이어야 한다
-        verify { employeeRepository.findDashboardBasicStatsProjection(match { it.isNotEmpty() && it.none { n -> n == "강남2지점" } }) }
+        // 빈 목록을 넘기면 repository 가 전건으로 해석하므로, sentinel 이 유지되어야 한다
+        verify {
+            employeeRepository.findDashboardBasicStatsProjection(
+                match { it.isNotEmpty() && it.all(String::isEmpty) },
+            )
+        }
     }
 
     @Test
-    @DisplayName("T-NAME3 기본현황 — 복수 지점 선택 시 지점명 목록 전체로 조회한다")
-    fun basicStatsQueriesAllSelectedBranchNames() {
+    @DisplayName("T-CODE3 기본현황 — 복수 지점 선택 시 코드 목록 전체로 조회한다")
+    fun basicStatsQueriesAllSelectedBranchCodes() {
         stubEmpty()
         every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
 
@@ -752,7 +761,7 @@ class AdminDashboardServiceTest {
 
         verify {
             employeeRepository.findDashboardBasicStatsProjection(
-                match { it.toSet() == setOf("강남2지점", "강남3지점") },
+                match { it.toSet() == setOf("5824", "5823") },
             )
         }
     }

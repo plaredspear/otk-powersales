@@ -66,18 +66,21 @@ interface EmployeeRepositoryCustom {
      * 퇴직자(status='퇴직') 는 재직 현황 모수에서 제외한다. status 가 NULL 인 사원은
      * 재직/휴직 미분류로 유지해야 하므로 포함한다.
      *
-     * ## 지점 매칭 축 — 조직명(org_name)
+     * ## 지점 매칭 축 — 지점코드(cost_center_code)
      *
-     * 본 조회만 **조직명 문자열**로 지점을 매칭한다. 레거시 리포트(`new_report_72Y`) 가
-     * `groupingsDown = DKRetail__OrgName__c` 로 그룹핑하므로, 그 수치와 일치시키기 위한 정합이다
-     * (사용자 결정 2026-07-28). 같은 대시보드의 투입현황/매출현황(MFEIS 기반) 과 여사원 현황 목록은
-     * `cost_center_code` + [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander]
-     * 확장을 쓰므로 **축이 다르다** — 조직 개편(2025-05) 후 발령을 못 받아 옛 코드가 남은 사원에서
-     * 화면 간 수치가 갈릴 수 있다. 상세는 지점축 차이 명세 문서 참조.
+     * 같은 대시보드의 투입현황/매출현황(MFEIS 기반) 및 여사원 현황 목록과 **동일 축**이다. 호출부가
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 로 조직 개편
+     * 이력 코드까지 확장해 넘기므로, 개편(2025-05) 후 발령을 못 받아 옛 코드가 남은 사원도 계보상
+     * 현행 지점에 계상된다.
      *
-     * @param branchNames  지점 스코프 필터 (`employee.org_name` 정확 일치). `null` 또는 비어있으면 전사 조회.
+     * 레거시 리포트(`new_report_72Y`) 는 `groupingsDown = DKRetail__OrgName__c` 조직명 그룹핑이었고
+     * 본 조회도 처음엔 그 축이었으나, 조직명이 재배치된 지점은 계보와 다른 지점에 계상되고 소멸한
+     * 조직명은 어느 지점에도 잡히지 않아 화면 간 수치가 갈렸다. 코드 축으로 통일했다
+     * (사용자 결정 2026-07-28).
+     *
+     * @param branchCodes  지점 스코프 필터 (`employee.cost_center_code` IN). `null` 또는 비어있으면 전사 조회.
      */
-    fun findDashboardBasicStatsProjection(branchNames: List<String>?): List<DashboardEmployeeProjection>
+    fun findDashboardBasicStatsProjection(branchCodes: List<String>?): List<DashboardEmployeeProjection>
 
     /**
      * @param role   단일 role 등호 필터 (`employee.role = :role`). 전체 사원 관리/lookup 화면용.
