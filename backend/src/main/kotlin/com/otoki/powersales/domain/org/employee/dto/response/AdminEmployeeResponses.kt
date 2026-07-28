@@ -32,7 +32,8 @@ data class EmployeeListItem(
     val appointmentDate: String?,
     val ordDetailNode: String?,
     // SF 여사원 리스트뷰 정합 컬럼 (직종명 / 회사 이메일 / 휴대전화 / 만나이 / 근속년수)
-    // 직종명(jikjong)은 직위(jikwee) 기준 파생 — OSPM/OSPE/OSPJ→'판촉직', OSC→'OSC직', 그 외는 원본값.
+    // 직종명(jikjong)은 직무코드(jobCode) 기준 파생 — 판촉직→'판촉직', OSC직·레이디직→'OSC직',
+    // 그 외/null 은 원본 jikjong 값. 상세는 deriveJikjong KDoc 참조.
     val jikjong: String?,
     val workEmail: String?,
     val phone: String?,
