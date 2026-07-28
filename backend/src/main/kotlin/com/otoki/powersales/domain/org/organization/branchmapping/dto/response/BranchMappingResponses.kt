@@ -5,8 +5,8 @@ package com.otoki.powersales.domain.org.organization.branchmapping.dto.response
  *
  * `branch_mapping` 원본 CSV 를 그대로 보여주는 것이 목적이 아니라, 각 코드가 **현행 조직에서 무엇인지**
  * 를 붙여 "이력 코드인지 / 현행 타 조직을 끌어오는 롤업인지" 를 눈으로 판별할 수 있게 하는 것이 목적이다.
- * (`BranchCodeExpander` / `BranchMapping` 의 KDoc 은 오랫동안 "이력 합집합" 으로만 서술해 왔으나,
- * 실제 운영 데이터에는 이력 외에 롤업·이중코드가 섞여 있다.)
+ * 성격 4종의 정의와 롤업 6건 실측 목록은
+ * [com.otoki.powersales.domain.org.organization.branchmapping.entity.BranchMapping] KDoc 참조.
  */
 
 /** 확장 코드 1건 — 코드 + 현행 조직명. */

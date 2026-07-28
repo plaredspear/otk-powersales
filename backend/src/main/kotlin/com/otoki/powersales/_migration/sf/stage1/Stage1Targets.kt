@@ -1813,7 +1813,7 @@ object Stage1Targets {
     )
 
     // ─────────────────────────────────────────────────────────
-    // BranchMapping — cost_center_code 이력 합집합 매핑 (BranchMapping__mdt, XML 메타 출처)
+    // BranchMapping — 지점 코드 확장 매핑 (BranchMapping__mdt, XML 메타 출처)
     // customMetadata/BranchMapping.*.md-meta.xml → branch-mapping.csv (extract-sharing-meta.main.kts).
     // PK = branch_code (Stage1 시점 NOT NULL) → ON CONFLICT DO NOTHING 멱등 → preClear 불요.
     // 직전엔 BranchMappingMatrix Kotlin object 박제 + 부팅 ApplicationRunner sync 였으나
@@ -1989,7 +1989,7 @@ object Stage1Targets {
         // spec #791 — SF OWD + master-detail relationship
         SOBJECT_SETTING,
         SOBJECT_RELATION,
-        // BranchMapping — cost_center_code 이력 합집합 매핑 (독립 메타)
+        // BranchMapping — 지점 코드 확장 매핑 (독립 메타)
         BRANCH_MAPPING,
         // spec #794 — SF Record Type 별 분기 권한
         RECORD_TYPE,
@@ -2064,7 +2064,7 @@ object Stage1Targets {
         // spec #791 — SF OWD + master-detail relationship (의존 없음 — 독립 메타)
         "SObjectSetting",
         "SObjectRelation",
-        // BranchMapping — cost_center_code 이력 합집합 매핑 (의존 없음 — 독립 메타)
+        // BranchMapping — 지점 코드 확장 매핑 (의존 없음 — 독립 메타)
         "BranchMapping",
         // spec #794 — Record Type 권한 (RecordType 먼저, Profile/PermissionSet 의 RT visibility 는 자연 키로 join)
         "RecordType",

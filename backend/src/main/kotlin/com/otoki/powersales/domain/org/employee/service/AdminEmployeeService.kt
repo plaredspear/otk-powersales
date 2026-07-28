@@ -264,12 +264,16 @@ class AdminEmployeeService(
     }
 
     /**
-     * 지점 보안 필터에 조직 개편 이력 코드를 합쳐 확장한다 (`applyBranchScope = true` 경로 전용).
+     * 지점 보안 필터에 BranchMapping 확장 코드를 합친다 (`applyBranchScope = true` 경로 전용).
      *
      * 2025-05 SAP 조직 개편으로 지점코드가 전면 재부여되었고(구 5452~/5666~ → 현행 5815~), 개편 이후
      * 발령을 받지 못한 사원은 [Employee.costCenterCode] 가 옛 코드로 남아 있다. 현행 코드만으로
      * IN 매칭하면 이들이 목록에서 누락되므로, [BranchCodeExpander] (branch_mapping = SF
      * `BranchMapping__mdt` 계보 매핑) 로 옛 코드까지 합집합에 넣는다.
+     *
+     * **주의**: 확장 결과가 옛 코드만은 아니다 — 일부 매핑 행은 현행 **타 조직**까지 끌어온다
+     * (예: `5829` → 인천1·2·3지점). 성격 4종과 롤업 6건은
+     * [com.otoki.powersales.domain.org.organization.branchmapping.entity.BranchMapping] KDoc 참조.
      *
      * [com.otoki.powersales.admin.dto.DataScope.effectiveBranchCodes] 는 지점을 **선택**하면 요청 코드
      * 1건만 `Filtered` 로 돌려주므로(`DataScope.kt` 참조), 호출부가 넘긴 확장 집합이 그 단계에서 버려진다.

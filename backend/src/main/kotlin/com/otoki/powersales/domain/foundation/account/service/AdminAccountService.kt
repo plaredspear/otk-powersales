@@ -128,7 +128,7 @@ class AdminAccountService(
      *
      * 신규 정합: [WomenScheduleBranchResolver.resolveBranches] 가 SF `CurrentUserBranchNameList` 정합으로
      * 산출한 지점 화이트리스트 (SYSTEM_ADMIN=전체 / 전사=제한 사업부 / 그 외=본인 조직트리) 를
-     * [BranchCodeExpander] (SF `Util.getIncludedBranchCode` 정합) 로 이력 코드 확장한 뒤
+     * [BranchCodeExpander] (SF `Util.getIncludedBranchCode` 정합) 로 확장한 뒤
      * `account.branchCode IN (확장집합)` 단일 필드 매칭. 여사원일정 거래처 조회
      * ([AdminTeamScheduleService.getAccounts]) 와 동일 계열. `AccountGroup__c IN (1000,1010)` 행사필터는
      * [getAccounts] 의 `applyPromotionFilter` 가 별도 적용.

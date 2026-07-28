@@ -7,8 +7,25 @@ import org.springframework.stereotype.Component
 /**
  * Spec #810 — SF `Util.getIncludedBranchCode(List<String>)` 의 backend 대응 헬퍼.
  *
- * 입력 도메인 = **조직코드 (cost_center_code)** 단일 도메인.
- * 출력 = 입력 + BranchMapping 으로 확장된 이력 코드의 합집합 Set.
+ * 입력 = 조직코드 (컬럼 명명은 `cost_center_code` 이나 **실제 값은 OrgCode** —
+ * [com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchService] KDoc 참조).
+ * 출력 = 입력 + `BranchMapping` 확장 코드의 합집합 Set.
+ *
+ * ## ⚠️ 확장 결과는 "이력 코드" 만이 아니다
+ * `BranchMapping.includedBranchCodes` 에는 폐기된 옛 코드뿐 아니라 **현행 타 조직 코드**(롤업)와
+ * 동일 조직 별칭(`E{N}` ↔ `{N}`)이 섞여 있다. 따라서 [expand] 결과를 "구 코드까지 넓힌 같은 지점"
+ * 으로 단정하면 안 되며, 롤업 행에서는 다른 조직의 데이터가 함께 조회된다.
+ * 예: `5829`(retail3영업부) → `5826,5827,5828` (인천1·2·3지점). 성격 4종과 롤업 6건의 실측 목록은
+ * [com.otoki.powersales.domain.org.organization.branchmapping.entity.BranchMapping] KDoc 참조.
+ *
+ * ## 화이트리스트 판정에 쓰지 말 것
+ * 지점 스코프 가드는 **확장 전 원본 코드**로 판정하고, [expand] 는 판정 통과 후 실제 조회 필터에만
+ * 적용한다 (`AdminTeamScheduleService.getMembers` / `AdminAttendInfoService.getMembers` 가 이 순서).
+ * 화이트리스트 자체를 확장하면 롤업 행이 권한 범위를 넓히고, 자기 자신을 포함하지 않는 행
+ * (예: `5829`)은 오히려 판정에서 탈락한다.
+ *
+ * 실제 확장 결과는 `시스템 > 지점 코드 맵핑` 화면에서 조직명과 함께 확인할 수 있다
+ * ([com.otoki.powersales.domain.org.organization.branchmapping.service.AdminBranchMappingService]).
  *
  * ## 캐시 정책
  * `@PostConstruct` 부팅 1회 메모리 캐시 (DB `branch_mapping` 테이블 조회). 운영 중 BranchMapping 변경 없다고 가정

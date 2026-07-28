@@ -288,7 +288,7 @@ class AdminDisplayWorkScheduleService(
             throw ScheduleRowLimitExceededException()
         }
 
-        // SF UplExcelBtnSchduleMasterController 정합 — 조장 지점 (BranchMapping 이력 합집합) 필터
+        // SF UplExcelBtnSchduleMasterController 정합 — 조장 지점 (BranchMapping 확장 합집합) 필터
         val expandedBranchCodes = expandUserBranchCodes(scope)
 
         // 사원번호/거래처코드 일괄 조회
@@ -1121,7 +1121,8 @@ class AdminDisplayWorkScheduleService(
      *
      * `scope.isAllBranches` (영업지원실/시스템 관리자) 인 경우 SF `CurrentUserBranchNameList.getOrgList()` L35 분기와 동등 — 전사 leaf branch_codes 합집합.
      * 그 외에는 scope.branchCodes 를 base 로 사용.
-     * 모든 케이스에서 BranchMapping 이력 합집합 (`BranchCodeExpander.expand`) 적용.
+     * 모든 케이스에서 BranchMapping 확장 (`BranchCodeExpander.expand`) 적용 — 확장 결과는 폐기된 옛
+     * 코드가 다수이나 일부 행은 현행 타 조직도 포함한다 (`BranchMapping` KDoc 의 성격 4종 참조).
      */
     private fun expandUserBranchCodes(scope: DataScope): List<String> {
         val baseBranchCodes: Collection<String> = if (scope.isAllBranches) {

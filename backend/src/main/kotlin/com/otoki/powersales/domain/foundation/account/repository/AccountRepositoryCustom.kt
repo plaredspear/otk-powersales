@@ -99,7 +99,7 @@ interface AccountRepositoryCustom {
     /**
      * SF `UplExcelBtnSchduleMasterController.checkResult` (L174) 정합 —
      * `Account WHERE BranchCode__c IN :newOrgValues AND ExternalKey__c IN :accCodes`.
-     * BranchCodeExpander 확장 결과로 조장 지점 (이력 합집합) 필터 + 외부키 필터 동시 적용.
+     * BranchCodeExpander 확장 결과로 조장 지점 (BranchMapping 확장 합집합) 필터 + 외부키 필터 동시 적용.
      */
     fun findByBranchCodeInAndExternalKeyIn(
         branchCodes: Collection<String>,
