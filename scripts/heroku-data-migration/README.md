@@ -71,29 +71,40 @@ CSV 파일명 = Heroku 원본 테이블명 + `.csv`. 적재 메타는 backend `H
 
 `GET /api/v1/admin/heroku-migration/stage1/targets` 가 (targetName, csvFileName) 일람을 반환한다.
 
-| 적재 순서 | 엔티티 | CSV (Heroku 원본) |
-|------|--------|---------------------|
-| 1 | EducationCode | education_code_mng.csv |
-| 2 | TmpClaimCode | tmp_claimcode.csv |
-| 3 | DeviceVersion | device_version_mng.csv |
-| 4 | SafetyCheckItem | safetycheck_list.csv |
-| 5 | EmployeeAdmin | employee_admin_mng.csv |
-| 6 | EmployeeInfo | employee_mng.csv |
-| 7 | EducationPost | education_mng.csv |
-| 8 | EducationPostAttachment | education_file_mng.csv |
-| 9 | EducationViewHistory | education_member_history.csv |
-| 10 | TmpOrder | tmp_order.csv |
-| 11 | TmpOrderProduct | tmp_order_product.csv |
-| 12 | TmpClaim | tmp_claim.csv |
-| 13 | TmpSuggest | tmp_suggest.csv |
-| 14 | TmpOnsite | tmp_onsite.csv |
-| 15 | TmpPromotion | tmp_promotion.csv |
-| 16 | FavoriteProduct | product_favorites.csv |
-| 17 | LoginHistory | employee_his.csv |
-| 18 | ProductExpiration | expirationdate__mng.csv |
-| 19 | SafetyCheckSubmission | safetycheck__workschedule__member.csv |
+**TablePlus 좌측 테이블 목록에 보이는 순서**(`salesforce2` 스키마 표시 순)로 정렬한다 — 화면을 위에서
+아래로 훑으며 export 할 때 누락 확인이 쉽다. **적재 순서가 아니다** (적재 순서는 `HerokuStage1Targets`
+가 결정하며 web 화면 "일괄 적재" 가 처리한다).
 
-> `if_product__c`(ProductSyncBuffer) 는 마이그레이션 제외(PLM 연동 미재현). `commute_distance` 는 대응 엔티티 부재로 대상 외.
+| # | CSV (Heroku 원본) | 엔티티 | 비고 |
+|---|-------------------|--------|------|
+| 1 | product_favorites.csv | FavoriteProduct | |
+| 2 | safetycheck__workschedule__member.csv | SafetyCheckSubmission | 패턴 C (`*_sfid`) |
+| 3 | safetycheck_list.csv | SafetyCheckItem | |
+| 4 | tmp_claim.csv | TmpClaim | TEXT 개행/콤마 (`description`) |
+| 5 | tmp_claimcode.csv | TmpClaimCode | |
+| 6 | tmp_onsite.csv | TmpOnsite | |
+| 7 | tmp_order.csv | TmpOrder | |
+| 8 | tmp_order_product.csv | TmpOrderProduct | |
+| 9 | tmp_promotion.csv | TmpPromotion | |
+| 10 | tmp_suggest.csv | TmpSuggest | |
+| 11 | device_version_mng.csv | DeviceVersion | |
+| 12 | education_code_mng.csv | EducationCode | |
+| 13 | education_file_mng.csv | EducationPostAttachment | 패턴 B — `edu_id` 누락 금지 |
+| 14 | education_member_history.csv | EducationViewHistory | 패턴 B — `edu_id` 누락 금지 |
+| 15 | education_mng.csv | EducationPost | 한글 다수 (UTF-8) |
+| 16 | employee_admin_mng.csv | EmployeeAdmin | |
+| 17 | employee_his.csv | LoginHistory | |
+| 18 | employee_mng.csv | EmployeeInfo | ⚠️ PII |
+| 19 | expirationdate__mng.csv | ProductExpiration | 패턴 C (`*_sfid`) |
+
+**같은 스키마에 보이지만 대상이 아닌 테이블** (TablePlus 목록에서 건너뛴다): `pushmessagereceiver__c` ·
+`staffreview__c` · `if_product__c` · `productbarcode__c` · `pushmessage__c` · `theme__c` ·
+`monthlysaleshistory__c` · `uploadfile__c` · `_hcmeta` · `_sf_event_log` · `_trigger_log` ·
+`_trigger_log_archive` · `agreementword__c` · `displayworkschedulemaster__c` · `commute_distance` ·
+`dkretail__employee__c` · `dkretail__notice__c` · `account` · `dkretail__teammemberschedule__c` ·
+`dkretail__product__c` · `hqreview__c`.
+
+> `if_product__c`(ProductSyncBuffer) 는 마이그레이션 제외(PLM 연동 미재현). `commute_distance` 는 대응 엔티티 부재로 대상 외. `dkretail__*` / `account` 등 SF 동기화 테이블은 SF 마이그레이션(`scripts/sf-data-migration/`)이 담당한다.
 
 ## 보조 스크립트
 
