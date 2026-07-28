@@ -65,3 +65,38 @@ describe('withMenuCategoryKeys + ProLayout 활성 카테고리', () => {
     expect(matchedCategoryNames(menuRoute.children, '/')).toEqual([]);
   });
 });
+
+/**
+ * 게이팅 누락 회귀 방지 — AdminLayout 의 itemAllowed 는 `entity && operation` 이 **둘 다 없으면
+ * 무조건 노출**(`return true`) 한다. 따라서 API 에 `@RequiresSfPermission` 가드가 있는 화면인데
+ * menuConfig 에 entity/operation 을 빠뜨리면 "메뉴는 보이는데 들어가면 403" 이 된다.
+ *
+ * 실제 사고: 공휴일 관리 / 조직마스터 / 대체휴무가 게이팅 없이 노출되어 권한 없는 조장에게도
+ * 메뉴가 보였다 (영업일관리마스터만 게이팅이 있어 정상 동작). 같은 축의 마스터 화면들이라
+ * 하나만 누락되어도 눈에 띄지 않는다 — 목록으로 고정해 재발을 막는다.
+ */
+describe('기준정보 마스터 메뉴 권한 게이팅', () => {
+  function findByPath(items: MenuItem[], path: string): MenuItem | undefined {
+    for (const item of items) {
+      if (item.path === path) return item;
+      const found = item.children && findByPath(item.children, path);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  // path → backend @RequiresSfPermission(entity) 와 일치해야 하는 게이팅 entity.
+  const GATED_MASTER_MENUS: Array<[string, string]> = [
+    ['/settings/organizations', 'organization'],
+    ['/settings/holiday-masters', 'holiday_master'],
+    ['/admin/working-day-masters', 'working_day_master'],
+    ['/settings/alternative-holidays', 'alternative_holiday'],
+  ];
+
+  it.each(GATED_MASTER_MENUS)('%s 는 entity=%s READ 로 게이팅된다', (path, entity) => {
+    const item = findByPath(menuRoute.children, path);
+    expect(item).toBeDefined();
+    expect(item!.entity).toBe(entity);
+    expect(item!.operation).toBe('READ');
+  });
+});
