@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app_router.dart';
 import 'core/navigation/navigator_key.dart';
+import 'core/navigation/pending_deep_link.dart';
 import 'core/network/request_cancel_controller.dart';
 import 'core/services/fcm_token_registrar.dart';
 import 'core/services/force_update_gate.dart';
@@ -43,11 +44,16 @@ void main() async {
   runApp(const AppBootstrap());
 }
 
-/// FCM 알림 탭(백그라운드/종료 상태)으로 앱이 열렸을 때 딥링크 라우팅을 수행한다.
+/// FCM 알림 탭(백그라운드/종료 상태, 포그라운드 로컬 알림 탭)으로 앱이 열렸을 때
+/// 이동할 딥링크 목적지를 대기열([PendingDeepLink])에 올린다.
 ///
-/// data payload 의 `type` 이 `notice` 이면 `noticeId` 를 읽어 공지 상세로 이동한다.
-/// 전역 [navigatorKey] 로 라우팅하므로 UI 트리 밖(top-level)에서 호출 가능하다.
-/// Navigator 미부착(앱 초기화 중)이거나 payload 가 유효하지 않으면 조용히 무시한다.
+/// data payload 의 `type` 이 `notice` 이면 `noticeId` 를 읽어 공지 상세를 목적지로 삼는다.
+/// payload 가 유효하지 않으면 조용히 무시한다.
+///
+/// 여기서 곧바로 라우팅하지 않는 이유: 알림은 **미인증** 상태(로그아웃 상태이거나 콜드
+/// 스타트로 자동로그인이 아직 진행 중)에서도 탭될 수 있고, 그때 상세로 이동하면 화면이
+/// 인증 필요 API 를 호출해 401 에러 화면이 그대로 노출된다. 실제 이동은 인증 상태를 아는
+/// [_OtokiAppState._flushPendingDeepLink] 가 수행한다.
 void _handlePushOpened(RemoteMessage message) {
   final data = message.data;
   if (data['type'] != 'notice') return;
@@ -55,13 +61,9 @@ void _handlePushOpened(RemoteMessage message) {
   final noticeId = int.tryParse(data['noticeId']?.toString() ?? '');
   if (noticeId == null) return;
 
-  // 알림 탭 시점에 Navigator 가 아직 준비되지 않았을 수 있으므로 다음 프레임에 라우팅.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    navigatorKey.currentState?.pushNamed(
-      AppRouter.noticeDetail,
-      arguments: noticeId,
-    );
-  });
+  PendingDeepLink.instance.store(
+    DeepLinkTarget(route: AppRouter.noticeDetail, arguments: noticeId),
+  );
 }
 
 /// 루트 부트스트랩 위젯.
@@ -170,6 +172,8 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       });
     }
     WidgetsBinding.instance.addObserver(this);
+    // 푸시 알림 탭으로 적재된 딥링크 — 인증 완료 상태에서만 소비해 이동한다.
+    PendingDeepLink.instance.pending.addListener(_flushPendingDeepLink);
     // 버전 게이트 — 시작 경로와 무관하게 항상 실행한다. 스플래시를 거치는 콜드 스타트뿐
     // 아니라 세션 리셋(로그인/로그아웃)으로 재생성돼 스플래시를 건너뛰는 진입에서도
     // 강제 업데이트가 걸려야 하기 때문이다. 스플래시와 동시에 호출되면 게이트가 진행 중인
@@ -182,6 +186,7 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _applyNavigation();
+      _flushPendingDeepLink();
     });
     // 인증 초기화(자동 로그인)는 SplashScreen 이 버전 게이트 통과 후 호출한다.
     // 여기서는 게이트와 무관한 FCM 초기화만 수행한다.
@@ -207,8 +212,40 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
   @override
   void dispose() {
     _tokenRefreshSub?.cancel();
+    PendingDeepLink.instance.pending.removeListener(_flushPendingDeepLink);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// 대기 중인 푸시 딥링크를 **인증 완료 상태에서만** 소비해 이동한다.
+  ///
+  /// 미인증(로그아웃 / 자동로그인 진행 중)이면 소비하지 않고 대기열에 그대로 둔다 —
+  /// 로그인·세션 복원으로 인증이 완료되면 authState 리스너가 이 메서드를 다시 호출해
+  /// 그때 이동한다. 그 결과 로그아웃 상태에서 푸시를 눌러도 401 에러 화면 대신 로그인
+  /// 화면이 뜨고, 로그인하면 원래 가려던 공지 상세로 이어진다.
+  void _flushPendingDeepLink() {
+    if (PendingDeepLink.instance.pending.value == null) return;
+    if (!ref.read(authProvider).isAuthenticated) return;
+
+    if (navigatorKey.currentState == null) {
+      // Navigator 미부착(앱 초기화 중) — 소비하지 않고 다음 프레임에 재시도.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _flushPendingDeepLink();
+      });
+      return;
+    }
+
+    final target = PendingDeepLink.instance.consume();
+    if (target == null) return;
+    // 인증 전이 직후에는 같은 프레임에 홈으로의 스택 교체(_applyNavigation)가 일어나므로,
+    // 다음 프레임에 push 해야 딥링크 화면이 그 교체에 휩쓸려 사라지지 않는다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      navigatorKey.currentState?.pushNamed(
+        target.route,
+        arguments: target.arguments,
+      );
+    });
   }
 
   @override
@@ -342,6 +379,8 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     // 인증 상태 변화 감지 → 현재 상태 기준으로 화면 전환(navigator 미부착 시 재시도).
     ref.listen<AuthState>(authProvider, (previous, next) {
       _applyNavigation();
+      // 인증 완료로 전이했다면 미인증이라 보류해 둔 푸시 딥링크를 이어서 처리한다.
+      _flushPendingDeepLink();
     });
 
     return MaterialApp(

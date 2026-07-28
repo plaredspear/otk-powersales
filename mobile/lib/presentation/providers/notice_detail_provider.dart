@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/error_utils.dart';
 import '../../domain/usecases/get_notice_post_detail_usecase.dart';
 import 'notice_detail_state.dart';
 import 'notice_list_provider.dart';
@@ -35,7 +36,8 @@ class NoticeDetailNotifier extends StateNotifier<NoticeDetailState> {
 
       state = state.toSuccess(detail);
     } catch (e) {
-      state = state.toError(e.toString());
+      // raw DioException 문자열이 화면에 그대로 노출되지 않도록 서버 메시지/친화 문구로 변환.
+      state = state.toError(extractErrorMessage(e));
     }
   }
 

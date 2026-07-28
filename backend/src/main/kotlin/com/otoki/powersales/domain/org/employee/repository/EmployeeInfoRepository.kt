@@ -87,4 +87,27 @@ interface EmployeeInfoRepository : JpaRepository<EmployeeInfo, Long> {
         @Param("token") token: String,
         @Param("employeeId") employeeId: Long
     ): Int
+
+    /**
+     * 더 이상 도달하지 않는 FCM 토큰을 보유한 행을 비운다 (발송 응답 `UNREGISTERED` 정리).
+     *
+     * 사원ID 가 아니라 **토큰 값** 으로 매칭하는 것이 핵심이다 — 발송과 정리 사이에 그 사원이
+     * 재로그인해 새 토큰을 등록했다면 조건이 어긋나 그대로 보존되므로, 살아 있는 토큰을
+     * 실수로 지우지 않는다.
+     *
+     * 배지 갱신과 달리 영속성 컨텍스트를 비우지 않는다(`clearAutomatically = false`) — 이 정리는
+     * 발송 호출자의 트랜잭션에 합류하는데, 컨텍스트를 비우면 호출자가 들고 있던 entity(공지 등)가
+     * detach 되어 후속 로직이 깨질 수 있기 때문이다.
+     *
+     * @return 정리된 행 수
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(
+        """
+        UPDATE EmployeeInfo ei
+           SET ei.fcmToken = null
+         WHERE ei.fcmToken IN :tokens
+        """
+    )
+    fun clearFcmTokens(@Param("tokens") tokens: Collection<String>): Int
 }

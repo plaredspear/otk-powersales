@@ -27,6 +27,15 @@ class AuthInterceptor extends Interceptor {
   /// 401 → 토큰 갱신 후 재시도된 요청 표식 (무한 루프 방지)
   static const String _retriedKey = '__auth_retried__';
 
+  /// 이 인스턴스가 이미 강제 로그아웃을 수행했는지 (중복 실행 방지).
+  ///
+  /// 한 번의 세션 만료가 두 경로로 이어질 수 있다: refresh 요청 자체의 401 에서 한 번,
+  /// 그 실패가 갱신 결과 null 로 환원돼 원요청 쪽에서 또 한 번. 동시 요청이 여럿이면
+  /// 그 수만큼 반복된다. 세션 리셋(ProviderScope 재생성)과 단말 정리 훅이 그때마다
+  /// 중복 실행되므로 첫 1회로 고정한다. 강제 로그아웃 후에는 새 ProviderScope 가 새
+  /// 인터셉터를 만들므로, 다음 세션의 강제 로그아웃은 정상 동작한다.
+  bool _forcedLogout = false;
+
   /// 명시적 자동 로그인(auth_provider.tryAutoLogin)의 refresh 요청 표식.
   ///
   /// 이 표식이 붙은 요청의 401 은 인터셉터가 가로채 _forceLogout(세션 재생성)하지
@@ -34,11 +43,19 @@ class AuthInterceptor extends Interceptor {
   /// 수행하므로, 인터셉터까지 로그인 전환을 일으키면 로그인 화면이 두 번 쌓인다.
   static const String skipAuthLogoutExtraKey = '__skip_auth_logout__';
 
+  /// 강제 로그아웃(세션 만료 / 단말 회수) 시 실행할 정리 훅.
+  ///
+  /// 이 시점의 access token 은 이미 무효라 서버 API(FCM 토큰 해제 등)를 호출할 수 없다.
+  /// 단말 로컬에서만 가능한 정리를 주입받아 수행한다([dioProvider] 가 FCM 토큰 폐기를 연결).
+  final Future<void> Function()? _onForceLogout;
+
   AuthInterceptor({
     required AuthLocalDataSource localDataSource,
     required Dio dio,
+    Future<void> Function()? onForceLogout,
   })  : _localDataSource = localDataSource,
-        _dio = dio;
+        _dio = dio,
+        _onForceLogout = onForceLogout;
 
   @override
   void onRequest(
@@ -287,12 +304,18 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// 강제 로그아웃: 토큰 클리어 + 전역 상태 초기화(로그인 화면 이동)
+  /// 강제 로그아웃: 토큰 클리어 + 단말 정리 훅 + 전역 상태 초기화(로그인 화면 이동)
   ///
   /// 루트 ProviderScope 를 재생성해 모든 Provider(도메인 캐시 포함)를 폐기하므로,
   /// 토큰 만료로 로그아웃된 뒤 다른 계정으로 로그인해도 잔여 데이터가 노출되지 않는다.
+  ///
+  /// 정리 훅(FCM 토큰 폐기)은 네트워크를 탈 수 있으므로 await 하지 않는다 — 로그인 화면
+  /// 전환이 그만큼 지연되면 안 되고, 훅은 자체적으로 실패를 흡수한다.
   Future<void> _forceLogout({LogoutReason? reason}) async {
+    if (_forcedLogout) return;
+    _forcedLogout = true;
     await _localDataSource.clearTokens();
+    unawaited(_onForceLogout?.call() ?? Future<void>.value());
     SessionResetController.instance.requestReset(reason: reason);
   }
 }

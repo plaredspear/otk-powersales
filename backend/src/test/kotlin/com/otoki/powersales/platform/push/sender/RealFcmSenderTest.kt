@@ -1,8 +1,11 @@
 package com.otoki.powersales.platform.push.sender
 
+import com.google.firebase.messaging.MessagingErrorCode
+import com.google.firebase.messaging.SendResponse
 import com.otoki.powersales.platform.common.storage.StorageNotFoundException
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.push.config.FcmProperties
+import com.otoki.powersales.platform.push.service.FcmTokenService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,11 +18,13 @@ import org.junit.jupiter.api.Test
 class RealFcmSenderTest {
 
     private val storageService: StorageService = mockk()
+    private val fcmTokenService: FcmTokenService = mockk(relaxed = true)
 
     private fun sender(enabled: Boolean, s3Key: String?): RealFcmSender =
         RealFcmSender(
             properties = FcmProperties(enabled = enabled, credentialS3Key = s3Key),
             storageService = storageService,
+            fcmTokenService = fcmTokenService,
         )
 
     @Nested
@@ -110,6 +115,51 @@ class RealFcmSenderTest {
 
             // resolveMessaging 이 initialized 플래그로 1회만 초기화 → S3 다운로드도 1회
             verify(exactly = 1) { storageService.download("config/fcm/key.json") }
+        }
+    }
+
+    @Nested
+    @DisplayName("무효 토큰 판별 — UNREGISTERED 만 정리 대상")
+    inner class UnregisteredDetection {
+
+        private fun failure(code: MessagingErrorCode): SendResponse = mockk {
+            every { isSuccessful } returns false
+            every { exception } returns mockk { every { messagingErrorCode } returns code }
+        }
+
+        private fun success(): SendResponse = mockk {
+            every { isSuccessful } returns true
+        }
+
+        @Test
+        @DisplayName("UNREGISTERED 응답의 토큰만 index 로 되짚어 수집한다")
+        fun collectsUnregisteredByIndex() {
+            val chunk = listOf(PushTarget("live"), PushTarget("dead"), PushTarget("also-dead"))
+            val responses = listOf(
+                success(),
+                failure(MessagingErrorCode.UNREGISTERED),
+                failure(MessagingErrorCode.UNREGISTERED),
+            )
+
+            val result = sender(enabled = true, s3Key = "k").unregisteredTokensOf(chunk, responses)
+
+            assertThat(result).containsExactly("dead", "also-dead")
+        }
+
+        @Test
+        @DisplayName("INVALID_ARGUMENT / 일시 오류는 정리 대상이 아니다")
+        fun ignoresNonUnregisteredFailures() {
+            val chunk = listOf(PushTarget("a"), PushTarget("b"), PushTarget("c"))
+            val responses = listOf(
+                // payload 오류로도 발생하는 코드 — 정리하면 멀쩡한 토큰까지 지워진다.
+                failure(MessagingErrorCode.INVALID_ARGUMENT),
+                failure(MessagingErrorCode.UNAVAILABLE),
+                failure(MessagingErrorCode.INTERNAL),
+            )
+
+            val result = sender(enabled = true, s3Key = "k").unregisteredTokensOf(chunk, responses)
+
+            assertThat(result).isEmpty()
         }
     }
 }

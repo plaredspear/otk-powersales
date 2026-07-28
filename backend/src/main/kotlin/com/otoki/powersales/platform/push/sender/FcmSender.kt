@@ -44,10 +44,14 @@ data class PushTarget(
  *
  * @property successCount 발송 성공 토큰 수
  * @property failureCount 발송 실패 토큰 수 (무효 토큰 등)
+ * @property unregisteredTokens FCM 이 `UNREGISTERED` 로 응답한 토큰 목록 — 앱 삭제/기기 초기화/
+ *   강제 로그아웃 시 단말이 폐기(`deleteToken`)한 토큰이다. 해당 토큰은 다시는 도달하지 않으므로
+ *   저장소에서 제거해야 한다 ([RealFcmSender] 가 발송 직후 정리하며, 집계는 관측/검증용으로 노출).
  */
 data class FcmSendResult(
     val successCount: Int,
     val failureCount: Int,
+    val unregisteredTokens: List<String> = emptyList(),
 ) {
     companion object {
         val EMPTY = FcmSendResult(0, 0)

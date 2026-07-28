@@ -6,6 +6,7 @@ import '../../domain/entities/notice_category.dart';
 import '../../domain/repositories/notice_repository.dart';
 import '../../domain/usecases/get_notice_posts_usecase.dart';
 import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
 import 'notice_list_state.dart';
 
 // --- Dependency Providers ---
@@ -64,7 +65,8 @@ class NoticeListNotifier extends StateNotifier<NoticeListState> {
         hasSearched: true,
       );
     } catch (e) {
-      state = state.toError(e.toString());
+      // raw DioException 문자열이 화면에 그대로 노출되지 않도록 서버 메시지/친화 문구로 변환.
+      state = state.toError(extractErrorMessage(e));
     }
   }
 

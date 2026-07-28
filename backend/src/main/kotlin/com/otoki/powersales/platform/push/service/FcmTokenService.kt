@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.push.service
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.repository.EmployeeInfoRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -24,6 +25,8 @@ class FcmTokenService(
     private val employeeInfoRepository: EmployeeInfoRepository,
     private val pushBadgeService: PushBadgeService
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * 인증 사용자의 FCM 토큰을 등록/갱신한다.
@@ -58,5 +61,24 @@ class FcmTokenService(
             ?: throw EmployeeNotFoundException()
         employee.fcmToken = null
         pushBadgeService.clear(employeeId)
+    }
+
+    /**
+     * 발송 결과가 `UNREGISTERED` 인 토큰을 저장소에서 제거한다 (발송 직후 호출).
+     *
+     * 로그아웃 API 로 해제되지 못한 토큰(강제 로그아웃 후 단말이 `deleteToken` 한 경우)과,
+     * 앱 삭제·기기 초기화·토큰 자연 만료로 죽은 토큰을 발송 응답을 근거로 정리한다.
+     * 정리하지 않으면 그 사원은 "토큰 보유" 로 계속 발송 대상에 잡혀 실패만 누적된다.
+     *
+     * 호출자(발송)의 트랜잭션에 합류한다 — 같은 트랜잭션이 방금 배지 카운터로 잠근 행을
+     * 다시 갱신하므로, 별도 트랜잭션으로 분리하면 자기 자신의 락을 기다려 교착된다.
+     */
+    @Transactional
+    fun clearUnregisteredTokens(tokens: Collection<String>) {
+        if (tokens.isEmpty()) return
+        val cleared = employeeInfoRepository.clearFcmTokens(tokens.toSet())
+        if (cleared > 0) {
+            log.info("FCM 무효 토큰 정리 — 대상 {}건 중 {}행 해제", tokens.size, cleared)
+        }
     }
 }

@@ -82,4 +82,23 @@ class FcmTokenServiceTest {
         assertThatThrownBy { service.register(99L, "token") }
             .isInstanceOf(EmployeeNotFoundException::class.java)
     }
+
+    @Test
+    @DisplayName("clearUnregisteredTokens -> 무효 토큰 목록으로 벌크 해제")
+    fun clearUnregisteredTokens_clearsByTokenValue() {
+        every { employeeInfoRepository.clearFcmTokens(any()) } returns 2
+
+        service.clearUnregisteredTokens(listOf("dead-1", "dead-2", "dead-1"))
+
+        // 중복 토큰은 한 번만 조건에 실린다.
+        verify(exactly = 1) { employeeInfoRepository.clearFcmTokens(setOf("dead-1", "dead-2")) }
+    }
+
+    @Test
+    @DisplayName("clearUnregisteredTokens -> 목록이 비면 저장소를 건드리지 않는다")
+    fun clearUnregisteredTokens_noopWhenEmpty() {
+        service.clearUnregisteredTokens(emptyList())
+
+        verify(exactly = 0) { employeeInfoRepository.clearFcmTokens(any()) }
+    }
 }

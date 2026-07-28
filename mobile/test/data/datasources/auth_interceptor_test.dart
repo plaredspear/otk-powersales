@@ -239,6 +239,55 @@ void main() {
     });
   });
 
+  group('강제 로그아웃 단말 정리 훅', () {
+    test('세션 만료로 강제 로그아웃되면 onForceLogout(FCM 토큰 폐기)이 호출된다', () async {
+      var forceLogoutCalls = 0;
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'oldToken'
+        ..refreshToken = 'refreshTok';
+      d.interceptors.add(AuthInterceptor(
+        localDataSource: localDS,
+        dio: d,
+        onForceLogout: () async => forceLogoutCalls++,
+      ));
+      d.httpClientAdapter = _Always401Adapter();
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 401);
+      }
+
+      // 강제 로그아웃 경로는 서버 FCM 해제 API 를 부를 수 없으므로 단말에서 토큰을 폐기해야 한다.
+      expect(forceLogoutCalls, 1);
+      expect(localDS.accessToken, isNull);
+    });
+
+    test('refresh token 이 없어 강제 로그아웃하지 않는 401 은 훅을 호출하지 않는다', () async {
+      var forceLogoutCalls = 0;
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource();
+      d.interceptors.add(AuthInterceptor(
+        localDataSource: localDS,
+        dio: d,
+        onForceLogout: () async => forceLogoutCalls++,
+      ));
+      d.httpClientAdapter = _Always401Adapter();
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (_) {
+        // 그대로 전파.
+      }
+
+      // 로그인 이력이 없는 401 은 세션 만료가 아니므로 토큰을 폐기하면 안 된다.
+      expect(forceLogoutCalls, 0);
+    });
+  });
+
   group('로그인 이력 없음 (신규 설치)', () {
     test('refresh token 이 없으면 401 을 세션 만료로 처리하지 않고 그대로 전파한다', () async {
       // 첫 설치 후 로그인 전: access/refresh token 이 모두 없다.

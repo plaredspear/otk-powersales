@@ -55,4 +55,11 @@ void main() {
       );
     });
   });
+
+  group('PushNotificationService.deleteToken', () {
+    test('Firebase 미초기화(설정 파일 없음)에서는 예외 없이 no-op', () async {
+      // 강제 로그아웃 경로에서 호출되므로, 푸시 미설정 환경에서도 로그아웃을 막으면 안 된다.
+      await expectLater(PushNotificationService().deleteToken(), completes);
+    });
+  });
 }

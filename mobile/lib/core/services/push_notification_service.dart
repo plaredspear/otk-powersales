@@ -93,6 +93,26 @@ class PushNotificationService {
     }
   }
 
+  /// 이 단말의 FCM 토큰을 폐기해 더 이상 푸시를 수신하지 않게 한다.
+  ///
+  /// **강제 로그아웃(세션 만료 / 단말 회수) 전용**이다. 사용자가 직접 로그아웃하는 경로는
+  /// 서버 해제([FcmTokenRegistrar.unregister])가 access token 이 살아 있을 때 수행되므로
+  /// 이 호출이 필요 없다. 반면 강제 로그아웃은 토큰이 이미 무효라 서버 해제 API 를 부를 수
+  /// 없어, 서버에 남은 토큰으로 로그아웃된 단말에 이전 사용자의 알림이 계속 도착한다.
+  /// 단말에서 토큰을 폐기하면 서버 상태와 무관하게 수신이 끊긴다(서버 측 잔여 토큰은 다음
+  /// 발송의 `UNREGISTERED` 응답으로 정리된다).
+  ///
+  /// 재로그인 시에는 [getToken] 이 새 토큰을 발급받아 서버에 등록하므로 흐름에 영향이 없다.
+  /// 실패해도 로그아웃을 막지 않는다(로깅만).
+  Future<void> deleteToken() async {
+    if (!isAvailable) return;
+    try {
+      await _messaging.deleteToken();
+    } catch (e) {
+      _logger.w('FCM 토큰 삭제 실패(무시): $e');
+    }
+  }
+
   /// FCM 초기화. main 또는 인증 완료 후 1회 호출.
   ///
   /// [onMessageOpened]: 알림 탭으로 앱이 열렸을 때(백그라운드/종료 상태 FCM 탭,
