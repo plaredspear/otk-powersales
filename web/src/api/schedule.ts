@@ -100,8 +100,11 @@ export type SchedulePreset =
 /** 유효여부 필터 — 화면 「유효」 신호등 dot 판정(유효/예정/종료)과 1:1 대응 (SF formula ValidData__c). */
 export type ScheduleValidData = 'VALID' | 'PLANNED' | 'END';
 
-/** 재직상태 필터 — SF formula ValidConditionData__c 4분류 (표시값의 날짜 suffix 제외). */
-export type ScheduleEmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'RESIGN_PLANNED';
+/**
+ * 재직상태 필터 — SF formula ValidConditionData__c 4분류 중 퇴직예정을 뺀 3종
+ * (표시값의 날짜 suffix 제외). 옵션 자체는 서버 meta 가 내려준다.
+ */
+export type ScheduleEmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED';
 
 export interface ScheduleListParams {
   page?: number;

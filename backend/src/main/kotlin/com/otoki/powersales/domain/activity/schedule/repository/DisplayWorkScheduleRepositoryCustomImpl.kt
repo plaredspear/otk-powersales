@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
@@ -336,19 +337,23 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     }
 
     /**
-     * 「재직상태」 조회 필터 (재직/휴직/퇴직/퇴직예정) → WHERE 조건 변환.
+     * 「재직상태」 조회 필터 (재직/휴직/퇴직) → WHERE 조건 변환.
      *
      * 화면·엑셀의 「재직상태」 컬럼 표시값 ([ScheduleDisplayStatusCalculator.employmentStatus] —
-     * SF formula `ValidConditionData__c` 포팅) 과 100% 일치하도록 동일한 복합식을 SQL 로 이관한다.
+     * SF formula `ValidConditionData__c` 포팅) 과 동일한 복합식을 SQL 로 이관한다.
      * 사원 원본 컬럼 `employee.status` 단순 매칭이 아니다 — status='재직' 이어도
-     * appLoginActive=false 면 표시값은 퇴직/퇴직예정이므로 그쪽 필터에 걸려야 한다.
+     * appLoginActive=false 면 표시값은 퇴직/퇴직예정이므로 재직/휴직 필터에서 빠져야 한다.
      *
      * SF formula 의 IF 중첩 순서를 그대로 배타 분기로 재현:
      * - resigned       = status='퇴직' OR appLoginActive != true (NULL 포함)
      * - 퇴직           = resigned AND empEndDate < TODAY
-     * - 퇴직예정       = resigned AND empEndDate > TODAY
+     * - (퇴직예정      = resigned AND empEndDate > TODAY — 필터 옵션에서 제외, 아래 참고)
      * - 휴직           = NOT 퇴직 AND NOT 퇴직예정 AND status='휴직'
      * - 재직           = 그 외 전부 (formula 최종 fallthrough)
+     *
+     * 표시값이 "퇴직예정" 인 행(종료일이 미래)은 [ScheduleEmploymentStatus] 에서 해당 분류를 뺐으므로
+     * 세 필터 어디에도 걸리지 않는다 — 재직/휴직은 `neitherResignedNorPlanned` 로, 퇴직은 종료일 과거
+     * 조건으로 각각 배제한다 (표시값과 필터 분류가 어긋나지 않도록 의도적으로 유지).
      *
      * `empEndDate` 가 NULL 이거나 정확히 TODAY 인 경우 퇴직/퇴직예정 어느 쪽도 아니므로
      * 계산기와 동일하게 휴직 또는 재직으로 수렴한다 (formula 의 `<` / `>` 엄격 비교 정합).
@@ -356,6 +361,14 @@ class DisplayWorkScheduleRepositoryCustomImpl(
      * NOT 대신 각 분기의 **부정형을 명시적으로 구성** 한다 — `empEndDate IS NULL` 인 행에서
      * `NOT(empEndDate < TODAY)` 가 SQL 3값 논리상 UNKNOWN 이 되어 휴직/재직 필터에서 행이
      * 통째로 누락되는 것을 막기 위함 (계산기는 NULL 을 "퇴직 아님" 으로 처리).
+     *
+     * 여기에 발령명 '면직' 보정을 얹는다 ([DismissalPolicy] — 여사원 현황 목록과 동일 축):
+     * - 퇴직 조회: 위 조건 **OR 면직** (면직 발령을 받고도 status/종료일이 갱신되지 않은 사원 포함)
+     * - 재직·휴직 조회: 위 조건 **AND NOT 면직** (이미 나간 사원이 섞여 나오지 않도록 배제)
+     *
+     * 면직 판정만으로 퇴직에 포함하므로 SF formula 분류와는 어긋날 수 있다(의도된 deviation) —
+     * 예: 면직이지만 사원 종료일이 미래/NULL 인 행은 표시값이 "퇴직예정"/"재직" 이어도 퇴직 조회에 잡힌다.
+     * 발령명 NULL 행이 3값 논리로 탈락하지 않도록 재직·휴직 쪽은 IS NULL 을 함께 허용한다.
      */
     private fun buildEmploymentStatusCondition(
         employmentStatus: ScheduleEmploymentStatus?,
@@ -380,18 +393,24 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .or(empEndDate.isNull)
             .or(empEndDate.eq(today))
 
+        // 면직 = 퇴직 취급 ([DismissalPolicy]). 재직/휴직 쪽은 발령명 NULL 행이 3값 논리로
+        // 탈락하지 않도록 IS NULL 을 함께 허용한다.
+        val dismissed: BooleanExpression =
+            displayWorkSchedule.employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
+        val notDismissed: BooleanExpression =
+            displayWorkSchedule.employee.ordDetailNode.isNull.or(dismissed.not())
+
         return when (employmentStatus) {
             ScheduleEmploymentStatus.RESIGNED ->
-                BooleanBuilder(resigned.and(empEndDate.lt(today)))
-            ScheduleEmploymentStatus.RESIGN_PLANNED ->
-                // formula 상 퇴직 판정이 먼저이나 두 분기는 empEndDate 대소로 이미 배타적.
-                BooleanBuilder(resigned.and(empEndDate.gt(today)))
+                BooleanBuilder(resigned.and(empEndDate.lt(today)).or(dismissed))
             ScheduleEmploymentStatus.ON_LEAVE ->
                 BooleanBuilder(neitherResignedNorPlanned)
                     .and(empStatus.eq(EmploymentStatus.ON_LEAVE.code))
+                    .and(notDismissed)
             ScheduleEmploymentStatus.ACTIVE ->
                 BooleanBuilder(neitherResignedNorPlanned)
                     .and(empStatus.ne(EmploymentStatus.ON_LEAVE.code).or(empStatus.isNull))
+                    .and(notDismissed)
         }
     }
 

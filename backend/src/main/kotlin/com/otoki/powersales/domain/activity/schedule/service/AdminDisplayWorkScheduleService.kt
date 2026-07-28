@@ -142,8 +142,8 @@ class AdminDisplayWorkScheduleService(
         val validDataOptions = ScheduleValidData.entries
             .map { ScheduleFilterOption(value = it.name, label = it.displayName) }
 
-        // 재직상태(재직/휴직/퇴직/퇴직예정) — 화면·엑셀 「재직상태」 컬럼 표시값(SF formula
-        // ValidConditionData__c) 의 4분류. 표시값은 퇴직/퇴직예정에 사원 종료일이 덧붙지만
+        // 재직상태(재직/휴직/퇴직) — 화면·엑셀 「재직상태」 컬럼 표시값(SF formula ValidConditionData__c)
+        // 4분류 중 퇴직예정을 뺀 3종. 표시값은 퇴직/퇴직예정에 사원 종료일이 덧붙지만
         // (예: "퇴직2026-01-15") 필터는 날짜 suffix 를 제외한 분류만 값으로 쓴다.
         val employmentStatusOptions = ScheduleEmploymentStatus.entries
             .map { ScheduleFilterOption(value = it.name, label = it.displayName) }

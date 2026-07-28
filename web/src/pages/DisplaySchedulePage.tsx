@@ -74,6 +74,9 @@ const previewColumns: ColumnsType<RowPreview> = [
 /** 거래처상태 (SF `Account.AccountStatusName__c`) 중 빨간색으로 강조할 값. */
 const ALERT_ACCOUNT_STATUS = new Set(['폐업', '출고중지']);
 
+/** 유효여부 필터 기본값 — 진입/초기화 시 '유효'(서버 meta value `VALID`) 로 조회한다. */
+const DEFAULT_VALID_DATA: ScheduleValidData = 'VALID';
+
 /**
  * 유효 신호등 색상 (SF formula `Valid__c` 의 IMAGE() Greenlight/Yellowlight/Redlight 대체).
  * GREEN=유효 / YELLOW=예정 / RED=종료.
@@ -315,7 +318,8 @@ export default function DisplaySchedulePage() {
   const [filterAccountStatus, setFilterAccountStatus] = useState('');
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
-  const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(undefined);
+  // 유효여부 기본값은 '유효' — 진입 시 현재 유효한 스케줄만 보이도록 한다(예정/종료는 사용자가 선택).
+  const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(DEFAULT_VALID_DATA);
   const [filterEmploymentStatus, setFilterEmploymentStatus] = useState<ScheduleEmploymentStatus | undefined>(undefined);
   const [filterPeriodRange, setFilterPeriodRange] = useState<[string, string] | null>(null);
   const [filterBranchCode, setFilterBranchCode] = useState('');
@@ -335,7 +339,7 @@ export default function DisplaySchedulePage() {
     periodStart?: string;
     periodEnd?: string;
     branchCode?: string;
-  }>({});
+  }>({ validData: DEFAULT_VALID_DATA });
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -434,7 +438,7 @@ export default function DisplaySchedulePage() {
     setFilterAccountStatus('');
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
-    setFilterValidData(undefined);
+    setFilterValidData(DEFAULT_VALID_DATA);
     setFilterEmploymentStatus(undefined);
     setFilterPeriodRange(null);
     setFilterBranchCode('');
@@ -442,7 +446,7 @@ export default function DisplaySchedulePage() {
     setSortDir(undefined);
     setListPage(0);
     setSelectedRowKeys([]);
-    setAppliedFilters({});
+    setAppliedFilters({ validData: DEFAULT_VALID_DATA });
   };
 
   const handleBatchConfirm = () => {
@@ -730,8 +734,9 @@ export default function DisplaySchedulePage() {
             onChange={(v) => setFilterEmploymentStatus(v)}
             allowClear
             style={{ width: 120 }}
-            // 서버 meta value(ACTIVE/ON_LEAVE/RESIGNED/RESIGN_PLANNED)를 그대로 employmentStatus 로 전송.
+            // 서버 meta value(ACTIVE/ON_LEAVE/RESIGNED)를 그대로 employmentStatus 로 전송.
             // 표시값은 퇴직/퇴직예정에 사원 종료일이 덧붙지만(예: "퇴직2026-01-15") 필터는 분류만 매칭.
+            // 퇴직예정은 필터 옵션에서 제외 — 컬럼에는 표시되지만 조회 축은 재직/휴직/퇴직 3분류.
             options={filterOptions('employmentStatus').map((o) => ({
               label: o.label,
               value: o.value as ScheduleEmploymentStatus,

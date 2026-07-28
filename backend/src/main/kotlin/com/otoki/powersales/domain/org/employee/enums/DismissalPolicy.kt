@@ -23,6 +23,11 @@ package com.otoki.powersales.domain.org.employee.enums
  *   ([com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findDashboardBasicStatsProjection]):
  *   면직자를 모수에서 제외 — 두 화면의 재직 인원이 어긋나지 않도록 함께 적용한다
  *   ([FemaleStaffHeadcountFilter] 참조).
+ * - 진열스케줄마스터 「재직상태」 조회 필터
+ *   ([com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepositoryCustomImpl]
+ *   의 `buildEmploymentStatusCondition`): 여사원 현황과 동일하게 퇴직 조회에 면직 포함,
+ *   재직·휴직 조회에서 면직 제외. **필터만** 적용하며 「재직상태」 컬럼 표시값은 SF formula
+ *   `ValidConditionData__c` 정합을 위해 원본 계산값(재직/휴직/퇴직·퇴직예정+날짜)을 유지한다.
  *
  * 전체 사원 관리·lookup 은 적용 대상이 아니다 — SAP 원본 상태를 그대로 노출한다.
  */

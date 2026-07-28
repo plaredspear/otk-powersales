@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentStatus
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
@@ -1005,9 +1006,17 @@ class DisplayWorkScheduleRepositoryTest {
             status: String?,
             appLoginActive: Boolean?,
             empEndDate: LocalDate?,
+            ordDetailNode: String? = null,
         ) {
             val emp = testEntityManager.persistAndFlush(
-                Employee(employeeCode = "ES-$name", name = name, status = status, appLoginActive = appLoginActive, endDate = empEndDate)
+                Employee(
+                    employeeCode = "ES-$name",
+                    name = name,
+                    status = status,
+                    appLoginActive = appLoginActive,
+                    endDate = empEndDate,
+                    ordDetailNode = ordDetailNode,
+                )
             )
             testEntityManager.persistAndFlush(
                 DisplayWorkSchedule(
@@ -1028,7 +1037,7 @@ class DisplayWorkScheduleRepositoryTest {
             ).content.map { it.employeeName }
 
         @Test
-        @DisplayName("재직/휴직/퇴직/퇴직예정 각 필터 결과가 화면 표시값 분류와 완전 일치")
+        @DisplayName("재직/휴직/퇴직 각 필터 결과가 화면 표시값 분류와 일치 (퇴직예정은 필터 제외)")
         fun matchesCalculatorClassification() {
             data class Case(
                 val name: String,
@@ -1066,12 +1075,12 @@ class DisplayWorkScheduleRepositoryTest {
             testEntityManager.clear()
 
             // 계산기 기준 기대 분류 산출 (화면 표시값 진리값). 표시값은 퇴직/퇴직예정에 날짜가
-            // 덧붙으므로 접두사(분류) 기준으로 매칭한다.
-            fun classify(c: Case): ScheduleEmploymentStatus {
+            // 덧붙으므로 접두사(분류) 기준으로 매칭한다. 표시값 "퇴직예정" 은 필터 옵션에서 제외된
+            // 분류라 null 로 둔다 (어느 필터에도 잡히지 않아야 함).
+            fun classify(c: Case): ScheduleEmploymentStatus? {
                 val display = calculator.employmentStatus(c.status, c.appLoginActive, c.empEndDate, today)
                 return when {
-                    display.startsWith(ScheduleEmploymentStatus.RESIGN_PLANNED.displayName) ->
-                        ScheduleEmploymentStatus.RESIGN_PLANNED
+                    display.startsWith("퇴직예정") -> null
                     display.startsWith(ScheduleEmploymentStatus.RESIGNED.displayName) ->
                         ScheduleEmploymentStatus.RESIGNED
                     display == ScheduleEmploymentStatus.ON_LEAVE.displayName ->
@@ -1091,9 +1100,42 @@ class DisplayWorkScheduleRepositoryTest {
                     .containsExactlyInAnyOrderElementsOf(expected.getValue(es))
             }
 
-            // 네 분류의 합집합이 전체 케이스와 동일해야 함 (누락/중복 없음).
+            // 세 분류의 합집합 = 전체 케이스 - 표시값이 퇴직예정인 케이스 (누락/중복 없음).
+            // 퇴직예정 행은 필터 옵션 제거에 따라 어느 분류에도 속하지 않는 것이 의도된 동작이다.
+            val planned = cases.filter { classify(it) == null }.map { it.name }
+            assertThat(planned).describedAs("퇴직예정 표시 케이스 존재").isNotEmpty()
+
             val union = ScheduleEmploymentStatus.entries.flatMap { searchByEmploymentStatus(it) }
-            assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name })
+            assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name } - planned.toSet())
+        }
+
+        @Test
+        @DisplayName("발령명 '면직' 은 퇴직 조회에 포함되고 재직·휴직 조회에서 제외 (여사원 현황과 동일 축)")
+        fun dismissalTreatedAsResigned() {
+            // status 갱신이 늦어 재직/휴직으로 남은 면직자 — 표시값은 재직/휴직이지만 퇴직으로 조회돼야 한다.
+            persistCase("면직인데재직", "재직", true, null, DismissalPolicy.ORD_DETAIL_NODE)
+            persistCase("면직인데휴직", "휴직", true, null, DismissalPolicy.ORD_DETAIL_NODE)
+            // status 도 퇴직인 면직자 — 기존 퇴직 조건(종료일 과거)과 OR 로 중복 매칭돼도 1건만 나와야 한다.
+            persistCase("면직이고퇴직", "퇴직", false, today.minusDays(10), DismissalPolicy.ORD_DETAIL_NODE)
+            // 종료일이 미래인 면직자 — 표시값은 "퇴직예정" 이지만 면직이므로 퇴직 조회에 포함(의도된 deviation).
+            persistCase("면직이고종료일미래", "퇴직", false, today.plusDays(10), DismissalPolicy.ORD_DETAIL_NODE)
+            // 대조군: 발령명 NULL / 면직이 아닌 발령명 — 3값 논리로 탈락하지 않고 재직에 남아야 한다.
+            persistCase("발령명없음재직", "재직", true, null, null)
+            persistCase("전보재직", "재직", true, null, "전보")
+            persistCase("발령명없음휴직", "휴직", true, null, null)
+            testEntityManager.clear()
+
+            assertThat(searchByEmploymentStatus(ScheduleEmploymentStatus.ACTIVE))
+                .describedAs("재직 조회 — 면직 제외, 발령명 NULL/기타는 포함")
+                .containsExactlyInAnyOrder("발령명없음재직", "전보재직")
+
+            assertThat(searchByEmploymentStatus(ScheduleEmploymentStatus.ON_LEAVE))
+                .describedAs("휴직 조회 — 면직 제외")
+                .containsExactlyInAnyOrder("발령명없음휴직")
+
+            assertThat(searchByEmploymentStatus(ScheduleEmploymentStatus.RESIGNED))
+                .describedAs("퇴직 조회 — 면직 포함(중복 없이)")
+                .containsExactlyInAnyOrder("면직인데재직", "면직인데휴직", "면직이고퇴직", "면직이고종료일미래")
         }
     }
 
