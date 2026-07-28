@@ -254,6 +254,26 @@ export async function runPasswordHash(): Promise<PasswordHashResponse> {
 }
 
 /**
+ * Stage 2-C — 조장 + 지정 사번 user 비밀번호 강제 초기화.
+ *
+ * `runPasswordHash` 와 달리 `password IS NULL` 가드가 **없어 이미 설정된 비밀번호도 덮어쓴다**
+ * (초기화가 목적). 대상은 profile `6.조장` 인 user + backend 상수에 열거된 지정 사번의 합집합.
+ * 초기 평문은 동일하게 사번 기반 `{사번}@pwrs` 이며 `password_change_required = TRUE` 가 함께 설정된다.
+ *
+ * 재실행하면 대상자가 스스로 바꾼 비밀번호도 매번 초기값으로 되돌아가므로 cut-over 시 1회 실행한다.
+ * profile_id 가 확정된 후(fk → fk-natural-key → user-profile-reconcile 이후) 호출해야 조장이 정확히 잡힌다.
+ */
+export async function runLeaderPasswordReset(): Promise<PasswordHashResponse> {
+  const res = await client.post<ApiResponse<PasswordHashResponse>>(
+    '/api/v1/admin/sf-migration/stage2/leader-password-reset',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '조장/지정 사번 비밀번호 초기화에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
  * Stage 2 — UserRole Hierarchy snapshot 재계산.
  *
  * `user_role_hierarchy_snapshot` 의 `all_subordinate_ids` (jsonb) + `depth` +

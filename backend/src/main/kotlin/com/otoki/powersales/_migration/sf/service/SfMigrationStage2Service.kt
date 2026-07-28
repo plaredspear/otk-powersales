@@ -47,6 +47,23 @@ class SfMigrationStage2Service(
          */
         val LEADER_FLAGS_TARGET_PROFILE_NAMES = setOf("6.조장")
 
+        /**
+         * `leader-password-reset` substep 의 profile 무관 초기화 대상 사번 (사용자 지정).
+         *
+         * 조장 profile 이 아니지만 cut-over 시 비밀번호 초기화가 필요한 계정을 명시 열거한다.
+         * 조장 대상과 합집합으로 처리되며 중복은 자동 제거된다. 대상 변경 시 본 집합만 수정.
+         */
+        val MANUAL_PASSWORD_RESET_EMPLOYEE_CODES = setOf(
+            "20000531",
+            "20020553",
+            "20190075",
+            "20210359",
+            "20210360",
+            "20240208",
+            "20070066",
+            "20050269",
+        )
+
         // 본문 HTML 의 <img ...> 태그 전체 (rtaImage 포함 여부는 src 추출 후 판정).
         private val RTA_IMG_REGEX = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
         // <img> 태그 안의 src 값 — rtaImage 서블릿 URL 만 대상 (이미 placeholder(notice-image://)면 미매칭 → skip).
@@ -341,6 +358,97 @@ class SfMigrationStage2Service(
             results = listOf(SubstepResult(label = "User.password (BCrypt)", rowsAffected = totalUpdated)),
             totalRowsAffected = totalUpdated,
         )
+    }
+
+    /**
+     * 2-C leader/manual password reset — 조장 계열 + 지정 사번 user 의 비밀번호를 **강제 초기화**한다.
+     *
+     * ## [runPasswordHash] 와의 차이
+     * [runPasswordHash] 는 `password IS NULL OR password = ''` 가드가 있어 **미설정 row 만** 채우는
+     * 적재용 substep 이다. 본 메소드는 "초기화" 가 목적이라 **이미 설정된 비밀번호도 덮어쓴다**
+     * (가드 없음). 따라서 재실행하면 대상자가 스스로 바꾼 비밀번호도 매번 초기값으로 되돌아간다 —
+     * cut-over 시점에 1회 실행하는 운영 도구로 취급한다.
+     *
+     * ## 대상
+     * - profile.name = [LEADER_FLAGS_TARGET_PROFILE_NAMES] (`6.조장`) 인 user.
+     *   `7.영업사원 + 조장` 은 leader-profile-flags substep 과 동일하게 제외 (web admin 수동 처리).
+     * - [MANUAL_PASSWORD_RESET_EMPLOYEE_CODES] 의 사번을 가진 user.
+     *
+     * 두 집합의 합집합이며 중복은 자동 제거된다(사번 기준 DISTINCT). SF 마이그레이션 대상이 아닌
+     * (sfid 가 없는) user 도 사번이 일치하면 초기화한다 — 지정 사번은 명시 요청이므로 sfid 로 좁히지 않는다.
+     *
+     * 초기 평문은 [runPasswordHash] 와 동일하게 사번 기반 `"{사번}@pwrs"` ([TemporaryPasswordPolicy]) 이고,
+     * `password_change_required = TRUE` 로 최초 로그인 시 변경을 강제한다. 평문은 응답에 담지 않는다
+     * (화면이 사번으로 동일 규칙을 재조립해 안내한다 — [TemporaryPasswordPolicy] 정책).
+     */
+    @Transactional
+    fun runLeaderPasswordReset(): SfMigrationStage2Response {
+        val leaderCodes = selectEmployeeCodes(
+            "SELECT u.employee_code FROM powersales.\"user\" u " +
+                "JOIN powersales.profile p ON p.profile_id = u.profile_id " +
+                "WHERE p.name IN (:names) AND u.employee_code IS NOT NULL",
+        ) { it.setParameter("names", LEADER_FLAGS_TARGET_PROFILE_NAMES) }
+
+        val manualCodes = selectEmployeeCodes(
+            "SELECT u.employee_code FROM powersales.\"user\" u " +
+                "WHERE u.employee_code IN (:codes)",
+        ) { it.setParameter("codes", MANUAL_PASSWORD_RESET_EMPLOYEE_CODES) }
+
+        val leaderUpdated = resetPasswords(leaderCodes)
+        // 조장에도 포함된 사번은 이미 초기화되었으므로 카운트 중복을 피해 차집합만 별도 집계한다.
+        val manualOnly = manualCodes - leaderCodes
+        val manualUpdated = resetPasswords(manualOnly)
+
+        val missingCodes = MANUAL_PASSWORD_RESET_EMPLOYEE_CODES - manualCodes
+        val results = buildList {
+            add(SubstepResult(label = "조장(6.조장) user.password 초기화", rowsAffected = leaderUpdated))
+            add(SubstepResult(label = "지정 사번 user.password 초기화", rowsAffected = manualUpdated))
+            if (missingCodes.isNotEmpty()) {
+                // 사번이 신규 DB 에 없으면 초기화 대상이 없다 — 조용히 넘기지 않고 화면에 노출한다.
+                add(
+                    SubstepResult(
+                        label = "미존재 사번 (초기화 안 됨): ${missingCodes.sorted().joinToString(", ")}",
+                        rowsAffected = 0,
+                    )
+                )
+            }
+        }
+
+        return SfMigrationStage2Response(
+            substep = "leader-password-reset",
+            results = results,
+            totalRowsAffected = leaderUpdated + manualUpdated,
+        )
+    }
+
+    /** 사번 목록 조회 헬퍼 — native query 결과를 non-null String 집합으로 정규화한다. */
+    private fun selectEmployeeCodes(
+        sql: String,
+        bind: (jakarta.persistence.Query) -> Unit,
+    ): Set<String> {
+        val query = em.createNativeQuery(sql)
+        bind(query)
+        @Suppress("UNCHECKED_CAST")
+        return (query.resultList as List<String?>).filterNotNull().toSet()
+    }
+
+    /**
+     * [codes] 사번 user 의 비밀번호를 `"{사번}@pwrs"` BCrypt hash 로 **무조건 덮어쓴다**.
+     * 평문이 사번마다 다르므로 row 별로 encode 한다(BCrypt salt 도 매번 랜덤).
+     */
+    private fun resetPasswords(codes: Collection<String>): Int {
+        var updated = 0
+        for (code in codes) {
+            val hash = passwordEncoder.encode(TemporaryPasswordPolicy.forEmployeeCode(code))
+            updated += em.createNativeQuery(
+                "UPDATE powersales.\"user\" SET password = :hash, password_change_required = TRUE " +
+                    "WHERE employee_code = :code"
+            )
+                .setParameter("hash", hash)
+                .setParameter("code", code)
+                .executeUpdate()
+        }
+        return updated
     }
 
     /**

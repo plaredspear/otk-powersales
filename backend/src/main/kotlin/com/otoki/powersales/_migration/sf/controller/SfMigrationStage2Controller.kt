@@ -189,6 +189,23 @@ class SfMigrationStage2Controller(
     }
 
     /**
+     * 조장 + 지정 사번 user 의 비밀번호 **강제 초기화**.
+     *
+     * `stage2/password` 와 달리 `password IS NULL` 가드가 없어 **이미 설정된 비밀번호도 덮어쓴다**
+     * (초기화가 목적). 대상은 profile `6.조장` +
+     * [com.otoki.powersales._migration.sf.service.SfMigrationStage2Service.MANUAL_PASSWORD_RESET_EMPLOYEE_CODES]
+     * 의 합집합. 초기 평문은 사번 기반 `"{사번}@pwrs"` 이며 `password_change_required = TRUE` 가 함께 설정된다.
+     *
+     * 실행 순서: profile_id 가 확정된 후 (fk → fk-natural-key → user-profile-reconcile 이후) 호출해야
+     * 조장 대상이 정확히 잡힌다. Stage 2 최종 단계로 1회 실행.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/leader-password-reset")
+    fun runLeaderPasswordReset(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runLeaderPasswordReset()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * 조장 Profile 의 ProfileFlags 초기 권한 적용 — [com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed] SoT 기준.
      *
      * SF frozen snapshot 에는 없는 신규 조장 권한을 코드 SoT 로 관리하여 적용한다. 과거 부팅 Runner

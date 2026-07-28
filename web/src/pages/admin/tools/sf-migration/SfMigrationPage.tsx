@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import {
   useFkResolvableTables,
   useFkResolveProgress,
+  useRunLeaderPasswordReset,
   useRunLeaderProfileFlags,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
@@ -100,6 +101,7 @@ export default function SfMigrationPage() {
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
   const runPasswordHashMutation = useRunPasswordHash();
+  const runLeaderPasswordResetMutation = useRunLeaderPasswordReset();
   const runSharingRecalcMutation = useRunSharingRecalcAll();
   const sharingRecalcStatusQuery = useSharingRecalcStatus();
   const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
@@ -145,6 +147,10 @@ export default function SfMigrationPage() {
   const passwordHashResult = runPasswordHashMutation.data;
   const passwordHashError = runPasswordHashMutation.error as Error | null;
   const passwordHashPending = runPasswordHashMutation.isPending;
+
+  const leaderPasswordResetResult = runLeaderPasswordResetMutation.data;
+  const leaderPasswordResetError = runLeaderPasswordResetMutation.error as Error | null;
+  const leaderPasswordResetPending = runLeaderPasswordResetMutation.isPending;
 
   const sharingRecalcResult = runSharingRecalcMutation.data;
   const sharingRecalcError = runSharingRecalcMutation.error as Error | null;
@@ -1118,6 +1124,99 @@ export default function SfMigrationPage() {
               {sharingRecalcResult.durationMs.toLocaleString()} ms
             </Descriptions.Item>
           </Descriptions>
+        )}
+      </Card>
+
+      <Card title="조장/지정 사번 비밀번호 초기화" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          profile <Text code>6.조장</Text> 인 user 와 <Text strong>지정 사번</Text> user 의 비밀번호를
+          사번 기반 초기 평문 (<Text code>{'{사번}@pwrs'}</Text>) 의 BCrypt hash 로 재발급하고{' '}
+          <Text code>password_change_required = TRUE</Text> 를 설정한다. 두 대상의 합집합이며 중복은
+          자동 제거된다.
+          <br />
+          위 <Text strong>Stage 2-C — 초기 비밀번호 적재</Text> 와 달리{' '}
+          <Text code>password IS NULL</Text> 가드가 <Text strong>없어 이미 설정된 비밀번호도 덮어쓴다</Text>{' '}
+          (초기화가 목적). <Text code>7.영업사원 + 조장</Text> 은 대상이 아니다 (조장 ProfileFlags 적용
+          카드와 동일 범위).
+          <br />
+          <Text strong>profile_id 가 확정된 후</Text> (FK Resolve → Natural Key FK → User Profile 정합
+          이후) 실행해야 조장 대상이 정확히 잡힌다 — Stage 2 최종 단계로 1회 실행.
+        </Paragraph>
+
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="기존 비밀번호를 덮어쓴다"
+          description="재실행하면 대상자가 스스로 변경한 비밀번호도 매번 초기값으로 되돌아간다. cut-over 시점에 1회만 실행하고, 대상자에게 '사번@pwrs' 로 로그인 후 즉시 변경하도록 안내한다."
+        />
+
+        <Space>
+          <Button
+            danger
+            type="primary"
+            loading={leaderPasswordResetPending}
+            disabled={leaderPasswordResetPending}
+            onClick={() => {
+              runLeaderPasswordResetMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {leaderPasswordResetError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="비밀번호 초기화 실패"
+            description={leaderPasswordResetError.message}
+            closable
+            onClose={() => {
+              runLeaderPasswordResetMutation.reset();
+            }}
+          />
+        )}
+
+        {leaderPasswordResetResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{leaderPasswordResetResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적용 row">
+                {leaderPasswordResetResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {leaderPasswordResetResult.totalRowsAffected === 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적용된 row 가 없습니다"
+                description="profile_id 가 아직 채워지지 않았거나(FK Resolve / User Profile 정합 미실행), 대상 사번이 신규 DB 에 없을 수 있습니다."
+              />
+            )}
+            <ResizableTable<PasswordHashSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={leaderPasswordResetResult.results}
+            />
+          </div>
         )}
       </Card>
     </div>

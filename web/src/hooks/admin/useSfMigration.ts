@@ -3,6 +3,7 @@ import {
   getFkResolvableTables,
   getFkResolveProgress,
   getSharingRecalcStatus,
+  runLeaderPasswordReset,
   runLeaderProfileFlags,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
@@ -120,6 +121,18 @@ export function useRunUserRoleHierarchyRecalc() {
 export function useRunPasswordHash() {
   return useMutation<PasswordHashResponse>({
     mutationFn: runPasswordHash,
+  });
+}
+
+/**
+ * 조장 + 지정 사번 비밀번호 강제 초기화 Mutation 훅.
+ *
+ * `useRunPasswordHash` 와 달리 이미 설정된 비밀번호도 덮어쓴다 (초기화 목적). Stage 2 최종 단계로
+ * profile_id 확정 이후 1회 실행. 1회성 cut-over 도구라 무효화할 캐시 화면이 없다.
+ */
+export function useRunLeaderPasswordReset() {
+  return useMutation<PasswordHashResponse>({
+    mutationFn: runLeaderPasswordReset,
   });
 }
 

@@ -23,7 +23,7 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
    - ProductExpiration / SafetyCheckSubmission 의 *_sfid → *_id (sfid 자동 스캔)
    ↓
 초기 비밀번호 적재 (web 화면 /admin/tools/heroku-migration-2 최하단 카드)
-   - employee_info.password ← BCrypt(pwrs1234!) + password_change_required=TRUE
+   - employee_info.password ← BCrypt("{사번}@pwrs") + password_change_required=TRUE
    - SF 화면의 user.password 와 동일 상수 공유 (대상 테이블은 서로 다름 — 각각 1회 실행)
 ```
 
@@ -38,7 +38,7 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
    - 일괄 적재 시 S3 에 CSV 가 없는 entity(404)는 **SKIPPED 로 건너뛰고 다음 entity 를 계속 적재**한다(batch 중단 안 함). 아직 export 안 된 테이블이 있어도 있는 것만 적재 가능. 단건 적재(SINGLE)는 지정 파일이 없으면 그대로 실패. (실패 FAILED 는 여전히 batch 중단)
 5. **Stage 2 FK Resolve** — web `/admin/tools/heroku-migration-2` 에서 "FK Resolve 실행". 패턴 A+B 일괄.
 6. **Stage 2-C sfid FK** — SF 마이그레이션 web `/admin/tools/sf-migration-2` 의 FK Resolve 재실행(ProductExpiration / SafetyCheckSubmission 의 *_sfid → *_id).
-7. **초기 비밀번호 적재 (EmployeeInfo)** — web `/admin/tools/heroku-migration-2` 최하단 **"초기 비밀번호 적재 (BCrypt) — EmployeeInfo"** 카드의 "실행" 버튼. `employee_info.password` 를 고정 초기 평문 `pwrs1234!` (`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD`) 의 BCrypt hash 로 채우고 `password_change_required=TRUE` 설정. 대상은 `password IS NULL OR password = ''` — 멱등.
+7. **초기 비밀번호 적재 (EmployeeInfo)** — web `/admin/tools/heroku-migration-2` 최하단 **"초기 비밀번호 적재 (BCrypt) — EmployeeInfo"** 카드의 "실행" 버튼. `employee_info.password` 를 사번 기반 초기 평문 `"{사번}@pwrs"` (`TemporaryPasswordPolicy.forEmployeeCode` — 사번이 없으면 `pwrs1234!` fallback) 의 BCrypt hash 로 채우고 `password_change_required=TRUE` 설정. 대상은 `password IS NULL OR password = ''` — 멱등.
    - **레거시 emp_pwd 는 재사용하지 않는다** (레거시 BCrypt hash 를 그대로 이관하지 않고 전원 동일 초기값으로 재발급).
    - SF 화면(`/admin/tools/sf-migration-2`)의 **Stage 2-C — 초기 비밀번호 적재** 는 `user` (web 로그인), 본 카드는 `employee_info` (mobile 로그인) 로 **대상 테이블이 다르다**. 동일 초기 평문 상수를 공유하므로 비밀번호는 같지만, **양쪽 화면에서 각각 1회씩 실행**해야 한다.
    - curl 대안: `curl -X POST "$BASE/api/v1/admin/heroku-migration/stage2/password" -H "Authorization: Bearer $JWT"`

@@ -248,6 +248,57 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     @Test
     @Transactional
+    @DisplayName("leader-password-reset — 6.조장 + 지정 사번 user 의 password 를 기존 값 유무와 무관하게 덮어씀")
+    fun runLeaderPasswordReset() {
+        em.createNativeQuery("INSERT INTO powersales.profile (profile_id, sfid, name) VALUES (25, '00e2x000000u01cAAA', '6.조장')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.profile (profile_id, sfid, name) VALUES (24, '00e2x000000u01bAAA', '5.영업사원')").executeUpdate()
+        // '7.영업사원 + 조장' 은 대상 밖 (leader-profile-flags 와 동일 범위 — 사용자 결정).
+        em.createNativeQuery("INSERT INTO powersales.profile (profile_id, sfid, name) VALUES (26, '00e2x000000u01dAAA', '7.영업사원 + 조장')").executeUpdate()
+
+        // L1: 조장 + 기존 비밀번호 보유 → 덮어써야 한다 (runPasswordHash 와의 핵심 차이).
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id, password) VALUES ('L1', 25, 'OLD-HASH')").executeUpdate()
+        // L2: 조장 + 비밀번호 없음.
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id) VALUES ('L2', 25)").executeUpdate()
+        // S1: 영업사원 → 대상 아님.
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id, password) VALUES ('S1', 24, 'KEEP-S1')").executeUpdate()
+        // S2: 7.영업사원 + 조장 → 대상 아님.
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id, password) VALUES ('S2', 26, 'KEEP-S2')").executeUpdate()
+        // M1: 지정 사번 (profile 무관, sfid 없음) → 대상.
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id, password) VALUES ('20000531', 24, 'OLD-M1')").executeUpdate()
+        // M2: 지정 사번이면서 조장 → 합집합 중복 제거 (1회만 카운트).
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_id, password) VALUES ('20050269', 25, 'OLD-M2')").executeUpdate()
+
+        val response = service.runLeaderPasswordReset()
+
+        assertThat(response.substep).isEqualTo("leader-password-reset")
+        // 조장 3건 (L1/L2/20050269) + 지정 사번 중 조장이 아닌 1건 (20000531) = 4. 중복 미가산.
+        assertThat(response.totalRowsAffected).isEqualTo(4)
+
+        val pwL1 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'L1'")
+        val pwM1 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = '20000531'")
+        val pwM2 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = '20050269'")
+        // 기존 비밀번호가 있어도 덮어쓴다.
+        assertThat(pwL1).isNotEqualTo("OLD-HASH")
+        assertThat(BCryptPasswordEncoder().matches("L1@pwrs", pwL1)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("20000531@pwrs", pwM1)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("20050269@pwrs", pwM2)).isTrue()
+        assertThat(boolOf("SELECT password_change_required FROM powersales.\"user\" WHERE employee_code = 'L1'")).isTrue()
+
+        // 대상 밖 profile 은 그대로 보존.
+        assertThat(strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'S1'")).isEqualTo("KEEP-S1")
+        assertThat(strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'S2'")).isEqualTo("KEEP-S2")
+
+        // 신규 DB 에 없는 지정 사번은 별도 행으로 보고한다 (조용한 누락 방지).
+        val missingLabel = response.results.map { it.label }.first { it.startsWith("미존재 사번") }
+        assertThat(missingLabel).contains("20020553").doesNotContain("20000531")
+
+        // 재실행해도 대상 수는 동일 (가드가 없으므로 매번 초기화 — 멱등이 아니라 반복 적용).
+        val again = service.runLeaderPasswordReset()
+        assertThat(again.totalRowsAffected).isEqualTo(4)
+    }
+
+    @Test
+    @Transactional
     @DisplayName("user profile reconcile — profile_sfid(SF 권위)로 profile_id override + 시스템 관리자 격상 보존 + 멱등")
     fun runUserProfileSfidReconcile() {
         // profile 4종 (진단 시나리오 정합): 5.영업사원 / 6.조장 / 9. Staff / 시스템 관리자

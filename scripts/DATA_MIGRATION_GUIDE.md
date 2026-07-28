@@ -119,7 +119,10 @@ cd scripts/sf-data-migration
 | 4 | **공지 본문 이미지 placeholder 치환** | notice RTA 이미지 URL placeholder |
 | 5 | **UserRole Hierarchy 재계산** | depth / all_subordinate_ids / ancestor_path. **Natural Key FK 해소 완료 후** |
 | 6 | **Derived 캐시 동기화 (Stage 2-B)** | Employee.cost_center_code → User / ProfessionalPromotionTeamMaster 백필 |
-| — | **비밀번호 해시 (Stage 2-C)** | 사번 평문 → BCrypt hash (`POST .../stage2/password`) |
+| — | **비밀번호 해시 (Stage 2-C)** | 사번 기반 초기 평문 `{사번}@pwrs` → BCrypt hash. **`password IS NULL OR ''` 인 row 만** (`POST .../stage2/password`) |
+| 최종 | **조장/지정 사번 비밀번호 초기화** | profile `6.조장` + 지정 사번 8명. **기존 비밀번호도 덮어씀**(가드 없음) — 화면 **최하단 카드** (`POST .../stage2/leader-password-reset`) |
+
+> **두 비밀번호 카드의 차이** — Stage 2-C 는 미설정 row 만 채우는 **적재**용(멱등), 최하단 카드는 이미 쓰던 비밀번호까지 되돌리는 **초기화**용(반복 적용). 후자는 `profile_id` 가 확정된 뒤(FK Resolve → Natural Key FK → User Profile 정합 이후) 실행해야 조장 대상이 정확히 잡히므로 Stage 2 최종 단계에 둔다. 대상 사번은 backend `SfMigrationStage2Service.MANUAL_PASSWORD_RESET_EMPLOYEE_CODES` 상수에서 관리한다.
 
 ### 1-5. 클레임/공지 이미지 (별도, Stage 2 이후 가능)
 
@@ -361,7 +364,7 @@ backend 가 S3 stream 을 PostgreSQL COPY 로 적재한다. **자연키만 채�
 
 화면 **최하단 "초기 비밀번호 적재 (BCrypt) — EmployeeInfo"** 카드의 "실행" 버튼.
 
-- `employee_info.password` ← 고정 초기 평문 **`pwrs1234!`**(`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD`)의 BCrypt hash + `password_change_required=TRUE`.
+- `employee_info.password` ← 사번 기반 초기 평문 **`{사번}@pwrs`**(`TemporaryPasswordPolicy.forEmployeeCode`, 사번 없으면 `pwrs1234!` fallback)의 BCrypt hash + `password_change_required=TRUE`.
 - 대상은 `password IS NULL OR password = ''` — **멱등**.
 - **레거시 `emp_pwd` 는 재사용하지 않는다** — 레거시 BCrypt hash 를 이관하지 않고 전원 동일 초기값으로 재발급.
 - ⚠️ **SF 화면의 Stage 2-C 와 별개다** — SF 쪽은 `user`(web 로그인), 본 카드는 `employee_info`(mobile 로그인)로 **대상 테이블이 다르다**. 동일 초기 평문 상수를 공유하지만 **양쪽 화면에서 각각 1회씩 실행**해야 한다(모바일 로그인 불가 사고의 흔한 원인).
