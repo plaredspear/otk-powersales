@@ -44,7 +44,7 @@ object DashboardScheduledJobTargets {
         Target(MfeisThisMonthRevenueBatch.JOB_NAME, "일정 평균매출", "매월 1일 03시"),
         Target(AccountNaverGeocodeBatch.JOB_NAME, "거래처 좌표변환", "매일 02시"),
         Target(PPTMasterExpireBatch.JOB_NAME, "금일 전문행사조 마감", "매일 23:30"),
-        Target(PPTMasterSyncBatch.JOB_NAME, "금일 전문행사조 반영", "매시간 44분"),
+        Target(PPTMasterSyncBatch.JOB_NAME, "금일 전문행사조 반영", "매일 01시"),
         Target(PostponedAppointmentBatch.JOB_NAME, "연기예약 처리", "매일 자정"),
         Target(SalesProgressRateMasterSyncBatch.JOB_NAME, "목표마스터 sync", "매시간 정각"),
         Target(ClaimMasterSyncBatch.JOB_NAME, "클레임 업데이트", "매시간 정각"),

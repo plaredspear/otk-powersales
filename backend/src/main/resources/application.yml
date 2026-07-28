@@ -473,7 +473,7 @@ logging:
 app:
   # prod 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
   # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등) 을 prod 에서 활성화한다.
-  # sync: 매시간 44분, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+  # sync: 매일 01:00, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
   batch:
     # 클레임/물류클레임 상태 업데이트 sync — 단일 잡(ClaimMasterSyncBatch, 매시 정각)으로 통합, 도메인별 개별 on/off.
     # 잡 빈 게이팅 = claim-master.sync.enabled. 두 도메인 처리 여부는 ClaimMasterSyncBatchService 가 각 플래그로 재판정한다.
@@ -567,7 +567,7 @@ app:
       sync:
         enabled: true
     # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등).
-    # sync: 매시간 44분, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+    # sync: 매일 01:00, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
     ppt-master:
       sync:
         enabled: true

@@ -84,8 +84,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = PPTMasterSyncBatch.JOB_NAME,
-            cron = "0 44 * * * *",
-            description = "전문행사조 마스터 유효 sync (매시간 44분) — SF \"금일 전문행사조 변경\" 운영 cron 정합",
+            cron = "0 0 1 * * *",
+            description = "전문행사조 마스터 유효 sync (매일 01시) — SF \"금일 전문행사조 변경\" 운영 cron (매일 01:00 Asia/Seoul) 정합",
             beanType = PPTMasterSyncBatch::class.java,
         ),
         Entry(

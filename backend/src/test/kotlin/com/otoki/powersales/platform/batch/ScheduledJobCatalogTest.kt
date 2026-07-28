@@ -94,13 +94,15 @@ class ScheduledJobCatalogTest {
     }
 
     @Test
-    @DisplayName("전문행사조 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (변경=매시간 44분, 마감=23:30)")
+    @DisplayName("전문행사조 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (변경=매일 01:00, 마감=23:30)")
     fun pptMasterCrons_alignWithLegacyOperationalSchedule() {
         val byName = ScheduledJobCatalog.ENTRIES.associateBy { it.jobName }
 
-        // legacy SF "금일 전문행사조 변경" = 0 44 * * * ? (매시간 44분)
+        // legacy SF "금일 전문행사조 변경" = 0 0 1 ? * 1~7 (매일 01:00 Asia/Seoul,
+        // 2026-07-28 운영 CronTrigger 전수 조회 실측). 이전에는 매시간 44분으로 기록되어 있었으나
+        // 실측 대조 결과 레거시에 매시 44분 발화 잡은 존재하지 않아 정정했다.
         val syncCron = byName.getValue(PPTMasterSyncBatch.JOB_NAME).cron
-        assertThat(syncCron).isEqualTo("0 44 * * * *")
+        assertThat(syncCron).isEqualTo("0 0 1 * * *")
         assertThat(CronExpression.isValidExpression(syncCron)).isTrue()
 
         // legacy SF "금일 전문행사조 마감" = 0 30 23 ? * 1~7 (매일 23:30)
