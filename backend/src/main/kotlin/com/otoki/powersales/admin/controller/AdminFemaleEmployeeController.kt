@@ -20,9 +20,8 @@ import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordRespon
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -52,12 +51,18 @@ import java.time.format.DateTimeParseException
  * 상세/근무이력은 [AdminEmployeeController] 의 공용 endpoint 를 쓰지 않고 본 컨트롤러에서
  * `female_employee` 가드로 제공하여 여사원 권한만으로 현황+상세 완결 접근이 되도록 한다.
  *
- * ## 지점 스코프 단일 출처 — [WomenScheduleBranchResolver]
+ * ## 지점 스코프 단일 출처 — [DashboardBranchResolver] (대시보드와 동일 목록)
  *
  * 목록 조회 조건(`/meta` 의 지점 셀렉터 옵션) 과 목록/엑셀 조회의 지점 보안 스코프
  * ([resolveBranchScope]) 가 **동일 resolver** 를 공유한다. 과거에는 셀렉터만 resolver 를 쓰고
  * 조회는 `@CurrentDataScope` (본인 지점 1건) 를 써서, 셀렉터에 노출된 형제/상위 지점을 고르면
  * 빈 목록이 되는 드리프트가 있었다.
+ *
+ * 2026-07-29 부터 그 resolver 를 [com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver]
+ * → [DashboardBranchResolver] 로 교체했다. 여사원 현황과 투입현황 대시보드는 이미 동일 모수
+ * (여사원+조장 role, `femaleStaffHeadcountScope`) 로 인원을 세므로, 지점 축까지 같은 목록
+ * (전사 권한자 = Retail 32지점 + 영업지원2팀 + CVS전략팀 34개 고정) 을 써야 두 화면의 총원이 일치한다.
+ * 지점 권한자(지점장/조장/여사원) 는 [DashboardBranchResolver] 가 기존 resolver 에 위임하므로 동작 동일.
  */
 @RestController
 @RequestMapping("/api/v1/admin/female-employees")
@@ -66,8 +71,7 @@ class AdminFemaleEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
-    private val branchCodeExpander: BranchCodeExpander,
+    private val dashboardBranchResolver: DashboardBranchResolver,
 ) {
 
     companion object {
@@ -92,9 +96,9 @@ class AdminFemaleEmployeeController(
      * 별도 `/branches` endpoint(지점 셀렉터) + web 하드코딩(재직상태·근무형태1·근무형태3·전문행사조)
      * 으로 분산됐던 목록 조건 로드를 단일 응답으로 통합했다 (`/branches` 는 호출처가 없어져 제거).
      * 정적 조건(재직상태·근무형태·전문행사조)과 기본값은 서비스가, 권한 의존 지점 옵션은
-     * [WomenScheduleBranchResolver] 결과를 컨트롤러가 조립해 붙인다.
+     * [DashboardBranchResolver] 결과를 컨트롤러가 조립해 붙인다 — 대시보드 지점 셀렉터와 동일 목록.
      *
-     * 셀렉터 옵션과 목록/엑셀 조회 스코프는 **동일 출처**([WomenScheduleBranchResolver]) 를 공유한다
+     * 셀렉터 옵션과 목록/엑셀 조회 스코프는 **동일 출처**([DashboardBranchResolver]) 를 공유한다
      * ([resolveBranchScope] 참조) — 셀렉터에 노출된 지점을 고르면 항상 그 지점 결과가 나온다.
      */
     @GetMapping("/meta")
@@ -103,7 +107,7 @@ class AdminFemaleEmployeeController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<FemaleEmployeeListMetaResponse>> {
         val base = adminEmployeeService.getFemaleEmployeeListMetaStatic()
-        val branchOptions = womenScheduleBranchResolver.resolveBranches(principal)
+        val branchOptions = dashboardBranchResolver.resolveBranches(principal)
             .map { FemaleEmployeeFilterOption(value = it.branchCode, label = it.branchName) }
         val response = base.copy(
             filters = base.filters + FemaleEmployeeFilterMeta(
@@ -136,7 +140,7 @@ class AdminFemaleEmployeeController(
      * 여사원 현황 목록 조회.
      *
      * 지점 스코프는 [resolveBranchScope] 로 산출한다 — `/meta` 셀렉터 옵션과 동일 출처
-     * ([WomenScheduleBranchResolver]) 이므로 셀렉터에 보이는 지점을 고르면 그 지점 결과가 나온다.
+     * ([DashboardBranchResolver]) 이므로 셀렉터에 보이는 지점을 고르면 그 지점 결과가 나온다.
      */
     @GetMapping
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
@@ -296,7 +300,7 @@ class AdminFemaleEmployeeController(
      * 목록/엑셀 조회의 지점 보안 스코프 산출 — **`/meta` 셀렉터 옵션과 동일 출처**.
      *
      * 기존에는 `@CurrentDataScope` (→ `DataScope.branchCodes = listOfNotNull(costCenterCode)`, 본인 지점
-     * 1건) 를 썼기 때문에, 셀렉터가 [WomenScheduleBranchResolver] 로 조직 트리 전체를 옵션으로 내려주면서도
+     * 1건) 를 썼기 때문에, 셀렉터가 resolver 로 조직 트리 전체를 옵션으로 내려주면서도
      * 그 중 본인 소속 지점이 아닌 지점을 고르면 `NoAccess` → 빈 목록이 되는 스코프 드리프트가 있었다.
      * 본 메서드는 스코프를 셀렉터와 같은 resolver 로 통일해 그 불일치를 제거한다.
      *
@@ -304,18 +308,26 @@ class AdminFemaleEmployeeController(
      * `effectiveBranchCodes(requestedBranch)` 로 소비된다 — 즉 IDOR 판정(요청 지점이 권한 집합에 속하는지)은
      * 기존 [DataScope] 규칙을 그대로 재사용하고, **권한 집합의 출처만** 셀렉터와 일치시킨다.
      *
-     * - 전사 권한자 (시스템 관리자 / 영업지원 / 본부장·사업부장·영업부장 —
-     *   [WomenScheduleBranchResolver.isAllBranchesUser]): `isAllBranches = true`
-     *   → 지점 미선택 시 전사, 선택 시 그 지점.
-     * - 지점 권한자 (지점장 / 조장 / 여사원): 본인 costCenterCode 의 조직 트리 지점 코드 집합.
-     *   [BranchCodeExpander] 로 BranchMapping 확장 코드까지 넓힌다 (폐기된 옛 코드가 다수이나
-     *   일부 행은 현행 타 조직도 함께 끌어온다 — `BranchMapping` KDoc 의 성격 4종 참조).
+     * 권한 분기는 [DashboardBranchResolver.resolveBranches] 안에 있어 여기서 다시 나누지 않는다
+     * (셀렉터 옵션 = 허용 지점 집합이라는 등식을 코드 구조로 보장):
+     * - 전사 권한자 (시스템 관리자 / 영업지원 / 본부장·사업부장·영업부장): 대시보드 고정 화이트리스트
+     *   34개 (Retail 32지점 + 영업지원2팀 + CVS전략팀). **전건 조회가 아니다** — 지점 미선택이면
+     *   34개 IN 매칭이며, 이는 대시보드(`AdminDashboardController.getDashboard`) 와 동일 규칙이다.
+     *   34개 밖 지점 소속 사원은 목록에 나오지 않는다 (두 화면 총원 일치가 우선).
+     * - 지점 권한자 (지점장 / 조장 / 여사원): 본인 costCenterCode 의 조직 트리 지점 코드 집합
+     *   (resolver 가 기존 `WomenScheduleBranchResolver` 에 위임 — 동작 변화 없음).
      *
-     * 여기서 확장한 코드는 **IDOR 통과 판정용**이다 — `DataScope.effectiveBranchCodes` 가 지점
-     * **선택 시** 요청 코드 1건만 `Filtered` 로 남기기 때문에 확장 집합이 그대로 필터가 되지는 않는다.
-     * 실제 조회 필터의 확장은 최종 필터 직전인
-     * [com.otoki.powersales.domain.org.employee.service.AdminEmployeeService.expandBranchCodes] 가
-     * 담당하며, 그래서 지점 선택/미선택 양쪽 모두 확장이 적용된다.
+     * ## BranchMapping 확장은 여기서 하지 않는다 (1-hop 보장)
+     *
+     * 폐기된 옛 코드까지 넓히는 [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander]
+     * 확장은 최종 필터 직전인
+     * [com.otoki.powersales.domain.org.employee.service.AdminEmployeeService.expandBranchCodes] 한 곳에서만
+     * 적용된다 — 지점 선택 시(`Filtered([요청코드])`) / 미선택 시(`Filtered(화이트리스트)`) 모두 그 경로를 탄다.
+     *
+     * 본 메서드가 확장 결과를 [DataScope] 에 담으면 서비스가 그것을 **다시** 확장해 2-hop 이 되고,
+     * 롤업 행(`BranchMapping` KDoc 의 성격 4종 중 롤업 6건) 이 걸리면 현행 타 조직까지 스코프가 넓어진다.
+     * 확장 전 원본 코드를 넘기는 이유이며, "화이트리스트 자체를 확장하지 말 것" 이라는
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] KDoc 규약과도 일치한다.
      *
      * **주의**: 반환하는 [DataScope] 는 `branchCodes` / `isAllBranches` 2차원만 채운 **부분 DataScope** 다
      * (`AdminDataScopeService` 가 채우는 sharing policy 차원 — userId / profileFlags / evaluatorRules 등은
@@ -326,16 +338,15 @@ class AdminFemaleEmployeeController(
      */
     private fun resolveBranchScope(principal: WebUserPrincipal, costCenterCode: String?): DataScope? {
         val requested = costCenterCode?.takeIf { it.isNotBlank() }
-        if (womenScheduleBranchResolver.isAllBranchesUser(principal)) {
-            // 전사 권한자는 어떤 지점을 골라도 허용 — 셀렉터 옵션도 전 지점이다.
-            return DataScope(branchCodes = emptyList(), isAllBranches = true)
-        }
         // 셀렉터 옵션과 동일한 화이트리스트를 1회 산출해 IDOR 검증과 스코프 조립에 함께 쓴다.
-        val allowedCodes = womenScheduleBranchResolver.resolveBranches(principal).map { it.branchCode }
+        // 전사/지점 권한 분기는 resolver 안에 있으므로 여기서는 권한을 나누지 않는다 —
+        // isAllBranches = false 로 고정해 전사 권한자도 셀렉터에 보이는 지점만 조회한다.
+        val allowedCodes = dashboardBranchResolver.resolveBranches(principal).map { it.branchCode }
         if (requested != null && requested !in allowedCodes) return null
-        return DataScope(
-            branchCodes = branchCodeExpander.expand(allowedCodes).toList(),
-            isAllBranches = false,
-        )
+        // BranchMapping 확장은 여기서 하지 않는다 — 확장 전 원본 코드를 그대로 스코프로 넘겨야
+        // 확장이 최종 필터([AdminEmployeeService.expandBranchCodes]) 에서 정확히 1회(1-hop) 적용된다.
+        // (여기서도 확장하면 확장 결과가 다시 확장되어 2-hop 이 되고, 롤업 행이 걸리면 타 조직까지 넓어진다
+        //  — BranchCodeExpander KDoc "화이트리스트 판정에 쓰지 말 것" 참조.)
+        return DataScope(branchCodes = allowedCodes, isAllBranches = false)
     }
 }

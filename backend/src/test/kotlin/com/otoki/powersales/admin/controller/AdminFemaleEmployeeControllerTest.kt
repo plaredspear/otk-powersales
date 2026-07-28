@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
@@ -20,8 +21,6 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialS
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
@@ -79,21 +78,18 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
 
     @MockkBean
-    private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
-
-    @MockkBean
-    private lateinit var branchCodeExpander: BranchCodeExpander
+    private lateinit var dashboardBranchResolver: DashboardBranchResolver
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun stubBranchScope() {
-        // 목록/엑셀 지점 스코프 기본 stub — 전사 권한자로 두어 지점 필터 없이 조회되게 한다.
-        // 지점 권한자 경로를 검증하는 테스트에서 override.
-        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns true
-        // 이력 코드(BranchMapping) 확장은 기본적으로 pass-through — 확장 자체는 BranchCodeExpanderTest 책임.
-        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+        // 목록/엑셀 지점 스코프 기본 stub — 셀렉터 옵션 = 허용 지점 집합이므로 최소 1건을 내려둔다.
+        // 전사(34개 화이트리스트) / 지점 권한자 경로를 검증하는 테스트에서 override.
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+        )
     }
 
     @BeforeEach
@@ -183,8 +179,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     @DisplayName("지점 권한자 - /meta 셀렉터 옵션 지점을 조회하면 그 지점 스코프로 조회 (셀렉터↔조회 동일 출처)")
     fun getFemaleEmployees_selectorBranchIsQueryable() {
         // 조장 등 지점 권한자: 셀렉터 옵션 = 본인 costCenterCode 의 조직 트리 (A001 + 형제 A002).
-        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
             BranchResponse(branchCode = "A002", branchName = "서울2지점"),
         )
@@ -212,11 +207,64 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
+    @DisplayName("전사 권한자 - 지점 미선택도 대시보드 34개 화이트리스트로 제한 (전건 조회 아님)")
+    fun getFemaleEmployees_allBranchesUserIsLimitedToDashboardWhitelist() {
+        // 전사 권한자: DashboardBranchResolver 가 고정 화이트리스트를 내려준다 (여기선 2건으로 축약).
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "5815", branchName = "강북1지점"),
+            BranchResponse(branchCode = "5816", branchName = "강북4지점"),
+        )
+        val scopeSlot = slot<DataScope>()
+        every {
+            adminEmployeeService.getEmployees(
+                scope = capture(scopeSlot), status = any(), costCenterCode = any(), keyword = any(),
+                role = any(), page = any(), size = any(), applyBranchScope = eq(true),
+                roles = eq(FEMALE_EMPLOYEE_ROLES), workType1 = any(), workType3 = any(),
+                professionalPromotionTeam = any(), jobCode = any(),
+                femaleStaffHeadcountScope = eq(true),
+            )
+        } returns EmployeeListResponse(emptyList(), 0, 20, 0, 0)
+
+        mockMvc.perform(get("/api/v1/admin/female-employees"))
+            .andExpect(status().isOk)
+
+        // 전사 권한자여도 isAllBranches=false — 지점 미선택이면 화이트리스트 IN 조회.
+        assertThat(scopeSlot.captured.isAllBranches).isFalse()
+        // 스코프는 확장 **전** 원본 화이트리스트 — BranchMapping 확장은 서비스(expandBranchCodes) 에서 1회만.
+        assertThat(scopeSlot.captured.branchCodes).containsExactlyInAnyOrder("5815", "5816")
+        assertThat(scopeSlot.captured.effectiveBranchCodes(null))
+            .isEqualTo(EffectiveBranchResult.Filtered(listOf("5815", "5816")))
+        // 화이트리스트 밖 지점은 IDOR 판정에서 차단.
+        assertThat(scopeSlot.captured.effectiveBranchCodes("9999"))
+            .isEqualTo(EffectiveBranchResult.NoAccess)
+    }
+
+    @Test
+    @DisplayName("전사 권한자 - 화이트리스트 밖 지점 요청은 빈 목록 (BranchMapping 확장 코드로도 우회 불가)")
+    fun getFemaleEmployees_allBranchesUserDeniesOutsideWhitelist() {
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "5815", branchName = "강북1지점"),
+        )
+
+        // 5452 = 5815 의 조직 개편 이전 코드. 확장은 조회 필터만 넓힐 뿐 요청 가능한 지점을 넓히지 않는다.
+        mockMvc.perform(get("/api/v1/admin/female-employees").param("costCenterCode", "5452"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content").isEmpty)
+            .andExpect(jsonPath("$.data.totalElements").value(0))
+
+        verify(exactly = 0) {
+            adminEmployeeService.getEmployees(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(),
+            )
+        }
+    }
+
+    @Test
     @DisplayName("지점 권한자 - 권한 밖 지점 요청은 빈 목록 (IDOR 차단)")
     fun getFemaleEmployees_deniesBranchOutsideScope() {
-        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
         // 셀렉터 화이트리스트에 없는 지점(Z999) 요청 — 조직 트리는 A001 뿐이다.
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
         )
 
@@ -239,7 +287,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     @DisplayName("GET /api/v1/admin/female-employees/meta - 정적 필터 + 권한별 지점 옵션 조립 (다중 지점)")
     fun getListMeta_assemblesBranchOptions() {
         every { adminEmployeeService.getFemaleEmployeeListMetaStatic() } returns staticListMeta()
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
             BranchResponse(branchCode = "A002", branchName = "서울2지점"),
         )
@@ -257,14 +305,14 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.filters[1].options[0].label").value("서울1지점"))
             .andExpect(jsonPath("$.data.filters[1].options[1].value").value("A002"))
 
-        verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
+        verify(exactly = 1) { dashboardBranchResolver.resolveBranches(any()) }
     }
 
     @Test
     @DisplayName("GET /api/v1/admin/female-employees/meta - 조장 등 단일 지점: 지점 옵션 1건만 조립")
     fun getListMeta_singleBranch() {
         every { adminEmployeeService.getFemaleEmployeeListMetaStatic() } returns staticListMeta()
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
         )
 
@@ -298,7 +346,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.professionalPromotionTeams[1].value").value("라면세일조"))
 
         // 목록 `/meta` 와 달리 권한 의존 옵션이 없어 지점 resolver 를 타지 않는다.
-        verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+        verify(exactly = 0) { dashboardBranchResolver.resolveBranches(any()) }
     }
 
     @Test
@@ -387,8 +435,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     @Test
     @DisplayName("export - 권한 밖 지점 요청은 NO_ACCESS 스코프 전달 → 헤더만 있는 빈 엑셀 (IDOR 차단)")
     fun exportFemaleEmployees_deniesBranchOutsideScope() {
-        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
         )
         val scopeSlot = slot<DataScope>()
