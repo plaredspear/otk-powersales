@@ -138,7 +138,7 @@ class EmployeeWorkHistoryServiceTest {
         every { employeeRepository.findById(1L) } returns Optional.of(employee)
         every {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                .findMonthlyWorkHistory(
                     employee,
                     LocalDate.of(2026, 6, 1),
                     LocalDate.of(2026, 6, 30),
@@ -153,13 +153,41 @@ class EmployeeWorkHistoryServiceTest {
     }
 
     @Test
-    @DisplayName("월별 — 월 시작·종료일이 정확히 경계로 전달되고 출근로그 연결 일정만 조회한다")
+    @DisplayName("월별 — 연차 행(출근등록 없음)도 응답에 포함된다")
+    fun getMonthlyHistory_includesAnnualLeaveWithoutAttendanceLog() {
+        val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
+        // 연차 행은 SAP 인바운드 생성분이라 attendanceLog 가 항상 null 이다.
+        val leave = TeamMemberSchedule(
+            id = 30L,
+            employee = employee,
+            workingDate = LocalDate.of(2026, 7, 15),
+            workingType = WorkingType.ANNUAL_LEAVE,
+        )
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
+        every {
+            teamMemberScheduleRepository
+                .findMonthlyWorkHistory(
+                    employee,
+                    LocalDate.of(2026, 7, 1),
+                    LocalDate.of(2026, 7, 31),
+                )
+        } returns listOf(leave)
+
+        val response = service.getMonthlyHistory(1L, YearMonth.of(2026, 7))
+
+        assertThat(response.items).hasSize(1)
+        assertThat(response.items[0].workingType).isEqualTo(WorkingType.ANNUAL_LEAVE.displayName)
+        assertThat(response.items[0].isClockIn).isFalse()
+    }
+
+    @Test
+    @DisplayName("월별 — 월 시작·종료일이 정확히 경계로 전달된다")
     fun getMonthlyHistory_monthBoundaries() {
         val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
         every { employeeRepository.findById(1L) } returns Optional.of(employee)
         every {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                .findMonthlyWorkHistory(
                     employee,
                     any(),
                     any(),
@@ -170,7 +198,7 @@ class EmployeeWorkHistoryServiceTest {
 
         verify {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                .findMonthlyWorkHistory(
                     employee,
                     LocalDate.of(2026, 2, 1),
                     LocalDate.of(2026, 2, 28),
@@ -200,7 +228,7 @@ class EmployeeWorkHistoryServiceTest {
         every { employeeRepository.findById(1L) } returns Optional.of(employee)
         every {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                .findMonthlyWorkHistory(
                     employee,
                     LocalDate.of(2026, 6, 1),
                     LocalDate.of(2026, 6, 30),

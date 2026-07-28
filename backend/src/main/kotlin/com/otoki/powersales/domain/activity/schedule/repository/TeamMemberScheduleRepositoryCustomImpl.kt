@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
@@ -639,6 +640,28 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             )
             .fetchOne()
             ?.toInt() ?: 0
+    }
+
+    override fun findMonthlyWorkHistory(
+        employeeEntity: Employee,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 응답 DTO 가 attendanceLog 존재 여부(isClockIn) 를 읽는다 — fetch join 으로 N+1 회피.
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
+            .where(
+                teamMemberSchedule.employee.eq(employeeEntity),
+                teamMemberSchedule.workingDate.between(startDate, endDate),
+                // 근무 행은 출근등록 기준, 연차 행은 출근등록 없이 포함 (연차는 attendance_log_id 가 항상 NULL).
+                teamMemberSchedule.attendanceLog.isNotNull
+                    .or(teamMemberSchedule.workingType.eq(WORKING_TYPE_ANNUAL_LEAVE)),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingDate.asc(), teamMemberSchedule.createdAt.asc())
+            .fetch()
     }
 
     override fun findSafetyCheckReport(

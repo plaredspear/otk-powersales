@@ -36,17 +36,19 @@ class EmployeeWorkHistoryService(
     /**
      * 근무기간 조회(월별) — 특정 인원 1명의 지정 월 근무내역을 일자 오름차순으로 반환.
      * "어디서(거래처/지점)/어떻게(근무유형·진열·행사·고정·순회)" 표현 + 캘린더/요약 인사이트 렌더용.
+     *
+     * 근무 행은 출근등록 기준, 연차 행은 출근등록 없이 포함한다
+     * ([TeamMemberScheduleRepository.findMonthlyWorkHistory] 참조).
      */
     fun getMonthlyHistory(employeeId: Long, yearMonth: YearMonth): EmployeeWorkHistoryResponse {
         val employee = employeeRepository.findById(employeeId).orElseThrow {
             EmployeeNotFoundException(employeeId)
         }
-        val schedules = teamMemberScheduleRepository
-            .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
-                employee,
-                yearMonth.atDay(1),
-                yearMonth.atEndOfMonth(),
-            )
+        val schedules = teamMemberScheduleRepository.findMonthlyWorkHistory(
+            employee,
+            yearMonth.atDay(1),
+            yearMonth.atEndOfMonth(),
+        )
         return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it) })
     }
 
@@ -58,7 +60,7 @@ class EmployeeWorkHistoryService(
             EmployeeNotFoundException(employeeId)
         }
         val items = teamMemberScheduleRepository
-            .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+            .findMonthlyWorkHistory(
                 employee,
                 yearMonth.atDay(1),
                 yearMonth.atEndOfMonth(),

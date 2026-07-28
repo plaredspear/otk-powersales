@@ -1049,4 +1049,133 @@ class TeamMemberScheduleRepositoryTest {
             assertThat(count).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("findMonthlyWorkHistory — 근무기간 조회(월별 개인)")
+    inner class FindMonthlyWorkHistory {
+
+        private val start = LocalDate.of(2026, 7, 1)
+        private val end = LocalDate.of(2026, 7, 31)
+
+        @Test
+        @DisplayName("연차 행은 출근등록이 없어도 포함된다")
+        fun includesAnnualLeaveWithoutAttendanceLog() {
+            // 연차 행은 SAP 인바운드 생성분이라 attendanceLog 가 항상 NULL 이다.
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 15),
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyWorkHistory(testEmployee, start, end)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].workingType).isEqualTo(WorkingType.ANNUAL_LEAVE)
+            assertThat(result[0].attendanceLog).isNull()
+        }
+
+        @Test
+        @DisplayName("근무 행은 출근등록이 있는 건만 포함된다 (미출근 근무 제외)")
+        fun includesOnlyAttendedWorkRows() {
+            val attendance = testEntityManager.persistAndFlush(AttendanceLog())
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 10),
+                    workingType = WorkingType.WORK,
+                    attendanceLog = attendance,
+                )
+            )
+            // 사전 배정 등 미출근 근무 행 — 제외 대상.
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 11),
+                    workingType = WorkingType.WORK,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyWorkHistory(testEmployee, start, end)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].workingDate).isEqualTo(LocalDate.of(2026, 7, 10))
+        }
+
+        @Test
+        @DisplayName("기간 밖 일정과 다른 사원 일정은 제외된다")
+        fun excludesOutOfPeriodAndOtherEmployees() {
+            val other = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "EMP300", name = "다른사원")
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 8, 1),
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                )
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = other,
+                    workingDate = LocalDate.of(2026, 7, 5),
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyWorkHistory(testEmployee, start, end)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("삭제된(is_deleted) 연차 행은 제외된다")
+        fun excludesSoftDeleted() {
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 20),
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                    isDeleted = true,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyWorkHistory(testEmployee, start, end)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("연차 + 근무를 일자 오름차순으로 함께 반환한다")
+        fun returnsMixedRowsOrderedByWorkingDate() {
+            val attendance = testEntityManager.persistAndFlush(AttendanceLog())
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 20),
+                    workingType = WorkingType.WORK,
+                    attendanceLog = attendance,
+                )
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.of(2026, 7, 5),
+                    workingType = WorkingType.ANNUAL_LEAVE,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyWorkHistory(testEmployee, start, end)
+
+            assertThat(result).hasSize(2)
+            assertThat(result.map { it.workingDate })
+                .containsExactly(LocalDate.of(2026, 7, 5), LocalDate.of(2026, 7, 20))
+        }
+    }
 }

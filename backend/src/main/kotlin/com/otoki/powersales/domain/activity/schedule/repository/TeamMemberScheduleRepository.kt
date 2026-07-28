@@ -128,20 +128,6 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     ): List<TeamMemberSchedule>
 
     /**
-     * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게) 조회.
-     * `working_date asc, created_at asc` 정렬으로 일자 오름차순 캘린더/표 렌더에 적합.
-     *
-     * attendance_log_id 가 채워진(= 출근로그 연결된) 일정만 반환 — 사전 배정/행사/SAP 파생 등
-     * 출근하지 않은 일정은 제외. 레거시 SF formula `isworkreport__c`(출퇴근 로그 존재 시 "근무등록")
-     * 판별 기준과 동등하다.
-     */
-    fun findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
-        employee: Employee,
-        startDate: LocalDate,
-        endDate: LocalDate,
-    ): List<TeamMemberSchedule>
-
-    /**
      * team_member_schedule.name 채번 — SF AutoNumber(Name, "TS{00000000}") 재현.
      *
      * name 은 SF AutoNumber 와 동일한 번호 공간(TS + 8자리)을 공유한다. SF 데이터 sync 가 신규 시스템

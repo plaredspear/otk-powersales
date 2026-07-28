@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDt
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import java.time.LocalDate
 
 /**
@@ -223,6 +224,28 @@ interface TeamMemberScheduleRepositoryCustom {
         to: LocalDate,
         branchCodes: List<String>,
     ): Int
+
+    /**
+     * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게) 조회.
+     * `working_date asc, created_at asc` 정렬으로 일자 오름차순 캘린더/표 렌더에 적합.
+     *
+     * ## 포함 조건 (근무 / 연차 2갈래)
+     * - **근무 행**: `attendance_log_id` 가 채워진(= 출근로그 연결된) 일정만. 사전 배정/행사/SAP 파생 등
+     *   출근하지 않은 일정은 제외 — 레거시 SF formula `isworkreport__c`(출퇴근 로그 존재 시 "근무등록")
+     *   판별 기준과 동등하다.
+     * - **연차 행**: 출근등록 없이 포함. 연차는 SAP 인바운드([AttendInfoToScheduleConverter]) 가 근태정보를
+     *   날짜별로 펼쳐 생성하므로 `attendance_log_id` 가 구조적으로 항상 NULL 이다. 출근등록 조건을 그대로
+     *   걸면 연차가 화면에서 전건 누락된다(캘린더 휴무 빗금 · "근무 구분" 요약 모두).
+     *   기간별 탭의 연차 집계([countAnnualLeaveDaysForPeriodByEmployee]) 가 연차를 출근등록과 무관하게
+     *   세는 것과 동일한 축이다.
+     *
+     * soft delete(`is_deleted`) 행은 제외한다 — 연차를 새로 포함시키면서 삭제분이 노출되지 않도록 명시.
+     */
+    fun findMonthlyWorkHistory(
+        employeeEntity: Employee,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<TeamMemberSchedule>
 
     /**
      * 판매여사원 일일 안전점검 현황 조회 (Spec #841 — SF Report `new_report_wce`/`new_report_oJO` 이식).
