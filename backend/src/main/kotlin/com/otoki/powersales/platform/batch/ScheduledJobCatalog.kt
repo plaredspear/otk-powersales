@@ -132,10 +132,9 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
-            cron = "\${app.batch.orora.monthly.cron:0 30 11 * * THU}",
-            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매주 목요일 + 매월 3일 11:30, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 레거시는 첫째 목요일 1회 + 전월 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라, 신규는 매주 목요일 + 매월 3일 전월 재적재(멱등 upsert)로 자동 흡수. 수동 트리거로 특정 월 재적재 가능",
+            cron = "\${app.batch.orora.monthly.cron:0 30 11 9 * *}",
+            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매월 9일 11:30, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 레거시 SF CronTrigger \"오로라 월별 매출 이력 수신\" 0 0 12 9 */1 ? (매월 9일 12:00 Asia/Seoul) 주기 정합. 전월 재마감 발생 시 수동 트리거로 특정 월 재적재 가능 (멱등 upsert)",
             beanType = OroraMonthlySalesMaterializeBatch::class.java,
-            extraCrons = listOf("\${app.batch.orora.monthly.day3-cron:0 30 11 3 * *}"),
         ),
         Entry(
             jobName = ErpOrderRetentionBatch.JOB_NAME,

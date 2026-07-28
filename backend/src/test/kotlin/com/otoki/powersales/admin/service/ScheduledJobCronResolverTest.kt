@@ -91,8 +91,9 @@ class ScheduledJobCronResolverTest {
     }
 
     @Test
-    @DisplayName("합집합 — 같은 시각에 겹치는 발화는 1회로 dedup 된다 (ORORA 월매출 목요일인 3일)")
+    @DisplayName("합집합 — 같은 시각에 겹치는 발화는 1회로 dedup 된다")
     fun union_sameInstant_deduped() {
+        // 다중 cron 잡의 일반 동작 검증 (cron 값을 직접 넘기는 순수 단위 테스트라 카탈로그 등록값과 무관).
         // 2026-09-03 은 목요일이면서 3일 — 매주 목요일 cron 과 매월 3일 cron 이 05:00 에 동시 발화하지만
         // ShedLock 이 한쪽만 실행시키므로 예상 횟수도 1회.
         val f = LocalDateTime.of(2026, 9, 2, 22, 0, 0)
