@@ -35,8 +35,8 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     }
 
     @Test
-    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 (사용자 결정)")
-    fun `revoked keys cover erp order organization attendance and alternative holiday`() {
+    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 / HR 적재 근무기간 (사용자 결정)")
+    fun `revoked keys cover leader hidden screens`() {
         assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS)
             .containsExactlyInAnyOrder(
                 "ERP_Order__c",
@@ -44,6 +44,7 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
                 "Org__c",
                 "DKRetail__CommuteLog__c",
                 "DKRetail__AlternativeHoliday__c",
+                "AttendInfo__c",
             )
     }
 
@@ -56,11 +57,12 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     }
 
     @Test
-    @DisplayName("AttendInfo__c 는 근무 등록현황(attendance_log) 과 별개 자원이라 회수 대상이 아니다")
-    fun `attend info is a separate resource from attendance log`() {
-        // 근무 등록현황 화면의 가드 entity 는 attendance_log(=DKRetail__CommuteLog__c) 단일이다.
-        // AttendInfo__c(entity attend_info) 는 다른 자원이므로 조장 권한을 그대로 둔다 — 혼동 방지.
-        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).doesNotContain("AttendInfo__c")
-        assertThat(leaderSeed.objectPermissionsJson).contains("AttendInfo__c")
+    @DisplayName("AttendInfo__c(HR 적재 근무기간) 와 DKRetail__CommuteLog__c(근무 등록현황) 는 별개 자원으로 각각 회수된다")
+    fun `attend info and attendance log are separate resources both revoked`() {
+        // 이름이 비슷해 하나로 뭉뚱그리기 쉬운 지점 — 가드 entity 가 서로 다르므로 둘 다 명시해야 한다.
+        // attend_info      = 기준정보 > HR 적재 근무기간 (AdminAttendInfoController)
+        // attendance_log   = 인사/근무 > 근무 등록현황 (AdminAttendanceLogController)
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS)
+            .contains("AttendInfo__c", "DKRetail__CommuteLog__c")
     }
 }

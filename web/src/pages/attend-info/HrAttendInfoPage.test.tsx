@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import AttendInfoPage from './AttendInfoPage';
+import HrAttendInfoPage from './HrAttendInfoPage';
 import * as api from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
 import { entityPermissionKey } from '@/hooks/usePermission';
 
-// 월별 근무내역 탭(기본 활성)이 전용 branches/members API 로 여사원 목록을 받으므로 stub.
+// 기준정보 > HR 적재 근무기간 단일 페이지 — 목록 조회 API 만 stub (탭 분리 전에는 월별 탭의
+// branches/members 도 필요했으나, 그 탭은 인사/근무 > 근무기간 조회에 남았다).
 vi.mock('@/api/attendInfo', async () => {
   const actual = await vi.importActual<typeof import('@/api/attendInfo')>('@/api/attendInfo');
   return {
@@ -20,11 +21,6 @@ vi.mock('@/api/attendInfo', async () => {
 
 const mockedSearch = vi.mocked(api.searchAttendInfo);
 
-/** 기본 활성 탭은 '월별 근무내역' 이므로, HR 목록 검증 전 'HR 적재 근무기간' 탭으로 전환. */
-function switchToHrTab() {
-  fireEvent.click(screen.getByRole('tab', { name: 'HR 적재 근무기간' }));
-}
-
 function renderPage() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -32,13 +28,13 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <AttendInfoPage />
+        <HrAttendInfoPage />
       </QueryClientProvider>
     </MemoryRouter>,
   );
 }
 
-describe('AttendInfoPage', () => {
+describe('HrAttendInfoPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({
@@ -69,8 +65,7 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
-    expect(screen.getByText('근무기간 조회')).toBeInTheDocument();
-    switchToHrTab();
+    expect(screen.getByRole('heading', { name: 'HR 적재 근무기간' })).toBeInTheDocument();
     expect(
       screen.getByText(/SAP HR 인바운드 적재 근무기간 데이터/),
     ).toBeInTheDocument();
@@ -86,7 +81,6 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
-    switchToHrTab();
     expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
   });
 
@@ -112,7 +106,6 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
-    switchToHrTab();
     expect(screen.queryByRole('button', { name: /신규 등록/ })).not.toBeInTheDocument();
   });
 
@@ -138,7 +131,6 @@ describe('AttendInfoPage', () => {
       totalPages: 1,
     });
     renderPage();
-    switchToHrTab();
     await waitFor(() => {
       expect(screen.getByText('AI0001')).toBeInTheDocument();
       expect(screen.getByText('20120253')).toBeInTheDocument();

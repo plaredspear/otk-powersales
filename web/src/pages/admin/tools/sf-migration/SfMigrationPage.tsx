@@ -857,6 +857,10 @@ export default function SfMigrationPage() {
             대체휴무 — <Text code>DKRetail__AlternativeHoliday__c</Text> (가드{' '}
             <Text code>alternative_holiday</Text>)
           </li>
+          <li>
+            HR 적재 근무기간 — <Text code>AttendInfo__c</Text> (가드 <Text code>attend_info</Text>).
+            근무기간 조회의 <Text strong>월별 근무내역 탭 지점/사원 셀렉터</Text>도 같은 가드라 함께 닫힌다
+          </li>
         </ul>
         <Paragraph type="secondary">
           위 <Text strong>조장 ProfileFlags 권한 적용</Text> 과 달리 object_permissions 전체를 덮어쓰지
@@ -865,7 +869,6 @@ export default function SfMigrationPage() {
           <br />
           공휴일 관리(<Text code>HolidayMaster__c</Text>) / 영업일관리마스터
           (<Text code>WorkingDayMaster__c</Text>) 는 조장 권한이 애초에 없어 회수 대상이 아니다.
-          근무 관련이라도 <Text code>AttendInfo__c</Text> 는 별개 자원이라 건드리지 않는다.
           <br />
           실행 순서: <Text code>FK Resolve</Text> → <Text code>Natural Key FK</Text> 이후 (profile_flags
           의 profile_id 가 채워진 뒤). 이미 제거된 상태면 적용 row 0 — <Text strong>멱등</Text>.

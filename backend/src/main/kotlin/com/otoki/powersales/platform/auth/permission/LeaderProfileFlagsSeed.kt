@@ -82,14 +82,15 @@ object LeaderProfileFlagsSeed {
 //   메뉴 게이팅과 AdminErpOrderController 목록/상세 가드가 함께 닫힌다.
 // - `DKRetail__CommuteLog__c` (근무 등록현황, 가드 entity `attendance_log`) — AdminAttendanceLogController
 //   목록/상세 가드. 모바일 출근 기록 자체(AttendanceLog 적재/조회)와는 별개로 web admin 화면만 닫는다.
+// - `AttendInfo__c` (기준정보 > HR 적재 근무기간, 가드 entity `attend_info`) — AdminAttendInfoController
+//   전 endpoint. 근무 등록현황(`attendance_log`) 과는 다른 자원이며, 인사/근무 > 근무기간 조회의 월별
+//   근무내역 탭이 쓰는 지점/사원 셀렉터(`/branches`, `/members`) 도 같은 가드 아래라 함께 닫힌다.
 // 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체휴무(`DKRetail__AlternativeHoliday__c`)
 // 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
-// 근무 관련이라도 `AttendInfo__c` (entity `attend_info`) 는 별개 자원이라 근무 등록현황 화면과 무관하다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
 {
   "Account": { "allowRead": true },
   "Theme__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
-  "AttendInfo__c": { "allowRead": true },
   "UploadFile__c": { "allowRead": true },
   "PushMessage__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "StaffReview__c": { "allowEdit": true, "allowRead": true, "allowCreate": true },

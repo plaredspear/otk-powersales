@@ -91,6 +91,8 @@ describe('기준정보 마스터 메뉴 권한 게이팅', () => {
     ['/settings/holiday-masters', 'holiday_master'],
     ['/admin/working-day-masters', 'working_day_master'],
     ['/settings/alternative-holidays', 'alternative_holiday'],
+    // 인사/근무 > 근무기간 조회의 'HR 적재 근무기간' 탭을 기준정보로 분리한 페이지.
+    ['/settings/hr-attend-info', 'attend_info'],
   ];
 
   it.each(GATED_MASTER_MENUS)('%s 는 entity=%s READ 로 게이팅된다', (path, entity) => {

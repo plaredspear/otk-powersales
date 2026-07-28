@@ -382,6 +382,7 @@ export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsRespons
  * - `Org__c` → `organization` (조직마스터)
  * - `DKRetail__CommuteLog__c` → `attendance_log` (근무 등록현황)
  * - `DKRetail__AlternativeHoliday__c` → `alternative_holiday` (대체휴무)
+ * - `AttendInfo__c` → `attend_info` (기준정보 > HR 적재 근무기간)
  *
  * 공휴일/영업일 마스터는 조장 권한이 애초에 없어 대상이 아니다. 멱등.
  */

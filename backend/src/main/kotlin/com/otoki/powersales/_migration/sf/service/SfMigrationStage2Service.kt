@@ -58,9 +58,14 @@ class SfMigrationStage2Service(
          * - `Org__c` → 가드 entity `organization` (조직마스터 조회)
          * - `DKRetail__CommuteLog__c` → 가드 entity `attendance_log` (근무 등록현황 목록/상세)
          * - `DKRetail__AlternativeHoliday__c` → 가드 entity `alternative_holiday` (대체휴무)
+         * - `AttendInfo__c` → 가드 entity `attend_info` (기준정보 > HR 적재 근무기간)
          *
          * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
          * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
+         *
+         * `AttendInfo__c` 회수는 인사/근무 > 근무기간 조회의 **월별 근무내역 탭 지점/사원 셀렉터**
+         * (`/admin/attend-infos/branches`, `/members`) 에도 영향을 준다 — 같은 컨트롤러의 `attend_info`
+         * READ 가드 아래이기 때문이다. 조장은 해당 탭에서 셀렉터를 쓸 수 없게 된다 (사용자 결정 범위).
          */
         val REVOKED_LEADER_OBJECT_KEYS = listOf(
             "ERP_Order__c",
@@ -68,6 +73,7 @@ class SfMigrationStage2Service(
             "Org__c",
             "DKRetail__CommuteLog__c",
             "DKRetail__AlternativeHoliday__c",
+            "AttendInfo__c",
         )
 
         /**
