@@ -4974,6 +4974,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseBranchMappingListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BranchMappingListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBulkConfirmResponse" : {
         "properties" : {
           "data" : {
@@ -5327,6 +5356,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ElectronicSalesDashboardListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseElectronicSalesProductAdvancedResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ElectronicSalesProductAdvancedResponse"
             }, {
               "type" : "null"
             } ]
@@ -10264,6 +10322,79 @@
         },
         "type" : "object"
       },
+      "BranchMappingExpandedCode" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "self" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "BranchMappingListItem" : {
+        "properties" : {
+          "branchCode" : {
+            "type" : "string"
+          },
+          "expandedCodes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BranchMappingExpandedCode"
+            },
+            "type" : "array"
+          },
+          "expandedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "label" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "rawIncludedBranchCodes" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "NONE", "ROLLUP", "DUAL_CODE", "LEGACY" ],
+            "type" : "string"
+          },
+          "typeLabel" : {
+            "type" : "string"
+          },
+          "unresolvedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "BranchMappingListResponse" : {
+        "properties" : {
+          "cacheEmpty" : {
+            "type" : "boolean"
+          },
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BranchMappingListItem"
+            },
+            "type" : "array"
+          },
+          "typeCounts" : {
+            "additionalProperties" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
       "BranchOption" : {
         "properties" : {
           "branchCode" : {
@@ -11225,6 +11356,75 @@
           },
           "totalSalesQuantity" : {
             "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ElectronicSalesProductAdvancedItem" : {
+        "properties" : {
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "category2" : {
+            "type" : [ "string", "null" ]
+          },
+          "category3" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "launchDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "standardUnitPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "storageCondition" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ElectronicSalesProductAdvancedResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ElectronicSalesProductAdvancedItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
             "type" : "integer"
           }
         },
@@ -21424,6 +21624,32 @@
         "tags" : [ "web-authentication-controller" ]
       }
     },
+    "/api/v1/admin/branch-mappings" : {
+      "get" : {
+        "operationId" : "getBranchMappings",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBranchMappingListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-branch-mapping-controller" ]
+      }
+    },
     "/api/v1/admin/cache" : {
       "get" : {
         "operationId" : "list_5",
@@ -29553,6 +29779,101 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListElectronicSalesProductLookupItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-electronic-sales-dashboard-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/electronic/product-lookup/advanced" : {
+      "get" : {
+        "operationId" : "lookupProductsAdvanced",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category1",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseElectronicSalesProductAdvancedResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-electronic-sales-dashboard-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/electronic/product-lookup/filter-options" : {
+      "get" : {
+        "operationId" : "productLookupFilterOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductLookupFilterOptions"
                 }
               }
             },
