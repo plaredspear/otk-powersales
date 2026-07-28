@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, DatePicker, Empty, Radio, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
+import { Alert, Button, Card, Col, DatePicker, Empty, Radio, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import RankHeadcountCard from '@/pages/dashboard/components/RankHeadcountCard';
+import { femaleEmployeeLinkState } from '@/pages/dashboard/femaleEmployeeLink';
 import { useAuthStore } from '@/stores/authStore';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
-import { SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
+import { SYSTEM_ADMIN_PROFILE_NAME, usePermission } from '@/hooks/usePermission';
 import {
   fetchDashboard,
   type AccountTypeCount,
@@ -425,6 +426,8 @@ export default function DashboardPage() {
   // 대시보드 전용 지점 목록 — 전사 권한자는 고정 화이트리스트(34개), 그 외는 본인 지점 스코프.
   // 여사원 일정 지점(useTeamScheduleBranches)과 분리하기 위해 branches 를 명시 주입한다.
   const { data: dashboardBranches = [] } = useDashboardBranches();
+  const { hasEntityPermission } = usePermission();
+  const canViewFemaleEmployees = hasEntityPermission('female_employee', 'READ');
 
   const dashboardQuery = useQuery({
     queryKey: ['adminDashboard', queryParams],
@@ -608,9 +611,28 @@ export default function DashboardPage() {
     );
   }, [data]);
 
+  /**
+   * 여사원 현황 링크가 넘길 지점 코드 — **조회에 실제 사용된** 조건(queryParams)이 기준이다.
+   * 셀렉터 상태(selectedCodes)를 쓰면 조회를 누르지 않고 지점만 바꿨을 때 화면 숫자와 링크가 어긋난다.
+   *
+   * 지점 미선택은 원칙적으로 '전체'라 링크를 열지 않지만, 애초에 지점이 1개뿐인 사용자(조장/지점장)는
+   * 미선택이어도 그 1개 지점 조회와 동일하므로 링크를 연다.
+   */
+  const linkBranchCode = useMemo(() => {
+    const applied = queryParams.branchCodes ?? [];
+    if (applied.length === 1) return applied[0];
+    if (applied.length === 0 && dashboardBranches.length === 1) return dashboardBranches[0].branchCode;
+    return null;
+  }, [queryParams.branchCodes, dashboardBranches]);
+
   const basicTab = useMemo(() => {
     if (!data) return null;
     const b = data.basicStats;
+    const femaleEmployeeLink = femaleEmployeeLinkState({
+      branchCode: linkBranchCode,
+      isActiveScope: basicScope === 'active',
+      canView: canViewFemaleEmployees,
+    });
     // 집계 기준 토글 — 서버가 두 기준을 모두 내려주므로 전환 시 재조회가 없다.
     const s = basicScope === 'active' ? b.active : b.includingLeave;
     const staffTypeTotal = s.staffType.promotion + s.staffType.osc + s.staffType.etc;
@@ -689,10 +711,25 @@ export default function DashboardPage() {
             {asOfBadge(b.asOfDate)}
           </Card>
         </Col>
+        {/* 여사원 현황 이동 — 단일 지점 + 재직 기준일 때만 활성 (femaleEmployeeLinkState 참조).
+            비활성 시 사유를 tooltip 으로 안내한다. */}
+        <Col span={24}>
+          <div style={{ textAlign: 'right' }}>
+            {'to' in femaleEmployeeLink ? (
+              <Link to={femaleEmployeeLink.to}>여사원 현황에서 보기 →</Link>
+            ) : (
+              <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{femaleEmployeeLink.disabledReason}</span>}>
+                <Button type="link" disabled style={{ padding: 0 }}>
+                  여사원 현황에서 보기 →
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </Col>
       </Row>
       </>
     );
-  }, [data, basicScope]);
+  }, [data, basicScope, linkBranchCode, canViewFemaleEmployees]);
 
   // 시스템 관리자가 아직 조회하지 않은 상태 — 탭 헤더는 노출하되 각 탭 콘텐츠는 조회 안내로 채운다.
   const beforeSearch = isSystemAdmin && !hasSearched;
