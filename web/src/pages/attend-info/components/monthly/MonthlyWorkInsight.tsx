@@ -282,7 +282,7 @@ function CalendarPanel({
       <div style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
         <span style={{ color: CATEGORY1_COLOR['진열'] }}>● 진열</span>{'   '}
         <span style={{ color: CATEGORY1_COLOR['행사'] }}>◆ 행사</span>{'   '}
-        <span>▨ 휴무(연차·대휴)</span>
+        <span>▨ 휴무(연차)</span>
       </div>
     </div>
   );
