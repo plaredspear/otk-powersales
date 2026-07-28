@@ -21,6 +21,7 @@ import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -43,7 +44,7 @@ class AdminAttendInfoServiceTest {
 
     private val attendInfoToScheduleConverter: AttendInfoToScheduleConverter = mockk(relaxUnitFun = true)
 
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk(relaxUnitFun = true)
+    private val dashboardBranchResolver: DashboardBranchResolver = mockk(relaxUnitFun = true)
 
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
 
@@ -52,7 +53,7 @@ class AdminAttendInfoServiceTest {
         employeeRepository,
         teamMemberScheduleRepository,
         attendInfoToScheduleConverter,
-        womenScheduleBranchResolver,
+        dashboardBranchResolver,
         branchCodeExpander,
     )
 
@@ -98,7 +99,8 @@ class AdminAttendInfoServiceTest {
         @DisplayName("branchCode 지정 + 권한 허용 → 해당 지점(매핑 확장) 여사원 조회")
         fun getMembers_withAllowedBranch() {
             val principal = principalOf(employeeCode = "99990001", costCenterCode = "9999")
-            every { womenScheduleBranchResolver.isBranchAllowed(principal, "5694") } returns true
+            every { dashboardBranchResolver.resolveBranches(principal) } returns
+                listOf(BranchResponse("5694", "CVS전략팀"))
             every { branchCodeExpander.expand(setOf("5694")) } returns setOf("5694", "5691")
             val woman = Employee(id = 5L, employeeCode = "20030005", name = "박지점").apply {
                 role = AppAuthority.WOMAN; status = "재직"
@@ -116,12 +118,36 @@ class AdminAttendInfoServiceTest {
         @DisplayName("branchCode 지정 + 권한 밖 지점 → 빈 목록 (IDOR 차단, 조회 미수행)")
         fun getMembers_withDisallowedBranch_blocked() {
             val principal = principalOf(employeeCode = "20030001", costCenterCode = "1234")
-            every { womenScheduleBranchResolver.isBranchAllowed(principal, "9999") } returns false
+            every { dashboardBranchResolver.resolveBranches(principal) } returns
+                listOf(BranchResponse("1234", "강북유통지점"))
 
             val result = service.getMembers(principal, branchCode = "9999")
 
             assertThat(result).isEmpty()
             verify(exactly = 0) { employeeRepository.findWomenByCostCenterCodes(any()) }
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+        }
+
+        @Test
+        @DisplayName("셀렉터(getBranches)와 IDOR 가드가 동일 출처 — 셀렉터에 없는 지점은 조회 불가")
+        fun getMembers_guardSharesSelectorSource() {
+            val principal = principalOf(employeeCode = "10000001", costCenterCode = "4889")
+            // 전사 권한자 셀렉터 = 고정 화이트리스트 34개 (일부만 stub).
+            every { dashboardBranchResolver.resolveBranches(principal) } returns listOf(
+                BranchResponse("4889", "영업지원2팀"),
+                BranchResponse("5815", "강북1지점"),
+            )
+            every { branchCodeExpander.expand(setOf("5815")) } returns setOf("5815")
+            every { employeeRepository.findWomenByCostCenterCodes(listOf("5815")) } returns emptyList()
+
+            // 셀렉터에 있는 지점 → 통과 (확장 후 조회 수행).
+            service.getMembers(principal, branchCode = "5815")
+            verify(exactly = 1) { employeeRepository.findWomenByCostCenterCodes(listOf("5815")) }
+
+            // 셀렉터에 없는 지점(화이트리스트 밖) → 차단.
+            val blocked = service.getMembers(principal, branchCode = "5853")
+            assertThat(blocked).isEmpty()
+            verify(exactly = 0) { branchCodeExpander.expand(setOf("5853")) }
         }
     }
 
@@ -130,15 +156,31 @@ class AdminAttendInfoServiceTest {
     inner class GetBranchesTests {
 
         @Test
-        @DisplayName("resolver 결과를 그대로 반환")
+        @DisplayName("DashboardBranchResolver 결과를 그대로 반환 — 여사원 일정관리와 동일 출처")
         fun getBranches_delegatesToResolver() {
             val principal = principalOf(employeeCode = "20030001", costCenterCode = "1234")
             val branches = listOf(BranchResponse("1234", "강북유통지점"))
-            every { womenScheduleBranchResolver.resolveBranches(principal) } returns branches
+            every { dashboardBranchResolver.resolveBranches(principal) } returns branches
 
             val result = service.getBranches(principal)
 
             assertThat(result).isEqualTo(branches)
+            verify(exactly = 1) { dashboardBranchResolver.resolveBranches(principal) }
+        }
+
+        @Test
+        @DisplayName("전사 권한자는 고정 화이트리스트 34개 — 팀 단위 조직 미포함")
+        fun getBranches_allBranchesUser_returnsWhitelist() {
+            val principal = principalOf(employeeCode = "10000001", costCenterCode = "4889")
+            every { dashboardBranchResolver.resolveBranches(principal) } returns
+                DashboardBranchResolver.DASHBOARD_ALL_BRANCHES
+
+            val result = service.getBranches(principal)
+
+            assertThat(result).hasSize(34)
+            assertThat(result.map { it.branchCode }).contains("4889", "5694", "5815", "5853")
+            // Level4 fallback 으로 섞이던 팀 단위 조직이 노출되지 않는다.
+            assertThat(result.map { it.branchName }).noneMatch { it.endsWith("팀") && it != "영업지원2팀" && it != "CVS전략팀" }
         }
     }
 

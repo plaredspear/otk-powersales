@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.InvalidAttendInfo
 import com.otoki.powersales.domain.activity.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -47,7 +48,7 @@ class AdminAttendInfoService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val attendInfoToScheduleConverter: AttendInfoToScheduleConverter,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val dashboardBranchResolver: DashboardBranchResolver,
     private val branchCodeExpander: BranchCodeExpander,
 ) {
 
@@ -56,18 +57,29 @@ class AdminAttendInfoService(
     /**
      * 근무기간 조회 화면 "지점 선택" 드롭다운 옵션 — 권한별 조회 허용 지점.
      *
-     * 여사원 일정관리와 동일한 권한 스코프([WomenScheduleBranchResolver]). 단일지점 사용자는 1건만
-     * 반환되어 web 에서 고정 표시, 다중/전사 권한자는 선택 드롭다운으로 노출된다.
+     * 여사원 일정관리([AdminTeamScheduleService.getBranches]) 와 동일한 단일 출처
+     * ([DashboardBranchResolver.resolveBranches]) 를 사용한다:
+     * - 전사 권한자: 고정 화이트리스트 34개 ([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES] —
+     *   Retail 32 + 영업지원2팀 + CVS전략팀). 필터 없는 `Organization` 조회가 Level5(지점) 부재 시
+     *   Level4(팀) 로 fallback 해 `FS마케팅1팀` 같은 팀 단위 조직까지 섞여 노출되던 것을 제거한다.
+     * - 그 외 지점 사용자: 본인 `costCenterCode` 기준 조직 트리
+     *   ([WomenScheduleBranchResolver] 위임 — [DashboardBranchResolver.resolveBranches] 내부).
+     *
+     * 단일지점 사용자는 1건만 반환되어 web 에서 고정 표시, 다중/전사 권한자는 선택 드롭다운으로 노출된다.
      */
     fun getBranches(principal: WebUserPrincipal): List<BranchResponse> =
-        womenScheduleBranchResolver.resolveBranches(principal)
+        dashboardBranchResolver.resolveBranches(principal)
 
     /**
      * 근무기간 조회 화면 좌측 여사원 선택 목록.
      *
      * - `branchCode == null`: 본인 지점 스코프([WomenMemberScopeResolver]) — 기존 동작.
-     * - `branchCode != null`: 다중/전사 권한자가 선택한 지점. [WomenScheduleBranchResolver] 화이트리스트로
-     *   검증하여 권한 밖 지점 조회(IDOR)를 차단하고, 통과 시 해당 지점 cost center(매핑 확장)로 조회.
+     * - `branchCode != null`: 다중/전사 권한자가 선택한 지점. 드롭다운에 실제 노출된 지점([getBranches])
+     *   화이트리스트로 검증하여 권한 밖 지점 조회(IDOR)를 차단하고, 통과 시 해당 지점
+     *   cost center(매핑 확장)로 조회. 셀렉터와 가드가 같은 출처라 두 축이 구조적으로 갈라지지 않는다.
+     *
+     * 확장([BranchCodeExpander]) 은 화이트리스트 판정 **이후** 실제 조회 필터에만 적용한다 — 조직 개편
+     * 이력 코드가 화이트리스트에 없어 판정에서 탈락하는 것을 피하기 위해 두 축을 분리한다.
      *
      * 과거 근무내역 조회 화면이므로 **퇴사/휴직 등 비활성 여사원도 포함**한다
      * (findWomenByCostCenterCodes — appLoginActive 조건 제외). DTO 의 status 로 재직상태 구분/필터.
@@ -76,8 +88,8 @@ class AdminAttendInfoService(
         val targetCostCenterCodes: List<String> = if (branchCode.isNullOrBlank()) {
             WomenMemberScopeResolver.resolveCostCenterCodes(principal.employeeCode, principal.costCenterCode)
         } else {
-            // 권한 밖 지점 조회 차단 — 화이트리스트 미포함이면 빈 목록.
-            if (!womenScheduleBranchResolver.isBranchAllowed(principal, branchCode)) return emptyList()
+            // 권한 밖 지점 조회 차단 — 드롭다운 화이트리스트 미포함이면 빈 목록.
+            if (getBranches(principal).none { it.branchCode == branchCode }) return emptyList()
             branchCodeExpander.expand(setOf(branchCode)).toList()
         }
         if (targetCostCenterCodes.isEmpty()) return emptyList()
