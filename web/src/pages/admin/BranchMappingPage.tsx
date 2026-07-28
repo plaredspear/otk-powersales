@@ -10,6 +10,7 @@ import type {
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
+import BranchMappingGuide from './BranchMappingGuide';
 
 const { Text } = Typography;
 
@@ -124,12 +125,13 @@ export default function BranchMappingPage() {
         description={
           <>
             지점을 선택해 조회할 때 backend 가 해당 지점 코드를 아래 <b>확장 결과</b>의 코드 집합으로
-            넓혀 데이터를 조회합니다. 회색 태그는 현행 조직에 없는 코드(조직 개편으로 폐기된 이력 코드)이며,{' '}
-            <Tag color="volcano" style={{ marginInline: 2 }}>롤업</Tag>
-            유형은 현행 <b>다른 조직</b>을 함께 끌어오므로 확인이 필요합니다.
+            넓혀 데이터를 조회합니다. 회색 태그는 현행 조직에 없는 코드(조직 개편으로 폐기된 이력
+            코드)입니다. 확장이 조회 결과에 미치는 영향은 아래 안내를 펼쳐 확인하세요.
           </>
         }
       />
+
+      <BranchMappingGuide />
 
       {data?.cacheEmpty && (
         <Alert
