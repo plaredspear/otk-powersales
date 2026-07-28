@@ -395,6 +395,7 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/permissions/page-access-guide', name: '페이지별 필요 권한', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/user-roles', name: '역할 (조직 계층)', entity: 'user_role', operation: 'READ' },
+        { path: '/admin/branch-mappings', name: '지점 코드 맵핑', systemPermission: 'VIEW_ALL_DATA' },
       ],
     },
     {

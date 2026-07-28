@@ -42,6 +42,21 @@ interface OrganizationRepositoryCustom {
     fun findFirstByAnyOrgCodeLevel(orgCode: String): Organization?
 
     /**
+     * 조직코드(`org_cd2~5`) 다건 → 조직명 일괄 해석. [findFirstByAnyOrgCodeLevel] 의 IN 버전.
+     *
+     * 지점 코드 맵핑 조회 화면이 74개 매핑 × 평균 3~4 확장 코드의 이름을 붙일 때, 코드마다
+     * [findFirstByAnyOrgCodeLevel] 을 호출하면 수백 쿼리가 되므로 IN 1회로 대체한다.
+     * 이름은 매칭된 레벨의 `org_nm*` — Level5 매칭이면 `orgNameLevel5`, Level4 매칭이면 `orgNameLevel4`.
+     *
+     * 매칭되지 않은 코드는 결과 Map 에 **키 자체가 없다** — 호출자는 그 부재를 "현행 조직에 없는
+     * 코드(조직 개편으로 폐기된 이력 코드)" 로 해석한다.
+     *
+     * `BranchMapping` 의 코드 도메인은 명명과 달리 cost_center 가 아니라 **OrgCode** 이므로
+     * (`OrgCostCenterMatchService` KDoc 참조) cc_cd 계열이 아닌 org_cd 계열로 매칭한다.
+     */
+    fun findOrgNamesByAnyOrgCodeLevel(orgCodes: Collection<String>): Map<String, String>
+
+    /**
      * 여사원 일정관리 지점 드롭다운용 조직 목록.
      *
      * SF 레거시 `CurrentUserBranchNameList.getOrgList()` 정합:

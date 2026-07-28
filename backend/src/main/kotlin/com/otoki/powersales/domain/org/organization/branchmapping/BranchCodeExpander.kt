@@ -50,6 +50,15 @@ class BranchCodeExpander(
         }
     }
 
+    /**
+     * 현재 메모리 캐시 스냅샷 — 지점 코드 맵핑 조회 화면(`시스템 > 지점 코드 맵핑`) 진단용.
+     *
+     * DB 원본이 아니라 **런타임 캐시**를 그대로 노출한다. 캐시가 DB 와 어긋나 있으면(빈 DB 부팅 후
+     * Stage1 적재 → [reload] 미호출 등, 클래스 KDoc 의 stale 시나리오) 화면이 그 사실을 그대로
+     * 보여주는 것이 목적이므로, 여기서 DB 를 재조회하지 않는다.
+     */
+    fun snapshot(): Map<String, Set<String>> = cache
+
     fun expand(branchCodes: Collection<String>): Set<String> {
         val result = mutableSetOf<String>()
         result.addAll(branchCodes)

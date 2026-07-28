@@ -107,6 +107,7 @@ const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/Permis
 const PageAccessGuidePage = lazy(() => import('@/pages/admin/permissions/PageAccessGuidePage'));
 const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
 const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTreePage'));
+const BranchMappingPage = lazy(() => import('@/pages/admin/BranchMappingPage'));
 const SystemDocsHomePage = lazy(() => import('@/pages/admin/docs/SystemDocsHomePage'));
 const SystemOverviewPage = lazy(() => import('@/pages/admin/docs/SystemOverviewPage'));
 const DomainMapPage = lazy(() => import('@/pages/admin/docs/DomainMapPage'));
@@ -457,6 +458,7 @@ export const router = createBrowserRouter(
                   children: [
                     { path: '/admin/permissions/matrix', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
                     { path: '/admin/permissions/page-access-guide', element: <LazyWrapper><PageAccessGuidePage /></LazyWrapper> },
+                    { path: '/admin/branch-mappings', element: <LazyWrapper><BranchMappingPage /></LazyWrapper> },
                   ],
                 },
                 {

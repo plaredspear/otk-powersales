@@ -240,6 +240,49 @@ class OrganizationRepositoryCustomImpl(
     }
 
     /**
+     * 조직코드 다건 → 조직명 일괄 해석 (IN 1회).
+     *
+     * 레벨별로 `(org_cd, org_nm)` 쌍을 훑어 요청 코드에 해당하는 이름만 담는다. 한 코드가 여러 행에
+     * 나타나면 **더 깊은 레벨(Level5 > 4 > 3 > 2)의 이름을 우선**한다 — [findFirstByAnyOrgCodeLevel]
+     * 이 단건 매칭 시 leaf 조직명을 주는 것과 결과를 맞추기 위함.
+     */
+    override fun findOrgNamesByAnyOrgCodeLevel(orgCodes: Collection<String>): Map<String, String> {
+        val targets = orgCodes.filter { it.isNotBlank() }.toSet()
+        if (targets.isEmpty()) return emptyMap()
+
+        val rows: List<Tuple> = queryFactory
+            .select(
+                organization.orgCodeLevel2, organization.orgNameLevel2,
+                organization.orgCodeLevel3, organization.orgNameLevel3,
+                organization.orgCodeLevel4, organization.orgNameLevel4,
+                organization.orgCodeLevel5, organization.orgNameLevel5,
+            )
+            .from(organization)
+            .where(
+                organization.isDeleted.isNull.or(organization.isDeleted.isFalse)
+                    .and(
+                        organization.orgCodeLevel2.`in`(targets)
+                            .or(organization.orgCodeLevel3.`in`(targets))
+                            .or(organization.orgCodeLevel4.`in`(targets))
+                            .or(organization.orgCodeLevel5.`in`(targets))
+                    )
+            )
+            .fetch()
+
+        // 얕은 레벨부터 넣어 깊은 레벨이 덮어쓰도록 (Level5 최우선).
+        val result = mutableMapOf<String, String>()
+        for (levelPair in LEVEL_TUPLE_INDEXES) {
+            for (row in rows) {
+                val code = row.get(levelPair.first, String::class.java) ?: continue
+                if (code !in targets) continue
+                val name = row.get(levelPair.second, String::class.java)?.takeIf { it.isNotBlank() } ?: continue
+                result[code] = name
+            }
+        }
+        return result
+    }
+
+    /**
      * cost_center 컬럼 cascade lookup — Level5 → Level4.
      *
      * 단일 JPQL 로 통합하지 않고 Level5 → Level4 derived 쿼리를 순차 호출하는 이유:
@@ -363,5 +406,11 @@ class OrganizationRepositoryCustomImpl(
     companion object {
         /** SF `CurrentUserBranchNameList.getOrgList()` (L32) 의 OrgNameLevel3 사업부 제약 3종. */
         private val SALES_DIVISION_NAMES = listOf("Retail사업부", "제1사업부", "CVS사업부")
+
+        /**
+         * [findOrgNamesByAnyOrgCodeLevel] 의 select tuple 인덱스 `(코드, 이름)` 쌍 — 얕은 레벨 → 깊은 레벨 순.
+         * 이 순서로 Map 에 넣어 깊은 레벨(Level5)이 최종적으로 덮어쓰게 한다.
+         */
+        private val LEVEL_TUPLE_INDEXES = listOf(0 to 1, 2 to 3, 4 to 5, 6 to 7)
     }
 }
