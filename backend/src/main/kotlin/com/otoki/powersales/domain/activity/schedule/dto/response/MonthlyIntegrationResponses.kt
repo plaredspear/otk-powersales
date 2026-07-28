@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.dto.response
 
+import com.otoki.powersales.domain.foundation.account.dto.response.DistributionChannelOption
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -14,13 +15,13 @@ data class MonthlyIntegrationScheduleResponse(
 /**
  * 통합일정 조회조건 드롭다운 옵션 — 유통형태 / 거래처유형 목록 + 종속 매핑.
  *
- * - [distributions] : 유통형태 라벨 전체 목록 (정렬됨).
+ * - [distributions] : 유통형태 옵션 전체 목록 — 거래처유형마스터 `{코드, "{코드} {이름}"}` (코드 오름차순).
  * - [accountTypes]  : 거래처유형 라벨 전체 목록 (유통형태 미선택 시 노출용, 정렬됨).
- * - [dependentAccountTypes] : 유통형태 라벨 → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록.
+ * - [dependentAccountTypes] : 유통형태 **코드** → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록.
  *   유통형태 선택 시 이 맵으로 거래처유형 셀렉트를 종속 필터링한다.
  */
 data class MonthlyIntegrationFilterOptionsResponse(
-    val distributions: List<String>,
+    val distributions: List<DistributionChannelOption>,
     val accountTypes: List<String>,
     val dependentAccountTypes: Map<String, List<String>>,
 )
@@ -32,7 +33,7 @@ data class MonthlyIntegrationScheduleItem(
     val accountBranchName: String?,
     val accountCode: String,
     val accountName: String,
-    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    /** 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" (예: "06 슈퍼"). AccountCategoryLookup 정본. */
     val distributionChannelLabel: String?,
     /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트"). */
     val abcTypeLabel: String?,

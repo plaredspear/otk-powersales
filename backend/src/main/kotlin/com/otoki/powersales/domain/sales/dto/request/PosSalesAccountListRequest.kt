@@ -10,13 +10,13 @@ package com.otoki.powersales.domain.sales.dto.request
  * 필터 해소 위치 (모두 메인 DB Account):
  * - costCenterCodes: 지점 (필수)
  * - customerKeyword: 거래처명 부분일치
- * - distributionChannels: 유통형태 라벨 (거래처상태코드+거래처타입)
+ * - distributionChannels: 유통형태 = 거래처유형마스터 코드 (마스터 이름으로 Account.accountType 매칭)
  * - accountTypes: 거래처유형 = ABC유형 라벨
  */
 data class PosSalesAccountListRequest(
     val costCenterCodes: List<String>,
     val customerKeyword: String? = null,
-    /** 유통형태 라벨 (거래처상태코드+거래처타입 조합, 예 "02 슈퍼"). 비우면 전체. */
+    /** 유통형태 — 거래처유형마스터 코드 (예 "06" = 슈퍼) 다중 선택. 비우면 전체. */
     val distributionChannels: List<String> = emptyList(),
     /** 거래처유형 라벨 (ABC유형코드+ABC유형 조합, 예 "6111 이마트"). 비우면 전체. */
     val accountTypes: List<String> = emptyList(),

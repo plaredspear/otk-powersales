@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.admin.dto.DataScope
@@ -52,6 +53,8 @@ class MonthlySalesAdminQueryService(
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository,
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
+    /** 유통형태 라벨/필터 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
 
     /**
@@ -289,6 +292,8 @@ class MonthlySalesAdminQueryService(
         val filteredAccounts = filterByDeployment(targetFiltered, headcountByAccountId.keys, request.deploymentFilter)
         if (filteredAccounts.isEmpty()) return emptyList()
 
+        // 유통형태 라벨 사전 — 목록 1회 조립당 한 번만 생성.
+        val categories = accountCategoryLookup.directory()
         return filteredAccounts.map { account ->
             val currentOro = oroByKey[account.id to currentSalesDate]
             val lastYearOro = oroByKey[account.id to lastYearSalesDate]
@@ -306,7 +311,7 @@ class MonthlySalesAdminQueryService(
             MonthlySalesDashboardListItem(
                 accountId = account.id,
                 accountName = account.name,
-                distributionChannelLabel = Account.distributionChannelLabel(account.accountStatusCode, account.accountType),
+                distributionChannelLabel = categories.label(account.accountType),
                 abcTypeLabel = Account.abcTypeLabel(account.abcTypeCode, account.abcType),
                 sapAccountCode = account.externalKey,
                 branchCode = account.branchCode,
@@ -424,13 +429,17 @@ class MonthlySalesAdminQueryService(
         // 거래처 통합 검색어 — 거래처명 OR 거래처코드(externalKey) 부분일치 (행사마스터 accountName 정합).
         val customerKw = customerKeyword?.trim()?.takeIf { it.isNotEmpty() }
 
+        // 유통형태 선택 코드 → 거래처유형마스터 이름 (`Account.accountType` 매칭용) — POS매출/전산실적 정합.
+        val distributionNames =
+            if (distributionChannels.isEmpty()) emptySet()
+            else accountCategoryLookup.namesOf(distributionChannels).toSet()
+
         return candidates.filter { account ->
             val customerMatch = customerKw == null ||
                 account.name?.contains(customerKw, ignoreCase = true) == true ||
                 account.externalKey?.contains(customerKw, ignoreCase = true) == true
-            // 유통형태(거래처상태코드+거래처타입) / 거래처유형(ABC유형) 라벨 다중 정확일치 — POS매출 정합.
-            val distributionMatch = distributionChannels.isEmpty() ||
-                account.distributionChannelLabel() in distributionChannels
+            val distributionMatch = distributionNames.isEmpty() ||
+                account.accountType in distributionNames
             val accountTypeMatch = accountTypes.isEmpty() ||
                 account.abcTypeLabel() in accountTypes
             customerMatch && distributionMatch && accountTypeMatch

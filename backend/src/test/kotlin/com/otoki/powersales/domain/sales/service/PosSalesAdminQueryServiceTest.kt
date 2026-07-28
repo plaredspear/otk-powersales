@@ -11,6 +11,7 @@ import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.request.PosSalesAccountListRequest
 import com.otoki.powersales.domain.sales.dto.request.PosSalesDashboardListRequest
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -27,7 +28,11 @@ class PosSalesAdminQueryServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val posRepository: LivePosSalesDailyRepository = mockk()
     private val productRepository: ProductRepository = mockk()
-    private val service = PosSalesAdminQueryService(accountRepository, posRepository, productRepository)
+    /** 유통형태는 거래처유형마스터 조인이 정본이라 운영 마스터 픽스처를 물린다. */
+    private val accountCategoryLookup = AccountCategoryLookupFixture.lookup()
+    private val service = PosSalesAdminQueryService(
+        accountRepository, posRepository, productRepository, accountCategoryLookup,
+    )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -35,7 +40,7 @@ class PosSalesAdminQueryServiceTest {
         id: Long,
         externalKey: String?,
         branchCode: String? = "B001",
-        distributionChannel: String? = null,
+        accountType: String? = null,
         abcTypeLabel: String? = null,
     ): Account = mockk {
         every { this@mockk.id } returns id
@@ -43,7 +48,7 @@ class PosSalesAdminQueryServiceTest {
         every { this@mockk.name } returns "거래처$id"
         every { this@mockk.branchCode } returns branchCode
         every { this@mockk.branchName } returns "지점"
-        every { this@mockk.distributionChannelLabel() } returns distributionChannel
+        every { this@mockk.accountType } returns accountType
         every { this@mockk.abcTypeLabel() } returns abcTypeLabel
     }
 
@@ -109,16 +114,18 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getAccounts — 유통형태(distributionChannels) 라벨 필터로 거래처 축소")
+    @DisplayName("getAccounts — 유통형태(거래처유형마스터 코드) 필터로 거래처 축소")
     fun accountsFiltersByDistributionChannel() {
-        val superMart = account(1, "S001", distributionChannel = "02 슈퍼")
-        val cvs = account(2, "S002", distributionChannel = "03 C.V.S")
+        val superMart = account(1, "S001", accountType = "슈퍼")
+        val cvs = account(2, "S002", accountType = "C.V.S")
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(superMart, cvs)
 
-        val result = service.getAccounts(allBranchesScope, accountRequest(distributionChannels = listOf("02 슈퍼")))
+        // 코드 "06" = 슈퍼.
+        val result = service.getAccounts(allBranchesScope, accountRequest(distributionChannels = listOf("06")))
 
         assertThat(result.items).hasSize(1)
         assertThat(result.items.first().accountId).isEqualTo(1)
+        assertThat(result.items.first().distributionChannel).isEqualTo("06 슈퍼")
     }
 
     @Test

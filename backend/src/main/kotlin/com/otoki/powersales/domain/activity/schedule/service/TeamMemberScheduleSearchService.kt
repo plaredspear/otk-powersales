@@ -3,6 +3,8 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryDirectory
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
@@ -11,6 +13,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmploy
 import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.CaseBuilder
+import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.core.types.dsl.StringExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.stereotype.Service
@@ -37,6 +40,8 @@ class TeamMemberScheduleSearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
+    /** 유통형태 라벨/필터 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
 
     /**
@@ -51,7 +56,7 @@ class TeamMemberScheduleSearchService(
         orgValues: List<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
-        distributionKeyword: String? = null,
+        distributionCode: String? = null,
         accountTypeKeyword: String? = null,
     ): TeamMemberScheduleSearchResult {
         val normMonth = month.toInt().toString()
@@ -61,11 +66,13 @@ class TeamMemberScheduleSearchService(
         }
 
         val rows = fetchMfeisOrdered(
-            year, normMonth, expandedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+            year, normMonth, expandedCodes, keyword, accountKeyword, distributionCode, accountTypeKeyword,
         )
         val avgSalesByAccountId = computeSixMonthAverageSales(rows, year, normMonth)
 
-        val items = rows.map { toResultItem(it, avgSalesByAccountId) }
+        // 유통형태 라벨 사전 — 행마다 만들지 않도록 1회만 생성.
+        val categories = accountCategoryLookup.directory()
+        val items = rows.map { toResultItem(it, avgSalesByAccountId, categories) }
 
         return TeamMemberScheduleSearchResult(
             resultCode = "S",
@@ -84,7 +91,7 @@ class TeamMemberScheduleSearchService(
         costCenterCodes: Collection<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
-        distributionKeyword: String? = null,
+        distributionCode: String? = null,
         accountTypeKeyword: String? = null,
     ): List<TeamMemberScheduleRow> {
         val q = monthlyFemaleEmployeeIntegrationSchedule
@@ -101,12 +108,13 @@ class TeamMemberScheduleSearchService(
         val accountKeywordPredicate = trimmedAccountKeyword?.let {
             q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
         }
-        // 유통형태 필터 — 조회조건이 드롭다운(Select)으로 바뀌어 화면 표시 라벨(거래처상태코드 + 거래처유형명)
-        // 완전일치로 매칭한다. 라벨 조합식은 [distributionChannelLabelExpr] 가 [Account.distributionChannelLabel]
-        // companion 정본 규칙(blank 필터 + 공백 join)을 QueryDSL 로 재현 — projection 라벨과 동일 규칙.
-        val trimmedDistribution = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
-        val distributionPredicate = trimmedDistribution?.let { label ->
-            distributionChannelLabelExpr(q).eq(label)
+        // 유통형태 필터 — 선택된 거래처유형코드를 거래처유형마스터 이름으로 되돌려 `Account.Type` 직접 비교.
+        // 레거시 SF `Account__r.Type IN :categoryMap.keySet()` 동등 (거래처유형코드는 Account 에 없고
+        // 마스터에만 있어 라벨 조합식으로는 매칭할 수 없다). 미등록 코드면 매칭 0건이 되도록 처리한다.
+        val trimmedDistribution = distributionCode?.trim()?.takeIf { it.isNotEmpty() }
+        val distributionPredicate = trimmedDistribution?.let { code ->
+            val names = accountCategoryLookup.namesOf(listOf(code))
+            if (names.isEmpty()) Expressions.FALSE.isTrue else q.account.accountType.`in`(names)
         }
         // 거래처유형 필터 — 화면 표시 라벨(ABC유형코드 + ABC유형) 완전일치.
         val trimmedAccountType = accountTypeKeyword?.trim()?.takeIf { it.isNotEmpty() }
@@ -165,13 +173,6 @@ class TeamMemberScheduleSearchService(
             )
             .fetch()
     }
-
-    /**
-     * 유통형태 라벨(거래처상태코드 + 거래처타입) QueryDSL 조합식 — [Account.distributionChannelLabel]
-     * companion 정본 규칙(blank 필터 후 공백 join)을 재현. 필터 완전일치 비교용.
-     */
-    private fun distributionChannelLabelExpr(q: QMonthlyFemaleEmployeeIntegrationSchedule): StringExpression =
-        labelExpr(q.account.accountStatusCode, q.account.accountType)
 
     /**
      * 거래처유형 라벨(ABC유형코드 + ABC유형) QueryDSL 조합식 — [Account.abcTypeLabel] companion 정본 재현.
@@ -283,6 +284,7 @@ class TeamMemberScheduleSearchService(
     private fun toResultItem(
         row: TeamMemberScheduleRow,
         avgSalesByAccountId: Map<Long, BigDecimal>,
+        categories: AccountCategoryDirectory,
     ): TeamMemberScheduleResultItem {
         val accId = row.accountId?.toLong()
         val actualAmount = accId?.let { avgSalesByAccountId[it] } ?: BigDecimal.ZERO
@@ -297,11 +299,8 @@ class TeamMemberScheduleSearchService(
             accountName = row.accountName,
             // D4=(a): SF formula AccountCode__c = Account__r.ExternalKey__c
             accountCode = row.accountExternalKey,
-            // 유통형태/거래처유형 라벨 — Account 조합 규칙 정본(companion) 재사용 (projection 이라 인스턴스 없음)
-            distributionChannelLabel = Account.distributionChannelLabel(
-                row.accountStatusCode,
-                row.accountType,
-            ),
+            // 유통형태 = 거래처유형마스터 "{코드} {이름}" (accountType 이름 매칭), 거래처유형 = ABC 조합 라벨
+            distributionChannelLabel = categories.label(row.accountType),
             abcTypeLabel = Account.abcTypeLabel(row.abcTypeCode, row.abcType),
             // D4=(a): SF formula BranchName__c = FullName__r.DKRetail__OrgName__c
             orgName = row.employeeOrgName,

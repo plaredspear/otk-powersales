@@ -54,12 +54,16 @@ describe('ElectronicSalesDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedFilterOptions.mockResolvedValue({
-      distributionChannels: ['01 대형마트(3대)', '02 슈퍼'],
+      // 유통형태 옵션 = 거래처유형마스터 {코드, "{코드} {이름}"} — 종속 매핑 key 도 코드.
+      distributionChannels: [
+        { code: '01', label: '01 대형마트(3대)' },
+        { code: '06', label: '06 슈퍼' },
+      ],
       accountTypes: ['6111 이마트', '6112 홈플러스', '6200 일반슈퍼'],
       categories: [{ category2: '면류', category3s: ['봉지면', '용기면'] }],
       dependentAccountTypes: {
-        '01 대형마트(3대)': ['6111 이마트', '6112 홈플러스'],
-        '02 슈퍼': ['6200 일반슈퍼'],
+        '01': ['6111 이마트', '6112 홈플러스'],
+        '06': ['6200 일반슈퍼'],
       },
     });
     mockedProductLookup.mockResolvedValue([]);
@@ -120,6 +124,24 @@ describe('ElectronicSalesDashboardPage', () => {
     expect(screen.getByText('중분류:')).toBeInTheDocument();
     expect(screen.getByText('소분류:')).toBeInTheDocument();
     expect(screen.getByText('제품 (제품명/제품코드/바코드):')).toBeInTheDocument();
+  });
+
+  it('유통형태는 "{코드} {이름}" 라벨로 표시하고 조회에는 거래처유형마스터 코드를 보낸다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
+
+    // 유통형태 콤보박스(첫 번째 combobox)를 열어 "06 슈퍼" 선택 — 라벨은 코드+이름 조합.
+    const comboboxes = screen.getAllByRole('combobox');
+    await user.click(comboboxes[0]);
+    await user.click(await screen.findByTitle('06 슈퍼'));
+
+    fireEvent.click(screen.getByRole('button', { name: /조회/ }));
+    await waitFor(() => expect(mockedList).toHaveBeenCalled());
+    // 전송값은 라벨이 아니라 코드("06") — 상태코드별로 쪼개진 라벨 매칭 방식을 대체한다.
+    expect(mockedList.mock.calls[mockedList.mock.calls.length - 1][0]).toMatchObject({
+      distributionChannels: ['06'],
+    });
   });
 
   it('조회 기간이 3개월을 초과하면 경고를 표시하고 조회 버튼이 비활성화된다', async () => {

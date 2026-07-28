@@ -8,17 +8,17 @@ export function useMonthlyIntegrationSchedule(
   enabled: boolean,
   keyword?: string,
   accountKeyword?: string,
-  distributionKeyword?: string,
+  distributionCode?: string,
   accountTypeKeyword?: string,
 ) {
   return useQuery({
     queryKey: [
       'admin', 'schedules', 'monthly-integration', year, month, costCenterCodes,
-      keyword ?? '', accountKeyword ?? '', distributionKeyword ?? '', accountTypeKeyword ?? '',
+      keyword ?? '', accountKeyword ?? '', distributionCode ?? '', accountTypeKeyword ?? '',
     ],
     queryFn: () =>
       fetchMonthlyIntegrationSchedule(
-        year, month, costCenterCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+        year, month, costCenterCodes, keyword, accountKeyword, distributionCode, accountTypeKeyword,
       ),
     enabled,
   });

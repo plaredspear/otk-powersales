@@ -5,6 +5,9 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountCategory
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertCommand
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertFailedRow
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertResult
+import com.otoki.powersales.platform.common.config.CacheConfig
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Caching
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -33,6 +36,20 @@ class AccountCategoryUpsertService(
     private val rowUpsertService: AccountCategoryRowUpsertService
 ) {
 
+    /**
+     * 캐시 무효화는 행 단위 [AccountCategoryRowUpsertService.persistRow] 가 아니라 본 진입점에 건다 —
+     * persistRow 는 행마다 `REQUIRES_NEW` 로 도는 루프 본문이라 거기 붙이면 요청당 행 수만큼 evict 된다.
+     *
+     * 조회조건 옵션 캐시 2종도 함께 비운다 — 유통형태 축이 거래처유형마스터에서 오므로, 마스터만 갱신되고
+     * 옵션 캐시가 남아 있으면 최대 24h 동안 옛 유통형태 목록이 화면에 노출된다.
+     */
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.CACHE_ACCOUNT_CATEGORY_MASTER], allEntries = true),
+            CacheEvict(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], allEntries = true),
+            CacheEvict(value = [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS], allEntries = true),
+        ]
+    )
     fun upsert(commands: List<AccountCategoryUpsertCommand>): AccountCategoryUpsertResult {
         val failures = mutableListOf<AccountCategoryUpsertFailedRow>()
         var successCount = 0

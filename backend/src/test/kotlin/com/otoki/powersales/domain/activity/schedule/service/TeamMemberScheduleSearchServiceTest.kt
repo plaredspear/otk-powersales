@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.domain.sales.service.MonthlySalesRow
 import com.querydsl.jpa.impl.JPAQueryFactory
 import io.mockk.every
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -23,7 +24,7 @@ class TeamMemberScheduleSearchServiceTest {
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
 
     private val service = TeamMemberScheduleSearchService(
-        expander, queryFactory, monthlySalesHistoryGateway,
+        expander, queryFactory, monthlySalesHistoryGateway, AccountCategoryLookupFixture.lookup(),
     )
 
     private fun row(accountId: Long?, externalKey: String? = null): TeamMemberScheduleRow =

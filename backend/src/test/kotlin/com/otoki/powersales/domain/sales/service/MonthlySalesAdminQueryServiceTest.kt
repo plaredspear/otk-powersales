@@ -8,6 +8,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.sales.dto.request.MonthlySalesDashboardListRequest
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -22,11 +23,14 @@ class MonthlySalesAdminQueryServiceTest {
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository = mockk()
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk()
+    /** 유통형태는 거래처유형마스터 조인이 정본이라 운영 마스터 픽스처를 물린다. */
+    private val accountCategoryLookup = AccountCategoryLookupFixture.lookup()
     private val service = MonthlySalesAdminQueryService(
         accountRepository,
         monthlySalesHistoryGateway,
         salesProgressRateMasterRepository,
         mfeisRepository,
+        accountCategoryLookup,
     )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
@@ -378,28 +382,30 @@ class MonthlySalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — distributionChannels 는 유통형태 라벨 다중 정확일치 (POS매출 정합)")
+    @DisplayName("getList — distributionChannels 는 거래처유형마스터 코드 다중 매칭 (POS매출 정합)")
     fun listFiltersByDistribution() {
-        val accA = account(1, "S001", accountStatusCode = "02", accountType = "슈퍼") // "02 슈퍼"
-        val accB = account(2, "S002", accountStatusCode = "05", accountType = "체인") // "05 체인"
-        val accC = account(3, "S003", accountStatusCode = "01", accountType = "대형마트") // "01 대형마트"
+        // 거래처상태코드는 유통형태와 무관한 축이라 일부러 유형과 어긋나게 둔다 — 매칭에 영향이 없어야 한다.
+        val accA = account(1, "S001", accountStatusCode = "02", accountType = "슈퍼") // 06 슈퍼
+        val accB = account(2, "S002", accountStatusCode = "05", accountType = "체인") // 02 체인
+        val accC = account(3, "S003", accountStatusCode = "01", accountType = "대형마트(3대)") // 01 대형마트(3대)
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB, accC)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
 
-        // 단일 라벨 정확일치 — "05 체인" → accB
+        // 단일 코드 매칭 — "02"(체인) → accB. 상태코드 02 인 accA(슈퍼)는 걸리지 않는다.
         val single = service.getList(
             allBranchesScope,
-            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), distributionChannels = listOf("05 체인")),
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), distributionChannels = listOf("02")),
         )
         assertThat(single.items.map { it.accountId }).containsExactly(2L)
+        assertThat(single.items.first().distributionChannelLabel).isEqualTo("02 체인")
 
-        // 다중 라벨 정확일치(합집합) — "02 슈퍼" OR "01 대형마트" → accA, accC
+        // 다중 코드 매칭(합집합) — "06"(슈퍼) OR "01"(대형마트(3대)) → accA, accC
         val multi = service.getList(
             allBranchesScope,
             MonthlySalesDashboardListRequest(
                 2026, 4, listOf("B001"),
-                distributionChannels = listOf("02 슈퍼", "01 대형마트"),
+                distributionChannels = listOf("06", "01"),
             ),
         )
         assertThat(multi.items.map { it.accountId }).containsExactlyInAnyOrder(1L, 3L)

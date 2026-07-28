@@ -13,7 +13,7 @@ export interface ElectronicSalesDashboardListItem {
   accountId: number;
   accountName: string | null;
   sapAccountCode: string | null;
-  /** 유통형태 — 거래처상태코드+거래처타입 조합 라벨 */
+  /** 유통형태 — 거래처유형마스터 "{코드} {이름}" 라벨 (예 "06 슈퍼") */
   distributionChannel: string | null;
   /** 거래처유형 — ABC유형코드+ABC유형 조합 라벨 */
   accountType: string | null;
@@ -59,12 +59,21 @@ export interface ElectronicSalesDashboardDetail {
   items: ElectronicSalesProductSales[];
 }
 
-/** 조회 조건 옵션 — 유통형태 / 거래처유형 / 제품 중·소분류 (메인 DB distinct). */
+/**
+ * 유통형태 옵션 1건 — 거래처유형마스터 코드 + `"{코드} {이름}"` 라벨.
+ * 조회 요청에는 [code] 를 보내고, 화면에는 [label] 을 표시한다 (목록 컬럼 표기와 동일 규칙).
+ */
+export interface DistributionChannelOption {
+  code: string;
+  label: string;
+}
+
+/** 조회 조건 옵션 — 유통형태(거래처유형마스터) / 거래처유형(ABC) / 제품 중·소분류. */
 export interface ElectronicSalesFilterOptions {
-  distributionChannels: string[];
+  distributionChannels: DistributionChannelOption[];
   accountTypes: string[];
   categories: { category2: string; category3s: string[] }[];
-  /** 유통형태 라벨 → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록 (종속 필터링용). */
+  /** 유통형태 **코드** → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록 (종속 필터링용). */
   dependentAccountTypes: Record<string, string[]>;
 }
 
@@ -86,7 +95,7 @@ export interface ElectronicSalesDashboardListRequest {
   accountIds?: number[];
   accountGroup?: string;
   customerKeyword?: string;
-  /** 유통형태 라벨 (예 "02 슈퍼") */
+  /** 유통형태 — 거래처유형마스터 코드 (예 "06" = 슈퍼) */
   distributionChannels?: string[];
   /** 거래처유형 라벨 (ABC유형, 예 "6111 이마트") */
   accountTypes?: string[];

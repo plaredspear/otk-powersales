@@ -9,7 +9,7 @@ import java.time.LocalDate
  * 동등. startDate/endDate(일 단위, 레거시 daterangepicker 정합) + costCenterCodes 는 필수.
  *
  * 필터 해소 위치:
- * - 메인 DB(Account): accountIds / accountGroup / customerKeyword / distributionChannels(유통형태 라벨) /
+ * - 메인 DB(Account): accountIds / accountGroup / customerKeyword / distributionChannels(유통형태 = 거래처유형코드) /
  *   accountTypes(거래처유형 = ABC유형 라벨)
  * - 메인 DB(Product) → POS `UPC_CD IN` 합류: productIds(선택 제품) / category2(중분류) / category3(소분류)
  *
@@ -22,7 +22,7 @@ data class ElectronicSalesDashboardListRequest(
     val accountIds: List<Long> = emptyList(),
     val accountGroup: String? = null,
     val customerKeyword: String? = null,
-    /** 유통형태 라벨 (거래처상태코드+거래처타입 조합, 예 "02 슈퍼"). 비우면 전체. */
+    /** 유통형태 — 거래처유형마스터 코드 (예 "06" = 슈퍼) 다중 선택. 비우면 전체. */
     val distributionChannels: List<String> = emptyList(),
     /** 거래처유형 라벨 (ABC유형코드+ABC유형 조합, 예 "6111 이마트"). 비우면 전체. */
     val accountTypes: List<String> = emptyList(),

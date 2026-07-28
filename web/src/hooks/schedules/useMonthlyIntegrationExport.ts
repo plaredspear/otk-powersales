@@ -9,7 +9,7 @@ export function useMonthlyIntegrationExport() {
       costCenterCodes: string[];
       keyword?: string;
       accountKeyword?: string;
-      distributionKeyword?: string;
+      distributionCode?: string;
       accountTypeKeyword?: string;
     }) =>
       fetchMonthlyIntegrationExport(
@@ -18,7 +18,7 @@ export function useMonthlyIntegrationExport() {
         params.costCenterCodes,
         params.keyword,
         params.accountKeyword,
-        params.distributionKeyword,
+        params.distributionCode,
         params.accountTypeKeyword,
       ),
   });

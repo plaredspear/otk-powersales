@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
@@ -22,6 +23,8 @@ class EmployeeWorkHistoryService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val excelExporter: EmployeeWorkHistoryExcelExporter,
+    /** 유통형태 라벨 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
 
     fun getRecentHistory(employeeId: Long, limit: Int): EmployeeWorkHistoryResponse {
@@ -30,7 +33,8 @@ class EmployeeWorkHistoryService(
         }
         val schedules = teamMemberScheduleRepository
             .findByEmployeeOrderByWorkingDateDescCreatedAtDesc(employee, PageRequest.of(0, limit))
-        return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it) })
+        val categories = accountCategoryLookup.directory()
+        return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it, categories) })
     }
 
     /**
@@ -49,7 +53,8 @@ class EmployeeWorkHistoryService(
             yearMonth.atDay(1),
             yearMonth.atEndOfMonth(),
         )
-        return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it) })
+        val categories = accountCategoryLookup.directory()
+        return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it, categories) })
     }
 
     /**
@@ -59,13 +64,14 @@ class EmployeeWorkHistoryService(
         val employee = employeeRepository.findById(employeeId).orElseThrow {
             EmployeeNotFoundException(employeeId)
         }
+        val categories = accountCategoryLookup.directory()
         val items = teamMemberScheduleRepository
             .findMonthlyWorkHistory(
                 employee,
                 yearMonth.atDay(1),
                 yearMonth.atEndOfMonth(),
             )
-            .map { EmployeeWorkHistoryItem.from(it) }
+            .map { EmployeeWorkHistoryItem.from(it, categories) }
         val filename = "월별근무내역_${employee.employeeCode.orEmpty()}_${yearMonth.format(FILENAME_MONTH_FMT)}.xlsx"
         return excelExporter.export(items, filename)
     }

@@ -31,7 +31,7 @@ data class ElectronicSalesDashboardListResponse(
 /**
  * 전산실적 명세 테이블 한 행 — 거래처 단위 기간 전산매출 합계.
  *
- * @property distributionChannel 유통형태 — 거래처상태코드+거래처타입 조합 라벨 ([Account.distributionChannelLabel])
+ * @property distributionChannel 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" 라벨 ([AccountCategoryLookup])
  * @property accountType 거래처유형 — ABC유형코드+ABC유형 조합 라벨 ([Account.abcTypeLabel])
  * @property salesAmount 전산매출 금액 합계 (원) — POS `SUM(SALES_RAMT)`
  * @property salesQuantity 전산매출 수량 합계 — POS `SUM(SALES_RQTY)`

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -60,6 +60,31 @@ const accountsResponse: posApi.PosSalesAccountListResponse = {
   ],
 };
 
+/**
+ * 거래처 선택 모달 열기 — 거래처 검색 조건(지점/유통형태/거래처유형/거래처명)은 모두 이 모달 안에 있다.
+ * 메인 화면에는 POS 조회 조건(기간/제품/분류)과 선택 거래처 칩만 남아 있다.
+ */
+async function openAccountModal(): Promise<HTMLElement> {
+  fireEvent.click(screen.getByRole('button', { name: /거래처 선택/ }));
+  return await screen.findByRole('dialog');
+}
+
+/** 모달에서 거래처 목록을 조회한다 (외부 POS DB 미접촉). */
+async function searchAccounts(dialog: HTMLElement): Promise<void> {
+  fireEvent.click(within(dialog).getByRole('button', { name: /거래처 검색/ }));
+  await waitFor(() => expect(mockedAccounts).toHaveBeenCalled());
+}
+
+/** antd Select 열기 — userEvent.click 보다 훨씬 빠르다 (mousedown 에 반응). */
+function openSelect(combobox: HTMLElement): void {
+  fireEvent.mouseDown(combobox);
+}
+
+/** 열린 드롭다운에서 옵션 선택 (옵션은 body 포털에 렌더된다). */
+async function pickOption(label: string): Promise<void> {
+  fireEvent.click(await screen.findByTitle(label));
+}
+
 const emptyListResponse: posApi.PosSalesDashboardListResponse = {
   startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
   endDate: dayjs().format('YYYY-MM-DD'),
@@ -73,12 +98,16 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedFilterOptions.mockResolvedValue({
-      distributionChannels: ['01 대형마트(3대)', '02 슈퍼'],
+      // 유통형태 옵션 = 거래처유형마스터 {코드, "{코드} {이름}"} — 종속 매핑 key 도 코드.
+      distributionChannels: [
+        { code: '01', label: '01 대형마트(3대)' },
+        { code: '06', label: '06 슈퍼' },
+      ],
       accountTypes: ['6111 이마트', '6112 홈플러스', '6200 일반슈퍼'],
       categories: [{ category2: '면류', category3s: ['봉지면', '용기면'] }],
       dependentAccountTypes: {
-        '01 대형마트(3대)': ['6111 이마트', '6112 홈플러스'],
-        '02 슈퍼': ['6200 일반슈퍼'],
+        '01': ['6111 이마트', '6112 홈플러스'],
+        '06': ['6200 일반슈퍼'],
       },
     });
     mockedProductLookup.mockResolvedValue([]);
@@ -97,24 +126,25 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     expect(mockedList).not.toHaveBeenCalled();
   });
 
-  it('1단 조회 클릭 시 POS 미접촉으로 거래처 목록만 조회한다', async () => {
+  it('모달에서 거래처 검색 시 POS 미접촉으로 거래처 목록만 조회한다', async () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
+    const dialog = await openAccountModal();
+    await searchAccounts(dialog);
 
     await waitFor(() => {
-      expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
-      expect(screen.getByText('홈플러스 원주점')).toBeInTheDocument();
+      expect(within(dialog).getByText('이마트 원주점')).toBeInTheDocument();
+      expect(within(dialog).getByText('홈플러스 원주점')).toBeInTheDocument();
     });
-    // 거래처 목록에 유통형태·거래처유형 컬럼 값이 표시된다.
-    expect(screen.getByText('6111 이마트')).toBeInTheDocument();
-    expect(screen.getByText('6112 홈플러스')).toBeInTheDocument();
-    expect(screen.getAllByText('01 대형마트(3대)').length).toBeGreaterThan(0);
+    // 목록에 유통형태·거래처유형 컬럼 값이 표시된다 (유통형태는 거래처유형마스터 "{코드} {이름}").
+    expect(within(dialog).getByText('6111 이마트')).toBeInTheDocument();
+    expect(within(dialog).getByText('6112 홈플러스')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('01 대형마트(3대)').length).toBeGreaterThan(0);
     expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ costCenterCodes: ['B001'] });
-    // 거래처를 선택하지 않았으므로 POS 조회는 아직 발생하지 않음
+    // 거래처를 확정하지 않았으므로 POS 조회는 아직 발생하지 않음
     expect(mockedList).not.toHaveBeenCalled();
   });
 
-  it('거래처 선택 후 POS 조회 클릭 시 선택 거래처(accountIds)로 집계하고 합계를 표시한다', async () => {
+  it('모달에서 거래처 선택 완료 후 POS 매출 조회 시 선택 거래처(accountIds)로 집계하고 합계를 표시한다', async () => {
     mockedList.mockResolvedValue({
       ...emptyListResponse,
       totalSalesAmount: 1_234_567,
@@ -133,13 +163,20 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
       pageInfo: { page: 0, size: 20, totalElements: 1, totalPages: 1 },
     });
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
-    await screen.findByText('이마트 원주점');
+    const dialog = await openAccountModal();
+    await searchAccounts(dialog);
+    await within(dialog).findByText('이마트 원주점');
 
-    // 첫 거래처(이마트 원주점) 행 클릭으로 선택 (체크박스 조준 불필요)
-    fireEvent.click(screen.getByText('이마트 원주점'));
+    // 행 아무 곳이나 클릭하면 선택/해제 (체크박스 조준 불필요) → [선택 완료] 로 확정.
+    fireEvent.click(within(dialog).getByText('이마트 원주점'));
+    fireEvent.click(within(dialog).getByRole('button', { name: /선택 완료/ }));
 
-    fireEvent.click(screen.getByRole('button', { name: /선택 거래처 POS 조회/ }));
+    // 확정된 거래처는 메인에 칩으로 남고 [POS 매출 조회] 가 활성화된다.
+    // (모달은 닫힘 애니메이션 동안 DOM 에 남아 있어 제거 대신 버튼 활성화를 기다린다.)
+    await waitFor(() => expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeEnabled());
+    expect(screen.getAllByText('이마트 원주점').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /POS 매출 조회/ }));
 
     await waitFor(() => {
       expect(screen.getByText('POS매출 금액 합계')).toBeInTheDocument();
@@ -152,35 +189,36 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     });
   });
 
-  it('유통형태/거래처유형은 1단, 중·소분류/제품 필터는 1단 조회 후 노출된다', async () => {
+  it('유통형태/거래처유형은 거래처 선택 모달, 기간/중·소분류/제품 필터는 메인 화면에 있다', async () => {
     renderPage();
     await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
-    // 1단 조건 (항상 노출)
-    expect(screen.getByText('유통형태:')).toBeInTheDocument();
-    expect(screen.getByText('거래처유형:')).toBeInTheDocument();
-    // 2단 필터는 거래처 조회 전에는 미노출
-    expect(screen.queryByText('중분류:')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
-    await screen.findByText('이마트 원주점');
-
+    // POS 조회 조건은 메인에 상시 노출.
+    expect(screen.getByText('조회기간:')).toBeInTheDocument();
     expect(screen.getByText('중분류:')).toBeInTheDocument();
     expect(screen.getByText('소분류:')).toBeInTheDocument();
     expect(screen.getByText('제품 (제품명/제품코드/바코드):')).toBeInTheDocument();
+    // 거래처 검색 조건은 모달을 열기 전에는 미노출.
+    expect(screen.queryByText('유통형태:')).not.toBeInTheDocument();
+    expect(screen.queryByText('거래처유형:')).not.toBeInTheDocument();
+
+    const dialog = await openAccountModal();
+    expect(within(dialog).getByText('유통형태:')).toBeInTheDocument();
+    expect(within(dialog).getByText('거래처유형:')).toBeInTheDocument();
   });
 
   it('유통형태 선택 시 거래처유형 옵션이 해당 유통형태의 종속 목록으로 좁혀진다', async () => {
-    const user = userEvent.setup();
     renderPage();
+    const dialog = await openAccountModal();
     await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
 
-    // 유통형태 콤보박스(첫 번째 combobox)를 열어 '01 대형마트(3대)' 선택.
-    const comboboxes = screen.getAllByRole('combobox');
-    await user.click(comboboxes[0]);
-    await user.click(await screen.findByTitle('01 대형마트(3대)'));
+    // 단일지점 사용자라 지점은 Tag 로 렌더 → 모달의 combobox 는 [유통형태, 거래처유형] 순.
+    const comboboxes = within(dialog).getAllByRole('combobox');
+    openSelect(comboboxes[0]);
+    await pickOption('01 대형마트(3대)');
 
     // 거래처유형 콤보박스를 열면 대형마트 종속 목록만(이마트/홈플러스) 노출되고 일반슈퍼는 빠진다.
-    await user.click(comboboxes[1]);
+    openSelect(comboboxes[1]);
     await waitFor(() => {
       expect(screen.getByTitle('6111 이마트')).toBeInTheDocument();
       expect(screen.getByTitle('6112 홈플러스')).toBeInTheDocument();
@@ -189,48 +227,54 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
   });
 
   it('유통형태 변경으로 종속 목록에서 사라진 거래처유형 선택값은 자동 정리된다', async () => {
-    const user = userEvent.setup();
     renderPage();
+    const dialog = await openAccountModal();
     await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
 
-    const comboboxes = screen.getAllByRole('combobox');
-    // 유통형태 '02 슈퍼' 선택 → 거래처유형 '6200 일반슈퍼' 선택 (종속 허용).
-    await user.click(comboboxes[0]);
-    await user.click(await screen.findByTitle('02 슈퍼'));
-    await user.click(comboboxes[1]);
-    await user.click(await screen.findByTitle('6200 일반슈퍼'));
+    const comboboxes = within(dialog).getAllByRole('combobox');
+    // 유통형태 '06 슈퍼' 선택 → 거래처유형 '6200 일반슈퍼' 선택 (종속 허용).
+    openSelect(comboboxes[0]);
+    await pickOption('06 슈퍼');
+    openSelect(comboboxes[1]);
+    await pickOption('6200 일반슈퍼');
 
-    // 유통형태를 '01 대형마트(3대)' 로 교체 (02 슈퍼 해제 후 대형마트 선택).
-    await user.click(comboboxes[0]);
-    await user.click(await screen.findByTitle('02 슈퍼')); // 토글 해제
-    await user.click(await screen.findByTitle('01 대형마트(3대)'));
+    // 유통형태를 '01 대형마트(3대)' 로 교체 (06 슈퍼 해제 후 대형마트 선택).
+    openSelect(comboboxes[0]);
+    await pickOption('06 슈퍼'); // 토글 해제
+    await pickOption('01 대형마트(3대)');
 
     // 거래처유형 옵션이 대형마트 종속(이마트/홈플러스)으로 좁혀지고, 선택했던 '6200 일반슈퍼' 는
-    // 종속 목록에 없어 선택값이 정리된다 → 거래처유형 조회 조건에 일반슈퍼가 반영되지 않음.
-    // 1단 조회 시 accountTypes 로 확인 (정리되어 빈 배열).
-    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
-    await waitFor(() => expect(mockedAccounts).toHaveBeenCalled());
+    // 종속 목록에 없어 선택값이 정리된다 → 거래처 검색 조건에 일반슈퍼가 반영되지 않음.
+    await searchAccounts(dialog);
     const lastAccountsCall = mockedAccounts.mock.calls[mockedAccounts.mock.calls.length - 1];
     expect(lastAccountsCall[0]).toMatchObject({
-      distributionChannels: ['01 대형마트(3대)'],
+      // 전송값은 라벨이 아니라 거래처유형마스터 코드.
+      distributionChannels: ['01'],
       accountTypes: [],
     });
-  });
+    // 다중선택 Select 를 5회 조작하는 테스트라 기본 10s 로는 병렬 실행에서 flaky 하다.
+  }, 30_000);
 
-  it('조회 기간이 31일을 초과하면 경고를 표시하고 POS 조회 버튼이 비활성화된다', async () => {
-    const user = userEvent.setup();
+  it('조회 기간이 31일을 초과하면 경고를 표시하고 POS 매출 조회 버튼이 비활성화된다', async () => {
+    // delay: null — 기본 delay 는 모달+다중선택 조작이 많은 본 파일에서 전체 스위트 병렬 실행 시
+    // 테스트 타임아웃을 넘긴다 (동작 검증에 delay 는 불필요).
+    const user = userEvent.setup({ delay: null });
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
-    await screen.findByText('이마트 원주점');
+    const dialog = await openAccountModal();
+    await searchAccounts(dialog);
+    await within(dialog).findByText('이마트 원주점');
 
-    // 거래처 선택 (행 클릭)
-    fireEvent.click(screen.getByText('이마트 원주점'));
+    // 거래처 확정 — 기간 위반이 아니면 [POS 매출 조회] 가 활성화되는 상태를 만든다.
+    fireEvent.click(within(dialog).getByText('이마트 원주점'));
+    fireEvent.click(within(dialog).getByRole('button', { name: /선택 완료/ }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeEnabled());
 
     const inputs = screen
       .getAllByRole('textbox')
       .filter((el) => (el as HTMLInputElement).value.match(/^\d{4}-\d{2}-\d{2}$/));
     const startInput = inputs[0] as HTMLInputElement;
     const sixtyDaysAgo = dayjs().subtract(60, 'day').format('YYYY-MM-DD');
+    // DatePicker 는 controlled input 이라 fireEvent.change 로는 값이 반영되지 않는다 — 실제 타이핑 필요.
     await user.click(startInput);
     await user.clear(startInput);
     await user.type(startInput, `${sixtyDaysAgo}{Enter}`);
@@ -239,7 +283,8 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     await waitFor(() => {
       expect(screen.getByText('조회 기간은 최대 31일까지 가능합니다')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /선택 거래처 POS 조회/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeDisabled();
     expect(mockedList).not.toHaveBeenCalled();
-  });
+    // 날짜 타이핑 + 모달 조작이 겹쳐 기본 10s 안에 못 끝나는 경우가 있어 여유를 준다 (병렬 실행 flaky 방지).
+  }, 30_000);
 });

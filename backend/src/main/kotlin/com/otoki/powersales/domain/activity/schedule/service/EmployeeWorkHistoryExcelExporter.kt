@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 근무기간 조회 월별 근무내역(개인) 엑셀 export — 목록 탭 컬럼 순서/라벨 정합.
  *
- * "유통형태" 는 Account.distributionChannelLabel() (거래처상태코드 + 거래처유형) 정본을 그대로 사용 — web 목록과 동일.
+ * "유통형태" 는 거래처유형마스터 "{거래처유형코드} {이름}" (AccountCategoryLookup 정본) 을 그대로 사용 — web 목록과 동일.
  */
 @Component
 class EmployeeWorkHistoryExcelExporter : BaseExcelExporter<EmployeeWorkHistoryItem>() {

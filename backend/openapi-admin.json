@@ -11064,6 +11064,17 @@
         },
         "type" : "object"
       },
+      "DistributionChannelOption" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "DryRunCheck" : {
         "properties" : {
           "entity" : {
@@ -11289,7 +11300,7 @@
           },
           "distributionChannels" : {
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/DistributionChannelOption"
             },
             "type" : "array"
           }
@@ -13442,7 +13453,7 @@
           },
           "distributions" : {
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/DistributionChannelOption"
             },
             "type" : "array"
           }
@@ -32344,7 +32355,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "distributionKeyword",
+          "name" : "distributionCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -32508,7 +32519,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "distributionKeyword",
+          "name" : "distributionCode",
           "required" : false,
           "schema" : {
             "type" : "string"

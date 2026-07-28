@@ -1,5 +1,6 @@
 import client from './client';
 import { downloadExcel } from '@/lib/excelDownload';
+import type { DistributionChannelOption } from './electronicSalesDashboard';
 import type { ApiResponse } from './types';
 
 
@@ -10,7 +11,7 @@ export interface MonthlyIntegrationScheduleItem {
   accountBranchName: string | null;
   accountCode: string;
   accountName: string;
-  /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼") */
+  /** 유통형태 — 거래처유형마스터 "{코드} {이름}" (예: "06 슈퍼") */
   distributionChannelLabel: string | null;
   /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트") */
   abcTypeLabel: string | null;
@@ -74,11 +75,11 @@ export interface MonthlyIntegrationDetailResponse {
 
 /** 통합일정 조회조건 드롭다운 옵션 — 유통형태/거래처유형 목록 + 종속 매핑. */
 export interface MonthlyIntegrationFilterOptions {
-  /** 유통형태 라벨 전체 목록 (예: "02 대형마트") */
-  distributions: string[];
+  /** 유통형태 옵션 전체 목록 — 거래처유형마스터 {코드, "{코드} {이름}"} (코드 오름차순) */
+  distributions: DistributionChannelOption[];
   /** 거래처유형 라벨 전체 목록 (유통형태 미선택 시 노출, 예: "6111 이마트") */
   accountTypes: string[];
-  /** 유통형태 라벨 → 해당 유통형태에 존재하는 거래처유형 라벨 목록 */
+  /** 유통형태 **코드** → 해당 유통형태에 존재하는 거래처유형 라벨 목록 */
   dependentAccountTypes: Record<string, string[]>;
 }
 
@@ -119,12 +120,12 @@ export async function fetchMonthlyIntegrationSchedule(
   costCenterCodes: string[],
   keyword?: string,
   accountKeyword?: string,
-  distributionKeyword?: string,
+  distributionCode?: string,
   accountTypeKeyword?: string,
 ): Promise<MonthlyIntegrationScheduleResponse> {
   const trimmedKeyword = keyword?.trim();
   const trimmedAccountKeyword = accountKeyword?.trim();
-  const trimmedDistribution = distributionKeyword?.trim();
+  const trimmedDistribution = distributionCode?.trim();
   const trimmedAccountType = accountTypeKeyword?.trim();
   const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration',
@@ -135,7 +136,7 @@ export async function fetchMonthlyIntegrationSchedule(
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
         ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
-        ...(trimmedDistribution ? { distributionKeyword: trimmedDistribution } : {}),
+        ...(trimmedDistribution ? { distributionCode: trimmedDistribution } : {}),
         ...(trimmedAccountType ? { accountTypeKeyword: trimmedAccountType } : {}),
       },
     },
@@ -177,12 +178,12 @@ export async function fetchMonthlyIntegrationExport(
   costCenterCodes: string[],
   keyword?: string,
   accountKeyword?: string,
-  distributionKeyword?: string,
+  distributionCode?: string,
   accountTypeKeyword?: string,
 ): Promise<void> {
   const trimmedKeyword = keyword?.trim();
   const trimmedAccountKeyword = accountKeyword?.trim();
-  const trimmedDistribution = distributionKeyword?.trim();
+  const trimmedDistribution = distributionCode?.trim();
   const trimmedAccountType = accountTypeKeyword?.trim();
   await downloadExcel(
     '/api/v1/admin/schedules/monthly-integration/export',
@@ -194,7 +195,7 @@ export async function fetchMonthlyIntegrationExport(
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
         ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
-        ...(trimmedDistribution ? { distributionKeyword: trimmedDistribution } : {}),
+        ...(trimmedDistribution ? { distributionCode: trimmedDistribution } : {}),
         ...(trimmedAccountType ? { accountTypeKeyword: trimmedAccountType } : {}),
       },
     },

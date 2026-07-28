@@ -195,6 +195,10 @@ class Account(
     @Column(name = "distribution", length = 20)
     var distribution: String? = null,
 
+    // 거래처 "상태" 축 — 운영 실데이터가 01/02/03 세 값뿐이며 거래처유형코드와 무관하다.
+    // 유통형태 라벨에 절대 쓰지 말 것: 과거 `accountStatusCode + accountType` 조합을 유통형태로
+    // 표기해 같은 유형이 상태코드별 3개 항목으로 쪼개지고 코드도 마스터와 어긋나는 버그가 있었다.
+    // 유통형태 정본은 [com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup].
     @SFField("AccountStatusCode__c")
     @FieldName("거래처상태코드")
     @Column(name = "account_status_code", length = 100)
@@ -428,15 +432,6 @@ class Account(
 ) : BaseEntity() {
 
     /**
-     * 유통형태 — 거래처상태코드(AccountStatusCode__c) + 거래처유형(Type) 을 공백으로 조합한 표시 문자열.
-     *
-     * 예: "02 슈퍼", "01 체인". 두 값이 모두 비어 있으면 null.
-     * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
-     */
-    fun distributionChannelLabel(): String? =
-        distributionChannelLabel(accountStatusCode, accountType)
-
-    /**
      * 거래처유형 — ABC유형코드(ABCTypeCode__c) + ABC유형(ABCType__c) 을 공백으로 조합한 표시 문자열.
      *
      * 예: "6111 이마트", "2001 슈퍼". 두 값이 모두 비어 있으면 null.
@@ -460,19 +455,6 @@ class Account(
             "2001", "2002", "2513", "3061", "6112", "3025", "5900",
             "5012", "5108", "5101", "5106", "5102", "5104"
         )
-
-        /**
-         * 유통형태 라벨 조합 — 거래처상태코드 + 거래처유형명(displayName) 을 공백으로 조합.
-         *
-         * Account 엔티티를 hydrate 하지 않는 projection 조회(예: 월별 통합일정)에서도
-         * 동일 조합 규칙을 재사용하도록 companion 으로 분리. 인스턴스 메서드
-         * [distributionChannelLabel] 도 이 함수를 위임 호출한다.
-         */
-        fun distributionChannelLabel(accountStatusCode: String?, accountTypeName: String?): String? =
-            listOfNotNull(accountStatusCode, accountTypeName)
-                .filter { it.isNotBlank() }
-                .joinToString(" ")
-                .ifBlank { null }
 
         /**
          * 거래처유형 라벨 조합 — ABC유형코드 + ABC유형 을 공백으로 조합.

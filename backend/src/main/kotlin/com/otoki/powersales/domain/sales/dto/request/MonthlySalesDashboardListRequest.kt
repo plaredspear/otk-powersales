@@ -8,7 +8,7 @@ package com.otoki.powersales.domain.sales.dto.request
  *
  * 거래처 검색:
  * - [customerKeyword]: 거래처명 OR 거래처코드(externalKey) 통합 부분일치 (행사마스터 accountName 정합).
- * - [distributionChannels]: 유통형태 라벨 (예 "01 대형마트(3대)") 다중 정확일치 — POS매출 정합.
+ * - [distributionChannels]: 유통형태 = 거래처유형마스터 코드 (예 "01" = 대형마트(3대)) 다중 선택 — POS매출 정합.
  * - [accountTypes]: 거래처유형(ABC유형) 라벨 (예 "6111 이마트") 다중 정확일치 — POS매출 정합.
  *
  * [targetRegistration]: 목표등록 구분 — 거래처목표등록마스터(SalesProgressRateMaster)의

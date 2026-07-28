@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -55,6 +56,7 @@ class AdminMonthlyIntegrationServiceFilterOptionsTest {
             employeeInputCriteriaMasterRepository,
             teamMemberScheduleSearchService,
             teamMemberCategorySearchService,
+            AccountCategoryLookupFixture.lookup(),
         )
     }
 
@@ -62,75 +64,60 @@ class AdminMonthlyIntegrationServiceFilterOptionsTest {
         AccountDistributionAbcPairRow(statusCode, accountType, abcCode, abcType)
 
     @Test
-    @DisplayName("유통형태별 종속 거래처유형 매핑 — co-occurrence 4-튜플에서 도출")
+    @DisplayName("유통형태별 종속 거래처유형 매핑 — key 는 거래처유형코드")
     fun dependentMapping() {
+        // 거래처상태코드(첫 파트)는 유통형태와 무관한 축이라 매핑에 영향이 없어야 한다 — 일부러 뒤섞어 둔다.
         every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
-            pair("02", "대형마트", "6111", "이마트"),
-            pair("02", "대형마트", "6112", "홈플러스"),
+            pair("02", "대형마트(3대)", "6111", "이마트"),
+            pair("03", "대형마트(3대)", "6112", "홈플러스"),
             pair("01", "슈퍼", "5012", "슈퍼체인"),
         )
 
         val result = service.getFilterOptions()
 
-        // 유통형태 "02 대형마트" 는 이마트/홈플러스 두 거래처유형에 종속.
-        assertThat(result.dependentAccountTypes["02 대형마트"])
+        // 코드 01 = 대형마트(3대) — 상태코드가 02/03 으로 갈려도 한 key 로 모인다.
+        assertThat(result.dependentAccountTypes["01"])
             .containsExactly("6111 이마트", "6112 홈플러스")
-        // 유통형태 "01 슈퍼" 는 슈퍼체인 하나에만 종속.
-        assertThat(result.dependentAccountTypes["01 슈퍼"])
+        // 코드 06 = 슈퍼.
+        assertThat(result.dependentAccountTypes["06"])
             .containsExactly("5012 슈퍼체인")
     }
 
     @Test
-    @DisplayName("전체 목록 — 정렬 + 중복 제거")
+    @DisplayName("유통형태 목록은 거래처유형마스터 전량(코드 오름차순), 거래처유형은 정렬 + 중복 제거")
     fun fullLists() {
         every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
-            pair("02", "대형마트", "6111", "이마트"),
-            pair("02", "대형마트", "6111", "이마트"), // 완전 중복
-            pair("01", "슈퍼", "6111", "이마트"),     // 거래처유형 라벨은 중복, 유통형태는 상이
+            pair("02", "대형마트(3대)", "6111", "이마트"),
+            pair("02", "대형마트(3대)", "6111", "이마트"), // 완전 중복
+            pair("01", "슈퍼", "6111", "이마트"),
         )
 
         val result = service.getFilterOptions()
 
-        // 유통형태 전체: 정렬(01 → 02) + 중복 제거.
-        assertThat(result.distributions).containsExactly("01 슈퍼", "02 대형마트")
+        // 유통형태 전체 = 마스터 전량. Account 에 유형이 없어도 옵션은 마스터가 정본.
+        assertThat(result.distributions.map { it.code })
+            .containsExactlyElementsOf(AccountCategoryLookupFixture.MASTER.map { it.first })
+        assertThat(result.distributions.first().label).isEqualTo("01 대형마트(3대)")
         // 거래처유형 전체: 라벨 중복("6111 이마트") 1건으로 제거.
         assertThat(result.accountTypes).containsExactly("6111 이마트")
     }
 
     @Test
-    @DisplayName("한쪽 파트만 있는 경우 — 라벨 규칙(공백 join) 적용, 둘 다 blank 면 종속 매핑 제외")
-    fun blankPartHandling() {
+    @DisplayName("유형 미지정/마스터 미등록 거래처는 종속 매핑에서 제외 (거래처유형 목록에는 포함)")
+    fun unmappedTypeHandling() {
         every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
-            // 코드만 존재 → "02"
-            pair("02", null, "6111", "이마트"),
-            // 거래처유형 명칭만 존재 → "이마트체인"
-            pair("01", "슈퍼", null, "이마트체인"),
-            // 유통형태 파트가 둘 다 blank → 유통형태 라벨 null → 종속 매핑 미반영
-            pair(null, "  ", "9999", "기타"),
+            pair("02", null, "6111", "이마트"),          // 유형 미지정
+            pair("01", "  ", "9999", "기타"),            // 공백 유형
+            pair("01", "마스터에없는유형", "5012", "슈퍼체인"), // 마스터 미등록
+            pair("02", "슈퍼", null, "이마트체인"),
         )
 
         val result = service.getFilterOptions()
 
-        assertThat(result.distributions).contains("02", "01 슈퍼")
-        assertThat(result.accountTypes).contains("6111 이마트", "이마트체인", "9999 기타")
-        // 유통형태 라벨이 null 인 튜플은 종속 매핑 키에 존재하지 않는다.
-        assertThat(result.dependentAccountTypes).doesNotContainKey("")
-        assertThat(result.dependentAccountTypes["02"]).containsExactly("6111 이마트")
-    }
-
-    @Test
-    @DisplayName("옵션 라벨은 companion 정본 규칙 그대로 — 코드/명칭 원본을 공백 join (trim 안 함)")
-    fun labelUsesRawParts() {
-        // companion 정본은 filter { isNotBlank } 후 원본을 join 하므로, 선행 공백이 있으면 옵션 라벨도 공백을 보존한다.
-        // 검색 필터(labelExpr) 도 concat 에 원본 컬럼을 쓰도록 맞춰져 있어 이 옵션 라벨과 완전일치한다.
-        every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
-            pair("02", " 대형마트", "6111", "이마트"),
-        )
-
-        val result = service.getFilterOptions()
-
-        // "02" + " " + " 대형마트" → "02  대형마트" (공백 2개, trim 되지 않음).
-        assertThat(result.distributions).containsExactly("02  대형마트")
-        assertThat(result.dependentAccountTypes).containsKey("02  대형마트")
+        // 거래처유형(ABC) 축은 Account 실재값이라 그대로 노출된다.
+        assertThat(result.accountTypes).contains("6111 이마트", "9999 기타", "5012 슈퍼체인", "이마트체인")
+        // 코드로 환원되지 않는 유형은 종속 매핑 key 가 될 수 없다.
+        assertThat(result.dependentAccountTypes.keys).containsExactly("06")
+        assertThat(result.dependentAccountTypes["06"]).containsExactly("이마트체인")
     }
 }

@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -35,6 +36,7 @@ class EmployeeWorkHistoryServiceTest {
             employeeRepository,
             teamMemberScheduleRepository,
             EmployeeWorkHistoryExcelExporter(),
+            AccountCategoryLookupFixture.lookup(),
         )
     }
 

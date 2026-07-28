@@ -88,9 +88,13 @@ export default function MonthlySalesDashboardPage() {
   const filterOptions = filterOptionsQuery.data;
   // 옵션 배열은 useMemo 로 identity 를 고정한다 (다중선택 Select 값 튐 방지).
   const distributionChannelOptions = useMemo(
-    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    // 값은 거래처유형마스터 코드, 표시는 "{코드} {이름}".
+    () => (filterOptions?.distributionChannels ?? []).map((o) => ({ value: o.code, label: o.label })),
     [filterOptions],
   );
+  // 조회 조건 요약줄용 — 선택된 유통형태 코드를 "{코드} {이름}" 라벨로 되돌린다 (코드만 노출되면 읽을 수 없다).
+  const distributionChannelLabels = (codes: string[]): string =>
+    codes.map((code) => distributionChannelOptions.find((o) => o.value === code)?.label ?? code).join(', ');
   // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.
   const accountTypeOptions = useMemo(() => {
     if (!filterOptions) return [];
@@ -530,7 +534,7 @@ export default function MonthlySalesDashboardPage() {
             {queryParams.year}-{String(queryParams.month).padStart(2, '0')} · {queryParams.codes.length}개 지점
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
             {queryParams.distributionChannels && queryParams.distributionChannels.length > 0 &&
-              ` · 유통형태: ${queryParams.distributionChannels.join(', ')}`}
+              ` · 유통형태: ${distributionChannelLabels(queryParams.distributionChannels)}`}
             {queryParams.accountTypes && queryParams.accountTypes.length > 0 &&
               ` · 거래처유형: ${queryParams.accountTypes.join(', ')}`}
             {queryParams.targetRegistration &&

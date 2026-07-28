@@ -82,8 +82,9 @@ export default function ElectronicSalesDashboardPage() {
 
   // 드롭다운 옵션 배열은 useMemo 로 identity 를 고정한다. 인라인 .map() 은 매 렌더마다 새 배열을 만들어
   // mode="multiple" Select 에서 hover/선택 시 활성 항목이 튀는 현상을 유발한다.
+  // 값은 거래처유형마스터 코드, 표시는 "{코드} {이름}" — 목록 컬럼 표기와 동일 라벨.
   const distributionChannelOptions = useMemo(
-    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    () => (filterOptions?.distributionChannels ?? []).map((o) => ({ value: o.code, label: o.label })),
     [filterOptions],
   );
   // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.

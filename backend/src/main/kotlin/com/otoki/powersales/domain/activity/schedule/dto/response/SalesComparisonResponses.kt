@@ -60,7 +60,7 @@ data class SalesComparisonMiddleItem(
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,
-    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    /** 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" (예: "06 슈퍼"). AccountCategoryLookup 정본. */
     val distributionChannelLabel: String?,
     val accountCategory: String,
     val suitability: String,
@@ -102,7 +102,7 @@ data class SalesComparisonDetailItem(
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,
-    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    /** 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" (예: "06 슈퍼"). AccountCategoryLookup 정본. */
     val distributionChannelLabel: String?,
     val accountCategory: String,
     val employeeCode: String,

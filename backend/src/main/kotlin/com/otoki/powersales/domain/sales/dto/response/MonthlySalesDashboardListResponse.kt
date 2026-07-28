@@ -24,8 +24,8 @@ data class MonthlySalesDashboardListItem(
     val accountId: Long,
     val accountName: String?,
     /**
-     * 유통형태 — 거래처상태코드(AccountStatusCode__c) + 거래처유형(Type) 조합 (예: "02 슈퍼").
-     * 월별 여사원 통합일정 화면의 "유통형태" 컬럼과 동일 산식 (`Account.distributionChannelLabel()`).
+     * 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" 조합 (예: "06 슈퍼").
+     * 월별 여사원 통합일정 화면의 "유통형태" 컬럼과 동일 산식 (`AccountCategoryLookup` 정본).
      * 화면 테이블에는 미표시, 엑셀 다운로드 전용. 두 값 모두 비어있으면 null.
      */
     val distributionChannelLabel: String?,

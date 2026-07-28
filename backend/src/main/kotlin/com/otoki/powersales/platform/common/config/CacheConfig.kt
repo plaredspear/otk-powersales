@@ -129,6 +129,17 @@ class CacheConfig : CachingConfigurer {
         const val CACHE_ELECTRONIC_SALES_FILTER_OPTIONS = "electronicSalesFilterOptions:v1"
 
         /**
+         * 거래처유형마스터 전량 (운영 18행, `{코드, 이름}`) — 24h TTL.
+         *
+         * 유통형태 라벨(`"{거래처유형코드} {이름}"`)과 조회조건 드롭다운의 원천. 목록 조회마다 마스터를
+         * 다시 읽지 않도록 단일 entry(key='ALL')로 얹는다. SAP 거래처 카테고리 마스터 적재
+         * ([com.otoki.powersales.domain.foundation.account.service.AccountCategoryUpsertService.upsert])
+         * 가 유일한 런타임 write 경로이며 적재 직후 @CacheEvict 가 즉시 무효화한다
+         * (`use_search` 는 마이그레이션에서만 세팅되어 런타임 write 경로 없음). 24h TTL 은 evict 누락 fallback.
+         */
+        const val CACHE_ACCOUNT_CATEGORY_MASTER = "accountCategoryMaster:v1"
+
+        /**
          * SF Sharing Rule 정책 evaluator cache name (spec #782 P2-B).
          *
          * 모두 1h TTL — 정책 변경 빈도 매우 낮음 (사원당 1~2년/회). UserRole entity / PermissionSetAssignment
@@ -276,6 +287,8 @@ class CacheConfig : CachingConfigurer {
             CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS to defaultConfig,
             // 전산실적/POS 조회조건 옵션 (Account + Product 원천) — 24h TTL
             CACHE_ELECTRONIC_SALES_FILTER_OPTIONS to defaultConfig,
+            // 거래처유형마스터 (유통형태 라벨·옵션 원천) — 24h TTL
+            CACHE_ACCOUNT_CATEGORY_MASTER to defaultConfig,
             CACHE_HIERARCHY_SUBORDINATES to sharingPolicyConfig,
             CACHE_HIERARCHY_ANCESTOR_PATH to sharingPolicyConfig,
             CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,

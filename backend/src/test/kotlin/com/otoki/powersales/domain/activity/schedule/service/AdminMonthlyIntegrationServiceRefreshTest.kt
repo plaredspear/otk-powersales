@@ -20,6 +20,7 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingCategory5
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -79,6 +80,7 @@ class AdminMonthlyIntegrationServiceRefreshTest {
             employeeInputCriteriaMasterRepository,
             teamMemberScheduleSearchService,
             teamMemberCategorySearchService,
+            AccountCategoryLookupFixture.lookup(),
         )
         every { monthlyIntegrationScheduleRepository.save(any()) } answers { firstArg() }
         every { monthlyIntegrationScheduleRepository.findByEmployeeIdAndYearAndMonth(10L, "2026", "6") } returns emptyList()

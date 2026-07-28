@@ -27,7 +27,7 @@ export interface MonthlySalesDashboardSummary {
 export interface MonthlySalesDashboardListItem {
   accountId: number;
   accountName: string | null;
-  /** 유통형태 — 거래처상태코드 + 거래처유형(Type) 조합 (예: "02 슈퍼"). 화면 미표시, 엑셀 다운로드 전용. */
+  /** 유통형태 — 거래처유형마스터 "{코드} {이름}" (예: "06 슈퍼"). 화면 미표시, 엑셀 다운로드 전용. */
   distributionChannelLabel: string | null;
   /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트"). 화면 미표시, 엑셀 다운로드 전용. */
   abcTypeLabel: string | null;
@@ -111,7 +111,7 @@ export interface MonthlySalesDashboardListRequest {
   accountGroup?: string;
   /** 거래처명 OR 거래처코드(externalKey) 통합 부분일치 (행사마스터 정합). */
   customerKeyword?: string;
-  /** 유통형태 라벨 (예 "01 대형마트(3대)") 다중 정확일치 — POS매출 정합. */
+  /** 유통형태 — 거래처유형마스터 코드 (예 "01" = 대형마트(3대)) 다중 선택 — POS매출 정합. */
   distributionChannels?: string[];
   /** 거래처유형(ABC유형) 라벨 (예 "6111 이마트") 다중 정확일치 — POS매출 정합. */
   accountTypes?: string[];

@@ -1,20 +1,22 @@
 package com.otoki.powersales.domain.sales.dto.response
 
+import com.otoki.powersales.domain.foundation.account.dto.response.DistributionChannelOption
 import java.math.BigDecimal
 
 /**
  * 전산실적 대시보드 조회 조건 옵션 — 유통형태 / 거래처유형 / 제품 중·소분류.
  *
- * 「월 매출(전산실적)」 화면 필터 드롭다운의 옵션 원천. 모두 메인 DB 마스터에서 distinct 산출:
- * - 유통형태 = Account 거래처상태코드+거래처타입 조합 라벨 (예 "02 슈퍼")
- * - 거래처유형 = Account ABC유형코드+ABC유형 조합 라벨 (예 "6111 이마트")
+ * 「월 매출(전산실적)」 화면 필터 드롭다운의 옵션 원천:
+ * - 유통형태 = 거래처유형마스터 전량 `{코드, "{코드} {이름}"}` (예 `{"06", "06 슈퍼"}`).
+ *   Account 에는 거래처유형코드가 없어 마스터가 유일한 원천이다.
+ * - 거래처유형 = Account ABC유형코드+ABC유형 조합 라벨 (예 "6111 이마트") — 메인 DB distinct
  * - 분류 = Product 중분류(category2) → 소분류(category3) 종속 트리 (바코드 보유 제품 한정 —
  *   POS `UPC_CD` 매칭이 불가능한 제품의 분류는 옵션에서 제외)
- * - [dependentAccountTypes] = 유통형태 라벨 → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록.
+ * - [dependentAccountTypes] = 유통형태 **코드** → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록.
  *   유통형태 선택 시 거래처유형 드롭다운을 종속 필터링하는 데 사용 (미선택 시 [accountTypes] 전체).
  */
 data class ElectronicSalesDashboardFilterOptionsResponse(
-    val distributionChannels: List<String>,
+    val distributionChannels: List<DistributionChannelOption>,
     val accountTypes: List<String>,
     val categories: List<CategoryGroup>,
     val dependentAccountTypes: Map<String, List<String>>,

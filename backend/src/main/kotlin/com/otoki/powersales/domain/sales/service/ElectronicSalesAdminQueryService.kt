@@ -4,6 +4,7 @@ import com.otoki.pos.repository.ElectronicSalesCustomerRow
 import com.otoki.pos.repository.LiveTotSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductLookupFilterOptions
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
@@ -64,6 +65,8 @@ class ElectronicSalesAdminQueryService(
     private val productRepository: ProductRepository,
     /** 제품 고급 검색 필터 옵션의 분류 트리 재사용 — 제품 관리 화면과 동일한 조립 규칙을 공유한다. */
     private val adminProductService: AdminProductService,
+    /** 유통형태 라벨/옵션 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -185,24 +188,23 @@ class ElectronicSalesAdminQueryService(
      */
     @Cacheable(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], key = "'ALL'")
     fun getFilterOptions(): ElectronicSalesDashboardFilterOptionsResponse {
-        // 유통형태·거래처유형은 같은 Account row 에 공존하므로 (유통형태, 거래처유형) 동시출현 pairs 로 한 번에
-        // 산출한다. 축별 전체 목록(distributionChannels/accountTypes)과 종속 매핑(dependentAccountTypes)을
-        // 동일 소스에서 도출해 정합을 보장한다. 한쪽만 있는 row 도 축 목록에는 포함하고, 둘 다 있을 때만
-        // 종속 매핑에 반영한다.
+        // 유통형태 목록은 거래처유형마스터가 정본이라 Account distinct 로 만들지 않는다 (코드가 Account 에 없음).
+        // 반면 거래처유형(ABC) 목록과 종속 매핑(유통형태 → 실재 거래처유형)은 어떤 조합이 실제로
+        // 존재하는지가 Account 에만 있으므로 동시출현 pairs 스캔을 유지한다.
+        val distributionChannels = accountCategoryLookup.options()
+        val accountCategories = accountCategoryLookup.directory()
         val pairs = accountRepository.findDistinctDistributionAbcPairs()
-        val distributionSet = sortedSetOf<String>()
         val accountTypeSet = sortedSetOf<String>()
         val dependent = linkedMapOf<String, MutableSet<String>>()
         for (pair in pairs) {
-            val distLabel = Account.distributionChannelLabel(pair.accountStatusCode, pair.accountType)
             val abcLabel = Account.abcTypeLabel(pair.abcTypeCode, pair.abcType)
-            if (distLabel != null) distributionSet.add(distLabel)
             if (abcLabel != null) accountTypeSet.add(abcLabel)
-            if (distLabel != null && abcLabel != null) {
-                dependent.getOrPut(distLabel) { sortedSetOf() }.add(abcLabel)
+            // 종속 매핑 key 는 유통형태 코드 — 화면이 되돌려 보내는 값과 동일 축으로 맞춘다.
+            val distCode = accountCategories.codeOf(pair.accountType)
+            if (distCode != null && abcLabel != null) {
+                dependent.getOrPut(distCode) { sortedSetOf() }.add(abcLabel)
             }
         }
-        val distributionChannels = distributionSet.toList()
         val accountTypes = accountTypeSet.toList()
         val dependentAccountTypes = dependent.mapValues { it.value.toList() }
         val categories = productRepository.findCategoryGroups()
@@ -349,6 +351,8 @@ class ElectronicSalesAdminQueryService(
             }
         }
 
+        // 유통형태 라벨 사전 — 행마다 만들지 않도록 목록 1회 조립당 한 번만 생성 (거래처유형마스터 캐시 스냅샷).
+        val categories = accountCategoryLookup.directory()
         return accounts.map { account ->
             val custCd = toCustCd(account.externalKey)
             val (amount, quantity) = custCd?.let { salesByCustCd[it] } ?: (0L to 0L)
@@ -356,7 +360,7 @@ class ElectronicSalesAdminQueryService(
                 accountId = account.id,
                 accountName = account.name,
                 sapAccountCode = account.externalKey,
-                distributionChannel = account.distributionChannelLabel(),
+                distributionChannel = categories.label(account.accountType),
                 accountType = account.abcTypeLabel(),
                 branchCode = account.branchCode,
                 branchName = account.branchName,
@@ -478,10 +482,16 @@ class ElectronicSalesAdminQueryService(
                 request.customerKeyword.isNullOrBlank() ||
                     acc.name?.contains(request.customerKeyword, ignoreCase = true) == true
             }
-            // 유통형태(거래처상태코드+거래처타입) / 거래처유형(ABC유형) 라벨 필터 — 메인 DB 해소분
-            .filter { acc ->
-                request.distributionChannels.isEmpty() ||
-                    acc.distributionChannelLabel() in request.distributionChannels
+            // 유통형태(거래처유형마스터 코드) / 거래처유형(ABC유형) 필터 — 메인 DB 해소분.
+            // 유통형태는 선택 코드를 마스터 이름으로 되돌려 `accountType` 직접 매칭한다 (레거시
+            // `Account__r.Type IN :categoryMap.keySet()` 동등). 유형 미지정 거래처는 자연히 제외된다.
+            .let { filtered ->
+                if (request.distributionChannels.isEmpty()) {
+                    filtered
+                } else {
+                    val names = accountCategoryLookup.namesOf(request.distributionChannels).toSet()
+                    filtered.filter { acc -> acc.accountType in names }
+                }
             }
             .filter { acc ->
                 request.accountTypes.isEmpty() || acc.abcTypeLabel() in request.accountTypes

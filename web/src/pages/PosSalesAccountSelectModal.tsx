@@ -126,7 +126,8 @@ export default function PosSalesAccountSelectModal({
   });
   const filterOptions = filterOptionsQuery.data;
   const distributionChannelOptions = useMemo(
-    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    // 값은 거래처유형마스터 코드, 표시는 "{코드} {이름}".
+    () => (filterOptions?.distributionChannels ?? []).map((o) => ({ value: o.code, label: o.label })),
     [filterOptions],
   );
   // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.

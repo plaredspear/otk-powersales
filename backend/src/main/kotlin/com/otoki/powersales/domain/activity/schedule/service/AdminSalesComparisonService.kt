@@ -914,7 +914,7 @@ class AdminSalesComparisonService(
         val accountCode: String,
         val accountName: String,
         val accountBranchName: String?,
-        /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). 거래처 단위 값. */
+        /** 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" (예: "06 슈퍼"). AccountCategoryLookup 정본. 거래처 단위 값. */
         val distributionChannelLabel: String?,
         val accountCategory: String,
         val accountCategoryCode: String?,

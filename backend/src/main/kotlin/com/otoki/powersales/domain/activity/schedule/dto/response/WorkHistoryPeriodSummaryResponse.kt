@@ -17,7 +17,7 @@ data class WorkHistoryAccountStat(
     val accountExternalKey: String?,
     /** 거래처 지점명 (Account.branchName). */
     val accountBranchName: String?,
-    /** 유통형태 (Account.distributionChannelLabel — 거래처상태코드 + 거래처유형). */
+    /** 유통형태 — 거래처유형마스터 "{거래처유형코드} {이름}" (예: "06 슈퍼"). AccountCategoryLookup 정본. */
     val distributionChannelLabel: String?,
     /** 거래처유형 (Account.abcTypeLabel — ABC유형코드 + ABC유형). */
     val abcTypeLabel: String?,

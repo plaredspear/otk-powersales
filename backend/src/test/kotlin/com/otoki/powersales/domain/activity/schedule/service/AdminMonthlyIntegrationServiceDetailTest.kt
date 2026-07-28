@@ -17,6 +17,7 @@ import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -73,6 +74,7 @@ class AdminMonthlyIntegrationServiceDetailTest {
             employeeInputCriteriaMasterRepository,
             teamMemberScheduleSearchService,
             teamMemberCategorySearchService,
+            AccountCategoryLookupFixture.lookup(),
         )
     }
 

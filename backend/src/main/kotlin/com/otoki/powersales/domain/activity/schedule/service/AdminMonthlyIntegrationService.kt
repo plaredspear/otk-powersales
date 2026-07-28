@@ -23,6 +23,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
@@ -56,6 +57,8 @@ class AdminMonthlyIntegrationService(
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
     private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService,
     private val teamMemberCategorySearchService: TeamMemberCategorySearchService,
+    /** 유통형태 옵션 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
 
     // 조회 (`getMonthlyIntegration` / `getCategorySchedule`) 는 SF `ScheduleSearchByTeamMember` /
@@ -68,7 +71,7 @@ class AdminMonthlyIntegrationService(
         costCenterCodes: List<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
-        distributionKeyword: String? = null,
+        distributionCode: String? = null,
         accountTypeKeyword: String? = null,
     ): MonthlyIntegrationScheduleResponse {
         validateParams(year, month, costCenterCodes)
@@ -78,7 +81,7 @@ class AdminMonthlyIntegrationService(
             orgValues = costCenterCodes,
             keyword = keyword,
             accountKeyword = accountKeyword,
-            distributionKeyword = distributionKeyword,
+            distributionCode = distributionCode,
             accountTypeKeyword = accountTypeKeyword,
         )
         val items = sf.result.map { it.toMonthlyIntegrationItem() }
@@ -93,12 +96,11 @@ class AdminMonthlyIntegrationService(
     /**
      * 통합일정 조회조건 드롭다운 옵션 — 유통형태 / 거래처유형 목록 + 종속 매핑.
      *
-     * Account 전체(미삭제)의 (유통형태, 거래처유형) 동시출현 distinct 4-튜플에서
-     * 라벨을 조합해 (1) 유통형태 전체 목록, (2) 거래처유형 전체 목록,
-     * (3) 유통형태 → 종속 거래처유형 목록 매핑을 구성한다.
-     * 라벨 조합 규칙은 목록 화면([toResultItem])과 동일한 [Account] companion 정본을 재사용한다.
+     * 유통형태는 거래처유형마스터 전량(`{코드, "{코드} {이름}"}`)이 정본이다 — 거래처유형코드가 Account 에
+     * 없어 Account distinct 로는 만들 수 없다. 거래처유형(ABC) 목록과 종속 매핑(유통형태 → 실재 거래처유형)
+     * 은 어떤 조합이 실제로 존재하는지가 Account 에만 있으므로 동시출현 distinct 스캔을 유지한다.
      *
-     * 옵션 소스는 통합일정 검색 스코프(지점/월)가 아니라 Account 전역 코드 체계다 — 행사마스터
+     * 옵션 소스는 통합일정 검색 스코프(지점/월)가 아니라 전역 코드 체계다 — 행사마스터
      * lookup(`findDistinctAccountTypes`)이 promotionLookupFilter/지점 스코프로 게이팅하는 것과 의도적으로
      * 다르다. 유통형태-거래처유형은 거래처 마스터의 코드 분류이므로 지점/월과 무관하게 전역 목록을 노출한다.
      *
@@ -109,24 +111,24 @@ class AdminMonthlyIntegrationService(
     @Cacheable(value = [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS], key = "'ALL'")
     fun getFilterOptions(): MonthlyIntegrationFilterOptionsResponse {
         val pairs = accountRepository.findDistinctDistributionAbcPairs()
+        val distributions = accountCategoryLookup.options()
+        val categories = accountCategoryLookup.directory()
 
-        val distributions = sortedSetOf<String>()
         val accountTypes = sortedSetOf<String>()
         val dependent = linkedMapOf<String, MutableSet<String>>()
 
         for (pair in pairs) {
-            val distLabel = Account.distributionChannelLabel(pair.accountStatusCode, pair.accountType)
             val abcLabel = Account.abcTypeLabel(pair.abcTypeCode, pair.abcType)
-            if (distLabel != null) distributions.add(distLabel)
             if (abcLabel != null) accountTypes.add(abcLabel)
-            // 유통형태·거래처유형 둘 다 있는 경우에만 종속 매핑에 반영.
-            if (distLabel != null && abcLabel != null) {
-                dependent.getOrPut(distLabel) { sortedSetOf() }.add(abcLabel)
+            // 종속 매핑 key 는 유통형태 코드 — 화면이 되돌려 보내는 값과 동일 축.
+            val distCode = categories.codeOf(pair.accountType)
+            if (distCode != null && abcLabel != null) {
+                dependent.getOrPut(distCode) { sortedSetOf() }.add(abcLabel)
             }
         }
 
         return MonthlyIntegrationFilterOptionsResponse(
-            distributions = distributions.toList(),
+            distributions = distributions,
             accountTypes = accountTypes.toList(),
             dependentAccountTypes = dependent.mapValues { it.value.toList() },
         )
@@ -157,11 +159,11 @@ class AdminMonthlyIntegrationService(
         costCenterCodes: List<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
-        distributionKeyword: String? = null,
+        distributionCode: String? = null,
         accountTypeKeyword: String? = null,
     ): ExcelResult {
         val response = getMonthlyIntegration(
-            year, month, costCenterCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+            year, month, costCenterCodes, keyword, accountKeyword, distributionCode, accountTypeKeyword,
         )
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("통합일정")

@@ -17,6 +17,8 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import com.otoki.powersales.domain.foundation.product.service.AdminProductService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
+import com.otoki.powersales.domain.foundation.account.dto.response.DistributionChannelOption
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesDashboardListRequest
 import io.mockk.every
@@ -40,11 +42,14 @@ class ElectronicSalesAdminQueryServiceTest {
 
     /** 제품 고급 검색 필터 옵션 전용 협력자 — 본 테스트가 다루는 목록/상세 경로에서는 호출되지 않는다. */
     private val adminProductService: AdminProductService = mockk()
+    /** 유통형태는 거래처유형마스터 조인이 정본이라 mock 대신 운영 마스터 픽스처를 물린다. */
+    private val accountCategoryLookup = AccountCategoryLookupFixture.lookup()
     private val service = ElectronicSalesAdminQueryService(
         accountRepository,
         posRepository,
         productRepository,
         adminProductService,
+        accountCategoryLookup,
     )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
@@ -53,7 +58,7 @@ class ElectronicSalesAdminQueryServiceTest {
         id: Long,
         externalKey: String?,
         branchCode: String? = "B001",
-        distributionChannel: String? = null,
+        accountType: String? = null,
         abcTypeLabel: String? = null,
     ): Account = mockk {
         every { this@mockk.id } returns id
@@ -61,7 +66,7 @@ class ElectronicSalesAdminQueryServiceTest {
         every { this@mockk.name } returns "거래처$id"
         every { this@mockk.branchCode } returns branchCode
         every { this@mockk.branchName } returns "지점"
-        every { this@mockk.distributionChannelLabel() } returns distributionChannel
+        every { this@mockk.accountType } returns accountType
         every { this@mockk.abcTypeLabel() } returns abcTypeLabel
     }
 
@@ -166,17 +171,20 @@ class ElectronicSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — 유통형태(distributionChannels) 라벨 필터로 거래처 축소")
+    @DisplayName("getList — 유통형태(거래처유형마스터 코드) 필터로 거래처 축소")
     fun listFiltersByDistributionChannel() {
-        val superMart = account(1, "S001", distributionChannel = "02 슈퍼")
-        val cvs = account(2, "S002", distributionChannel = "03 C.V.S")
+        val superMart = account(1, "S001", accountType = "슈퍼")
+        val cvs = account(2, "S002", accountType = "C.V.S")
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(superMart, cvs)
         every { posRepository.aggregateByCustomer(listOf("000S001"), any(), any()) } returns emptyList()
 
-        val result = service.getList(allBranchesScope, listRequest(distributionChannels = listOf("02 슈퍼")))
+        // 코드 "06" = 슈퍼 — 마스터 이름으로 되돌려 accountType 매칭.
+        val result = service.getList(allBranchesScope, listRequest(distributionChannels = listOf("06")))
 
         assertThat(result.items).hasSize(1)
         assertThat(result.items.first().accountId).isEqualTo(1)
+        // 라벨은 마스터 정본 "{코드} {이름}" — 거래처상태코드가 섞이지 않는다.
+        assertThat(result.items.first().distributionChannel).isEqualTo("06 슈퍼")
     }
 
     @Test
@@ -440,17 +448,16 @@ class ElectronicSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getFilterOptions — (유통형태,거래처유형) pairs 로 축 목록·종속 매핑·카테고리 트리 산출")
+    @DisplayName("getFilterOptions — 유통형태는 마스터 전량, 거래처유형·종속 매핑은 Account pairs 로 산출")
     fun filterOptionsCombinesLabelsAndCategories() {
-        // 유통형태·거래처유형은 같은 Account row 의 pairs 로 제공된다.
-        // - 대형마트에는 이마트/홈플러스, 슈퍼에는 일반슈퍼가 붙는다 (종속 매핑).
-        // - 한쪽만 있는 row 도 축 목록에는 포함, 둘 다 있을 때만 종속 매핑에 반영.
+        // 유통형태 목록은 거래처유형마스터가 정본(코드가 Account 에 없음)이고, 어떤 거래처유형이 실제로
+        // 붙는지(종속 매핑)만 Account pairs 에서 얻는다. 거래처상태코드 컬럼은 더 이상 쓰이지 않는다.
         every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
-            AccountDistributionAbcPairRow("01", "대형마트", "6111", "이마트"),
-            AccountDistributionAbcPairRow("01", "대형마트", "6112", "홈플러스"),
-            AccountDistributionAbcPairRow("02", "슈퍼", "6200", "일반슈퍼"),
-            AccountDistributionAbcPairRow("03", "편의점", null, null), // 거래처유형 없음 → 축 목록만
-            AccountDistributionAbcPairRow(null, null, null, null), // 라벨 조합 불가 → 전부 제외
+            AccountDistributionAbcPairRow("01", "대형마트(3대)", "6111", "이마트"),
+            AccountDistributionAbcPairRow("02", "대형마트(3대)", "6112", "홈플러스"),
+            AccountDistributionAbcPairRow("03", "슈퍼", "6200", "일반슈퍼"),
+            AccountDistributionAbcPairRow("01", "편의점", null, null), // 거래처유형 없음 → 종속 매핑 제외
+            AccountDistributionAbcPairRow(null, null, null, null), // 유형 미지정 → 전부 제외
         )
         every { productRepository.findCategoryGroups() } returns listOf(
             CategoryGroupRow("면류", "봉지면"),
@@ -461,14 +468,18 @@ class ElectronicSalesAdminQueryServiceTest {
 
         val result = service.getFilterOptions()
 
-        assertThat(result.distributionChannels).containsExactly("01 대형마트", "02 슈퍼", "03 편의점")
+        // 유통형태 옵션 = 마스터 전량(코드 오름차순), 값은 코드 / 표시는 "{코드} {이름}".
+        assertThat(result.distributionChannels.map { it.code })
+            .containsExactlyElementsOf(AccountCategoryLookupFixture.MASTER.map { it.first })
+        assertThat(result.distributionChannels.first()).isEqualTo(
+            DistributionChannelOption("01", "01 대형마트(3대)"),
+        )
         assertThat(result.accountTypes).containsExactly("6111 이마트", "6112 홈플러스", "6200 일반슈퍼")
-        // 종속 매핑 — 유통형태별로 실제 붙는 거래처유형만.
-        assertThat(result.dependentAccountTypes["01 대형마트"])
-            .containsExactly("6111 이마트", "6112 홈플러스")
-        assertThat(result.dependentAccountTypes["02 슈퍼"]).containsExactly("6200 일반슈퍼")
+        // 종속 매핑 key 는 유통형태 코드 — 거래처상태코드가 달라도 같은 유형이면 한 key 로 모인다.
+        assertThat(result.dependentAccountTypes["01"]).containsExactly("6111 이마트", "6112 홈플러스")
+        assertThat(result.dependentAccountTypes["06"]).containsExactly("6200 일반슈퍼")
         // 거래처유형이 없는 유통형태는 종속 매핑 키에 없다.
-        assertThat(result.dependentAccountTypes).doesNotContainKey("03 편의점")
+        assertThat(result.dependentAccountTypes).doesNotContainKey("09")
         assertThat(result.categories).hasSize(2)
         val noodle = result.categories.first { it.category2 == "면류" }
         assertThat(noodle.category3s).containsExactly("봉지면", "용기면")

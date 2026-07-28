@@ -6,6 +6,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.sales.dto.request.PosSalesAccountListRequest
 import com.otoki.powersales.domain.sales.dto.request.PosSalesDashboardListRequest
@@ -66,6 +67,8 @@ class PosSalesAdminQueryService(
     private val accountRepository: AccountRepository,
     private val livePosSalesDailyRepository: LivePosSalesDailyRepository,
     private val productRepository: ProductRepository,
+    /** 유통형태 라벨/필터 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -95,13 +98,15 @@ class PosSalesAdminQueryService(
             accountTypes = request.accountTypes,
         )
         validateAccountCount(accounts.size)
+        // 유통형태 라벨 사전 — 목록 1회 조립당 한 번만 생성.
+        val categories = accountCategoryLookup.directory()
         val items = accounts
             .map { account ->
                 PosSalesAccountItem(
                     accountId = account.id,
                     accountName = account.name,
                     sapAccountCode = account.externalKey,
-                    distributionChannel = account.distributionChannelLabel(),
+                    distributionChannel = categories.label(account.accountType),
                     accountType = account.abcTypeLabel(),
                     branchCode = account.branchCode,
                     branchName = account.branchName,
@@ -379,10 +384,15 @@ class PosSalesAdminQueryService(
                 customerKeyword.isNullOrBlank() ||
                     acc.name?.contains(customerKeyword, ignoreCase = true) == true
             }
-            // 유통형태(거래처상태코드+거래처타입) / 거래처유형(ABC유형) 라벨 필터 — 메인 DB 해소분
-            .filter { acc ->
-                distributionChannels.isEmpty() ||
-                    acc.distributionChannelLabel() in distributionChannels
+            // 유통형태(거래처유형마스터 코드) / 거래처유형(ABC유형) 필터 — 메인 DB 해소분.
+            // 유통형태는 선택 코드를 마스터 이름으로 되돌려 `accountType` 직접 매칭 (전산실적과 동일 규칙).
+            .let { filtered ->
+                if (distributionChannels.isEmpty()) {
+                    filtered
+                } else {
+                    val names = accountCategoryLookup.namesOf(distributionChannels).toSet()
+                    filtered.filter { acc -> acc.accountType in names }
+                }
             }
             .filter { acc ->
                 accountTypes.isEmpty() || acc.abcTypeLabel() in accountTypes

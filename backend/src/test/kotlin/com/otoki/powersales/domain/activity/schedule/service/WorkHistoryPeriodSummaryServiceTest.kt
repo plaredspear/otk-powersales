@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import io.mockk.every
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.mockk
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -22,7 +23,7 @@ import java.time.LocalDate
 class WorkHistoryPeriodSummaryServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mockk()
-    private val service = WorkHistoryPeriodSummaryService(repository)
+    private val service = WorkHistoryPeriodSummaryService(repository, AccountCategoryLookupFixture.lookup())
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
@@ -115,7 +116,8 @@ class WorkHistoryPeriodSummaryServiceTest {
             assertThat(itemA.workDays).isEqualTo(2)
             // 통합일정 대비 추가된 거래처 속성 컬럼 (지점명 / 유통형태 / 거래처유형)
             assertThat(itemA.accountBranchName).isEqualTo("원주1지점")
-            assertThat(itemA.distributionChannelLabel).isEqualTo("02 대형마트(3대)")
+            // 유통형태는 거래처유형마스터 "{코드} {이름}" — 거래처상태코드(02)는 섞이지 않는다.
+            assertThat(itemA.distributionChannelLabel).isEqualTo("01 대형마트(3대)")
             assertThat(itemA.abcTypeLabel).isEqualTo("6111 이마트")
         }
 

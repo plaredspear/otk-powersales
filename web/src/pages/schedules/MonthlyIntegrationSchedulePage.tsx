@@ -268,7 +268,7 @@ export default function MonthlyIntegrationSchedulePage() {
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [accountKeyword, setAccountKeyword] = useState('');
-  const [distributionKeyword, setDistributionKeyword] = useState('');
+  const [distributionCode, setDistributionCode] = useState('');
   const [accountTypeKeyword, setAccountTypeKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<{
     year: number;
@@ -276,7 +276,7 @@ export default function MonthlyIntegrationSchedulePage() {
     codes: string[];
     keyword: string;
     accountKeyword: string;
-    distributionKeyword: string;
+    distributionCode: string;
     accountTypeKeyword: string;
   } | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -288,8 +288,8 @@ export default function MonthlyIntegrationSchedulePage() {
 
   // 거래처유형 셀렉트 옵션 — 유통형태 선택 시 종속 목록, 미선택 시 전체 목록.
   const accountTypeOptions =
-    distributionKeyword && filterOptions
-      ? filterOptions.dependentAccountTypes[distributionKeyword] ?? []
+    distributionCode && filterOptions
+      ? filterOptions.dependentAccountTypes[distributionCode] ?? []
       : filterOptions?.accountTypes ?? [];
 
   // 선택된 거래처유형이 현재 옵션 목록에 없으면(유통형태 종속으로 사라진 값) 렌더에서 제외.
@@ -302,7 +302,7 @@ export default function MonthlyIntegrationSchedulePage() {
   // 유통형태 변경 시, 새 유통형태에 속하지 않는 거래처유형 선택값은 초기화.
   const handleDistributionChange = (value: string | undefined) => {
     const next = value ?? '';
-    setDistributionKeyword(next);
+    setDistributionCode(next);
     if (accountTypeKeyword) {
       const dependent = next && filterOptions ? filterOptions.dependentAccountTypes[next] ?? [] : null;
       // 유통형태를 비우면(전체) 기존 거래처유형 선택은 유지, 특정 유통형태 선택 시 종속 목록에 없으면 초기화.
@@ -319,7 +319,7 @@ export default function MonthlyIntegrationSchedulePage() {
     queryParams != null,
     queryParams?.keyword,
     queryParams?.accountKeyword,
-    queryParams?.distributionKeyword,
+    queryParams?.distributionCode,
     queryParams?.accountTypeKeyword,
   );
 
@@ -363,9 +363,9 @@ export default function MonthlyIntegrationSchedulePage() {
     if (selectedCodes.length === 0) return;
     autoSearchedRef.current = true;
     setQueryParams({
-      year, month, codes: selectedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+      year, month, codes: selectedCodes, keyword, accountKeyword, distributionCode, accountTypeKeyword,
     });
-  }, [selectedCodes, year, month, keyword, accountKeyword, distributionKeyword, accountTypeKeyword]);
+  }, [selectedCodes, year, month, keyword, accountKeyword, distributionCode, accountTypeKeyword]);
 
   useEffect(() => {
     if (isLoading || isError) return;
@@ -383,7 +383,7 @@ export default function MonthlyIntegrationSchedulePage() {
       return;
     }
     setQueryParams({
-      year, month, codes: selectedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+      year, month, codes: selectedCodes, keyword, accountKeyword, distributionCode, accountTypeKeyword,
     });
   };
 
@@ -395,7 +395,7 @@ export default function MonthlyIntegrationSchedulePage() {
       costCenterCodes: queryParams.codes,
       keyword: queryParams.keyword,
       accountKeyword: queryParams.accountKeyword,
-      distributionKeyword: queryParams.distributionKeyword,
+      distributionCode: queryParams.distributionCode,
       accountTypeKeyword: queryParams.accountTypeKeyword,
     });
   };
@@ -451,10 +451,11 @@ export default function MonthlyIntegrationSchedulePage() {
                 allowClear
                 showSearch
                 placeholder="유통형태 선택"
-                value={distributionKeyword || undefined}
+                value={distributionCode || undefined}
                 onChange={handleDistributionChange}
                 optionFilterProp="label"
-                options={(filterOptions?.distributions ?? []).map((v) => ({ label: v, value: v }))}
+                // 값은 거래처유형마스터 코드, 표시는 "{코드} {이름}" — 목록 컬럼 표기와 동일 라벨.
+                options={(filterOptions?.distributions ?? []).map((o) => ({ label: o.label, value: o.code }))}
                 style={{ width: 170 }}
               />
             </Space>

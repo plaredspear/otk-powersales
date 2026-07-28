@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.dto.response
 
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryDirectory
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -32,9 +33,9 @@ data class EmployeeWorkHistoryItem(
     val abcTypeCode: String?,
     /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트"). Account.abcTypeLabel() 정본. */
     val abcTypeLabel: String?,
-    /** 거래처상태코드 (SF Account.AccountStatusCode__c) — 유통형태 표시용. */
+    /** 거래처상태코드 (SF Account.AccountStatusCode__c) — 거래처 상태 축. 유통형태와 무관. */
     val accountStatusCode: String?,
-    /** 유통형태 — 거래처상태코드 + 거래처타입 조합 (예: "02 슈퍼"). Account.distributionChannelLabel() 정본. */
+    /** 유통형태 — 거래처유형마스터 `"{거래처유형코드} {이름}"` (예: "06 슈퍼"). AccountCategoryLookup 정본. */
     val distributionChannelLabel: String?,
     val isClockIn: Boolean,
     val refAccountName: String?,
@@ -44,7 +45,14 @@ data class EmployeeWorkHistoryItem(
     val completeTime: LocalDateTime?,
 ) {
     companion object {
-        fun from(schedule: TeamMemberSchedule): EmployeeWorkHistoryItem = EmployeeWorkHistoryItem(
+        /**
+         * @param categories 유통형태 라벨 사전 — 거래처유형코드가 Account 에 없어 마스터 조인이 필요하다.
+         *   목록 변환 시 호출 측에서 한 번 만들어 전 행에 재사용한다.
+         */
+        fun from(
+            schedule: TeamMemberSchedule,
+            categories: AccountCategoryDirectory,
+        ): EmployeeWorkHistoryItem = EmployeeWorkHistoryItem(
             id = schedule.id,
             workingDate = schedule.workingDate,
             workingType = schedule.workingType?.displayName,
@@ -59,7 +67,7 @@ data class EmployeeWorkHistoryItem(
             abcTypeCode = schedule.account?.abcTypeCode,
             abcTypeLabel = schedule.account?.abcTypeLabel(),
             accountStatusCode = schedule.account?.accountStatusCode,
-            distributionChannelLabel = schedule.account?.distributionChannelLabel(),
+            distributionChannelLabel = categories.label(schedule.account?.accountType),
             isClockIn = schedule.attendanceLog != null,
             refAccountName = schedule.refAccountName,
             costCenterCode = schedule.costCenterCode,

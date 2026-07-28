@@ -12,6 +12,7 @@ import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpa
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookupFixture
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -57,6 +58,7 @@ class AdminMonthlyIntegrationServiceCategoryTest {
             employeeInputCriteriaMasterRepository,
             teamMemberScheduleSearchService,
             teamMemberCategorySearchService,
+            AccountCategoryLookupFixture.lookup(),
         )
     }
 

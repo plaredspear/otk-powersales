@@ -18,6 +18,7 @@ import com.otoki.powersales.domain.sales.service.ElectronicSalesAdminQueryServic
 import com.otoki.powersales.domain.sales.service.ElectronicSalesDashboardExcelExporter
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.foundation.account.dto.response.DistributionChannelOption
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
@@ -167,21 +168,22 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
     @DisplayName("GET /filter-options - 유통형태/거래처유형/분류 옵션 응답")
     fun filterOptions() {
         every { queryService.getFilterOptions() } returns ElectronicSalesDashboardFilterOptionsResponse(
-            distributionChannels = listOf("02 슈퍼"),
+            distributionChannels = listOf(DistributionChannelOption("06", "06 슈퍼")),
             accountTypes = listOf("6111 이마트"),
             categories = listOf(
                 ElectronicSalesDashboardFilterOptionsResponse.CategoryGroup("면류", listOf("봉지면")),
             ),
-            dependentAccountTypes = mapOf("02 슈퍼" to listOf("6111 이마트")),
+            dependentAccountTypes = mapOf("06" to listOf("6111 이마트")),
         )
 
         mockMvc.perform(get("/api/v1/admin/sales/electronic/filter-options"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.distributionChannels[0]").value("02 슈퍼"))
+            .andExpect(jsonPath("$.data.distributionChannels[0].code").value("06"))
+            .andExpect(jsonPath("$.data.distributionChannels[0].label").value("06 슈퍼"))
             .andExpect(jsonPath("$.data.accountTypes[0]").value("6111 이마트"))
             .andExpect(jsonPath("$.data.categories[0].category2").value("면류"))
             .andExpect(jsonPath("$.data.categories[0].category3s[0]").value("봉지면"))
-            .andExpect(jsonPath("$.data.dependentAccountTypes['02 슈퍼'][0]").value("6111 이마트"))
+            .andExpect(jsonPath("$.data.dependentAccountTypes['06'][0]").value("6111 이마트"))
     }
 
     @Test

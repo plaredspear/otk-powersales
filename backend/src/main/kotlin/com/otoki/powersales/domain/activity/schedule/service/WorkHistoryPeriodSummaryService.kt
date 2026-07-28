@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryAcc
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryEmployeeAccountResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryLookup
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import org.springframework.stereotype.Service
@@ -29,6 +30,8 @@ import java.time.temporal.ChronoUnit
 @Transactional(readOnly = true)
 class WorkHistoryPeriodSummaryService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    /** 유통형태 라벨 정본 (거래처유형마스터 캐시). */
+    private val accountCategoryLookup: AccountCategoryLookup,
 ) {
 
     /**
@@ -93,6 +96,8 @@ class WorkHistoryPeriodSummaryService(
             emptyMap()
         }
 
+        // 유통형태 라벨 사전 — 거래처 행마다 만들지 않도록 1회만 생성.
+        val categories = accountCategoryLookup.directory()
         val items = schedules
             .groupBy { it.account?.id }
             .map { (accountId, rows) ->
@@ -103,7 +108,7 @@ class WorkHistoryPeriodSummaryService(
                     accountName = acc?.name,
                     accountExternalKey = acc?.externalKey,
                     accountBranchName = acc?.branchName,
-                    distributionChannelLabel = acc?.distributionChannelLabel(),
+                    distributionChannelLabel = categories.label(acc?.accountType),
                     abcTypeLabel = acc?.abcTypeLabel(),
                     totalWorkingDays = s.totalWorkingDays,
                     displayDays = s.displayDays,
