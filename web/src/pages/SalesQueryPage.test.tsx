@@ -61,17 +61,36 @@ const accountsResponse: posApi.PosSalesAccountListResponse = {
 };
 
 /**
+ * 버튼 조회 — 라벨 텍스트로 찾아 감싸는 <button> 을 되짚는다 (antd Button 은 <button><span>라벨).
+ *
+ * `getByRole('button', { name })` 은 문서 전체를 돌며 접근성 이름 + 가시성(getComputedStyle)
+ * 을 계산하므로, 모달/테이블이 올라온 뒤에는 쿼리 1회에 0.5~1.5초가 걸린다 (본 파일이 30초
+ * timeout 을 명시해야 했던 주 원인). 텍스트 조회는 동일 시점에 수 ms 수준이다.
+ * 모달 제목처럼 동일 문구가 버튼 밖에도 존재할 수 있어 <button> 조상을 가진 것만 남긴다.
+ */
+function getButton(name: string | RegExp, container?: HTMLElement): HTMLElement {
+  const buttons = (container ? within(container) : screen)
+    .getAllByText(name)
+    .map((el) => el.closest('button'))
+    .filter((el): el is HTMLButtonElement => el != null);
+  if (buttons.length !== 1) {
+    throw new Error(`"${name}" 라벨을 가진 버튼이 ${buttons.length} 개 입니다 (1 개여야 함)`);
+  }
+  return buttons[0];
+}
+
+/**
  * 거래처 선택 모달 열기 — 거래처 검색 조건(지점/유통형태/거래처유형/거래처명)은 모두 이 모달 안에 있다.
  * 메인 화면에는 POS 조회 조건(기간/제품/분류)과 선택 거래처 칩만 남아 있다.
  */
 async function openAccountModal(): Promise<HTMLElement> {
-  fireEvent.click(screen.getByRole('button', { name: /거래처 선택/ }));
+  fireEvent.click(getButton('거래처 선택'));
   return await screen.findByRole('dialog');
 }
 
 /** 모달에서 거래처 목록을 조회한다 (외부 POS DB 미접촉). */
 async function searchAccounts(dialog: HTMLElement): Promise<void> {
-  fireEvent.click(within(dialog).getByRole('button', { name: /거래처 검색/ }));
+  fireEvent.click(getButton('거래처 검색', dialog));
   await waitFor(() => expect(mockedAccounts).toHaveBeenCalled());
 }
 
@@ -169,14 +188,14 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
 
     // 행 아무 곳이나 클릭하면 선택/해제 (체크박스 조준 불필요) → [선택 완료] 로 확정.
     fireEvent.click(within(dialog).getByText('이마트 원주점'));
-    fireEvent.click(within(dialog).getByRole('button', { name: /선택 완료/ }));
+    fireEvent.click(getButton(/선택 완료/, dialog));
 
     // 확정된 거래처는 메인에 칩으로 남고 [POS 매출 조회] 가 활성화된다.
     // (모달은 닫힘 애니메이션 동안 DOM 에 남아 있어 제거 대신 버튼 활성화를 기다린다.)
-    await waitFor(() => expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeEnabled());
+    await waitFor(() => expect(getButton('POS 매출 조회')).toBeEnabled());
     expect(screen.getAllByText('이마트 원주점').length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /POS 매출 조회/ }));
+    fireEvent.click(getButton('POS 매출 조회'));
 
     await waitFor(() => {
       expect(screen.getByText('POS매출 금액 합계')).toBeInTheDocument();
@@ -252,13 +271,10 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
       distributionChannels: ['01'],
       accountTypes: [],
     });
-    // 다중선택 Select 를 5회 조작하는 테스트라 기본 10s 로는 병렬 실행에서 flaky 하다.
-  }, 30_000);
+  });
 
   it('조회 기간이 31일을 초과하면 경고를 표시하고 POS 매출 조회 버튼이 비활성화된다', async () => {
-    // delay: null — 기본 delay 는 모달+다중선택 조작이 많은 본 파일에서 전체 스위트 병렬 실행 시
-    // 테스트 타임아웃을 넘긴다 (동작 검증에 delay 는 불필요).
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup();
     renderPage();
     const dialog = await openAccountModal();
     await searchAccounts(dialog);
@@ -266,8 +282,8 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
 
     // 거래처 확정 — 기간 위반이 아니면 [POS 매출 조회] 가 활성화되는 상태를 만든다.
     fireEvent.click(within(dialog).getByText('이마트 원주점'));
-    fireEvent.click(within(dialog).getByRole('button', { name: /선택 완료/ }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeEnabled());
+    fireEvent.click(getButton(/선택 완료/, dialog));
+    await waitFor(() => expect(getButton('POS 매출 조회')).toBeEnabled());
 
     const inputs = screen
       .getAllByRole('textbox')
@@ -283,8 +299,7 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     await waitFor(() => {
       expect(screen.getByText('조회 기간은 최대 31일까지 가능합니다')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /POS 매출 조회/ })).toBeDisabled();
+    expect(getButton('POS 매출 조회')).toBeDisabled();
     expect(mockedList).not.toHaveBeenCalled();
-    // 날짜 타이핑 + 모달 조작이 겹쳐 기본 10s 안에 못 끝나는 경우가 있어 여유를 준다 (병렬 실행 flaky 방지).
-  }, 30_000);
+  });
 });
