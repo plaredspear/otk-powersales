@@ -986,6 +986,69 @@ class DisplayWorkScheduleRepositoryTest {
             val union = ScheduleValidData.entries.flatMap { searchByValidData(it) }
             assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name })
         }
+
+        /**
+         * content 와 totalElements 가 같은 모수를 세야 한다 (재직상태 필터와 동일 축).
+         *
+         * `pageSize` 를 전체 건수보다 작게 잡아 count 쿼리 실행을 강제한다 (PageableExecutionUtils 는
+         * 첫 페이지에 전건이 들어가면 count 를 생략해, 큰 pageSize 로는 count 쿼리 자체가 검증되지 않는다).
+         *
+         * ## 재직상태 필터 쪽 동일 테스트와의 차이
+         * 유효여부 술어는 세 분류 모두 사원 필드 비교를 포함해, 사원 미배정(employee_id IS NULL) 행이
+         * 조인 종류와 무관하게 WHERE 에서 탈락한다. 따라서 이 테스트는 조인이 leftJoin 이든 implicit
+         * inner join 이든 **동일하게 통과** 하며, 재직상태 쪽처럼 조인 결함을 스스로 잡아내지는 못한다
+         * (재직상태 술어는 `ord_detail_node IS NULL` 분기가 있어 미배정 행이 살아남기에 검출된다).
+         *
+         * 그럼에도 두는 이유는 향후 유효여부 술어에 NULL 허용 분기가 추가되거나 필터가 사원 필드를
+         * 안 쓰는 방향으로 바뀌면 그때부터 실질 회귀 감시가 되기 때문이다 — 현재는 count/목록 모수
+         * 일치에 대한 계약 고정 역할.
+         */
+        @Test
+        @DisplayName("content 와 totalElements 가 동일 모수 (count 쿼리 조인 정합)")
+        fun countMatchesContent() {
+            // 사원 미배정 스케줄 — 유효여부 계산 대상은 아니지만 count 모수에서 빠지면 안 된다.
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = null,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = today.minusDays(3),
+                    endDate = today.plusDays(3),
+                )
+            )
+            // 유효 2건 — 필터 적용 시 count 쿼리가 실행되도록 pageSize 보다 많게 만든다.
+            persistCase("재직진행", "재직", true, null, today.minusDays(3), today.plusDays(3))
+            persistCase("재직무기한", "재직", true, null, today.minusDays(3), null)
+            testEntityManager.clear()
+
+            val unfiltered = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 1),
+            )
+            assertThat(unfiltered.totalElements)
+                .describedAs("필터 미적용 — count 가 사원 미배정 행을 포함한 전건")
+                .isEqualTo(3L)
+
+            val valid = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null,
+                ScheduleValidData.VALID, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 1),
+            )
+            val validAll = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null,
+                ScheduleValidData.VALID, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            )
+            assertThat(valid.totalElements)
+                .describedAs("유효 필터 — count 총 건수가 목록 실제 행 수와 일치")
+                .isEqualTo(validAll.content.size.toLong())
+            assertThat(valid.totalElements)
+                .describedAs("유효 필터 — 유효 2건")
+                .isEqualTo(2L)
+        }
     }
 
     @Nested
