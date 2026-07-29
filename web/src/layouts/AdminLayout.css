@@ -48,12 +48,24 @@
  * 이미 스크롤과 무관하게 고정돼 있다. 다만 배경/경계가 없으면 아래 메뉴가 스크롤되어 지나갈 때
  * "고정 헤더" 가 아니라 "메뉴 목록의 첫 항목" 처럼 읽히므로, 영역 배경 + 하단 구분선으로 분리한다.
  * 배경/경계는 프로젝트에서 이미 쓰는 antd blue-1(#e6f4ff) + blue-3(#91caff) 조합을 따른다.
+ *
+ * ProLayout 기본 스타일은 `-extra` 에 `marginInline: 16` / `marginBlockEnd: 16` 을 주는데,
+ * 그대로 두면 배경색 띠가 사이더 폭을 못 채우고 좌우에 흰 여백이 남는다. 마진을 0 으로 되돌리고
+ * 여백은 안쪽 컨테이너의 padding 으로 잡아 띠가 사이더 폭 전체를 채우게 한다.
+ *
+ * 셀렉터를 `.ant-pro-layout` 하위로 중첩한 것은 antd 규칙이 `.ant-pro-layout .ant-pro-sider-extra`
+ * (클래스 2개) 로 생성되기 때문. 단일 클래스로 쓰면 특이도가 낮아 margin 재정의가 먹지 않는다.
  */
-.ant-pro-sider-extra {
+.ant-pro-layout .ant-pro-sider-extra {
+  margin: 0;
   background: #e6f4ff;
   border-bottom: 1px solid #91caff;
 }
 
+/*
+ * `-extra` 의 기본 마진(좌우 16 + 하단 16)을 0 으로 되돌렸으므로 여백은 전부 여기서 잡는다.
+ * 하단 패딩을 12 로 둬서 구분선 아래 첫 메뉴 항목이 선에 바짝 붙지 않게 한다.
+ */
 .admin-sider-search {
   padding: 12px 16px;
 }
