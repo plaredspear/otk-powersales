@@ -4,7 +4,6 @@ import tools.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
@@ -58,8 +57,10 @@ class SfOutboundClientImpl(
             .toEntity(String::class.java)
 
         val body = response.body ?: ""
-        if (response.statusCode != HttpStatus.OK) {
-            log.warn("[sf-outbound] non-200 응답: status={} body={}", response.statusCode, body)
+        // 2xx 는 모두 정상 — SF Apex REST 는 조회 계열도 201 CREATED 로 응답한다.
+        // (200 단독 비교 시 정상 배치가 매시간 WARN 으로 오인되고 응답 전문이 stdout 에 노출된다.)
+        if (!response.statusCode.is2xxSuccessful) {
+            log.warn("[sf-outbound] 비정상 응답: status={} bodyHead={}", response.statusCode, body.take(BODY_HEAD_LENGTH))
         }
         return parse(body)
     }
@@ -72,5 +73,13 @@ class SfOutboundClientImpl(
         val resultCode = parsed["RESULT_CODE"]?.toString() ?: "0"
         val resultMsg = parsed["RESULT_MSG"]?.toString() ?: ""
         return SfApiResponse(resultCode = resultCode, resultMsg = resultMsg, rawBody = body)
+    }
+
+    companion object {
+        /**
+         * 비정상 응답 로그에 남길 본문 최대 길이. 목록 응답(거래처목표 6천건 등) 전문이 stdout 에
+         * 노출되지 않도록 절단한다 — SAP sender / SF fetch client 의 `bodyHead` 컨벤션 정합.
+         */
+        private const val BODY_HEAD_LENGTH = 200
     }
 }
