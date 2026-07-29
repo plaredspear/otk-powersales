@@ -639,23 +639,36 @@ export default function DashboardPage() {
     const ageTotal = s.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
     return (
       <>
-        <Space style={{ marginBottom: 16 }} size={8}>
-          <span style={{ color: '#8c8c8c' }}>집계 기준:</span>
-          <Radio.Group
-            value={basicScope}
-            onChange={(e) => setBasicScope(e.target.value as BasicScope)}
-            optionType="button"
-            buttonStyle="solid"
-            size="small"
-            options={[
-              { label: '재직', value: 'active' },
-              { label: '재직+휴직', value: 'includingLeave' },
-            ]}
-          />
-          <Tooltip title={BASIC_SCOPE_NOTICE}>
-            <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
-          </Tooltip>
-        </Space>
+        {/* 집계 기준 행 — 우측 끝에 여사원 현황 이동 링크를 함께 배치한다.
+            링크는 단일 지점 + 재직 기준일 때만 활성 (femaleEmployeeLinkState 참조). 비활성 시 사유를 tooltip 으로 안내. */}
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Space size={8}>
+            <span style={{ color: '#8c8c8c' }}>집계 기준:</span>
+            <Radio.Group
+              value={basicScope}
+              onChange={(e) => setBasicScope(e.target.value as BasicScope)}
+              optionType="button"
+              buttonStyle="solid"
+              size="small"
+              options={[
+                { label: '재직', value: 'active' },
+                { label: '재직+휴직', value: 'includingLeave' },
+              ]}
+            />
+            <Tooltip title={BASIC_SCOPE_NOTICE}>
+              <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+            </Tooltip>
+          </Space>
+          {'to' in femaleEmployeeLink ? (
+            <Link to={femaleEmployeeLink.to}>여사원 현황에서 보기 →</Link>
+          ) : (
+            <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{femaleEmployeeLink.disabledReason}</span>}>
+              <Button type="link" disabled style={{ padding: 0 }}>
+                여사원 현황에서 보기 →
+              </Button>
+            </Tooltip>
+          )}
+        </div>
       <Row gutter={[16, 16]}>
         {/* 직급별 인원현황 — 좌측 상단 첫 카드. 2단 헤더 표라 폭이 더 필요해 xl 부터 반폭.
             그래도 열이 넘치면 표만 가로 스크롤한다(RankHeadcountCard 내부 overflow-x). */}
@@ -708,21 +721,6 @@ export default function DashboardPage() {
             <ReactECharts option={headcountBarOption(ageGroupItems(s.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
             {asOfBadge(b.asOfDate)}
           </Card>
-        </Col>
-        {/* 여사원 현황 이동 — 단일 지점 + 재직 기준일 때만 활성 (femaleEmployeeLinkState 참조).
-            비활성 시 사유를 tooltip 으로 안내한다. */}
-        <Col span={24}>
-          <div style={{ textAlign: 'right' }}>
-            {'to' in femaleEmployeeLink ? (
-              <Link to={femaleEmployeeLink.to}>여사원 현황에서 보기 →</Link>
-            ) : (
-              <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{femaleEmployeeLink.disabledReason}</span>}>
-                <Button type="link" disabled style={{ padding: 0 }}>
-                  여사원 현황에서 보기 →
-                </Button>
-              </Tooltip>
-            )}
-          </div>
         </Col>
       </Row>
       </>
