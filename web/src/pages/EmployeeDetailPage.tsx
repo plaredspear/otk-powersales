@@ -21,6 +21,7 @@ import EmployeeRoleModal from '@/pages/employee/components/EmployeeRoleModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import WorkHistorySection from '@/pages/employee/components/WorkHistorySection';
+import EmploymentStatusTag from '@/components/common/EmploymentStatusTag';
 import { appAuthorityLabel } from '@/constants/userRole';
 
 function toEmployeeListItem(detail: EmployeeDetail): Employee {
@@ -51,15 +52,6 @@ function toEmployeeListItem(detail: EmployeeDetail): Employee {
     yearsOfService: null,
   };
 }
-
-// 상태 태그 색. '퇴직(면직)' 은 여사원 현황 상세에서 서버가 발령명 '면직' 사원에게 부여하는
-// 파생 표시값으로, 퇴직과 동일 취급하므로 같은 색을 쓴다 (backend DismissalPolicy.DISPLAY_STATUS).
-const STATUS_TAG: Record<string, string> = {
-  재직: 'green',
-  휴직: 'orange',
-  퇴직: 'red',
-  '퇴직(면직)': 'red',
-};
 
 const ORIGIN_TAG: Record<string, { color: string; label: string }> = {
   SAP: { color: 'blue', label: 'SAP 인입' },
@@ -243,11 +235,7 @@ export default function EmployeeDetailPage() {
           <Descriptions.Item label="이름">{employee.name}</Descriptions.Item>
           <Descriptions.Item label="성별">{employee.gender ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="상태">
-            {employee.status ? (
-              <Tag color={STATUS_TAG[employee.status] ?? undefined}>{employee.status}</Tag>
-            ) : (
-              '-'
-            )}
+            <EmploymentStatusTag status={employee.status} />
           </Descriptions.Item>
           <Descriptions.Item label="생년월일">{employee.birthDate ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="발령일">{employee.appointmentDate ?? '-'}</Descriptions.Item>
