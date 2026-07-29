@@ -149,23 +149,31 @@ class EmployeeRepositoryCustomImpl(
     }
 
     /**
-     * 재직상태 필터 술어 — [treatDismissalAsResigned] 면 발령명 '면직' 을 퇴직과 동일 취급한다
-     * ([DismissalPolicy] 참조, 여사원 현황 화면 전용).
+     * 재직상태 필터 술어 — SAP 원본 `status` 만 비교한다 (`status = ?`).
+     *
+     * 면직 보정 전면 적용([DismissalPolicy]) 이 화면 단위로 점진 전환 중이라 잠정 유지한다.
+     * 미전환 호출부가 0이 되면 본 함수와 [findEmployees] 의 `treatDismissalAsResigned` 파라미터를
+     * 함께 제거하고 [employmentStatusPredicate] 로 일원화한다.
+     */
+    private fun statusPredicate(status: String): BooleanBuilder =
+        BooleanBuilder().and(employee.status.eq(status))
+
+    /**
+     * 재직상태 필터 술어 — 발령명 '면직' 을 퇴직과 동일 취급한다 ([DismissalPolicy]).
      *
      * - 퇴직 조회: `status = '퇴직' OR ord_detail_node = '면직'` (상태가 아직 재직인 면직자 포함)
      * - 재직/휴직 조회: `status = ? AND (ord_detail_node IS NULL OR ord_detail_node <> '면직')`
      *   — SQL 3값 논리상 `<>` 만 쓰면 NULL 행이 통째로 탈락하므로 IS NULL 을 함께 허용한다.
+     *
+     * 면직 보정 전면 적용이 전 화면의 목표 동작이며, 전환이 끝나면 [statusPredicate] 를 삭제하고
+     * 본 함수만 남긴다.
      */
-    private fun statusPredicate(status: String, treatDismissalAsResigned: Boolean): BooleanBuilder {
-        val predicate = BooleanBuilder()
-        if (!treatDismissalAsResigned) {
-            return predicate.and(employee.status.eq(status))
-        }
+    private fun employmentStatusPredicate(status: String): BooleanBuilder {
         val dismissed = employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
         return if (status == EmploymentStatus.RESIGNED.code) {
-            predicate.and(employee.status.eq(status).or(dismissed))
+            BooleanBuilder().and(employee.status.eq(status).or(dismissed))
         } else {
-            predicate.and(employee.status.eq(status))
+            BooleanBuilder().and(employee.status.eq(status))
                 .and(employee.ordDetailNode.isNull.or(dismissed.not()))
         }
     }
@@ -241,7 +249,10 @@ class EmployeeRepositoryCustomImpl(
             .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
 
         if (status != null) {
-            where.and(statusPredicate(status, treatDismissalAsResigned))
+            where.and(
+                if (treatDismissalAsResigned) employmentStatusPredicate(status)
+                else statusPredicate(status)
+            )
         }
         if (branchCodes != null) {
             where.and(employee.costCenterCode.`in`(branchCodes))
