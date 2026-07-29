@@ -31,8 +31,9 @@ class PendingDeepLink {
 
   /// 딥링크를 대기열에 올린다 — 최신 1건만 유지한다.
   ///
-  /// 세션 리셋으로 푸시 서비스가 재생성되면 이전 인스턴스의 FCM 리스너가 살아 있어
-  /// 같은 알림 탭이 중복 통지될 수 있는데, 최신 1건만 유지하므로 중복 이동이 없다.
+  /// 주의: "최신 1건 유지" 는 소비 전 중복 store 만 합쳐줄 뿐, store → 소비 → store 가
+  /// 반복되면 각각 이동이 발생한다. 알림 탭 1회당 store 가 정확히 1번 오도록 하는 책임은
+  /// 발신 측에 있다([PushNotificationService] 가 FCM 리스너를 프로세스 1회만 등록).
   void store(DeepLinkTarget target) => pending.value = target;
 
   /// 대기 중인 딥링크를 꺼내고 즉시 비운다(1회성). 없으면 null.

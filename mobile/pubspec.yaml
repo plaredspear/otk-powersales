@@ -84,8 +84,8 @@ dependencies:
   # Push Notifications (FCM)
   # 네이티브 설정 파일(google-services.json / GoogleService-Info.plist)과
   # iOS APNs 인증키는 추후 추가. 설정 파일이 없으면 초기화를 graceful 하게 skip 함.
-  firebase_core: ^4.10.0
-  firebase_messaging: ^16.3.0
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
   mobile_scanner: 7.2.0
   flutter_local_notifications: ^22.0.1
   # 앱 아이콘 배지 초기화용. iOS 는 배지를 0 으로 되돌리는 네이티브 API 가 필요하고

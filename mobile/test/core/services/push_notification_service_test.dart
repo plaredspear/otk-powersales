@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/services/push_notification_service.dart';
 
@@ -52,6 +53,26 @@ void main() {
       expect(
         PushNotificationService.decodePayloadToMessage(payload),
         isNull,
+      );
+    });
+  });
+
+  group('pushNotificationServiceProvider', () {
+    test('컨테이너(세션)가 재생성돼도 동일 싱글턴을 반환한다', () {
+      // 세션 리셋으로 루트 ProviderScope 가 재생성될 때마다 새 인스턴스를 만들면
+      // FCM 스트림 리스너가 중복 등록되어, 푸시 탭 1회에 딥링크 화면이 여러 장
+      // 쌓인다(뒤로가기를 눌러도 같은 화면 반복). 싱글턴 유지가 그 방어선이다.
+      final container1 = ProviderContainer();
+      final container2 = ProviderContainer();
+      addTearDown(container1.dispose);
+      addTearDown(container2.dispose);
+
+      expect(
+        identical(
+          container1.read(pushNotificationServiceProvider),
+          container2.read(pushNotificationServiceProvider),
+        ),
+        isTrue,
       );
     });
   });

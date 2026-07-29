@@ -39,6 +39,14 @@ class PushNotificationService {
         _localNotifications =
             localNotifications ?? FlutterLocalNotificationsPlugin();
 
+  /// 프로세스 전역 싱글턴.
+  ///
+  /// FCM 스트림 리스너 등록 상태([_initialized])가 세션 리셋(루트 ProviderScope 재생성)을
+  /// 넘어 유지되어야 하므로 Provider 는 항상 이 인스턴스를 반환한다. 세대마다 새 인스턴스를
+  /// 만들면 이전 인스턴스의 리스너가 해제되지 않은 채 누적되어, 알림 탭 1회에
+  /// [_onMessageOpened] 가 N번 호출된다. (테스트는 생성자로 격리 인스턴스 사용)
+  static final PushNotificationService instance = PushNotificationService();
+
   final Logger _logger;
   final FlutterLocalNotificationsPlugin _localNotifications;
 
@@ -124,9 +132,17 @@ class PushNotificationService {
     void Function(RemoteMessage message)? onMessageOpened,
     void Function(RemoteMessage message)? onForegroundMessage,
   }) async {
-    if (_initialized) return;
+    // 콜백은 매 호출마다 최신으로 교체한다 — 세션 리셋(로그인/로그아웃)으로 루트 위젯이
+    // 재생성되면 이전 세대 위젯의 ref 를 캡처한 콜백은 폐기된 컨테이너를 가리키므로,
+    // 스트림 리스너는 재등록하지 않고 콜백만 새 세대 것으로 바꿔 끼운다.
     _onMessageOpened = onMessageOpened;
     _onForegroundMessage = onForegroundMessage;
+
+    // 리스너 등록은 프로세스 생애 1회만 — 중복 등록되면 알림 탭 1회가 N번 통지되어
+    // 딥링크 화면이 N장 쌓인다(뒤로가기를 눌러도 같은 화면 반복). 초기화 도중 재진입도
+    // 막아야 하므로 시작 시점에 선점 마킹한다.
+    if (_initialized) return;
+    _initialized = true;
 
     // 네이티브 설정 파일이 없어 Firebase 가 초기화되지 않은 경우 skip.
     if (!isAvailable) {
@@ -171,11 +187,25 @@ class PushNotificationService {
         _onMessageOpened?.call(initialMessage);
       }
 
+      // 5b. 종료 상태에서 "로컬 알림" 탭으로 앱이 실행된 경우 — Android 포그라운드 수신 시
+      //     앱이 직접 표시한 알림은 FCM SDK 소관이 아니라 getInitialMessage 로 오지 않는다.
+      //     (알림이 트레이에 남은 채 앱을 종료했다가 탭하는 시나리오) launch details 에서
+      //     payload 를 복원해 동일한 딥링크 경로를 태운다.
+      final launchDetails =
+          await _localNotifications.getNotificationAppLaunchDetails();
+      if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+        final launchMessage = decodePayloadToMessage(
+          launchDetails.notificationResponse?.payload,
+        );
+        if (launchMessage != null) {
+          _logger.i('로컬 알림 탭(종료 상태): 딥링크 복원');
+          _onMessageOpened?.call(launchMessage);
+        }
+      }
+
       // 6. 토큰 조회 (서버 등록 연동 지점)
       final token = await getToken();
       _logger.i('FCM 토큰: ${token ?? '(없음)'}');
-
-      _initialized = true;
     } catch (e, st) {
       _logger.e('FCM 초기화 실패', error: e, stackTrace: st);
     }
@@ -306,6 +336,10 @@ class PushNotificationService {
 }
 
 /// PushNotificationService Riverpod Provider
+///
+/// 반드시 프로세스 싱글턴([PushNotificationService.instance])을 반환해야 한다 —
+/// 세션 리셋으로 ProviderScope 가 재생성될 때 새 인스턴스를 만들면 FCM 리스너가
+/// 중복 등록되어 푸시 탭 1회에 딥링크 화면이 여러 장 쌓인다.
 final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
-  return PushNotificationService();
+  return PushNotificationService.instance;
 });
