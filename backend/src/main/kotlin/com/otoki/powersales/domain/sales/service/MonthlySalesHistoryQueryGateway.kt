@@ -192,4 +192,35 @@ data class MonthlySalesRow(
     val shipClosingAmount2: BigDecimal? = null,
     val shipClosingAmount3: BigDecimal? = null,
     val shipClosingAmount4: BigDecimal? = null,
-)
+) {
+
+    /**
+     * 레거시 Heroku 「월 매출」의 **카테고리 축** — 카테고리 8종 (`ABC_n + Ship_n`, n=1..4) 합.
+     *
+     * 레거시는 「전년 대비」 차트의 전년 값 전부를 온도대별 카테고리 컬럼만 더해 산출한다:
+     * `IF_REST_MOBILE_MonthlySalesHistory.cls:152-155` 가 `ABCClosingAmount_n__c + ShipClosingAmount_n__c`
+     * 를 항목으로 내려주고, `list.jsp:205` 가 그 4개를 합산한다. 같은 응답에 담긴
+     * `ShipClosingSumAmount__c` 는 `list.jsp:206` 에서 **명시적으로 제외**된다
+     * ("물류실적을 전산에 포함해서 전송해서 제외"). 차트의 당해 값도 조회월이 과거월이면 같은 축을
+     * 쓴다 (`list.jsp:253` — 현재월만 합계 축).
+     *
+     * [closingAmountSum] (원본 합계 컬럼 `ABCClosingSumAmount__c + ShipClosingSumAmount__c`) 과는
+     * SF 에서 서로 독립된 Number 컬럼이라 **값이 항상 같지는 않다** — 카테고리 8종과 합계 2종은
+     * ORORA 월마감 인터페이스가 함께 세팅하지만, 일별 ERP 트리거는 합계 2종만 덮어쓰고 카테고리는
+     * 손대지 않아 이후 두 축이 갈라진다.
+     *
+     * 요소별 축 구분 (레거시 `list.jsp` 현행 마크업 기준):
+     * · 마감 합계 실적 박스(box4) — **항상 합계 축** ([closingAmountSum], `:269` 무조건)
+     * · 「전년 대비」 차트 전년 값 — 항상 이 카테고리 축 (`:205, :226`)
+     * · 「전년 대비」 차트 당해 값 — 현재월 합계 축 / 과거월 카테고리 축 (`:253, :301`)
+     */
+    val categoryAmountSum: BigDecimal
+        get() = (abcClosingAmount1 ?: BigDecimal.ZERO) +
+            (abcClosingAmount2 ?: BigDecimal.ZERO) +
+            (abcClosingAmount3 ?: BigDecimal.ZERO) +
+            (abcClosingAmount4 ?: BigDecimal.ZERO) +
+            (shipClosingAmount1 ?: BigDecimal.ZERO) +
+            (shipClosingAmount2 ?: BigDecimal.ZERO) +
+            (shipClosingAmount3 ?: BigDecimal.ZERO) +
+            (shipClosingAmount4 ?: BigDecimal.ZERO)
+}

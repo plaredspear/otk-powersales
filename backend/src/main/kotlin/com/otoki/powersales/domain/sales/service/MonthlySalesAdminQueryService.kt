@@ -115,11 +115,12 @@ class MonthlySalesAdminQueryService(
             .findBySalesDatesByAccountId(listOf(currentSalesDate, lastYearSalesDate), accountIds)
             .associateBy { it.accountId to it.salesDate }
 
+        val today = LocalDate.now()
         val totalAchieved = accounts.sumOf { acc ->
             closingSum(oroByKey[acc.id to currentSalesDate])
         }
         val totalLastYearAchieved = accounts
-            .sumOf { acc -> closingSum(oroByKey[acc.id to lastYearSalesDate]) }
+            .sumOf { acc -> categorySum(oroByKey[acc.id to lastYearSalesDate]) }
             .takeIf { it > 0L }
         val lastYearRatio = if (totalLastYearAchieved == null || totalLastYearAchieved == 0L) null
         else (totalAchieved.toDouble() / totalLastYearAchieved.toDouble()) * 100.0
@@ -133,7 +134,7 @@ class MonthlySalesAdminQueryService(
             totalTargetAmount = totalTarget,
             totalAchievedAmount = totalAchieved,
             overallAchievementRate = rate(totalAchieved, totalTarget),
-            referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
+            referenceAchievementRate = referenceAchievementRate(year, month, today),
             totalLastYearAchievedAmount = totalLastYearAchieved,
             lastYearComparisonRatio = lastYearRatio,
             monthlyTrend = buildMonthlyTrend(year, month, accounts),
@@ -214,27 +215,31 @@ class MonthlySalesAdminQueryService(
         val currentOro = oroByKey[account.id to currentSalesDate]
         val lastYearOro = oroByKey[account.id to lastYearSalesDate]
 
+        val today = LocalDate.now()
+        // 「마감 합계 실적」 — 레거시 box4 는 조회월과 무관하게 항상 합계 축이다 (list.jsp:269 무조건).
         val achieved = closingSum(currentOro)
 
         // 목표 — 조회 거래처의 (연, 월) 1행 (SalesProgressRateMaster). 미등록 시 0.
         val target = findTarget(account.id, year, month)
         val targetSum = target?.let { targetSumOf(it) } ?: 0L
 
-        val today = LocalDate.now()
         val isPastMonth = year < today.year || (year == today.year && month < today.monthValue)
         val categorySales = if (isPastMonth) buildCategorySales(currentOro, target) else emptyList()
 
-        val lastYearAchieved = closingSum(lastYearOro)
+        val lastYearAchieved = categorySum(lastYearOro)
         val yearComparison = MonthlySalesDashboardDetailResponse.YearComparisonInfo(
-            currentYear = achieved / MILLION,
+            currentYear = chartAchievedSum(currentOro, year, month, today) / MILLION,
             previousYear = lastYearAchieved / MILLION,
         )
 
-        // 1월~조회월 누적 평균 (백만원 단위 절사) — RDS row 기반
+        // 1월~조회월 누적 평균 (백만원 단위 절사) — RDS row 기반.
+        // 축은 레거시 `list.jsp:301`(avgC) 정합 — 루프 안에서 **조회월** 기준으로 한 번 결정한 축을
+        // 1월~조회월 전 구간에 동일 적용한다 (월별로 축이 바뀌지 않는다).
         val currentAvg = if (months.isEmpty()) 0L
-        else currentRangeSalesDates.sumOf { sd -> closingSum(oroByKey[account.id to sd]) } / months.size
+        else currentRangeSalesDates
+            .sumOf { sd -> chartAchievedSum(oroByKey[account.id to sd], year, month, today) } / months.size
         val previousAvg = if (months.isEmpty()) 0L
-        else previousRangeSalesDates.sumOf { sd -> closingSum(oroByKey[account.id to sd]) } / months.size
+        else previousRangeSalesDates.sumOf { sd -> categorySum(oroByKey[account.id to sd]) } / months.size
         val monthlyAverage = MonthlySalesDashboardDetailResponse.MonthlyAverageInfo(
             currentYearAverage = currentAvg / MILLION,
             previousYearAverage = previousAvg / MILLION,
@@ -299,7 +304,7 @@ class MonthlySalesAdminQueryService(
             val lastYearOro = oroByKey[account.id to lastYearSalesDate]
 
             val achieved = closingSum(currentOro)
-            val lastYearAchieved = closingSum(lastYearOro)
+            val lastYearAchieved = categorySum(lastYearOro)
             val lastYearRatio = if (lastYearAchieved > 0)
                 (achieved.toDouble() / lastYearAchieved.toDouble()) * 100.0 else null
 
@@ -388,6 +393,7 @@ class MonthlySalesAdminQueryService(
         val targetYears = keys.map { (y, _) -> y }.distinct()
         val targetsByYear = targetYears.associateWith { y -> findTargets(accountIds, y) }
 
+        // 실적은 「마감 합계 실적」 축(합계 축, 항상), 전년은 차트 전년 막대 축(카테고리 축) — getList 정합.
         return keys.map { (y, m) ->
             val currentSalesDate = toSalesDate(y, m)
             val lastYearSalesDate = toSalesDate(y - 1, m)
@@ -402,7 +408,7 @@ class MonthlySalesAdminQueryService(
                 targetAmount = targetSum,
                 achievedAmount = currentOroRows.sumOf { closingSum(it) },
                 lastYearAchievedAmount = if (lastYearOroRows.isEmpty()) null
-                else lastYearOroRows.sumOf { closingSum(it) },
+                else lastYearOroRows.sumOf { categorySum(it) },
             )
         }
     }
@@ -526,13 +532,51 @@ class MonthlySalesAdminQueryService(
     }
 
     /**
-     * RDS row 의 마감 합계 실적 — SF `ClosingAmountSum__c` (ABC합 + Ship합) 동등.
+     * RDS row 의 **「마감 합계 실적」** — SF `ClosingAmountSum__c` (ABC합 + Ship합) 동등. row 부재 시 0.
      * 게이트웨이([MonthlySalesHistoryQueryGateway])가 원본 합계 컬럼을 더해 산출한 [MonthlySalesRow.closingAmountSum]
-     * 을 그대로 사용 (개별 카테고리 재합산과 달리 물류매출 누락 없음). row 부재 시 0.
-     * 모바일 「월 매출」([MonthlySalesService]) "마감 합계 실적" 정합.
+     * 을 그대로 사용. 모바일 「월 매출」([MonthlySalesService]) "마감 합계 실적" 정합.
+     *
+     * 레거시 「월 매출」의 마감 합계 실적 박스(box4)는 조회월이 과거월이어도 **항상 이 합계 축**이다
+     * (`list.jsp:269` — `obj.ClosingAmountSum` 무조건 합산, 현재월 분기 없음). 조회월에 따라 축이
+     * 바뀌는 것은 「전년 대비」 차트 값뿐이다 ([chartAchievedSum]) — 실적 필드에 조건부 축을 적용하면
+     * 레거시 box4 와 어긋난다.
      */
     private fun closingSum(oro: MonthlySalesRow?): Long =
         oro?.closingAmountSum?.toLong() ?: 0L
+
+    /**
+     * RDS row 의 **카테고리 축** 값 — [MonthlySalesRow.categoryAmountSum] (`ABC_n + Ship_n` 8종 합).
+     * row 부재 시 0.
+     *
+     * 레거시 Heroku 「월 매출」에서 이 축이 쓰이는 곳은 **「전년 대비」 차트의 전년 값 전부**
+     * (`list.jsp:205` 동월 막대, `:226` 평균 avgB — 예외 없음, `ShipClosingSumAmount__c` 는 `:206` 에서
+     * 명시적 제외)와 **과거월 조회 시의 당해 차트 값** ([chartAchievedSum]) 이다.
+     * 합계 축([closingSum]) 과는 SF 에서 독립 컬럼이라 값이 항상 같지는 않다
+     * (상세 근거는 [MonthlySalesRow.categoryAmountSum] KDoc).
+     */
+    private fun categorySum(oro: MonthlySalesRow?): Long =
+        oro?.categoryAmountSum?.toLong() ?: 0L
+
+    /**
+     * RDS row 의 **「전년 대비」 차트 당해 값** — 레거시 차트 당월 막대(`list.jsp:253`)·당해 평균
+     * (`:301` avgC) 산식 동등.
+     *
+     * 레거시는 이 두 값에 한해 조회월이 시스템 현재월이면 `ClosingAmountSum__c`(합계 축), 과거월이면
+     * `Σ(ABCClosingAmount_n + ShipClosingAmount_n)`(카테고리 축)을 쓴다. 마감 전 당월은 일별 ERP
+     * 트리거가 합계 컬럼만 갱신해 카테고리 컬럼이 아직 비어 있고, 마감 후 과거월은 ORORA 월마감
+     * 인터페이스가 채운 카테고리 컬럼이 정본이기 때문이다.
+     *
+     * **적용 범위 주의**: 조건부 축은 차트 값 전용이다. 실적 필드(`achievedAmount` 등)는 레거시
+     * 마감 합계 실적 박스(box4, 항상 합계 축) 대응이라 [closingSum] 을 쓴다 — 레거시의 조건부 값
+     * `totalAmount` 는 대응 요소(`#totalAmount`)가 현행 마크업에서 주석 처리되어 차트 막대에만 표시된다.
+     *
+     * **레거시 이탈 1건**: 레거시 `:253` 의 조건은 `month === realMonth` 로 **연도를 비교하지 않아**,
+     * 과거 연도의 같은 월(예: 오늘이 2026-07 일 때 2025-07 조회)도 합계 축으로 새는 버그가 있다.
+     * 같은 파일 `:112` 는 동일 판정을 `(currentY === realYear) && (currentM === realMonth)` 로 올바르게
+     * 계산하므로 오기로 보고, 여기서는 **연·월을 함께 비교**한다.
+     */
+    private fun chartAchievedSum(oro: MonthlySalesRow?, year: Int, month: Int, today: LocalDate): Long =
+        if (year == today.year && month == today.monthValue) closingSum(oro) else categorySum(oro)
 
     /**
      * 조회 거래처의 (연, 월) 목표 1행 — RDS `SalesProgressRateMaster` (SF `SalesProgressRateMaster__c` 복제).

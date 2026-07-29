@@ -91,13 +91,30 @@ class MonthlySalesService(
         val currentRow = rowsByDate[toSalesDate(year, month)]
         val previousRow = rowsByDate[toSalesDate(year - 1, month)]
 
+        // 축 선택 — 레거시 Heroku 「월 매출」(`list.jsp`) 요소별 정합.
+        // · 마감 합계 실적(achievedAmount) : **항상 합계 축**(`ClosingAmountSum__c`) — 레거시 box4 는
+        //   과거월에도 합계 축이다 (`:269` 무조건). 조건부 축 값(totalAmount)은 대응 요소
+        //   `#totalAmount` 가 현행 마크업에서 주석 처리되어 차트에만 표시된다.
+        // · 「전년 대비」 차트 당해 값(yearComparison.currentYear / 당해 평균) : 시스템 현재월이면
+        //   합계 축, 과거월이면 카테고리 축 (`:253, :301` — 마감 전 당월은 일별 ERP 트리거가 합계
+        //   컬럼만 갱신하고, 마감 후 과거월은 ORORA 월마감이 채운 카테고리 컬럼이 정본이다)
+        // · 차트 전년 값 전부 : 예외 없이 카테고리 축 (`:205, :226` — `ShipClosingSumAmount__c` 는
+        //   `:206` 에서 명시적 제외)
+        // 두 축은 SF 에서 독립 컬럼이라 값이 항상 같지 않다 — 근거는 [MonthlySalesRow.categoryAmountSum] KDoc.
+        // 당해 평균은 레거시 `:301`(avgC) 정합 — 조회월로 한 번 정한 축을 1월~조회월 전 구간에 동일 적용.
+        val today = LocalDate.now()
+        val isCurrentMonth = year == today.year && month == today.monthValue
+        fun chartAchievedOf(row: MonthlySalesRow?): Long =
+            (if (isCurrentMonth) row?.closingAmountSum else row?.categoryAmountSum)?.toLong() ?: 0L
+
         val achieved = currentRow?.closingAmountSum?.toLong() ?: 0L
-        val previousAchieved = previousRow?.closingAmountSum?.toLong() ?: 0L
+        val chartAchieved = chartAchievedOf(currentRow)
+        val previousAchieved = previousRow?.categoryAmountSum?.toLong() ?: 0L
 
         val currentAvg = currentRangeSalesDates
-            .sumOf { rowsByDate[it]?.closingAmountSum?.toLong() ?: 0L } / month
+            .sumOf { chartAchievedOf(rowsByDate[it]) } / month
         val previousAvg = previousRangeSalesDates
-            .sumOf { rowsByDate[it]?.closingAmountSum?.toLong() ?: 0L } / month
+            .sumOf { rowsByDate[it]?.categoryAmountSum?.toLong() ?: 0L } / month
 
         // 목표: 조회 거래처의 (연, 월) 1행. account 미resolve 시 목표 없음 (전체 0).
         val target = account?.let { findTarget(it.id, year, month) }
@@ -112,7 +129,7 @@ class MonthlySalesService(
             achievementRate = rate(achieved, targetSum),
             baseRate = baseRate(year, month),
             categorySales = buildCategorySales(currentRow, target),
-            yearComparison = MonthlySalesResponse.YearComparisonInfo(achieved, previousAchieved),
+            yearComparison = MonthlySalesResponse.YearComparisonInfo(chartAchieved, previousAchieved),
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(
                 currentYearAverage = currentAvg,
                 previousYearAverage = previousAvg,

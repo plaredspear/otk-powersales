@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.time.LocalDate
 
 @DisplayName("MonthlySalesAdminQueryService — RDS 기반 응답 회귀 보호")
 class MonthlySalesAdminQueryServiceTest {
@@ -95,6 +96,26 @@ class MonthlySalesAdminQueryServiceTest {
         shipClosingAmount2 = BigDecimal(ship2),
         shipClosingAmount3 = BigDecimal(ship3),
         shipClosingAmount4 = BigDecimal(ship4),
+    )
+
+    /**
+     * 두 축이 **어긋난** 실적 row — 카테고리 축(`ABC_n + Ship_n` 합) ≠ 합계 축(`ClosingAmountSum`).
+     *
+     * SF 에서 카테고리 8종과 합계 2종은 독립 Number 컬럼이라 실제로 갈릴 수 있다 (ORORA 월마감
+     * 인터페이스는 둘을 함께 세팅하지만, 일별 ERP 트리거는 합계만 덮어쓴다). [row] 는 두 축을 항상
+     * 같게 만들어 축 구분을 검증할 수 없으므로 전년 산식 회귀 테스트는 이 헬퍼를 쓴다.
+     */
+    private fun divergentRow(
+        accountId: Long,
+        salesDate: String,
+        categoryAxis: Long,
+        sumAxis: Long,
+    ) = MonthlySalesRow(
+        sapAccountCode = "",
+        salesDate = salesDate,
+        closingAmountSum = BigDecimal(sumAxis),
+        accountId = accountId,
+        abcClosingAmount1 = BigDecimal(categoryAxis),
     )
 
     private fun target(
@@ -191,6 +212,87 @@ class MonthlySalesAdminQueryServiceTest {
         assertThat(item.noodleTargetAmount).isEqualTo(500L)
         assertThat(item.frozenRefrigeratedTargetAmount).isEqualTo(300L)
         assertThat(item.oilFatTargetAmount).isEqualTo(200L)
+    }
+
+    @Test
+    @DisplayName("getList — 실적(마감 합계)은 과거월에도 합계 축, 전년 동월은 카테고리 축 (레거시 Heroku 정합)")
+    fun listAxesForPastMonth() {
+        // 레거시 요소별 축 (list.jsp 현행 마크업):
+        // · 마감 합계 실적(box4) — 항상 합계 축 (`:269` 무조건, 현재월 분기 없음)
+        // · 전년 값 — 항상 카테고리 축 `Σ(ABCClosingAmount_n + ShipClosingAmount_n)`
+        //   (`:205`, `ShipClosingSumAmount__c` 는 `:206` 에서 명시적 제외)
+        // 두 축은 독립 컬럼이라 값이 갈릴 수 있으므로, 두 축이 **다른** row 로 어느 쪽을 읽는지 고정한다.
+        val acc = account(1, "S001")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
+            divergentRow(accountId = 1, salesDate = "202004", categoryAxis = 1000, sumAxis = 1500),
+            divergentRow(accountId = 1, salesDate = "201904", categoryAxis = 700, sumAxis = 900),
+        )
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2020") } returns emptyList()
+
+        // 2020-04 는 항상 과거월 — 실적 축이 조회월에 따라 바뀌지 않음을 시계와 무관하게 검증한다.
+        val request = MonthlySalesDashboardListRequest(year = 2020, month = 4, costCenterCodes = listOf("B001"))
+        val item = service.getList(allBranchesScope, request).items.single()
+
+        assertThat(item.totalAchievedAmount)
+            .withFailMessage("실적(마감 합계)은 과거월에도 합계 축(1500)이어야 한다 — 레거시 box4 는 현재월 분기가 없다")
+            .isEqualTo(1500L)
+        assertThat(item.lastYearAchievedAmount)
+            .withFailMessage("전년 동월은 카테고리 축(700)이어야 한다 — 합계 축(900)을 읽으면 레거시와 어긋난다")
+            .isEqualTo(700L)
+    }
+
+    @Test
+    @DisplayName("getDetail — 실적은 합계 축, 「전년 대비」 차트는 과거월 조회 시 양쪽 모두 카테고리 축")
+    fun detailAxesForPastMonth() {
+        val acc = account(1, "S001")
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
+            divergentRow(accountId = 1, salesDate = "202001", categoryAxis = 4_000_000, sumAxis = 9_000_000),
+            divergentRow(accountId = 1, salesDate = "201901", categoryAxis = 2_000_000, sumAxis = 8_000_000),
+        )
+        every { salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, "2020") } returns emptyList()
+
+        val result = service.getDetail(allBranchesScope, customerId = 1, year = 2020, month = 1)
+
+        // 마감 합계 실적 — 항상 합계 축 (레거시 box4)
+        assertThat(result.achievedAmount).isEqualTo(9_000_000L)
+        // 차트 값 (백만원 단위) — 과거월 조회이므로 당해/전년/평균 모두 카테고리 축.
+        // 합계 축을 읽으면 각각 9 / 8 이 된다.
+        assertThat(result.yearComparison.currentYear).isEqualTo(4L)
+        assertThat(result.yearComparison.previousYear).isEqualTo(2L)
+        assertThat(result.monthlyAverage.currentYearAverage).isEqualTo(4L)
+        assertThat(result.monthlyAverage.previousYearAverage).isEqualTo(2L)
+    }
+
+    @Test
+    @DisplayName("getDetail — 현재월 조회는 차트 당해 값도 합계 축, 차트 전년은 그대로 카테고리 축")
+    fun detailAxesForCurrentMonth() {
+        // 레거시 `list.jsp:253` 은 차트 당해 값에 한해 조회월이 시스템 현재월일 때만 합계 축으로
+        // 전환한다 (마감 전 당월은 카테고리 컬럼이 아직 비어 있기 때문). 시계 의존이라 조회 연월을
+        // 오늘에서 만든다.
+        val today = LocalDate.now()
+        val currentSalesDate = "%04d%02d".format(today.year, today.monthValue)
+        val lastYearSalesDate = "%04d%02d".format(today.year - 1, today.monthValue)
+        val acc = account(1, "S001")
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
+            divergentRow(accountId = 1, salesDate = currentSalesDate, categoryAxis = 4_000_000, sumAxis = 9_000_000),
+            divergentRow(accountId = 1, salesDate = lastYearSalesDate, categoryAxis = 2_000_000, sumAxis = 8_000_000),
+        )
+        every {
+            salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, today.year.toString())
+        } returns emptyList()
+
+        val result = service.getDetail(allBranchesScope, customerId = 1, year = today.year, month = today.monthValue)
+
+        assertThat(result.achievedAmount).isEqualTo(9_000_000L)
+        assertThat(result.yearComparison.currentYear)
+            .withFailMessage("현재월 차트 당해 값은 합계 축(9)이어야 한다 — 마감 전 당월은 카테고리 컬럼이 비어 있다")
+            .isEqualTo(9L)
+        assertThat(result.yearComparison.previousYear)
+            .withFailMessage("차트 전년 값은 현재월 조회에서도 카테고리 축(2)이어야 한다")
+            .isEqualTo(2L)
     }
 
     @Test

@@ -78,7 +78,8 @@ class MonthlySalesServiceTest {
             } returns listOf(account)
 
             // 조회월(202605) 마감 합계 실적 7,796만원. account_id FK 로 조회 (레거시 Account 관계 조인 정합).
-            // 카테고리 개별 컬럼은 비고 합계만 적재된 케이스.
+            // 카테고리 개별 컬럼은 비고 합계만 적재된 케이스 — 마감 합계 실적(achievedAmount)은 항상
+            // 합계 축이라 (레거시 box4 정합) 카테고리 컬럼 적재 여부와 무관해야 한다.
             every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
                 MonthlySalesRow(
                     sapAccountCode = "1000091",
@@ -114,6 +115,110 @@ class MonthlySalesServiceTest {
             assertThat(result.categorySales).hasSize(4)
             val ambient = result.categorySales.first { it.category == "AMBIENT" }
             assertThat(ambient.targetAmount).isEqualTo(45_970_000L)
+        }
+
+        @Test
+        @DisplayName("과거월 조회 — 마감 합계 실적은 합계 축, 「전년 대비」 차트는 양쪽 모두 카테고리 축")
+        fun pastMonthAxes() {
+            // 레거시 요소별 축 (list.jsp 현행 마크업):
+            // · 마감 합계 실적(box4) — 항상 합계 축 (`:269` 무조건, 현재월 분기 없음)
+            // · 차트 전년 값 — 항상 카테고리 축 `Σ(ABCClosingAmount_n + ShipClosingAmount_n)`
+            //   (`:205`, `ShipClosingSumAmount__c` 는 `:206` 에서 명시적 제외)
+            // · 차트 당해 값 — 과거월 조회이므로 카테고리 축 (`:253, :301`)
+            // 두 축이 어긋난 row 로 축을 고정한다. 2020-01 은 항상 과거월.
+            val account = mockk<Account> {
+                every { id } returns 100L
+                every { externalKey } returns "1000091"
+                every { name } returns "(주)이마트 월배점"
+            }
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true) } returns listOf(account)
+            every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
+                // 조회월: 카테고리 축 500만 ≠ 합계 축 700만
+                MonthlySalesRow(
+                    sapAccountCode = "1000091",
+                    salesDate = "202001",
+                    closingAmountSum = BigDecimal("7000000"),
+                    accountId = 100L,
+                    abcClosingAmount1 = BigDecimal("5000000"),
+                ),
+                // 전년: 카테고리 축 300만 ≠ 합계 축 900만
+                MonthlySalesRow(
+                    sapAccountCode = "1000091",
+                    salesDate = "201901",
+                    closingAmountSum = BigDecimal("9000000"),
+                    accountId = 100L,
+                    abcClosingAmount1 = BigDecimal("3000000"),
+                ),
+            )
+            every {
+                salesProgressRateMasterRepository.findByAccountIdAndTargetYear(100L, "2020")
+            } returns emptyList()
+
+            val result = service.getMonthlySales(
+                MonthlySalesRequest(customerId = "100", yearMonth = "202001")
+            )
+
+            assertThat(result.achievedAmount)
+                .withFailMessage("마감 합계 실적은 과거월에도 합계 축(700만)이어야 한다 — 레거시 box4 는 현재월 분기가 없다")
+                .isEqualTo(7_000_000L)
+            assertThat(result.yearComparison.currentYear)
+                .withFailMessage("과거월 차트 당해 값은 카테고리 축(500만)이어야 한다 — 합계 축(700만)이면 레거시와 어긋난다")
+                .isEqualTo(5_000_000L)
+            assertThat(result.yearComparison.previousYear)
+                .withFailMessage("차트 전년 값은 카테고리 축(300만)이어야 한다 — 합계 축(900만)이면 레거시와 어긋난다")
+                .isEqualTo(3_000_000L)
+            assertThat(result.monthlyAverage.currentYearAverage).isEqualTo(5_000_000L)
+            assertThat(result.monthlyAverage.previousYearAverage).isEqualTo(3_000_000L)
+        }
+
+        @Test
+        @DisplayName("현재월 조회 — 차트 당해 값도 합계 축으로 전환, 차트 전년은 그대로 카테고리 축")
+        fun currentMonthAxes() {
+            // 레거시 `list.jsp:253` 은 차트 당해 값에 한해 조회월이 시스템 현재월일 때만
+            // `ClosingAmountSum__c` 로 전환한다. 시계 의존이라 조회 연월을 오늘에서 만든다.
+            val today = LocalDate.now()
+            val account = mockk<Account> {
+                every { id } returns 100L
+                every { externalKey } returns "1000091"
+                every { name } returns "(주)이마트 월배점"
+            }
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true) } returns listOf(account)
+            every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
+                MonthlySalesRow(
+                    sapAccountCode = "1000091",
+                    salesDate = "%04d%02d".format(today.year, today.monthValue),
+                    closingAmountSum = BigDecimal("7000000"),
+                    accountId = 100L,
+                    abcClosingAmount1 = BigDecimal("5000000"),
+                ),
+                MonthlySalesRow(
+                    sapAccountCode = "1000091",
+                    salesDate = "%04d%02d".format(today.year - 1, today.monthValue),
+                    closingAmountSum = BigDecimal("9000000"),
+                    accountId = 100L,
+                    abcClosingAmount1 = BigDecimal("3000000"),
+                ),
+            )
+            every {
+                salesProgressRateMasterRepository.findByAccountIdAndTargetYear(100L, today.year.toString())
+            } returns emptyList()
+            // baseRate 는 이 테스트의 관심사가 아니라 0 으로 고정 (현재월이라 실제 조회가 발생한다).
+            every { workingDayMasterRepository.countWorkingDays(any(), any(), any()) } returns 0L
+
+            val result = service.getMonthlySales(
+                MonthlySalesRequest(
+                    customerId = "100",
+                    yearMonth = "%04d%02d".format(today.year, today.monthValue),
+                )
+            )
+
+            assertThat(result.achievedAmount).isEqualTo(7_000_000L)
+            assertThat(result.yearComparison.currentYear)
+                .withFailMessage("현재월 차트 당해 값은 합계 축(700만)이어야 한다 — 마감 전 당월은 카테고리 컬럼이 비어 있다")
+                .isEqualTo(7_000_000L)
+            assertThat(result.yearComparison.previousYear)
+                .withFailMessage("차트 전년 값은 현재월 조회에서도 카테고리 축(300만)이어야 한다")
+                .isEqualTo(3_000_000L)
         }
 
         @Test
