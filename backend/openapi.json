@@ -16755,8 +16755,7 @@
             "type" : [ "string", "null" ]
           },
           "age" : {
-            "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [ "string", "null" ]
           },
           "commuteDate" : {
             "type" : [ "string", "null" ]
@@ -16801,8 +16800,7 @@
             "type" : [ "string", "null" ]
           },
           "yearsOfService" : {
-            "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -25689,6 +25687,10 @@
           "lastMonthRevenue" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "maxAttendedWorkingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "startDate" : {
             "format" : "date",
@@ -34769,13 +34771,6 @@
         "operationId" : "getAllHistory",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -34857,13 +34852,6 @@
         "operationId" : "exportHistories",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "employeeName",
           "required" : false,
           "schema" : {
@@ -34927,13 +34915,6 @@
       "get" : {
         "operationId" : "getMasters",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "page",
           "required" : false,
@@ -35136,13 +35117,6 @@
         "operationId" : "getConfirmedReport",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "branchCode",
           "required" : false,
           "schema" : {
@@ -35168,13 +35142,6 @@
       "get" : {
         "operationId" : "exportConfirmedReport",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "branchCode",
           "required" : false,
@@ -35221,13 +35188,6 @@
       "get" : {
         "operationId" : "exportMasters",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "employeeName",
           "required" : false,
