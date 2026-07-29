@@ -22,6 +22,23 @@ vi.mock('@/components/charts/MonthlyTrendChart', () => ({
   default: () => null,
 }));
 
+// 유통형태/거래처유형 조회 조건 옵션 — 전산실적과 동일 endpoint 를 재사용하므로 함께 mock 한다
+// (mock 이 없으면 실제 backend 로 요청이 나가 web 테스트가 타 플랫폼에 의존하게 된다).
+vi.mock('@/api/electronicSalesDashboard', async () => {
+  const actual = await vi.importActual<typeof import('@/api/electronicSalesDashboard')>(
+    '@/api/electronicSalesDashboard',
+  );
+  return {
+    ...actual,
+    fetchFilterOptions: vi.fn().mockResolvedValue({
+      distributionChannels: [],
+      accountTypes: [],
+      categories: [],
+      dependentAccountTypes: {},
+    }),
+  };
+});
+
 // 월 매출(물류배부) 지점 셀렉터 — 대시보드와 동일한 다중 지점 화이트리스트로 고정.
 vi.mock('@/hooks/sales/useMonthlySalesBranches', () => ({
   useMonthlySalesBranches: () => ({

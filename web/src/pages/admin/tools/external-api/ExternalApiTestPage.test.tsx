@@ -50,6 +50,14 @@ const INTEGRATION_INFO_ITEMS = [
   },
 ];
 
+// 각 탭 하단 "이 API 의 최근 호출 이력" 인라인 섹션(ExternalApiLogsTab) 은 테이블 + 필터 +
+// 호출 이력 조회 훅까지 딸린 무거운 컴포넌트라, 탭 전환마다 렌더 비용이 누적되어 10초
+// testTimeout 을 초과하는 flaky 실패의 원인이 된다. 본 스위트의 검증 대상(탭 구성/각 탭의
+// 입력 폼·전송 동작) 이 아니므로 stub 으로 대체한다.
+vi.mock('./ExternalApiLogsTab', () => ({
+  default: () => <div data-testid="external-api-logs-tab" />,
+}));
+
 const fetchIntegrationInfoMock = vi.fn();
 vi.mock('@/api/admin/externalApiIntegrationInfo', () => ({
   fetchExternalApiIntegrationInfo: () => fetchIntegrationInfoMock(),
@@ -59,6 +67,26 @@ vi.mock('@/api/admin/externalApiIntegrationInfo', () => ({
     isError: false,
   }),
 }));
+
+/**
+ * 버튼 조회 — 라벨 텍스트로 찾아 감싸는 <button> 을 되짚는다 (antd Button 은 <button><span>라벨).
+ *
+ * `getByRole('button', { name })` 은 문서 전체를 돌며 접근성 이름 + 가시성(getComputedStyle)
+ * 을 계산하므로, 무거운 탭 패널이 마운트된 뒤에는 쿼리 1회에 1.3초 이상 걸려 10초 testTimeout
+ * 을 넘기는 flaky 의 주 원인이 된다. 텍스트 조회는 동일 시점에 2ms 수준이다.
+ */
+function getButton(name: string): HTMLElement {
+  const button = screen.getByText(name).closest('button');
+  if (!button) throw new Error(`"${name}" 라벨을 가진 버튼이 없습니다`);
+  return button;
+}
+
+async function findButton(name: string): Promise<HTMLElement> {
+  const label = await screen.findByText(name);
+  const button = label.closest('button');
+  if (!button) throw new Error(`"${name}" 라벨을 가진 버튼이 없습니다`);
+  return button;
+}
 
 function renderPage() {
   const client = new QueryClient({
@@ -112,7 +140,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
       await screen.findByPlaceholderText('account.external_key'),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('empcode (SFID 아님)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'SF 전송' })).toBeInTheDocument();
+    expect(getButton('SF 전송')).toBeInTheDocument();
   });
 
   it('H4b - SF 물류 클레임 등록 탭 전환 시 입력 폼과 payload 미리보기 버튼이 노출', async () => {
@@ -123,9 +151,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     expect(
       await screen.findByPlaceholderText('product.product_code'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'payload 미리보기' }),
-    ).toBeInTheDocument();
+    expect(getButton('payload 미리보기')).toBeInTheDocument();
     // SF 미전송 안내가 노출됨
     expect(
       screen.getByText(/payload 미리보기 전용/),
@@ -138,9 +164,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     await user.click(screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }));
 
     // 필수값 미입력 상태로 바로 제출 → Form 검증에 막혀 API 미호출
-    await user.click(
-      await screen.findByRole('button', { name: 'payload 미리보기' }),
-    );
+    await user.click(await findButton('payload 미리보기'));
 
     // antd Form 의 비동기 validation 메시지는 전체 스위트 병렬 실행 시 렌더 지연이
     // findByText 기본 1초를 넘길 수 있어 timeout 을 5초로 명시해 대기한다.
@@ -187,7 +211,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     const user = userEvent.setup();
     const input = screen.getByPlaceholderText(/예: 서울특별시 강남구 테헤란로 123/);
     await user.type(input, '서울특별시 강남구 테헤란로 123');
-    await user.click(screen.getByRole('button', { name: '변환' }));
+    await user.click(getButton('변환'));
 
     await waitFor(() => {
       expect(mutateAsyncMock).toHaveBeenCalledWith({
@@ -201,7 +225,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
 
   it('E1 - 주소 blank 시 "변환" 버튼이 disabled', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: '변환' })).toBeDisabled();
+    expect(getButton('변환')).toBeDisabled();
   });
 
   it('P1 - push 발송 테스트 탭 전환 시 사번/제목/본문 폼과 발송 버튼이 노출', async () => {
@@ -212,9 +236,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     expect(await screen.findByPlaceholderText('예: 00012345')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('알림 제목')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('알림 본문')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'push 발송' }),
-    ).toBeInTheDocument();
+    expect(getButton('push 발송')).toBeInTheDocument();
     // 실제 발송 경고 안내 노출
     expect(
       screen.getByText(/실제 단말로 FCM push 를 발송합니다/),
@@ -237,7 +259,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     await user.click(screen.getByRole('tab', { name: 'push 발송 테스트' }));
 
     await user.type(await screen.findByPlaceholderText('예: 00012345'), '00012345');
-    await user.click(screen.getByRole('button', { name: 'push 발송' }));
+    await user.click(getButton('push 발송'));
 
     await waitFor(() => {
       expect(pushTestMutateAsyncMock).toHaveBeenCalledWith({

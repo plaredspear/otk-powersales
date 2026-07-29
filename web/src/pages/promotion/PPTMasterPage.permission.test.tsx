@@ -43,6 +43,16 @@ vi.mock('@/hooks/common/useExcelDownload', () => ({
   useExcelDownload: () => ({ run: vi.fn(), downloading: false }),
 }));
 
+// 지점 셀렉터 옵션 + 폼 모달 메타 — mock 이 없으면 실제 backend 로 요청이 나가 web 테스트가
+// 타 플랫폼에 의존하게 된다. 본 스위트는 권한별 버튼 노출만 검증하므로 빈 목록으로 고정한다.
+vi.mock('@/hooks/promotion/usePPTBranches', () => ({
+  usePPTBranches: () => ({ data: [] }),
+}));
+
+vi.mock('@/hooks/promotion/usePPTMasterFormMeta', () => ({
+  usePPTMasterFormMeta: () => ({ data: { teamTypes: [] } }),
+}));
+
 function setPermissions(permissions: string[], profileName: string | null = '5.영업사원') {
   useAuthStore.setState({
     user: {

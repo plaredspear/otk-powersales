@@ -41,6 +41,12 @@ vi.mock('@/hooks/promotion/usePPTHistories', () => ({
   usePPTHistories: (params: unknown) => mockHook(params),
 }));
 
+// 지점 셀렉터 옵션 — mock 이 없으면 실제 backend 로 요청이 나가 web 테스트가 타 플랫폼에
+// 의존하게 된다. 본 스위트는 지점 필터를 검증하지 않으므로 빈 목록으로 고정한다.
+vi.mock('@/hooks/promotion/usePPTBranches', () => ({
+  usePPTBranches: () => ({ data: [] }),
+}));
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -130,11 +136,11 @@ describe('PPTHistoryPage', () => {
     expect(screen.getAllByText('조회 결과가 없습니다.').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('행 클릭 시 상세 모달 표시', () => {
+  it('행 클릭으로는 상세 모달이 열리지 않음 (셀 내 DetailLink 로만 이동)', () => {
     renderPage();
     const row = screen.getByText('백은경').closest('tr');
     expect(row).not.toBeNull();
     fireEvent.click(row!);
-    expect(screen.getByText('전문행사조 이력 상세')).toBeInTheDocument();
+    expect(screen.queryByText('전문행사조 이력 상세')).not.toBeInTheDocument();
   });
 });
