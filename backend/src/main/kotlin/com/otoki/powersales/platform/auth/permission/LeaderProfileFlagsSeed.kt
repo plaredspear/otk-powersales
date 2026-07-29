@@ -83,8 +83,9 @@ object LeaderProfileFlagsSeed {
 // - `DKRetail__CommuteLog__c` (근무 등록현황, 가드 entity `attendance_log`) — AdminAttendanceLogController
 //   목록/상세 가드. 모바일 출근 기록 자체(AttendanceLog 적재/조회)와는 별개로 web admin 화면만 닫는다.
 // - `AttendInfo__c` (기준정보 > HR 적재 근무기간, 가드 entity `attend_info`) — AdminAttendInfoController
-//   전 endpoint. 근무 등록현황(`attendance_log`) 과는 다른 자원이며, 인사/근무 > 근무기간 조회의 월별
-//   근무내역 탭이 쓰는 지점/사원 셀렉터(`/branches`, `/members`) 도 같은 가드 아래라 함께 닫힌다.
+//   전 endpoint (적재 마스터 목록/상세/등록/수정/삭제). 근무 등록현황(`attendance_log`) 과는 다른 자원이다.
+//   인사/근무 > 근무기간 **조회** 화면은 `work_history` 가상 자원으로 분리되어 아래 custom_permissions
+//   로 별도 부여하므로, 본 키 회수가 조회 화면을 닫지 않는다 (지점/사원 셀렉터 포함).
 // 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체휴무(`DKRetail__AlternativeHoliday__c`)
 // 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
@@ -148,11 +149,19 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
 //
 // 조장은 마스터 자체는 **조회만** 하고(EmployeeInputCriteriaMaster__c = allowRead 단독 — 등록/수정/삭제 없음),
 // 확정만 별도로 수행한다 (사용자 결정). 확정 가드는 EDIT operation 을 보므로 allowEdit 비트로 부여한다.
+//
+// `work_history` 는 인사/근무 > 근무기간 조회 화면의 가드 자원이다 (@PermissionResource,
+// AdminWorkHistoryController). 조장은 근무 실적을 **조회만** 하고 SAP HR 적재 마스터(기준정보 >
+// HR 적재 근무기간, AttendInfo__c) 는 보지 않는다 (사용자 결정) — 그래서 object_permissions 의
+// `AttendInfo__c` 는 계속 미기재(회수 유지)하고 조회 권한만 본 가상 자원으로 부여한다.
+// 두 화면이 `attend_info` 하나를 공유하던 시절에는 이 분리가 불가능했다.
+// 가드가 실재하는 operation 은 READ 단독이라 (화면 전체가 조회 전용) allowRead 만 부여한다.
 private val LEADER_6_CUSTOM_PERMISSIONS = """
 {
   "female_employee": { "allowEdit": true, "allowRead": true },
   "education_post": { "allowRead": true },
-  "employee_input_criteria_confirm": { "allowEdit": true }
+  "employee_input_criteria_confirm": { "allowEdit": true },
+  "work_history": { "allowRead": true }
 }
 """.trimIndent()
 

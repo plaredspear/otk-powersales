@@ -17,8 +17,9 @@ import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermissio
 export const ENTITY_LABELS: Record<string, string> = {
   account: '거래처',
   agreement_word: '동의 약관',
-  attend_info: '근무기간',
+  attend_info: 'HR 적재 근무기간',
   attendance_log: '근무 등록',
+  work_history: '근무기간 조회',
   claim: '클레임',
   employee: '사원',
   female_employee: '여사원',

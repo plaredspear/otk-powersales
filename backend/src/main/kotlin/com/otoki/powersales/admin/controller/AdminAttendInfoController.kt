@@ -9,25 +9,12 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminAttendInfo
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDeleteResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoListItemResponse
-import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
-import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
-import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryEmployeeAccountResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService
-import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
-import com.otoki.powersales.domain.activity.schedule.service.WorkHistoryPeriodSummaryService
-import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.platform.common.dto.response.BranchResponse
-import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
-import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
-import java.time.YearMonth
-import java.time.format.DateTimeParseException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
@@ -39,101 +26,23 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 기준정보 > HR 적재 근무기간 — SAP HR 인바운드 적재 마스터(`attend_info` 테이블) 의 CRUD.
+ *
+ * ## 권한 자원 — `attend_info` (SF `AttendInfo__c` 매핑 entity 자원)
+ *
+ * 인사/근무 > 근무기간 **조회** 화면은 본 컨트롤러가 아니라 [AdminWorkHistoryController]
+ * (`work_history` 가상 자원) 가 담당한다. 과거에는 두 화면이 본 컨트롤러 하나를 공유해
+ * `AttendInfo__c` 를 회수하면 조회 화면까지 함께 닫혔으나, 조회/편집 권한을 분리하기 위해
+ * 조회 전용 endpoint (기간별 집계 / 월별 근무내역 / 지점·사원 셀렉터) 를 그쪽으로 옮겼다.
+ *
+ * 본 컨트롤러에는 적재 마스터 자체의 목록/상세/등록/수정/삭제만 남는다.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/attend-info")
 class AdminAttendInfoController(
     private val service: AdminAttendInfoService,
-    private val workHistoryPeriodSummaryService: WorkHistoryPeriodSummaryService,
-    private val employeeWorkHistoryService: EmployeeWorkHistoryService,
 ) {
-
-    /**
-     * 기간별 근무내역(개인) — 특정 여사원 1명의 기간 내 거래처별 근무 집계.
-     *
-     * 좌측 패널에서 여사원을 선택하면 선택 기간의 근무 행을 거래처 단위로 그룹핑해 반환.
-     * 지점 스코프 밖 여사원의 사번을 지정하면 빈 결과.
-     */
-    @GetMapping("/period-summary/accounts")
-    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
-    fun getPeriodAccountSummary(
-        @CurrentDataScope scope: DataScope,
-        @RequestParam employeeCode: String,
-        @RequestParam fromYearMonth: String,
-        @RequestParam toYearMonth: String,
-    ): ResponseEntity<ApiResponse<WorkHistoryEmployeeAccountResponse>> {
-        val response = workHistoryPeriodSummaryService.getAccountSummary(
-            scope = scope,
-            employeeCode = employeeCode,
-            fromYearMonth = fromYearMonth,
-            toYearMonth = toYearMonth,
-        )
-        return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    /**
-     * 근무기간 조회 화면 "지점 선택" 드롭다운 옵션 — 권한별 조회 허용 지점.
-     */
-    @GetMapping("/branches")
-    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
-    fun getBranches(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(service.getBranches(principal)))
-    }
-
-    /**
-     * 근무기간 조회 화면 좌측 여사원 선택 목록.
-     *
-     * 여사원 일정관리의 /team-schedule/form members 를 빌려쓰던 것을 화면 도메인 권한(attend_info)으로
-     * 분리. 퇴사/휴직 등 비활성 여사원도 포함하여 과거 근무내역 조회를 지원한다.
-     *
-     * `branchCode` 지정 시 (다중/전사 권한자가 지점 선택) 해당 지점 여사원을 조회 — 권한 화이트리스트 검증.
-     */
-    @GetMapping("/members")
-    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
-    fun getMembers(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-        @RequestParam(required = false) branchCode: String?,
-    ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        return ResponseEntity.ok(ApiResponse.success(service.getMembers(principal, branchCode)))
-    }
-
-    /**
-     * 근무기간 조회 화면 "월별 근무내역(개인)" 탭 — 인원 1명 × 지정 월의 근무내역을 일자 오름차순 조회.
-     *
-     * [AdminEmployeeController] 의 동일 데이터를 사용하되, 그쪽은 `employee` READ 로 가드되어 근무기간
-     * 조회 화면(`attend_info` 게이팅) 사용자가 403 이 난다. 화면 도메인 권한(`attend_info`)으로 가드한
-     * 전용 endpoint 로 분리한다 (`/members`·`/branches` 분리와 동일 취지).
-     *
-     * @param yearMonth `yyyy-MM` (예: 2026-06).
-     */
-    @GetMapping("/{employeeId}/work-history/monthly")
-    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
-    fun getMonthlyWorkHistory(
-        @PathVariable employeeId: Long,
-        @RequestParam yearMonth: String,
-    ): ResponseEntity<ApiResponse<EmployeeWorkHistoryResponse>> {
-        val response = employeeWorkHistoryService.getMonthlyHistory(employeeId, parseYearMonth(yearMonth))
-        return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    /** 월별 근무내역(개인) 엑셀 다운로드 — 탭과 동일 데이터/컬럼을 xlsx 로 추출. */
-    @GetMapping("/{employeeId}/work-history/monthly/export")
-    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
-    fun exportMonthlyWorkHistory(
-        @PathVariable employeeId: Long,
-        @RequestParam yearMonth: String,
-    ): ResponseEntity<ByteArray> {
-        val result = employeeWorkHistoryService.exportMonthlyHistory(employeeId, parseYearMonth(yearMonth))
-        return ExcelResponseUtils.build(result)
-    }
-
-    private fun parseYearMonth(yearMonth: String): YearMonth =
-        try {
-            YearMonth.parse(yearMonth)
-        } catch (e: DateTimeParseException) {
-            throw IllegalArgumentException("yearMonth 형식이 올바르지 않습니다 (yyyy-MM): $yearMonth")
-        }
 
     @GetMapping
     @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)

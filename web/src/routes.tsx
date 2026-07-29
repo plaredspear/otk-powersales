@@ -174,9 +174,16 @@ export const router = createBrowserRouter(
                   ],
                 },
                 {
-                  element: <PermissionRoute entity="attend_info" operation="READ" />,
+                  // 인사/근무 > 근무기간 조회 (조회 전용) — 기준정보 > HR 적재 근무기간과 권한 분리.
+                  element: <PermissionRoute entity="work_history" operation="READ" />,
                   children: [
                     { path: '/attend-info', element: <LazyWrapper><AttendInfoPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  // 기준정보 > HR 적재 근무기간 (SAP HR 적재 마스터 CRUD).
+                  element: <PermissionRoute entity="attend_info" operation="READ" />,
+                  children: [
                     { path: '/settings/hr-attend-info', element: <LazyWrapper><HrAttendInfoPage /></LazyWrapper> },
                   ],
                 },

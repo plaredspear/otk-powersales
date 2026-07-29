@@ -63,9 +63,10 @@ class SfMigrationStage2Service(
          * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
          * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
          *
-         * `AttendInfo__c` 회수는 인사/근무 > 근무기간 조회의 **월별 근무내역 탭 지점/사원 셀렉터**
-         * (`/admin/attend-infos/branches`, `/members`) 에도 영향을 준다 — 같은 컨트롤러의 `attend_info`
-         * READ 가드 아래이기 때문이다. 조장은 해당 탭에서 셀렉터를 쓸 수 없게 된다 (사용자 결정 범위).
+         * `AttendInfo__c` 회수는 기준정보 > HR 적재 근무기간 화면**만** 닫는다. 인사/근무 > 근무기간
+         * 조회는 `work_history` 가상 자원(AdminWorkHistoryController, custom_permissions 경로) 으로
+         * 분리되어 조장에게 READ 가 부여되므로 조회 화면과 지점/사원 셀렉터는 계속 동작한다
+         * — 조장은 근무 실적 조회는 하되 SAP HR 적재 마스터는 보지 않는다 (사용자 결정).
          */
         val REVOKED_LEADER_OBJECT_KEYS = listOf(
             "ERP_Order__c",

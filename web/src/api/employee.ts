@@ -414,18 +414,18 @@ function detailBasePath(isFemale: boolean): string {
 /**
  * 월별 근무내역 base path 선택자 — 호출 화면의 게이팅 권한과 API 가드를 정합.
  *
- * 근무기간 조회 화면(`attend_info` 권한)은 `/attend-info/*`, 여사원 현황(`female_employee`)은
+ * 근무기간 조회 화면(`work_history` 권한)은 `/work-history/*`, 여사원 현황(`female_employee`)은
  * `/female-employees/*`, 그 외(설정 사원, `employee`)는 `/employees/*` 를 호출한다. 각 base 의
  * `{id}/work-history/monthly` 는 해당 도메인 entity READ 로 가드된다.
  */
-export type WorkHistoryScope = 'employee' | 'female' | 'attendInfo';
+export type WorkHistoryScope = 'employee' | 'female' | 'workHistory';
 
 function monthlyWorkHistoryBasePath(scope: WorkHistoryScope): string {
   switch (scope) {
     case 'female':
       return '/api/v1/admin/female-employees';
-    case 'attendInfo':
-      return '/api/v1/admin/attend-info';
+    case 'workHistory':
+      return '/api/v1/admin/work-history';
     default:
       return '/api/v1/admin/employees';
   }

@@ -65,4 +65,21 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
         assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS)
             .contains("AttendInfo__c", "DKRetail__CommuteLog__c")
     }
+
+    @Test
+    @DisplayName("조장은 근무기간 조회(work_history) READ 보유 + HR 적재 근무기간(attend_info) 미보유 (사용자 결정)")
+    fun `leader has work history read but not attend info`() {
+        // 두 화면의 권한 분리 — 조장은 근무 실적 **조회**는 하되 SAP HR 적재 마스터는 편집/조회하지 않는다.
+        // 분리 전에는 두 화면이 attend_info 하나를 공유해 AttendInfo__c 회수 시 조회 화면까지 닫혔다.
+        assertThat(leaderSeed.customPermissionsJson)
+            .withFailMessage("근무기간 조회 권한(work_history READ)이 6.조장 SoT 에 없습니다")
+            .contains("\"work_history\"")
+
+        // 조회 전용 화면이라 READ 단독 — EDIT/CREATE/DELETE 비트는 대응 가드가 없는 죽은 키다.
+        assertThat(leaderSeed.customPermissionsJson).contains("\"work_history\": { \"allowRead\": true }")
+
+        // attend_info 축은 계속 회수 상태여야 분리가 의미를 갖는다.
+        assertThat(leaderSeed.objectPermissionsJson).doesNotContain("AttendInfo__c")
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains("AttendInfo__c")
+    }
 }

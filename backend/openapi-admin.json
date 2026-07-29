@@ -21233,166 +21233,6 @@
         "tags" : [ "admin-attend-info-controller" ]
       }
     },
-    "/api/v1/admin/attend-info/branches" : {
-      "get" : {
-        "operationId" : "getBranches_7",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-attend-info-controller" ]
-      }
-    },
-    "/api/v1/admin/attend-info/members" : {
-      "get" : {
-        "operationId" : "getMembers",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "branchCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-attend-info-controller" ]
-      }
-    },
-    "/api/v1/admin/attend-info/period-summary/accounts" : {
-      "get" : {
-        "operationId" : "getPeriodAccountSummary",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
-          "name" : "employeeCode",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "fromYearMonth",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "toYearMonth",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseWorkHistoryEmployeeAccountResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-attend-info-controller" ]
-      }
-    },
-    "/api/v1/admin/attend-info/{employeeId}/work-history/monthly" : {
-      "get" : {
-        "operationId" : "getMonthlyWorkHistory_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "employeeId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "yearMonth",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeWorkHistoryResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-attend-info-controller" ]
-      }
-    },
-    "/api/v1/admin/attend-info/{employeeId}/work-history/monthly/export" : {
-      "get" : {
-        "operationId" : "exportMonthlyWorkHistory_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "employeeId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "yearMonth",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-attend-info-controller" ]
-      }
-    },
     "/api/v1/admin/attend-info/{id}" : {
       "delete" : {
         "operationId" : "delete_4",
@@ -22097,7 +21937,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_6",
+        "operationId" : "getBranches_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -23369,7 +23209,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -23876,7 +23716,7 @@
     },
     "/api/v1/admin/employees/{employeeId}/work-history/monthly" : {
       "get" : {
-        "operationId" : "getMonthlyWorkHistory",
+        "operationId" : "getMonthlyWorkHistory_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "employeeId",
@@ -23910,7 +23750,7 @@
     },
     "/api/v1/admin/employees/{employeeId}/work-history/monthly/export" : {
       "get" : {
-        "operationId" : "exportMonthlyWorkHistory",
+        "operationId" : "exportMonthlyWorkHistory_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "employeeId",
@@ -25497,7 +25337,7 @@
     },
     "/api/v1/admin/inspection-themes/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -27136,7 +26976,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -29317,7 +29157,7 @@
     },
     "/api/v1/admin/sales-progress-rate-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -34076,7 +33916,7 @@
     },
     "/api/v1/admin/team-schedule/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -34410,7 +34250,7 @@
     },
     "/api/v1/admin/users/branches" : {
       "get" : {
-        "operationId" : "getBranches",
+        "operationId" : "getBranches_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -34559,6 +34399,166 @@
           }
         },
         "tags" : [ "admin-user-controller" ]
+      }
+    },
+    "/api/v1/admin/work-history/branches" : {
+      "get" : {
+        "operationId" : "getBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-work-history-controller" ]
+      }
+    },
+    "/api/v1/admin/work-history/members" : {
+      "get" : {
+        "operationId" : "getMembers",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-work-history-controller" ]
+      }
+    },
+    "/api/v1/admin/work-history/period-summary/accounts" : {
+      "get" : {
+        "operationId" : "getPeriodAccountSummary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fromYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "toYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWorkHistoryEmployeeAccountResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-work-history-controller" ]
+      }
+    },
+    "/api/v1/admin/work-history/{employeeId}/work-history/monthly" : {
+      "get" : {
+        "operationId" : "getMonthlyWorkHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeWorkHistoryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-work-history-controller" ]
+      }
+    },
+    "/api/v1/admin/work-history/{employeeId}/work-history/monthly/export" : {
+      "get" : {
+        "operationId" : "exportMonthlyWorkHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-work-history-controller" ]
       }
     },
     "/api/v1/admin/working-day-masters" : {

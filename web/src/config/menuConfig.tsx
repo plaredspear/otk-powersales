@@ -115,7 +115,7 @@ export const menuRoute: MenuRoute = {
             { path: '/female-employee/:employeeId', name: '여사원 상세', entity: 'female_employee', operation: 'READ' },
           ],
         },
-        { path: '/attend-info', name: '근무기간 조회', entity: 'attend_info', operation: 'READ' },
+        { path: '/attend-info', name: '근무기간 조회', entity: 'work_history', operation: 'READ' },
       ],
     },
     {
