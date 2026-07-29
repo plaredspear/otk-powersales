@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedR
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedReportResponse
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -27,18 +28,24 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminPPTConfirmedReportService(
     private val pptMasterRepository: PPTMasterRepository,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
      * 전문행사조 확정 인원 조회 (isConfirmed=true).
      *
-     * 지점 스코프 — 사원 소속 지점(costCenterCode) 기준. 전사 권한은 전체, 그 외는 본인 지점만.
+     * 지점 스코프 — 사원 소속 지점(costCenterCode) 기준. 마스터/이력 조회와 동일하게 컨트롤러
+     * ([com.otoki.powersales.admin.controller.AdminPPTMasterController] 의 `resolveBranchScope`) 가
+     * 셀렉터와 같은 출처(`DashboardBranchResolver`) 로 산출한 `scope` 를 넘겨준다.
      * `branchCode` 지정 시 해당 지점만. 권한 밖 지점 요청(NoAccess)은 빈 결과.
+     *
+     * 지점 코드는 최종 필터 직전에 `BranchMapping` 확장을 1회 적용한다 — 조직 개편 전 코드가 남아 있는
+     * 사원이 누락되지 않도록 ([AdminPPTMasterService] 의 `expandBranchCodes` 와 동일 축).
      */
     fun getReport(scope: DataScope, branchCode: String?): PPTConfirmedReportResponse {
         val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.Filtered -> branchCodeExpander.expand(result.codes).toList()
             is EffectiveBranchResult.NoAccess -> return PPTConfirmedReportResponse(emptyList())
         }
         val masters = pptMasterRepository.findConfirmedReport(branchCodeFilter)

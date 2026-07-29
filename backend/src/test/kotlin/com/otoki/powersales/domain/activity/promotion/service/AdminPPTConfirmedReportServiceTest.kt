@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.promotion.service
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
@@ -20,7 +21,12 @@ import java.time.LocalDate
 class AdminPPTConfirmedReportServiceTest {
 
     private val repository: PPTMasterRepository = mockk()
-    private val service = AdminPPTConfirmedReportService(repository)
+
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
+
+    private val service = AdminPPTConfirmedReportService(repository, branchCodeExpander)
 
     private fun allBranchesScope(): DataScope =
         DataScope(branchCodes = emptyList(), isAllBranches = true)

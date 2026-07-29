@@ -33,6 +33,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
@@ -54,12 +55,33 @@ class AdminPPTMasterService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val pptHistoryExcelExporter: PPTHistoryExcelExporter
+    private val pptHistoryExcelExporter: PPTHistoryExcelExporter,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     companion object {
         private const val BULK_MAX_SIZE = 450
         private const val EXPORT_MAX_ROWS = 50_000
+    }
+
+    /**
+     * 지점 보안 필터에 `BranchMapping` 확장을 적용 — 여사원 현황
+     * ([com.otoki.powersales.domain.org.employee.service.AdminEmployeeService] 의 `expandBranchCodes`) 정합.
+     *
+     * 조직 개편으로 코드가 바뀐 지점의 **옛 코드**(예: `5452` → `5815`) 를 함께 매칭하기 위함이다.
+     * 사원의 `costCenterCode` 가 아직 개편 전 코드로 남아 있으면(미발령 잔존) 확장 없이는 목록에서
+     * 누락되며, 같은 사원이 여사원 현황에는 나오는데 전문행사조에는 안 나오는 불일치가 된다.
+     *
+     * 확장은 스코프 산출부([com.otoki.powersales.admin.controller.AdminPPTMasterController] 의
+     * `resolveBranchScope`) 가 아니라 **최종 필터 직전인 여기서 1회만** 적용한다 —
+     * `DataScope.effectiveBranchCodes` 가 지점 **선택** 시 요청 코드 1건만 `Filtered` 로 돌려주므로
+     * 스코프 단계에서 확장하면 그 집합이 버려지고, 화이트리스트 판정에 확장 결과를 쓰면 롤업 행 때문에
+     * 타 조직까지 넓어진다 ([com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander]
+     * KDoc "화이트리스트 판정에 쓰지 말 것" 참조).
+     */
+    private fun expandBranchCodes(codes: List<String>): List<String> {
+        if (codes.isEmpty()) return codes
+        return branchCodeExpander.expand(codes).toList()
     }
 
     /**
@@ -85,11 +107,13 @@ class AdminPPTMasterService(
         validOnly: Boolean,
         pageable: Pageable
     ): PPTMasterListResponse {
-        // 지점 스코프 — 여사원 현황/일정 화면과 동일하게 본인 소속 지점만 노출 (전사 권한은 전체).
+        // 지점 스코프 — 여사원 현황과 동일 출처(DashboardBranchResolver). 지점 권한자는 본인 조직 트리,
+        // 전사 권한자는 고정 화이트리스트 34개로 제한된 `scope` 를 컨트롤러
+        // ([com.otoki.powersales.admin.controller.AdminPPTMasterController] 의 resolveBranchScope) 가 넘겨준다.
         // 데이터의 branch_code 컬럼은 비어 있으므로 사원 소속 지점(costCenterCode) 기준으로 평가한다.
         val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.Filtered -> expandBranchCodes(result.codes)
             is EffectiveBranchResult.NoAccess -> return emptyMasterList(pageable)
         }
         val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
@@ -294,7 +318,7 @@ class AdminPPTMasterService(
         // branchCode 지정 시(다중지점 사용자가 지점 선택) 해당 지점만 — 권한 밖이면 NoAccess.
         val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.Filtered -> expandBranchCodes(result.codes)
             is EffectiveBranchResult.NoAccess -> return emptyHistoryList(pageable)
         }
         // "일반" 은 enum 값이 아니라 미지정(해제) 상태 — new_value IS NULL 또는 raw '일반'
@@ -336,7 +360,7 @@ class AdminPPTMasterService(
             else -> {
                 val branchCodeFilter = when (result) {
                     is EffectiveBranchResult.All -> null
-                    is EffectiveBranchResult.Filtered -> result.codes
+                    is EffectiveBranchResult.Filtered -> expandBranchCodes(result.codes)
                     is EffectiveBranchResult.NoAccess -> emptyList() // unreachable
                 }
                 // "일반" 은 enum 값이 아니라 미지정(해제) 상태 — 목록 화면과 동일하게
@@ -380,7 +404,7 @@ class AdminPPTMasterService(
         } else {
             val branchCodeFilter = when (scopeResult) {
                 is EffectiveBranchResult.All -> null
-                is EffectiveBranchResult.Filtered -> scopeResult.codes
+                is EffectiveBranchResult.Filtered -> expandBranchCodes(scopeResult.codes)
                 is EffectiveBranchResult.NoAccess -> emptyList() // unreachable
             }
             val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)

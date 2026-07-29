@@ -1,13 +1,12 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
@@ -50,18 +49,29 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockkBean private lateinit var adminPPTMasterService: AdminPPTMasterService
     @MockkBean private lateinit var pptConfirmedReportService: AdminPPTConfirmedReportService
-    @MockkBean private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
+    @MockkBean private lateinit var dashboardBranchResolver: DashboardBranchResolver
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
+    fun stubBranchResolver() {
+        // 지점 셀렉터 + 목록/엑셀 조회 스코프의 단일 출처 (여사원 현황과 동일 목록).
+        // 지점 축을 검증하는 테스트는 AdminPPTMasterControllerBranchScopeTest 가 담당하므로
+        // 여기서는 요청 지점이 NoAccess 로 막히지 않을 최소 stub 만 둔다.
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "1100", branchName = "강남지점"),
+        )
+    }
+
+    @BeforeEach
     fun stubArgumentResolver() {
+        // 본 컨트롤러는 @CurrentDataScope 를 더 이상 쓰지 않지만 (지점 스코프는 resolveBranchScope 가 산출),
+        // Spring 이 모든 핸들러 파라미터마다 supportsParameter 를 호출하므로 stub 을 유지한다.
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
             val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     private fun createResponse(): PPTMasterResponse = PPTMasterResponse(
@@ -137,7 +147,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 권한별 지점 목록 반환")
         fun getBranches_success() {
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
                 BranchResponse(branchCode = "1100", branchName = "강남지점"),
                 BranchResponse(branchCode = "1200", branchName = "서초지점"),
             )

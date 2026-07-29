@@ -23,6 +23,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -51,6 +52,10 @@ class AdminPPTMasterServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
 
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
+
     private val service: AdminPPTMasterService = AdminPPTMasterService(
         pptMasterRepository = pptMasterRepository,
         pptHistoryRepository = pptHistoryRepository,
@@ -58,6 +63,7 @@ class AdminPPTMasterServiceTest {
         accountRepository = accountRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         pptHistoryExcelExporter = PPTHistoryExcelExporter(),
+        branchCodeExpander = branchCodeExpander,
     )
 
     private lateinit var batchService: PPTMasterBatchService
