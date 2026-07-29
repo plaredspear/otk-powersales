@@ -1,8 +1,8 @@
 import './AdminLayout.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
-import { Dropdown, Input, Typography, type MenuProps } from 'antd';
+import { Dropdown, Input, Typography, type InputRef, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -24,6 +24,10 @@ const { Text } = Typography;
 
 const SIDER_COLLAPSED_KEY = 'admin.sider.collapsed';
 
+/** macOS 계열이면 ⌘, 그 외는 Ctrl 을 단축키 힌트로 표기한다. */
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const MENU_SEARCH_HOTKEY_LABEL = IS_MAC ? '⌘K' : 'Ctrl K';
+
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,11 +41,30 @@ export default function AdminLayout() {
   });
   const [menuKeyword, setMenuKeyword] = useState('');
   const isSearching = normalizeMenuKeyword(menuKeyword).length > 0;
+  const menuSearchRef = useRef<InputRef>(null);
 
   const handleCollapse = (next: boolean) => {
     setCollapsed(next);
     localStorage.setItem(SIDER_COLLAPSED_KEY, String(next));
   };
+
+  // ⌘K / Ctrl+K 로 메뉴 검색에 포커스. 사이더가 접혀 있으면 먼저 펼친 뒤 포커스한다
+  // (접힘 상태에서는 menuExtraRender 가 검색 UI 를 렌더하지 않기 때문).
+  useEffect(() => {
+    const handleHotkey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey) || e.altKey) return;
+      e.preventDefault();
+      setCollapsed((prev) => {
+        if (!prev) return prev;
+        localStorage.setItem(SIDER_COLLAPSED_KEY, 'false');
+        return false;
+      });
+      // 펼침 렌더 이후에 포커스가 걸리도록 다음 프레임으로 미룬다.
+      requestAnimationFrame(() => menuSearchRef.current?.focus({ cursor: 'all' }));
+    };
+    window.addEventListener('keydown', handleHotkey);
+    return () => window.removeEventListener('keydown', handleHotkey);
+  }, []);
 
   const filteredMenuRoute = useMemo(() => {
     const itemAllowed = (item: MenuItem): boolean => {
@@ -111,16 +134,29 @@ export default function AdminLayout() {
           // 비검색 시 undefined 로 두어 제어 모드를 벗어나 기본 동작 복원.
           menuOpenKeys ? { openKeys: menuOpenKeys } : undefined
         }
-        menuExtraRender={({ collapsed: menuCollapsed }) =>
-          menuCollapsed ? null : (
+        // menuExtraRender 콜백 인자의 collapsed 는 이 ProLayout 버전에서 undefined 로 넘어와
+        // 접힘 판정에 쓸 수 없다 (조건이 항상 falsy 가 되어 접어도 검색창이 남았다).
+        // 레이아웃이 소유한 collapsed state 를 직접 참조한다.
+        menuExtraRender={() =>
+          collapsed ? null : (
             <div className="admin-sider-search">
               <Input
                 allowClear
-                size="small"
+                ref={menuSearchRef}
                 prefix={<SearchOutlined />}
+                // 입력 중에는 allowClear 의 clear 아이콘이 suffix 자리를 쓰므로 키캡은 빈 상태에서만 노출.
+                suffix={
+                  menuKeyword ? undefined : (
+                    <kbd className="admin-sider-search-kbd">{MENU_SEARCH_HOTKEY_LABEL}</kbd>
+                  )
+                }
                 placeholder="메뉴 검색"
+                aria-label={`메뉴 검색 (${MENU_SEARCH_HOTKEY_LABEL})`}
                 value={menuKeyword}
                 onChange={(e) => setMenuKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setMenuKeyword('');
+                }}
               />
             </div>
           )
