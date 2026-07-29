@@ -1137,6 +1137,94 @@ class DisplayWorkScheduleRepositoryTest {
                 .describedAs("퇴직 조회 — 면직 포함(중복 없이)")
                 .containsExactlyInAnyOrder("면직인데재직", "면직인데휴직", "면직이고퇴직", "면직이고종료일미래")
         }
+
+        /**
+         * 사원 미배정(employee_id IS NULL) 스케줄이 재직상태 필터에 의해 사라지지 않아야 한다.
+         *
+         * 필터 술어가 alias 조인(`leftJoin(displayWorkSchedule.employee, employee)`) 대신 경로 표현식
+         * (`displayWorkSchedule.employee.status`) 을 쓰면 JPQL 이 **implicit inner join** 을 하나 더
+         * 만들어, 사원이 없는 행이 재직/휴직/퇴직 어느 필터로도 잡히지 않고 통째로 누락된다.
+         * 사원 미배정 행은 표시값 계산상 어느 분류에도 속하지 않으므로 조회 결과에는 안 나오는 것이
+         * 맞지만, **필터를 걸지 않았을 때는 반드시 보여야** 한다.
+         */
+        @Test
+        @DisplayName("사원 미배정 스케줄은 필터 미적용 조회에 포함된다 (implicit inner join 회귀 방지)")
+        fun unassignedScheduleSurvivesWithoutFilter() {
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = null,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = today.minusDays(3),
+                    endDate = today.plusDays(3),
+                )
+            )
+            persistCase("재직활성", "재직", true, null)
+            testEntityManager.clear()
+
+            val unfiltered = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            )
+            assertThat(unfiltered.content.map { it.employeeName })
+                .describedAs("필터 미적용 — 사원 미배정 행(employeeName=null) 포함")
+                .containsExactlyInAnyOrder(null, "재직활성")
+        }
+
+        /**
+         * content 와 totalElements 가 같은 모수를 세야 한다.
+         *
+         * 목록 쿼리는 employee 를 명시 leftJoin 하지만 count 쿼리는 그 조인이 없어, 필터 술어가
+         * 경로 표현식이면 count 쪽에만 implicit inner join 이 붙어 **행은 보이는데 총 건수가 다른**
+         * 상태가 된다. 사원 미배정 행을 섞어 두 값이 어긋나지 않는지 검증한다.
+         */
+        @Test
+        @DisplayName("content 와 totalElements 가 동일 모수 (count 쿼리 조인 정합)")
+        fun countMatchesContent() {
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = null,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = today.minusDays(3),
+                    endDate = today.plusDays(3),
+                )
+            )
+            persistCase("재직활성", "재직", true, null)
+            persistCase("휴직활성", "휴직", true, null)
+            testEntityManager.clear()
+
+            // pageSize 를 전체 건수보다 작게 잡아 count 쿼리 실행을 강제한다 —
+            // PageableExecutionUtils 는 첫 페이지에 전건이 들어가면 count 를 생략하므로,
+            // 큰 pageSize 로는 count 쿼리 자체가 검증되지 않는다.
+            val unfiltered = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 1),
+            )
+            assertThat(unfiltered.totalElements)
+                .describedAs("필터 미적용 — count 가 사원 미배정 행을 포함한 전건")
+                .isEqualTo(3L)
+
+            // 재직상태 필터를 걸면 count 쿼리에만 employee 가 붙는다. 목록은 leftJoin 인데 count 는
+            // 경로 표현식이 유발한 inner join 이라, 두 쿼리의 조인 종류가 어긋나면 여기서 드러난다.
+            val active = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null,
+                ScheduleEmploymentStatus.ACTIVE, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 1),
+            )
+            val activeAll = displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, null, null,
+                ScheduleEmploymentStatus.ACTIVE, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            )
+            assertThat(active.totalElements)
+                .describedAs("재직 필터 — count 총 건수가 목록 실제 행 수와 일치")
+                .isEqualTo(activeAll.content.size.toLong())
+        }
     }
 
     @Nested

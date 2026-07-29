@@ -19,6 +19,7 @@ export function useScheduleList(params: ScheduleListParams) {
       params.periodStart,
       params.periodEnd,
       params.validData,
+      params.employmentStatus,
       params.branchCode,
       params.sortBy,
       params.sortDir,

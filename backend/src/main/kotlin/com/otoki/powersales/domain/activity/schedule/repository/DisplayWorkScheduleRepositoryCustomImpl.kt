@@ -143,9 +143,13 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .limit(pageable.pageSize.toLong())
             .fetch()
 
+        // employee 를 목록 쿼리와 **동일하게 leftJoin** 한다 — 재직상태/유효여부 필터가 employee 필드를
+        // 참조하므로, 조인이 없으면 alias 해석이 implicit inner join 으로 떨어져 사원 미배정 행이
+        // count 에서만 빠진다(목록 행 수 ≠ 총 건수).
         val countQuery = queryFactory
             .select(displayWorkSchedule.count())
             .from(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee, employee)
             .leftJoin(displayWorkSchedule.ownerUser)
             .where(where)
 
@@ -303,9 +307,12 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
         val startDate = displayWorkSchedule.startDate
         val endDate = displayWorkSchedule.endDate
-        val empStatus = displayWorkSchedule.employee.status
-        val empAppLoginActive = displayWorkSchedule.employee.appLoginActive
-        val empEndDate = displayWorkSchedule.employee.endDate
+        // 사원 필드는 조인 alias(employee) 로 참조한다 — 경로 표현식(displayWorkSchedule.employee.*) 은
+        // implicit inner join 을 유발해 목록(leftJoin)과 count 쿼리의 모수가 갈린다
+        // ([buildEmploymentStatusCondition] 주석 참조).
+        val empStatus = employee.status
+        val empAppLoginActive = employee.appLoginActive
+        val empEndDate = employee.endDate
 
         // resigned = status='퇴직' OR appLoginActive != true (NULL 포함)
         val resigned: BooleanExpression = empStatus.eq(EmploymentStatus.RESIGNED.code)
@@ -378,9 +385,13 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     ): BooleanBuilder? {
         if (employmentStatus == null) return null
 
-        val empStatus = displayWorkSchedule.employee.status
-        val empAppLoginActive = displayWorkSchedule.employee.appLoginActive
-        val empEndDate = displayWorkSchedule.employee.endDate
+        // 사원 필드는 반드시 조인 alias(employee) 로 참조한다. 경로 표현식
+        // (`displayWorkSchedule.employee.status`) 을 쓰면 JPQL 이 목록 쿼리의 leftJoin 과 **별개로**
+        // implicit inner join 을 만들어, employee 조인이 없는 count 쿼리에서만 사원 미배정 행이
+        // 걸러진다 — 목록 1건인데 총 건수 2건이 되는 모수 불일치가 발생한다.
+        val empStatus = employee.status
+        val empAppLoginActive = employee.appLoginActive
+        val empEndDate = employee.endDate
 
         // resigned = status='퇴직' OR appLoginActive != true (NULL 포함)
         val resigned: BooleanExpression = empStatus.eq(EmploymentStatus.RESIGNED.code)
@@ -398,9 +409,9 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         // 면직 = 퇴직 취급 ([DismissalPolicy]). 재직/휴직 쪽은 발령명 NULL 행이 3값 논리로
         // 탈락하지 않도록 IS NULL 을 함께 허용한다.
         val dismissed: BooleanExpression =
-            displayWorkSchedule.employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
+            employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
         val notDismissed: BooleanExpression =
-            displayWorkSchedule.employee.ordDetailNode.isNull.or(dismissed.not())
+            employee.ordDetailNode.isNull.or(dismissed.not())
 
         return when (employmentStatus) {
             ScheduleEmploymentStatus.RESIGNED ->
