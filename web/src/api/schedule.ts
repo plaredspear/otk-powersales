@@ -73,8 +73,13 @@ export interface ScheduleListItem {
   confirmed: boolean | null;
   costCenterCode: string | null;
   lastMonthRevenue: number | null;
-  /** 연결 여사원일정 중 실제 출근(출근보고시각 채워짐)한 건수 — 1 이상이면 수정 불가 */
+  /** 연결 여사원일정 중 실제 출근(출근보고시각 채워짐)한 건수 — 1 이상이면 종료일만 수정 가능 */
   attendanceCount: number;
+  /**
+   * 출근보고된 최종 근무일 (YYYY-MM-DD) — 종료일 수정 하한. 출근보고 0건이면 null (하한 없음).
+   * 이 일자보다 앞선 종료일로는 수정할 수 없다 (backend V4a).
+   */
+  maxAttendedWorkingDate: string | null;
 }
 
 export interface ScheduleListResponse {

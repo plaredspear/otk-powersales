@@ -226,14 +226,10 @@ function buildListColumns(
       fixed: 'right',
       render: (_, row) => (
         <Space size={4}>
-          {row.attendanceCount > 0 && row.endDate != null ? (
-            <Tooltip placement="left" title={`근무등록(${row.attendanceCount}건)된 스케줄은 수정할 수 없습니다`}>
-              <Button size="small" disabled>
-                수정
-              </Button>
-            </Tooltip>
-          ) : row.attendanceCount > 0 ? (
-            // 근무등록되어도 종료일이 없으면 종료일 입력을 위해 수정 허용 (모달에서 종료일만 편집 가능)
+          {row.attendanceCount > 0 ? (
+            // 근무등록되어도 종료일 수정은 허용한다 (SF `EditDisableForDisplayMaster` 가 종료일을
+            // ISCHANGED 목록에서 제외한 것과 정합). 종료일을 이미 근무등록된 최종 근무일보다
+            // 앞으로 당기는 것만 backend V4a 가 차단하고, 미래 연장 / 종료일 삭제는 허용.
             <Tooltip placement="left" title={`근무등록 ${row.attendanceCount}건, 종료일만 수정 가능합니다`}>
               <Button size="small" onClick={() => onEdit(row)}>
                 수정

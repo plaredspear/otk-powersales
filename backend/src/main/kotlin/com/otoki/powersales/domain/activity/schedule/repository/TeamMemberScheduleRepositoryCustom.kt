@@ -32,6 +32,20 @@ interface TeamMemberScheduleRepositoryCustom {
     fun countAttendedByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, Long>
 
     /**
+     * 진열마스터 종료일 하한 판정용 — 진열마스터 id 목록별 **실제 출근(commuteReportDatetime 채워짐)**
+     * 일정의 MAX(working_date) 를 페이지 단위 1쿼리로 집계 (id IN + GROUP BY, N+1 회피).
+     *
+     * 종료일을 이 일자보다 앞으로 당기면 이미 출근보고된 근무일이 마스터 기간 밖으로 밀려나
+     * 조회/배치 모수에서 사라지므로(고아 행), 수정 시 하한으로 사용한다.
+     * 모수는 [countAttendedByDisplayWorkScheduleIds] 와 동일한 출근보고 축이라
+     * 화면의 `attendanceCount` 표기와 판정 기준이 일치한다.
+     * 출근보고 0건 마스터는 결과에서 제외되므로, 반환 Map 에 키가 없으면 하한 없음(null)으로 처리한다.
+     *
+     * @return Map<displayWorkScheduleId, maxWorkingDate> (출근보고 1건 이상인 마스터만 포함)
+     */
+    fun findMaxAttendedWorkingDateByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, LocalDate>
+
+    /**
      * 여사원 현황 "근무형태/근무거래처" 컬럼용 — 사원별 **가장 최근 출근(근무)등록 1건**의
      * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) + 거래처명/거래처코드를 조회.
      *

@@ -841,6 +841,90 @@ class ScheduleUploadValidatorTest {
         }
 
         @Test
+        @DisplayName("V4a 종료일을 출근보고된 최종 근무일보다 앞으로 단축 - 에러")
+        fun validateSingle_endDateBeforeMaxAttendedWorkingDate() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 5, 20),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList(),
+                maxAttendedWorkingDate = LocalDate.of(2026, 5, 25)
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("이미 근무등록된 최종 근무일") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V4a 종료일 = 출근보고된 최종 근무일 (경계) - 통과")
+        fun validateSingle_endDateEqualsMaxAttendedWorkingDate() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 5, 25),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList(),
+                maxAttendedWorkingDate = LocalDate.of(2026, 5, 25)
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull()
+        }
+
+        @Test
+        @DisplayName("V4a 종료일을 미래로 연장 - 통과")
+        fun validateSingle_endDateExtendedBeyondMaxAttended() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 12, 31),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList(),
+                maxAttendedWorkingDate = LocalDate.of(2026, 5, 25)
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull()
+        }
+
+        @Test
+        @DisplayName("V4a 종료일 없음(무기한) - 하한 있어도 통과")
+        fun validateSingle_nullEndDateSkipsFloor() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null,
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList(),
+                maxAttendedWorkingDate = LocalDate.of(2026, 5, 25)
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull()
+        }
+
+        @Test
         @DisplayName("V7 임시 + 고정 - 차단")
         fun validateSingle_temporaryWithFixed() {
             val result = validator.validateSingle(

@@ -104,6 +104,18 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
   const isAttendanceLocked = isEdit && (editTarget?.attendanceCount ?? 0) > 0;
   const isLocked = isAttendanceLocked;
 
+  /**
+   * 종료일 하한 — 이미 출근보고된 최종 근무일(backend V4a). 이 일자보다 앞으로 당기면
+   * 해당 근무 행이 마스터 기간 밖으로 밀려나므로 선택 자체를 막는다.
+   * 미래로 연장하거나 종료일을 비우는 것(allowClear)은 제한하지 않는다.
+   */
+  const endDateFloor = isEdit && editTarget?.maxAttendedWorkingDate
+    ? dayjs(editTarget.maxAttendedWorkingDate)
+    : null;
+  const disabledEndDate = endDateFloor
+    ? (current: Dayjs) => current.isBefore(endDateFloor, 'day')
+    : undefined;
+
   useEffect(() => {
     if (!open) return;
     setErrorMessage(null);
@@ -189,7 +201,11 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       {isLocked && (
         <Alert
           type="warning"
-          message="근무등록이 시작된 스케줄입니다. 종료일만 변경할 수 있습니다."
+          message={
+            endDateFloor
+              ? `근무등록이 시작된 스케줄입니다. 종료일만 변경할 수 있으며, 최종 근무일(${endDateFloor.format('YYYY-MM-DD')}) 이전으로는 지정할 수 없습니다.`
+              : '근무등록이 시작된 스케줄입니다. 종료일만 변경할 수 있습니다.'
+          }
           style={{ marginBottom: 16 }}
         />
       )}
@@ -271,6 +287,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
                 style={{ width: '100%' }}
                 placeholder={endDateRequired ? '종료일' : '종료일 (선택)'}
                 disabled={false}
+                disabledDate={disabledEndDate}
               />
             </Form.Item>
           </Form>

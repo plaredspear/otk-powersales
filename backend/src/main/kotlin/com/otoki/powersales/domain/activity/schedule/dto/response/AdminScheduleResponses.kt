@@ -65,8 +65,11 @@ data class ScheduleListItemDto(
     val confirmed: Boolean?,
     val costCenterCode: String?,
     val lastMonthRevenue: Long?,
-    // 연결 여사원일정 중 실제 출근(commuteReportDatetime 채워짐)한 건수 — 0 이면 수정 가능
-    val attendanceCount: Long = 0
+    // 연결 여사원일정 중 실제 출근(commuteReportDatetime 채워짐)한 건수 — 0 이면 전체 필드 수정 가능
+    val attendanceCount: Long = 0,
+    // 출근보고된 최종 근무일 — 종료일 수정 하한(V4a). 출근보고 0건이면 null (하한 없음).
+    // 웹 수정 모달의 종료일 DatePicker `disabledDate` 경계로 사용한다.
+    val maxAttendedWorkingDate: LocalDate? = null
 )
 
 data class ScheduleBatchConfirmResultDto(

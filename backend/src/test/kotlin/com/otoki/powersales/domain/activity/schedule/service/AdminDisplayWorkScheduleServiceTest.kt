@@ -1197,6 +1197,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
             every { teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(listOf(1L)) } returns emptyMap()
+            every { teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(listOf(1L)) } returns emptyMap()
 
             val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -1225,6 +1226,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
             every { teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(listOf(1L, 2L)) } returns emptyMap()
+            every { teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(listOf(1L, 2L)) } returns emptyMap()
 
             val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -1709,10 +1711,12 @@ class AdminDisplayWorkScheduleServiceTest {
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
             every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
             every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
+            // 출근보고 0건 → 종료일 하한(V4a) 없음
+            every { teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(listOf(scheduleId)) } returns emptyMap()
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(LocalDate.of(2026, 5, 31)),
-                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId), isNull()
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
             every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
@@ -1723,6 +1727,168 @@ class AdminDisplayWorkScheduleServiceTest {
             )
 
             assertThat(schedule.endDate).isEqualTo(LocalDate.of(2026, 5, 31))
+        }
+
+        /**
+         * V4a — 종료일을 이미 출근보고된 최종 근무일보다 앞으로 당길 때만 하한을 건다.
+         * 미래 연장 / 종료일 삭제(null) / 종료일 미변경은 하한 조회 자체를 하지 않는다.
+         */
+        @Test
+        @DisplayName("V4a — 근무등록 있어도 종료일 미래 연장은 하한을 validator 에 전달하고 통과")
+        fun updateSchedule_endDateExtendPassesFloorToValidator() {
+            val scope = mockAdminScope()
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val maxAttended = LocalDate.of(2026, 6, 10)
+            val newEndDate = LocalDate.of(2026, 12, 31)
+            val schedule = DisplayWorkSchedule(
+                id = scheduleId,
+                employee = originalEmployee,
+                account = originalAccount,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork4 = SecondWorkType.ROOM_TEMP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = baseRequest.startDate,
+                endDate = LocalDate.of(2026, 6, 30),
+                confirmed = true
+            )
+            val user = createEmployee(id = userId, role = AppAuthority.LEADER)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = newEndDate,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns true
+            every {
+                teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(listOf(scheduleId))
+            } returns mapOf(scheduleId to maxAttended)
+            every { uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(newEndDate),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId), eq(maxAttended)
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
+
+            adminDisplayWorkScheduleService.updateSchedule(
+                scope, userId, scheduleId, baseRequest.copy(endDate = newEndDate)
+            )
+
+            assertThat(schedule.endDate).isEqualTo(newEndDate)
+        }
+
+        @Test
+        @DisplayName("V4a — 근무등록 있어도 종료일 삭제(null)는 하한 미적용으로 허용")
+        fun updateSchedule_endDateClearedSkipsFloor() {
+            val scope = mockAdminScope()
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val schedule = DisplayWorkSchedule(
+                id = scheduleId,
+                employee = originalEmployee,
+                account = originalAccount,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork4 = SecondWorkType.ROOM_TEMP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = baseRequest.startDate,
+                endDate = LocalDate.of(2026, 6, 30),
+                confirmed = true
+            )
+            val user = createEmployee(id = userId, role = AppAuthority.LEADER)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = null,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns true
+            // 종료일 삭제는 하한 조회 자체를 하지 않으므로 validator 에 null 이 전달된다.
+            every { uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), isNull(),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId), isNull()
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
+
+            adminDisplayWorkScheduleService.updateSchedule(
+                scope, userId, scheduleId, baseRequest.copy(endDate = null)
+            )
+
+            assertThat(schedule.endDate).isNull()
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(any())
+            }
+        }
+
+        @Test
+        @DisplayName("V4a — 종료일 미변경(다른 필드만 수정)은 기존 과거 종료일이어도 하한 조회 안 함")
+        fun updateSchedule_endDateUnchangedSkipsFloor() {
+            val scope = mockAdminScope()
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val existingEndDate = LocalDate.of(2020, 1, 31)
+            val schedule = DisplayWorkSchedule(
+                id = scheduleId,
+                employee = originalEmployee,
+                account = originalAccount,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork4 = SecondWorkType.ROOM_TEMP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = baseRequest.startDate,
+                endDate = existingEndDate,
+                confirmed = true
+            )
+            // isAdminGrade(adminUser.employeeCode) → User → isSalesSupport=true 로 ADMIN_GRADE bypass
+            val adminUser = createEmployee(id = userId, employeeCode = "ADMIN001", role = null)
+            every { userRepository.findByEmployeeCode("ADMIN001") } returns User(
+                username = "admin", employeeCode = "ADMIN001", password = "x", isSalesSupport = true,
+            )
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "순회", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = existingEndDate,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(adminUser)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("순회"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(existingEndDate),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId), isNull()
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
+
+            adminDisplayWorkScheduleService.updateSchedule(
+                scope, userId, scheduleId,
+                baseRequest.copy(typeOfWork3 = "순회", endDate = existingEndDate)
+            )
+
+            assertThat(schedule.endDate).isEqualTo(existingEndDate)
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(any())
+            }
         }
 
         @Test

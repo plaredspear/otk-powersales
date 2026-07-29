@@ -481,10 +481,12 @@ class AdminDisplayWorkScheduleService(
             employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, employmentStatus, branchCodes, policyPredicate, pageable
         )
 
-        // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
-        val attendanceCountById = buildAttendanceCountMap(schedulePage.content.map { it.id })
+        // 페이지 단위 출근등록 수 + 종료일 하한(출근보고 최종 근무일) 집계 (N+1 회피 — id IN + GROUP BY)
+        val scheduleIds = schedulePage.content.map { it.id }
+        val attendanceCountById = buildAttendanceCountMap(scheduleIds)
+        val maxAttendedDateById = buildMaxAttendedWorkingDateMap(scheduleIds)
 
-        return schedulePage.map { toListItemDto(it, attendanceCountById) }
+        return schedulePage.map { toListItemDto(it, attendanceCountById, maxAttendedDateById) }
     }
 
     /**
@@ -538,6 +540,7 @@ class AdminDisplayWorkScheduleService(
     private fun toListItemDto(
         row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow,
         attendanceCountById: Map<Long, Long> = emptyMap(),
+        maxAttendedDateById: Map<Long, LocalDate> = emptyMap(),
     ): ScheduleListItemDto {
         // 유효데이터 (`ValidData__c`) + 유효 신호등 (`Valid__c`) — 상세와 동일 계산식, projection raw 필드 사용
         val validData = if (row.employeeId != null) {
@@ -582,7 +585,8 @@ class AdminDisplayWorkScheduleService(
             confirmed = row.confirmed,
             costCenterCode = row.costCenterCode,
             lastMonthRevenue = row.lastMonthRevenue?.toLong(),
-            attendanceCount = attendanceCountById[row.id] ?: 0
+            attendanceCount = attendanceCountById[row.id] ?: 0,
+            maxAttendedWorkingDate = maxAttendedDateById[row.id]
         )
     }
 
@@ -593,6 +597,15 @@ class AdminDisplayWorkScheduleService(
     private fun buildAttendanceCountMap(scheduleIds: List<Long>): Map<Long, Long> {
         if (scheduleIds.isEmpty()) return emptyMap()
         return teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(scheduleIds)
+    }
+
+    /**
+     * 진열마스터 id 목록의 종료일 하한(출근보고 최종 근무일) Map (페이지 단위 1쿼리, N+1 회피).
+     * 출근보고 0건 마스터는 Map 에 없으므로 하한 없음(null) 으로 처리한다.
+     */
+    private fun buildMaxAttendedWorkingDateMap(scheduleIds: List<Long>): Map<Long, LocalDate> {
+        if (scheduleIds.isEmpty()) return emptyMap()
+        return teamMemberScheduleRepository.findMaxAttendedWorkingDateByDisplayWorkScheduleIds(scheduleIds)
     }
 
     /**
@@ -825,6 +838,9 @@ class AdminDisplayWorkScheduleService(
      *   confirmed=true 이고 사용자가 ADMIN_GRADE(SYSTEM_ADMIN/SALES_SUPPORT) 가 아닐 때
      *   거래처·근무형태1·근무형태3·근무형태5·사원·시작일·확정 변경 시 차단.
      * 통과 시 validateSingle 재실행 (자기 자신 row 는 V8/C1~C3 중복 검사에서 제외) + 자동채움 재계산.
+     *
+     * 종료일 수정 정책 (V4a): 이미 출근보고된 최종 근무일보다 앞으로 당기는 것만 차단하고,
+     * 미래로 연장 / 종료일 삭제(null = 무기한)는 근무등록 유무와 무관하게 허용한다.
      */
     @Transactional
     fun updateSchedule(
@@ -889,6 +905,17 @@ class AdminDisplayWorkScheduleService(
             emptyList()
         }
 
+        // V4a 하한 — 종료일을 **실제로 변경**할 때만 이미 출근보고된 최종 근무일을 하한으로 건다.
+        // 종료일이 그대로면(다른 필드만 수정) 기존에 과거 종료일로 저장된 레코드가 새 규칙에 걸려
+        // 편집 자체가 막히는 것을 피한다. 종료일 삭제(null)는 근무 행을 배제하지 않으므로 하한 미적용.
+        val endDateChanged = schedule.endDate != request.endDate
+        val maxAttendedWorkingDate = if (endDateChanged && request.endDate != null) {
+            teamMemberScheduleRepository
+                .findMaxAttendedWorkingDateByDisplayWorkScheduleIds(listOf(scheduleId))[scheduleId]
+        } else {
+            null
+        }
+
         val result = uploadValidator.validateSingle(
             employeeCode = request.employeeCode,
             accountCode = request.accountCode,
@@ -900,7 +927,8 @@ class AdminDisplayWorkScheduleService(
             employee = employee,
             account = account,
             existingSchedules = existingSchedules,
-            excludeScheduleId = scheduleId
+            excludeScheduleId = scheduleId,
+            maxAttendedWorkingDate = maxAttendedWorkingDate
         )
 
         if (result.validatedRow == null) {

@@ -346,7 +346,8 @@ class ScheduleUploadValidator {
         employee: Employee?,
         account: Account?,
         existingSchedules: List<DisplayWorkSchedule>,
-        excludeScheduleId: Long? = null
+        excludeScheduleId: Long? = null,
+        maxAttendedWorkingDate: LocalDate? = null
     ): SingleValidationResult {
         // 편집 시나리오에서는 자기 자신을 중복 검사 대상에서 제외 (UC-03 동일 레코드 update)
         val filteredExisting = if (excludeScheduleId != null) {
@@ -412,6 +413,15 @@ class ScheduleUploadValidator {
         // V4: 시작일 <= 종료일
         if (endDate != null && startDate.isAfter(endDate)) {
             messages.add("시작일이 종료일보다 이후입니다")
+        }
+
+        // V4a: 종료일 >= 이미 출근보고된 최종 근무일 (편집 시나리오 전용 — 신규 제약).
+        // 종료일을 출근보고된 근무일보다 앞으로 당기면 해당 근무 행이 마스터 기간 밖으로 밀려나
+        // 조회/배치 모수에서 사라지므로(고아 행) 차단한다. 미래로 연장하거나 종료일을 아예
+        // 비우는 것(null = 무기한)은 근무 행을 배제하지 않으므로 허용한다.
+        // 레거시 SF 는 `dateCheck()` 에 시작일<=종료일 규칙만 있어 이 제약이 없다 (의도적 신규 제약).
+        if (endDate != null && maxAttendedWorkingDate != null && endDate.isBefore(maxAttendedWorkingDate)) {
+            messages.add("종료일은 이미 근무등록된 최종 근무일($maxAttendedWorkingDate) 이후여야 합니다")
         }
 
         // 기본 검증 실패 시 V8 / C1~C3 skip

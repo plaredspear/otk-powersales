@@ -43,6 +43,29 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             }
     }
 
+    override fun findMaxAttendedWorkingDateByDisplayWorkScheduleIds(
+        scheduleIds: List<Long>
+    ): Map<Long, LocalDate> {
+        if (scheduleIds.isEmpty()) return emptyMap()
+        val scheduleIdPath = teamMemberSchedule.displayWorkSchedule.id
+        val maxWorkingDate = teamMemberSchedule.workingDate.max()
+        return queryFactory
+            .select(scheduleIdPath, maxWorkingDate)
+            .from(teamMemberSchedule)
+            .where(
+                scheduleIdPath.`in`(scheduleIds),
+                teamMemberSchedule.commuteReportDatetime.isNotNull,
+            )
+            .groupBy(scheduleIdPath)
+            .fetch()
+            .mapNotNull { tuple ->
+                val id = tuple.get(scheduleIdPath) ?: return@mapNotNull null
+                val date = tuple.get(maxWorkingDate) ?: return@mapNotNull null
+                id to date
+            }
+            .toMap()
+    }
+
     override fun findLatestAttendanceInfoByEmployeeIds(
         employeeIds: List<Long>
     ): Map<Long, LatestAttendanceInfo> {
