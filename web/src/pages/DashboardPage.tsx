@@ -459,8 +459,17 @@ export default function DashboardPage() {
           : '#ff4d4f';
     return (
       <>
-        <div style={{ marginBottom: 12, color: '#8c8c8c' }}>
-          출근등록 거래처 {s.investedAccountCount.toLocaleString()}개
+        <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#8c8c8c' }}>출근등록 거래처 {s.investedAccountCount.toLocaleString()}개</span>
+          <Link
+            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed${
+              queryParams.branchCodes?.length
+                ? `&branchCodes=${queryParams.branchCodes.map(encodeURIComponent).join(',')}`
+                : ''
+            }`}
+          >
+            {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
+          </Link>
         </div>
         <Row gutter={[16, 16]}>
           <Col {...KPI_COL_SPAN}>
@@ -516,20 +525,9 @@ export default function DashboardPage() {
             </Card>
           </Col>
         </Row>
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: '#8c8c8c' }}>
-            <InfoCircleOutlined style={{ marginRight: 4 }} />
-            여사원 투입거래처 기준 매출현황
-          </span>
-          <Link
-            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed${
-              queryParams.branchCodes?.length
-                ? `&branchCodes=${queryParams.branchCodes.map(encodeURIComponent).join(',')}`
-                : ''
-            }`}
-          >
-            {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
-          </Link>
+        <div style={{ marginTop: 16, color: '#8c8c8c' }}>
+          <InfoCircleOutlined style={{ marginRight: 4 }} />
+          여사원 투입거래처 기준 매출현황
         </div>
       </>
     );
