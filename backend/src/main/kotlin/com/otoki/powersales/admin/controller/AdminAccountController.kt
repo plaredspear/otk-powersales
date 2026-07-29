@@ -266,6 +266,39 @@ class AdminAccountController(
     }
 
     /**
+     * ORORA 월매출 화면의 거래처 lookup search — 「기준정보 > ORORA 월매출」 조회 조건 전용.
+     *
+     * monthly_sales_history.READ 권한 보유자가 조회 대상 거래처를 고급 검색으로 고를 때 사용한다.
+     * account.READ 권한 없이도 호출 가능 (SF lookup search 메커니즘 정합).
+     *
+     * 일매출용(`/lookup-for-daily-sales`) 과 동작은 같지만 가드 entity 가 달라 별도 endpoint 로 둔다 —
+     * 화면 게이팅 entity 와 API 가드 entity 가 어긋나면 메뉴는 보이는데 검색만 403 이 된다.
+     */
+    @GetMapping("/lookup-for-monthly-sales")
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    fun lookupAccountsForMonthlySales(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
+    ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val response = adminAccountService.getAccounts(
+            scope = scope,
+            keyword = keyword,
+            abcType = null,
+            branchCode = null,
+            accountStatusName = null,
+            page = page,
+            size = size,
+            // 매출 적재 확인 화면이라 행사 lookupFilter (계정그룹/폐업 제외) 를 적용하지 않는다 —
+            // 폐업 거래처의 과거 매출도 조회 대상이다 (일매출 lookup 과 동일).
+            applyPromotionFilter = false
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * 거래처 상세 조회 — 거래처 상세 페이지(`/account/:id`) 의 "기본 정보" 영역.
      *
      * 목록(`getAccounts`)과 동일한 `account.READ` + SF Sharing Rule 정책 적용. 가시 범위 밖 거래처는

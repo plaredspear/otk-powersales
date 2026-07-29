@@ -355,6 +355,12 @@ export const menuRoute: MenuRoute = {
           entity: 'daily_sales_history',
           operation: 'READ',
         },
+        {
+          path: '/settings/orora-monthly-sales',
+          name: 'ORORA 월매출',
+          entity: 'monthly_sales_history',
+          operation: 'READ',
+        },
         { path: '/attendance', name: '근무 등록현황', entity: 'attendance_log', operation: 'READ' },
       ],
     },

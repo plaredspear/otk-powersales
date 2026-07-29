@@ -41,4 +41,21 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
         salesMonths: Collection<SalesMonth>,
         accountIds: Collection<Long>,
     ): List<MonthlySalesHistory>
+
+    /**
+     * 거래처코드 + 매출년월의 월매출 행 (web admin "ORORA 월매출" 조회용).
+     *
+     * 조회 키를 `account_id` FK 가 아니라 `sap_account_code` 텍스트로 두는 이유는 일매출 조회
+     * ([DailySalesHistoryRepository.findBySapAccountCodeAndSalesDateStartingWithOrderBySalesDateAscIdAsc])
+     * 와 같다 — SF 이관분 중 FK 미해소 row 가 있어도 원본 거래처코드 기준으로는 빠짐없이 보이게
+     * 하기 위함이다 (적재 결과 확인이 목적인 화면).
+     *
+     * 적재 upsert 키(`external_key` = 거래처코드 + yyyy + MM) 상 정상 데이터는 1건이지만, SF 이관분에
+     * 키 없는 중복 row 가 있을 수 있어 List 로 받아 화면에 그대로 노출한다 (적재 이상 신호).
+     */
+    fun findBySapAccountCodeAndSalesYearAndSalesMonthOrderByIdAsc(
+        sapAccountCode: String,
+        salesYear: SalesYear,
+        salesMonth: SalesMonth,
+    ): List<MonthlySalesHistory>
 }

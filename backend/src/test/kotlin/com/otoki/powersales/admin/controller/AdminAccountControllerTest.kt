@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -168,6 +169,38 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/accounts/lookup-for-monthly-sales - ORORA 월매출 거래처 lookup")
+    inner class LookupAccountsForMonthlySales {
+
+        @Test
+        @DisplayName("성공 - 행사 lookupFilter 미적용(applyPromotionFilter=false) 으로 조회한다")
+        fun lookupForMonthlySales_doesNotApplyPromotionFilter() {
+            val response = AccountListResponse(
+                content = emptyList(),
+                page = 0,
+                size = 20,
+                totalElements = 0,
+                totalPages = 0
+            )
+            // 매출 적재 확인 화면이라 폐업 거래처의 과거 매출도 조회 대상 — applyPromotionFilter 를
+            // 넘기지 않으면 기본값 true 로 되돌아 폐업 거래처가 조용히 사라진다. 인자를 테스트로 고정.
+            every {
+                adminAccountService.getAccounts(any(), eq("역삼"), isNull(), isNull(), isNull(), eq(0), eq(20), eq(false))
+            } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/accounts/lookup-for-monthly-sales").param("keyword", "역삼")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+
+            verify {
+                adminAccountService.getAccounts(any(), eq("역삼"), isNull(), isNull(), isNull(), eq(0), eq(20), eq(false))
+            }
         }
     }
 

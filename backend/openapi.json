@@ -8785,6 +8785,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseMonthlySalesHistoryListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlySalesHistoryListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMonthlySalesResponse" : {
         "properties" : {
           "data" : {
@@ -19024,6 +19053,113 @@
         },
         "type" : "object"
       },
+      "MonthlySalesHistoryListItem" : {
+        "properties" : {
+          "abcClosingAmount1" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "abcClosingAmount2" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "abcClosingAmount3" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "abcClosingAmount4" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "abcClosingSumAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "isDeleted" : {
+            "type" : "boolean"
+          },
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesYear" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "shipClosingAmount1" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "shipClosingAmount2" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "shipClosingAmount3" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "shipClosingAmount4" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "shipClosingSumAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "MonthlySalesHistoryListResponse" : {
+        "properties" : {
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlySalesHistoryListItem"
+            },
+            "type" : "array"
+          },
+          "lastMaterializedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "salesMonth" : {
+            "type" : "string"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "totalAbcClosingAmount" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "totalShipClosingAmount" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
       "MonthlySalesRequest" : {
         "properties" : {
           "customerId" : {
@@ -28268,6 +28404,62 @@
         "tags" : [ "admin-account-controller" ]
       }
     },
+    "/api/v1/admin/accounts/lookup-for-monthly-sales" : {
+      "get" : {
+        "operationId" : "lookupAccountsForMonthlySales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-account-controller" ]
+      }
+    },
     "/api/v1/admin/accounts/lookup-for-product" : {
       "get" : {
         "operationId" : "lookupAccountsForProduct",
@@ -33597,6 +33789,50 @@
           }
         },
         "tags" : [ "admin-logistics-claim-regist-test-controller" ]
+      }
+    },
+    "/api/v1/admin/monthly-sales-histories" : {
+      "get" : {
+        "operationId" : "getMonthlySalesHistories",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountCode",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "salesMonth",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 7,
+            "minLength" : 6,
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlySalesHistoryListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-monthly-sales-history-controller" ]
       }
     },
     "/api/v1/admin/naver-geocode/test" : {

@@ -269,6 +269,25 @@ export async function fetchAccountsForDailySalesLookup(
   return res.data.data;
 }
 
+/**
+ * ORORA 월매출 화면의 거래처 lookup search — monthly_sales_history 권한 보유자 호출용.
+ *
+ * Account READ 권한 없이도 호출 가능. 일매출용과 동작은 같지만 백엔드 가드 entity 가 달라
+ * endpoint 가 분리돼 있다 (화면 게이팅 entity 와 API 가드 entity 를 일치시키기 위함).
+ */
+export async function fetchAccountsForMonthlySalesLookup(
+  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+): Promise<AccountListData> {
+  const res = await client.get<ApiResponse<AccountListData>>(
+    '/api/v1/admin/accounts/lookup-for-monthly-sales',
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 // --- 신규 거래처 등록 (Spec #640 P2-W) ---
 
 export interface AdminAccountCreateRequest {
