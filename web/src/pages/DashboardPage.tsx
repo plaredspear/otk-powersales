@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Alert, Button, Card, Col, DatePicker, Empty, Radio, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -8,6 +8,11 @@ import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import RankHeadcountCard from '@/pages/dashboard/components/RankHeadcountCard';
 import { femaleEmployeeLinkState } from '@/pages/dashboard/femaleEmployeeLink';
+import {
+  BASIC_TAB_KEY,
+  readDashboardUrlState,
+  toDashboardSearchParams,
+} from '@/pages/dashboard/dashboardUrlState';
 import { useAuthStore } from '@/stores/authStore';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import { SYSTEM_ADMIN_PROFILE_NAME, usePermission } from '@/hooks/usePermission';
@@ -353,21 +358,6 @@ const TABLE_COL_SPAN = { xs: 24, xl: 12 } as const;
  */
 const KPI_COL_SPAN = { xs: 24, sm: 12, lg: 8 } as const;
 
-/**
- * 기본 현황 탭 key. 이 탭에서는 조회월 셀렉터를 잠근다.
- *
- * 사유: 기본 현황의 인원 집계는 **사원 마스터의 현재 상태 스냅샷**이라 조회월과 무관하다
- * (레거시 SF `DKRetail__Employee__c` 도 기간 조건 없는 현재 상태 오브젝트이며, 레거시 인원현황
- * 리포트에 기간 필터가 없다). 셀렉터가 열려 있으면 과거 이력을 조회할 수 있는 것처럼 보이지만
- * 실제로는 값이 바뀌지 않아 오해를 준다.
- *
- * 이 탭의 3개 차트는 모두 같은 기준일을 쓴다 — 유일하게 조회월을 쓰던 '근무형태별 고정/격고/순회'
- * (선택월 MFEIS 환산인원) 는 기준 시점이 섞이는 혼선을 없애기 위해 제거했다(사용자 결정).
- * 실제 기준일은 각 카드 하단에 표기하고([asOfBadge]), 잠금 사유는 탭 라벨의 info 아이콘이
- * 안내한다([BASIC_TAB_PERIOD_LOCK_NOTICE]).
- */
-const BASIC_TAB_KEY = 'basic';
-
 /** 기본 현황 집계 기준 — 재직만 / 재직+휴직(퇴직 제외). */
 type BasicScope = 'active' | 'includingLeave';
 
@@ -401,14 +391,19 @@ function asOfBadge(asOfDate: string) {
 
 export default function DashboardPage() {
   const today = new Date();
-  const [year, setYear] = useState<number>(today.getFullYear());
-  const [month, setMonth] = useState<number>(today.getMonth() + 1);
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // 최초 마운트 시 1회만 URL 을 읽는다 — 이후 상태 변경은 setSearchParams 로 URL 에 반영하므로,
+  // URL 을 매 렌더 다시 읽으면 사용자가 만지던 필터 입력이 되돌려질 수 있다.
+  const [initial] = useState(() => readDashboardUrlState(searchParams, today));
+  const [year, setYear] = useState<number>(initial.year);
+  const [month, setMonth] = useState<number>(initial.month);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>(initial.branchCodes);
   const [queryParams, setQueryParams] = useState<QueryParams>({
-    yearMonth: toYearMonth(today.getFullYear(), today.getMonth() + 1),
+    yearMonth: toYearMonth(initial.year, initial.month),
+    branchCodes: initial.branchCodes.length > 0 ? initial.branchCodes : undefined,
   });
   // 활성 탭 — 기본 현황 탭에서는 조회월 셀렉터를 잠근다(BASIC_TAB_KEY 참조).
-  const [activeTab, setActiveTab] = useState<string>('sales');
+  const [activeTab, setActiveTab] = useState<string>(initial.tab);
   const isBasicTab = activeTab === BASIC_TAB_KEY;
   // 기본 현황 집계 기준 — 기본값은 재직(휴직 제외). 현황 확인의 기본 관심사가 실제 근무 인원이라
   // 진입 시 재직 기준으로 보여준다 (여사원 현황 목록의 상태 기본값 '재직' 과 동일한 축).
@@ -421,7 +416,8 @@ export default function DashboardPage() {
   const isSystemAdmin = useAuthStore(
     (state) => state.user?.profileName === SYSTEM_ADMIN_PROFILE_NAME,
   );
-  const [hasSearched, setHasSearched] = useState(false);
+  // back 복원(URL 에 조회 조건이 실려 있음)이면 조회를 이미 누른 것으로 간주해 그대로 재조회한다.
+  const [hasSearched, setHasSearched] = useState(initial.hasSearched);
 
   // 대시보드 전용 지점 목록 — 전사 권한자는 고정 화이트리스트(34개), 그 외는 본인 지점 스코프.
   // 여사원 일정 지점(useTeamScheduleBranches)과 분리하기 위해 branches 를 명시 주입한다.
@@ -435,13 +431,33 @@ export default function DashboardPage() {
     enabled: !isSystemAdmin || hasSearched,
   });
 
+  /**
+   * 탭 · 조회 조건을 URL 쿼리에 반영한다.
+   *
+   * `replace` 인 이유: 탭 전환/조회마다 history 가 쌓이면 여사원 현황에서 back 한 번으로
+   * 대시보드에 돌아오지 못하고 이전 탭들을 되짚게 된다. 대신 대시보드 history 항목의 URL 이
+   * 항상 "떠나기 직전 상태" 로 유지되어 back 복원이 정확해진다.
+   */
+  const syncUrl = (tab: string, params: QueryParams) => {
+    setSearchParams(toDashboardSearchParams(tab, params.yearMonth, params.branchCodes), {
+      replace: true,
+    });
+  };
+
   const handleSearch = () => {
     setHasSearched(true);
-    setQueryParams({
+    const next: QueryParams = {
       yearMonth: toYearMonth(year, month),
       // 선택한 지점을 모두 전달(다중 IN 조회). 선택 없으면 undefined → 권한 스코프 전체.
       branchCodes: selectedCodes.length > 0 ? selectedCodes : undefined,
-    });
+    };
+    setQueryParams(next);
+    syncUrl(activeTab, next);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    syncUrl(tab, queryParams);
   };
 
   const data: DashboardResponse | undefined = dashboardQuery.data;
@@ -787,7 +803,7 @@ export default function DashboardPage() {
         <Tabs
           style={{ marginTop: 16 }}
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           items={[
             { key: 'sales', label: '매출현황', children: beforeSearch ? searchPrompt : salesTab },
             { key: 'deployment', label: '여사원 투입현황', children: beforeSearch ? searchPrompt : deploymentTab },
