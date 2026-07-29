@@ -47,21 +47,23 @@
  * 검색 영역은 ProLayout SiderMenu 의 `-extra` 슬롯 (logo 아래 / 스크롤 영역 위) 에 렌더되어
  * 이미 스크롤과 무관하게 고정돼 있다. 다만 배경/경계가 없으면 아래 메뉴가 스크롤되어 지나갈 때
  * "고정 헤더" 가 아니라 "메뉴 목록의 첫 항목" 처럼 읽히므로, 영역 배경 + 하단 구분선으로 분리한다.
+ * 배경/경계는 프로젝트에서 이미 쓰는 antd blue-1(#e6f4ff) + blue-3(#91caff) 조합을 따른다.
  */
 .ant-pro-sider-extra {
-  background: #fafafa;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #e6f4ff;
+  border-bottom: 1px solid #91caff;
 }
 
 .admin-sider-search {
   padding: 12px 16px;
 }
 
-/* 회색 띠 위에 흰색 + 실선 테두리로 올려 입력 가능한 필드임을 명확히 한다. */
+/* 하늘색 띠 위에 흰색 + 실선 테두리로 올려 입력 가능한 필드임을 명확히 한다.
+   테두리는 배경과 같은 파랑 계열(blue-3)로 맞춰 회색이 겉돌지 않게 한다. */
 .admin-sider-search .ant-input-affix-wrapper {
   border-radius: 6px;
   background: #fff;
-  border-color: #d9d9d9;
+  border-color: #91caff;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
