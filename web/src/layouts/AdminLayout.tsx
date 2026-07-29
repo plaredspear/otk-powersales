@@ -43,7 +43,20 @@ export default function AdminLayout() {
   const isSearching = normalizeMenuKeyword(menuKeyword).length > 0;
   const menuSearchRef = useRef<InputRef>(null);
 
+  // antd Layout.Sider 는 breakpoint(ProLayout 기본 'lg') 가 있으면 마운트 직후 미디어쿼리를
+  // 즉시 1회 평가해 onCollapse(matches, 'responsive') 를 호출한다. ProLayout 은 두 번째 인자
+  // (트리거 종류) 를 버리고 넘기므로 우리 쪽에서 responsive 여부를 구분할 수 없다. 그 결과
+  // 넓은 화면에서 마운트하면 onCollapse(false) 가 들어와 저장된 '접힘' 상태를 덮어써,
+  // 접어둔 사이더가 새로고침마다 펼쳐졌다.
+  //
+  // 최초 1회 호출은 사용자 조작이 아니므로 '펼치기'(false) 방향만 무시한다. 좁은 화면에서
+  // 자동으로 접히는 동작(true)은 반응형 UX 로서 유효하므로 그대로 살린다.
+  const collapseInitializedRef = useRef(false);
+
   const handleCollapse = (next: boolean) => {
+    const isInitialCall = !collapseInitializedRef.current;
+    collapseInitializedRef.current = true;
+    if (isInitialCall && !next) return;
     setCollapsed(next);
     localStorage.setItem(SIDER_COLLAPSED_KEY, String(next));
   };

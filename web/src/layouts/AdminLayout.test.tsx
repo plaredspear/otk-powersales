@@ -93,8 +93,6 @@ describe('AdminLayout 메뉴 검색', () => {
     const user = userEvent.setup();
     renderLayout();
 
-    // 초기 collapsed 는 antd Sider 의 responsive onCollapse 가 마운트 직후 덮어쓰므로
-    // (jsdom matchMedia stub = matches:false) localStorage 선주입이 아니라 실제 조작으로 접는다.
     await user.click(screen.getByRole('button', { name: '사이드 메뉴 접기' }));
 
     // 접힘 상태에서는 menuExtraRender 가 검색 UI 를 렌더하지 않는다.
@@ -108,5 +106,52 @@ describe('AdminLayout 메뉴 검색', () => {
       expect(getSearchInput()).toHaveFocus();
     });
     expect(localStorage.getItem(SIDER_COLLAPSED_KEY)).toBe('false');
+  });
+});
+
+describe('AdminLayout 사이더 접힘 상태 유지', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setUser();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  // antd Sider 는 breakpoint 가 있으면 마운트 직후 onCollapse(matches, 'responsive') 를 1회
+  // 호출한다. jsdom 의 matchMedia stub 은 항상 matches:false 라 이 경로가 그대로 재현된다.
+  it('저장된 접힘 상태가 마운트 직후 responsive 콜백으로 덮어써지지 않는다', async () => {
+    localStorage.setItem(SIDER_COLLAPSED_KEY, 'true');
+    renderLayout();
+
+    // 접힘이 유지되면 검색 UI 는 렌더되지 않고, 푸터 라벨도 '펼치기' 여야 한다.
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '사이드 메뉴 펼치기' })).toBeInTheDocument();
+    });
+    expect(screen.queryByPlaceholderText('메뉴 검색')).not.toBeInTheDocument();
+    expect(localStorage.getItem(SIDER_COLLAPSED_KEY)).toBe('true');
+  });
+
+  it('펼침 상태로 저장돼 있으면 그대로 펼쳐진 채 유지된다', async () => {
+    localStorage.setItem(SIDER_COLLAPSED_KEY, 'false');
+    renderLayout();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '사이드 메뉴 접기' })).toBeInTheDocument();
+    });
+    expect(getSearchInput()).toBeInTheDocument();
+    expect(localStorage.getItem(SIDER_COLLAPSED_KEY)).toBe('false');
+  });
+
+  it('사용자가 접으면 접힘 상태를 저장한다', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByRole('button', { name: '사이드 메뉴 접기' }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem(SIDER_COLLAPSED_KEY)).toBe('true');
+    });
   });
 });
