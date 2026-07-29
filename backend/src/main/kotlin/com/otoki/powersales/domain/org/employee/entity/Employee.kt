@@ -5,12 +5,14 @@ import com.otoki.powersales.domain.org.employee.entity.converter.GenderConverter
 import com.otoki.powersales.domain.org.employee.enums.CrmWorkType
 import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
 import com.otoki.powersales.domain.org.employee.enums.Gender
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
@@ -462,12 +464,18 @@ class Employee(
     /**
      * 만나이 (SF `Age__c` 계산식 정합).
      *
-     * SF formula: `FLOOR((TODAY() - DATEVALUE(Birthdate)) / 365.2425) + '살'`.
-     * `birthDate` 는 `yyyy-MM-dd` 문자열. 미지정/파싱 불가 시 null.
-     * SF 의 `여사원` 게이트는 호출 endpoint (role=WOMAN) 가 이미 한정.
+     * SF formula: `IF(TEXT(AppAuthority__c)='여사원' && Birthdate != null,
+     *                 TEXT(FLOOR((TODAY() - DATEVALUE(Birthdate)) / 365.2425)) + '살', '')`.
+     * `birthDate` 는 `yyyy-MM-dd` 문자열 (마이그레이션 유입분 대비 `yyyyMMdd` 도 허용). 미지정/파싱 불가 시 null.
+     *
+     * [womanOnly] 는 SF formula 의 `AppAuthority='여사원'` 게이트. 조장(LEADER) 등 여사원 외 역할이 함께
+     * 조회되는 화면에서 SF 는 해당 행의 나이 칸을 공백으로 둔다 — 그 정합이 필요한 호출부 (여사원 배치 점검)
+     * 만 명시적으로 켠다. 기본값이 false 인 이유: 전체 사원 관리 목록([EmployeeListItem.from]) 은 여사원 외
+     * 직군도 함께 노출하는 신규 화면이라, 게이트를 기본 적용하면 기존에 보이던 나이가 사라지는 회귀가 된다.
      */
-    fun calculateAge(today: LocalDate): String? {
-        val birth = birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    fun calculateAge(today: LocalDate, womanOnly: Boolean = false): String? {
+        if (womanOnly && role != AppAuthority.WOMAN) return null
+        val birth = parseFlexibleDate(birthDate) ?: return null
         val days = ChronoUnit.DAYS.between(birth, today)
         if (days < 0) return null
         return "${Math.floor(days / 365.2425).toLong()}살"
@@ -476,13 +484,37 @@ class Employee(
     /**
      * 근속년수 (SF `yearsOfService__c` 계산식 정합).
      *
-     * SF formula: `FLOOR((TODAY() - StartDate) / 365) + '년'` (만나이와 달리 윤년 미보정 — 365 고정).
-     * `startDate` 미지정 시 null.
+     * SF formula: `IF(!ISNULL(StartDate) && TEXT(AppAuthority__c)='여사원',
+     *                 TEXT(FLOOR((TODAY() - StartDate) / 365)) + '년', '')`
+     * (만나이와 달리 윤년 미보정 — 365 고정). `startDate` 미지정 시 null.
+     *
+     * [womanOnly] 게이트는 [calculateAge] 와 동일 — SF 는 조장 행의 근속연수 칸도 공백으로 둔다.
      */
-    fun calculateYearsOfService(today: LocalDate): String? {
+    fun calculateYearsOfService(today: LocalDate, womanOnly: Boolean = false): String? {
+        if (womanOnly && role != AppAuthority.WOMAN) return null
         val start = startDate ?: return null
         val days = ChronoUnit.DAYS.between(start, today)
         if (days < 0) return null
         return "${days / 365}년"
+    }
+
+    companion object {
+        private val BIRTH_DATE_FORMATTERS = listOf(
+            DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+            DateTimeFormatter.ofPattern("yyyyMMdd"),
+        )
+
+        /**
+         * `yyyy-MM-dd` 우선, 실패 시 `yyyyMMdd` 파싱. 둘 다 실패하면 null.
+         * SAP 인바운드([EmployeeUpsertService.normalizeBirthdate]) 는 `yyyy-MM-dd` 로 정규화하지만,
+         * 레거시 마이그레이션 유입분에 8자리 원본이 남아 있을 수 있어 관용적으로 받는다.
+         */
+        private fun parseFlexibleDate(value: String?): LocalDate? {
+            if (value.isNullOrBlank()) return null
+            for (formatter in BIRTH_DATE_FORMATTERS) {
+                runCatching { return LocalDate.parse(value, formatter) }
+            }
+            return null
+        }
     }
 }

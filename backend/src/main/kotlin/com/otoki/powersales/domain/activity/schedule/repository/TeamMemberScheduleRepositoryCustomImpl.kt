@@ -562,6 +562,9 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .join(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 출근일자/부근무유형/근무보고여부 3컬럼이 출근로그 파생값(SF CommuteLog formula 정합) 이라
+            // fetch join 없이는 월 전건 × 1 의 N+1 이 된다.
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),

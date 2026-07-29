@@ -25,6 +25,7 @@ interface QueryParams {
  * 여사원 배치 점검 현황 (영업지원실용) — SF Report `new_report_4Ic` 이식 (Spec #839).
  *
  * 년·월 + 지점(선택) 으로 여사원/조장의 월간 배치 현황을 조회 (퇴직자 포함). 21컬럼 그리드 + 엑셀 다운로드.
+ * 나이/근속연수는 SF formula 정합상 조회월이 아닌 **오늘** 기준이며, 여사원이 아닌 행(조장) 은 공백이다.
  */
 export default function FemaleEmployeePlacementCheckPage() {
   const now = new Date();
@@ -77,10 +78,12 @@ export default function FemaleEmployeePlacementCheckPage() {
       { title: '근무구분3', dataIndex: 'workingCategory3', width: 90, render: (v) => v ?? '-' },
       { title: '부근무유형', dataIndex: 'secondWorkType', width: 100, render: (v) => v ?? '-' },
       { title: '근무구분5', dataIndex: 'workingCategory5', width: 90, render: (v) => v ?? '-' },
+      { title: '출근일자', dataIndex: 'commuteDate', width: 160, render: (v) => v ?? '-' },
       { title: '근무보고여부', dataIndex: 'isWorkReport', width: 110, render: (v) => v || '-' },
       { title: '입사일', dataIndex: 'startDate', width: 110, render: (v) => v ?? '-' },
-      { title: '나이', dataIndex: 'age', width: 70, align: 'right', render: (v) => v ?? '-' },
-      { title: '근속연수', dataIndex: 'yearsOfService', width: 80, align: 'right', render: (v) => v ?? '-' },
+      // 나이/근속연수는 SF formula 정합 문자열("41살"/"7년") — 여사원이 아닌 행(조장) 은 SF 와 동일하게 공백.
+      { title: '나이', dataIndex: 'age', width: 70, render: (v) => v ?? '-' },
+      { title: '근속연수', dataIndex: 'yearsOfService', width: 80, render: (v) => v ?? '-' },
     ],
     [],
   );

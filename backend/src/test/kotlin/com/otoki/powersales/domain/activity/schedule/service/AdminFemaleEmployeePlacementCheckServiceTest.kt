@@ -6,9 +6,11 @@ import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeePlacementCheckService
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory5
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @DisplayName("AdminFemaleEmployeePlacementCheckService 테스트")
 class AdminFemaleEmployeePlacementCheckServiceTest {
@@ -64,16 +67,24 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         workingDate: LocalDate = LocalDate.of(2026, 5, 12),
         cat1: WorkingCategory1? = WorkingCategory1.DISPLAY,
         cat5: WorkingCategory5? = WorkingCategory5.REGULAR,
-        secondWorkType: String? = "보조",
+        // SF `SecondWorkType__c` 는 출근로그(CommuteLog) 파생 formula 이므로 출근로그에 실어 준다.
+        logSecondWorkType: SecondWorkType? = SecondWorkType.ROOM_TEMP,
+        attendanceDate: LocalDateTime? = LocalDateTime.of(2026, 5, 12, 9, 0),
+        withAttendanceLog: Boolean = true,
     ): TeamMemberSchedule {
         val s = TeamMemberSchedule(
             workingDate = workingDate,
             workingCategory1 = cat1,
             workingCategory5 = cat5,
-            secondWorkType = secondWorkType,
         )
         s.employee = emp
         s.account = acc
+        if (withAttendanceLog) {
+            s.attendanceLog = AttendanceLog(
+                attendanceDate = attendanceDate,
+                secondWorkType = logSecondWorkType,
+            )
+        }
         return s
     }
 
@@ -105,7 +116,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             assertThat(item.accountBranchName).isEqualTo("강남지점")
             assertThat(item.workingCategory1).isEqualTo("진열")
             assertThat(item.workingCategory5).isEqualTo("상시")
-            assertThat(item.secondWorkType).isEqualTo("보조")
+            assertThat(item.secondWorkType).isEqualTo("상온")
             assertThat(item.workingDate).isEqualTo("2026-05-12")
         }
 
@@ -140,7 +151,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         }
 
         @Test
-        @DisplayName("나이와 근속연수를 조회 월 말일 기준으로 계산한다")
+        @DisplayName("나이·근속연수를 SF formula 정합 문자열로 계산한다 (기준일 = TODAY)")
         fun calculatesAgeAndService() {
             val emp = employee("100234", "홍길동", birthDate = "1985-01-01", startDate = LocalDate.of(2019, 3, 2))
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
@@ -148,9 +159,39 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
 
             val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
 
-            // 2026-05-31 기준: 만 41세, 근속 7년
-            assertThat(res.items[0].age).isEqualTo(41)
-            assertThat(res.items[0].yearsOfService).isEqualTo(7)
+            // SF `Age__c` = FLOOR(경과일/365.2425)+'살', `yearsOfService__c` = FLOOR(경과일/365)+'년'.
+            // 기준일이 TODAY 이므로 동일 계산기의 오늘 값과 대조한다 (고정 기대값은 시간이 지나면 깨짐).
+            val today = LocalDate.now()
+            assertThat(res.items[0].age).isEqualTo(emp.calculateAge(today, womanOnly = true))
+            assertThat(res.items[0].age).endsWith("살")
+            assertThat(res.items[0].yearsOfService).isEqualTo(emp.calculateYearsOfService(today, womanOnly = true))
+            assertThat(res.items[0].yearsOfService).endsWith("년")
+        }
+
+        @Test
+        @DisplayName("과거 월을 조회해도 나이 기준일은 조회월 말일이 아닌 오늘이다 (SF TODAY 정합)")
+        fun ageBasedOnTodayNotQueriedMonth() {
+            val emp = employee("100234", "홍길동", birthDate = "1985-01-01")
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
+                listOf(schedule(emp, account("마트", "B1", "지점"), workingDate = LocalDate.of(2020, 3, 5)))
+
+            val res = service.getPlacementCheck(allScope, 2020, 3, emptyList())
+
+            assertThat(res.items[0].age).isEqualTo(emp.calculateAge(LocalDate.now(), womanOnly = true))
+        }
+
+        @Test
+        @DisplayName("조장 행의 나이·근속연수는 SF 와 동일하게 null (AppAuthority='여사원' 게이트)")
+        fun leaderRowHasNoAgeNorService() {
+            val leader = employee("100777", "김조장", role = AppAuthority.LEADER)
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
+                listOf(schedule(leader, account("마트", "B1", "지점")))
+
+            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+
+            assertThat(res.items[0].employeeCode).isEqualTo("100777")
+            assertThat(res.items[0].age).isNull()
+            assertThat(res.items[0].yearsOfService).isNull()
         }
 
         @Test
@@ -168,13 +209,48 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         @Test
         @DisplayName("birthDate 가 yyyyMMdd 형식이어도 파싱한다")
         fun parsesCompactBirthDate() {
-            val emp = employee("100234", "홍길동", birthDate = "19850101")
+            val compact = employee("100234", "홍길동", birthDate = "19850101")
+            val dashed = employee("100235", "홍길순", birthDate = "1985-01-01")
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
-                listOf(schedule(emp, account("마트", "B1", "지점")))
+                listOf(schedule(compact, account("마트", "B1", "지점")))
 
             val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
 
-            assertThat(res.items[0].age).isEqualTo(41)
+            assertThat(res.items[0].age).isNotNull()
+            assertThat(res.items[0].age).isEqualTo(dashed.calculateAge(LocalDate.now(), womanOnly = true))
+        }
+
+        @Test
+        @DisplayName("부근무유형·출근일자·근무보고여부는 출근로그 파생값이다 (SF CommuteLog formula 정합)")
+        fun derivesAttendanceLogFields() {
+            val emp = employee("100234", "홍길동")
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns listOf(
+                schedule(
+                    emp, account("마트", "B1", "지점"),
+                    logSecondWorkType = SecondWorkType.FROZEN_REFRIGERATED,
+                    attendanceDate = LocalDateTime.of(2026, 5, 12, 8, 30),
+                )
+            )
+
+            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+
+            assertThat(res.items[0].secondWorkType).isEqualTo("냉동/냉장")
+            assertThat(res.items[0].commuteDate).startsWith("2026-05-12T08:30")
+            assertThat(res.items[0].isWorkReport).isEqualTo("근무등록")
+        }
+
+        @Test
+        @DisplayName("출근로그가 없으면 부근무유형·출근일자는 null, 근무보고여부는 공백")
+        fun noAttendanceLog() {
+            val emp = employee("100234", "홍길동")
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
+                listOf(schedule(emp, account("마트", "B1", "지점"), withAttendanceLog = false))
+
+            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+
+            assertThat(res.items[0].secondWorkType).isNull()
+            assertThat(res.items[0].commuteDate).isNull()
+            assertThat(res.items[0].isWorkReport).isEmpty()
         }
 
         @Test

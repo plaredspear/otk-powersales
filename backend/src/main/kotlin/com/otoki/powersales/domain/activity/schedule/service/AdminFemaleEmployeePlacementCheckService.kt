@@ -13,10 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.Period
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
  * 여사원 배치 점검 현황 — 영업지원실용 월간 배치 점검 조회 + 엑셀 export.
@@ -28,7 +25,9 @@ import java.time.format.DateTimeParseException
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 도입 — 레거시 SF Report 의 web admin 이식. 레거시 하드코딩 날짜는 year/month 검색 조건으로 전환 (Spec #839 Q1).
- * 나이(`Age__c`) / 근속연수(`yearsOfService__c`) 는 SF formula 필드이므로 birthDate/startDate 기반 계산으로 대체.
+ * 나이(`Age__c`) / 근속연수(`yearsOfService__c`) 는 SF formula 필드이므로 [Employee.calculateAge] /
+ * [Employee.calculateYearsOfService] (SF 계산식 정합 구현) 로 대체한다. SF formula 가 `TODAY()` 기준이고
+ * `AppAuthority='여사원'` 일 때만 값을 내므로, 기준일은 조회월이 아닌 오늘, 조장 행은 공백이다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -41,6 +40,9 @@ class AdminFemaleEmployeePlacementCheckService(
      *
      * year/month 검증 (2020~2099 / 1~12) 후 해당 월 [1일, 말일] 로 환산하여 조회. 권한: scope.isAllBranches 면
      * 사용자 입력 그대로, 아니면 scope.branchCodes 와 교집합 (empty → 403). 조회 결과를 orgName/employeeCode/workingDate 정렬.
+     *
+     * 나이/근속연수 기준일은 조회월이 아니라 **오늘** — SF formula 가 `TODAY()` 이므로 과거 월을 조회해도
+     * 현재 시점 값이 나온다 (레거시 리포트 정합).
      */
     fun getPlacementCheck(
         scope: DataScope,
@@ -62,7 +64,7 @@ class AdminFemaleEmployeePlacementCheckService(
         )
 
         val items = schedules
-            .map { toItem(it, to) }
+            .map { toItem(it, LocalDate.now()) }
             .sortedWith(
                 compareBy(
                     { it.orgName ?: "" },
@@ -124,8 +126,8 @@ class AdminFemaleEmployeePlacementCheckService(
             row.createCell(16).setCellValue(item.commuteDate ?: "")
             row.createCell(17).setCellValue(item.isWorkReport ?: "")
             row.createCell(18).setCellValue(item.startDate ?: "")
-            row.createCell(19).setCellValue(item.age?.toString() ?: "")
-            row.createCell(20).setCellValue(item.yearsOfService?.toString() ?: "")
+            row.createCell(19).setCellValue(item.age ?: "")
+            row.createCell(20).setCellValue(item.yearsOfService ?: "")
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -134,7 +136,13 @@ class AdminFemaleEmployeePlacementCheckService(
         return ExcelResult(bytes, filename)
     }
 
-    /** 여사원일정 1건 → 21컬럼 행. enum 필드는 displayName (`@JsonValue` 동일값) 으로 직렬화. */
+    /**
+     * 여사원일정 1건 → 21컬럼 행. enum 필드는 displayName (`@JsonValue` 동일값) 으로 직렬화.
+     *
+     * `secondWorkType` 은 일정 자체 컬럼이 아니라 **출근로그** 파생값([TeamMemberSchedule.secondWorkTypeText]) —
+     * SF formula `TEXT(CommuteLogId__r.SecondWorkType__c)` 정합.
+     * `age` / `yearsOfService` 는 SF formula 정합 계산기를 쓰며 `여사원` 게이트를 켠다 (조장 행은 null).
+     */
     private fun toItem(schedule: TeamMemberSchedule, asOf: LocalDate): FemaleEmployeePlacementCheckItem {
         val emp = schedule.employee
         val acc = schedule.account
@@ -153,39 +161,14 @@ class AdminFemaleEmployeePlacementCheckService(
             workingCategory1 = schedule.workingCategory1?.displayName,
             workingCategory2 = schedule.workingCategory2?.displayName,
             workingCategory3 = schedule.workingCategory3?.displayName,
-            secondWorkType = schedule.secondWorkType,
+            secondWorkType = schedule.secondWorkTypeText,
             workingCategory5 = schedule.workingCategory5?.displayName,
             commuteDate = schedule.commuteDate?.toString(),
             isWorkReport = schedule.isWorkReport,
             startDate = emp?.startDate?.toString(),
-            age = calculateAge(emp?.birthDate, asOf),
-            yearsOfService = calculateYearsOfService(emp?.startDate, asOf),
+            age = emp?.calculateAge(asOf, womanOnly = true),
+            yearsOfService = emp?.calculateYearsOfService(asOf, womanOnly = true),
         )
-    }
-
-    /** birthDate (String) 파싱 후 asOf 기준 만 나이. 파싱 불가/null → null. */
-    private fun calculateAge(birthDate: String?, asOf: LocalDate): Int? {
-        val date = parseDate(birthDate) ?: return null
-        return Period.between(date, asOf).years.takeIf { it >= 0 }
-    }
-
-    /** startDate 기준 asOf 까지 만 근속연수. null → null. */
-    private fun calculateYearsOfService(startDate: LocalDate?, asOf: LocalDate): Int? {
-        startDate ?: return null
-        return Period.between(startDate, asOf).years.takeIf { it >= 0 }
-    }
-
-    /** `yyyy-MM-dd` 또는 `yyyyMMdd` 형식 birthDate 파싱. 둘 다 실패 시 null. */
-    private fun parseDate(value: String?): LocalDate? {
-        if (value.isNullOrBlank()) return null
-        for (formatter in DATE_FORMATTERS) {
-            try {
-                return LocalDate.parse(value, formatter)
-            } catch (_: DateTimeParseException) {
-                // 다음 포맷 시도
-            }
-        }
-        return null
     }
 
     private fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String> {
@@ -207,12 +190,5 @@ class AdminFemaleEmployeePlacementCheckService(
         if (month !in 1..12) {
             throw InvalidParameterException("month는 1~12 범위여야 합니다")
         }
-    }
-
-    companion object {
-        private val DATE_FORMATTERS = listOf(
-            DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-            DateTimeFormatter.ofPattern("yyyyMMdd"),
-        )
     }
 }

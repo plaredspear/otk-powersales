@@ -23,8 +23,10 @@ export interface FemaleEmployeePlacementCheckItem {
   commuteDate: string | null;
   isWorkReport: string | null;
   startDate: string | null;
-  age: number | null;
-  yearsOfService: number | null;
+  /** SF `Age__c` 정합 문자열 (예: `"41살"`). 여사원이 아닌 행(조장) 은 SF 와 동일하게 null. */
+  age: string | null;
+  /** SF `yearsOfService__c` 정합 문자열 (예: `"7년"`). 조장 행은 null. */
+  yearsOfService: string | null;
 }
 
 export interface FemaleEmployeePlacementCheckResponse {

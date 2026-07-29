@@ -207,12 +207,37 @@ class EmployeeTest {
     }
 
     @Test
-    @DisplayName("만나이 - birthDate 가 파싱 불가 포맷이면 null (방어)")
-    fun calculateAge_unparsableBirthDate() {
+    @DisplayName("만나이 - birthDate 가 yyyyMMdd 8자리여도 파싱한다 (SAP 인바운드 원본 형식)")
+    fun calculateAge_compactBirthDate() {
+        // SAP `Birthdate` 는 yyyyMMdd 로 들어오고 EmployeeUpsertService.normalizeBirthdate 는
+        // 빈값/00000000 센티넬만 처리하고 나머지는 원본 그대로 저장한다 → 8자리가 운영에 실재한다.
         val employee = createTestEmployee()
         employee.birthDate = "19781127"
 
+        assertThat(employee.calculateAge(LocalDate.of(2026, 5, 30))).isEqualTo("47살")
+    }
+
+    @Test
+    @DisplayName("만나이 - birthDate 가 파싱 불가 포맷이면 null (방어)")
+    fun calculateAge_unparsableBirthDate() {
+        val employee = createTestEmployee()
+        employee.birthDate = "1978/11/27"
+
         assertThat(employee.calculateAge(LocalDate.of(2026, 5, 30))).isNull()
+    }
+
+    @Test
+    @DisplayName("만나이 - womanOnly=true 면 여사원이 아닌 사원은 null (SF AppAuthority 게이트)")
+    fun calculateAge_womanOnlyGate() {
+        val leader = createTestEmployee(role = AppAuthority.LEADER)
+        leader.birthDate = "1978-11-27"
+        val woman = createTestEmployee(role = AppAuthority.WOMAN)
+        woman.birthDate = "1978-11-27"
+
+        assertThat(leader.calculateAge(LocalDate.of(2026, 5, 30), womanOnly = true)).isNull()
+        assertThat(woman.calculateAge(LocalDate.of(2026, 5, 30), womanOnly = true)).isEqualTo("47살")
+        // 기본값(false) 은 게이트 없음 — 전체 사원 관리 목록이 여사원 외 직군의 나이도 노출한다.
+        assertThat(leader.calculateAge(LocalDate.of(2026, 5, 30))).isEqualTo("47살")
     }
 
     // --- 근속년수 (SF yearsOfService__c 계산식 정합) ---
@@ -229,6 +254,16 @@ class EmployeeTest {
 
         // then
         assertThat(years).isEqualTo("6년")
+    }
+
+    @Test
+    @DisplayName("근속년수 - womanOnly=true 면 여사원이 아닌 사원은 null (SF AppAuthority 게이트)")
+    fun calculateYearsOfService_womanOnlyGate() {
+        val leader = createTestEmployee(role = AppAuthority.LEADER)
+        leader.startDate = LocalDate.of(2020, 3, 15)
+
+        assertThat(leader.calculateYearsOfService(LocalDate.of(2026, 5, 30), womanOnly = true)).isNull()
+        assertThat(leader.calculateYearsOfService(LocalDate.of(2026, 5, 30))).isEqualTo("6년")
     }
 
     @Test

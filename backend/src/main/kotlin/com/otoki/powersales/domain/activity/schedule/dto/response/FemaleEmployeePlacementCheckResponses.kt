@@ -16,7 +16,8 @@ data class FemaleEmployeePlacementCheckResponse(
  * 배치 점검 1행 — (여사원/조장) × (여사원일정 1건) 조인 결과.
  *
  * 21컬럼: 레거시 Report 컬럼 순서 보존. enum 필드는 `@JsonValue` 로 한글 displayName 직렬화.
- * `age` / `yearsOfService` 는 SF formula 필드 대체 (조회 시점 계산값).
+ * `age` / `yearsOfService` 는 SF formula(`Age__c` / `yearsOfService__c`) 정합 문자열 —
+ * 각각 `"41살"` / `"7년"` 형태이며, 여사원이 아닌 행(조장) 은 SF 와 동일하게 null.
  */
 data class FemaleEmployeePlacementCheckItem(
     val workingDate: String?,
@@ -38,6 +39,6 @@ data class FemaleEmployeePlacementCheckItem(
     val commuteDate: String?,
     val isWorkReport: String?,
     val startDate: String?,
-    val age: Int?,
-    val yearsOfService: Int?,
+    val age: String?,
+    val yearsOfService: String?,
 )
