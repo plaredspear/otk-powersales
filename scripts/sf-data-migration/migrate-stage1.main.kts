@@ -582,6 +582,7 @@ val shouldReset: Boolean = when {
         println("Stage 1 시작 전 powersales 스키마를 TRUNCATE RESTART IDENTITY CASCADE 로 초기화하시겠습니까?")
         println("  - 기존 모든 데이터 삭제 + IDENTITY PK 초기화")
         println("  - flyway_schema_history 는 보존")
+        println("  - app_package (앱 버전 관리) 는 보존")
         print("초기화하려면 'y' 입력, 아니면 Enter: ")
         val answer = readLine()?.trim()?.lowercase()
         if (answer == null) {

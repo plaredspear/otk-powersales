@@ -61,7 +61,7 @@ scripts/sf-data-migration/
 | **Stage 2-E** | 공지 본문 rtaImage `<img>` → placeholder 치환 (dry-run 기본) | Stage 2 "공지 본문 이미지 placeholder 치환" (Dry-run/Apply) | `POST /stage2/notice-rta-placeholder?dryRun={bool}` | curl | substep 단위 |
 | **Stage 2-F** | profile_sfid 기준 User.profile_id 최종 정합 | (web 미노출 — API/curl) | `POST /stage2/user-profile-reconcile` | curl | substep 단위 |
 | **Stage 2-G** | 조장 ProfileFlags 초기 권한 적용 (`LeaderProfileFlagsSeed` SoT, `6.조장` 단건) | Stage 2 "조장 ProfileFlags 권한 적용" | `POST /stage2/leader-profile-flags` | curl | substep 단위 |
-| **Reset**     | DB 초기화. ① 전체 TRUNCATE (`db-reset.sh` truncate, flyway 보존) — 진짜 처음부터 ② SF 산출물만 삭제 (`reset-dev.main.kts`, sfid IS NOT NULL row) ③ Stage 1 stale RUNNING 락 해제 (`POST /stage1/reset`) | Stage 1 "상태 초기화" (③ 한정) | `POST /stage1/reset` (③) | `db-reset.sh` / `reset-dev.main.kts` | 단일 |
+| **Reset**     | DB 초기화. ① 전체 TRUNCATE (`db-reset.sh` truncate, flyway·app_package 보존) — 진짜 처음부터 ② SF 산출물만 삭제 (`reset-dev.main.kts`, sfid IS NOT NULL row) ③ Stage 1 stale RUNNING 락 해제 (`POST /stage1/reset`) | Stage 1 "상태 초기화" (③ 한정) | `POST /stage1/reset` (③) | `db-reset.sh` / `reset-dev.main.kts` | 단일 |
 
 > API 경로는 모두 `/api/v1/admin/sf-migration/` prefix 생략 표기. 전체 경로 예: `POST /api/v1/admin/sf-migration/stage2/fk`.
 
@@ -270,7 +270,7 @@ kotlin migrate-stage1.main.kts --target=Organization,Employee --no-reset
 
 옵션:
 - `--target=Organization,Account,Product,Promotion,Group,Employee,User,Notice,...` (default: 전체. 전체 target 권위 출처는 `common.kts` `TARGET_SPECS`)
-- `--reset` — 적재 전 `db-reset.sh --mode truncate` 호출 (powersales 전체 TRUNCATE RESTART IDENTITY CASCADE, `flyway_schema_history` 보존). 확인 프롬프트 생략.
+- `--reset` — 적재 전 `db-reset.sh --mode truncate` 호출 (powersales 전체 TRUNCATE RESTART IDENTITY CASCADE, `flyway_schema_history` · `app_package` 보존). 확인 프롬프트 생략.
 - `--no-reset` — reset 건너뜀 (확인 프롬프트 생략). 기존 데이터 위에 `ON CONFLICT DO NOTHING` 누적.
 - (둘 다 미지정) — stdin 으로 reset 여부 대화형 질의. stdin 미가용이면 reset 건너뜀.
 - `--input-dir=<path>` (default: `./input`)
@@ -360,12 +360,14 @@ curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/user-role-hierarchy"       
 ```bash
 # powersales 의 모든 테이블 TRUNCATE RESTART IDENTITY CASCADE (sfid 유무 무관, IDENTITY PK 리셋).
 # flyway_schema_history 는 보존 → backend 가 마이그레이션을 재실행하지 않음.
+# app_package (앱 버전 관리) 도 보존 → 임시 보관 후 복원 (CASCADE 로 지워지므로 스크립트가 되돌린다).
 # stage 분기로 dev (localhost:15432) / prod (localhost:25432) 구분, 비밀번호는 환경변수.
 scripts/db-reset.sh -s dev                          # 확인 프롬프트 있음
 scripts/db-reset.sh -s dev --yes                    # 프롬프트 생략 (자동화)
 scripts/db-reset.sh --db-properties scripts/sf-data-migration/db.properties --mode truncate --yes
 
 # recreate 모드 (스키마 자체 DROP + flyway_schema_history 까지 삭제 → backend 가 전 마이그레이션 재실행)
+# 주의: recreate 는 app_package 도 테이블째 사라져 보존되지 않는다.
 scripts/db-reset.sh -s dev --mode recreate
 ```
 

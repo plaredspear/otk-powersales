@@ -54,12 +54,12 @@
 
 기존 데이터 위에 누적 적재해도 무방하면(Stage1/2 모두 멱등) **건너뛴다**. 깨끗한 상태에서 다시 시작할 때만 실행.
 
-`scripts/db-reset.sh` 는 `powersales` 스키마 **전체 테이블 일괄** 초기화다(부분 선택 불가). 사전에 **DB 터널이 떠 있어야** 하고, 실행 전 테이블별 현재 행 수를 출력한 뒤 확인 프롬프트를 띄운다.
+`scripts/db-reset.sh` 는 `powersales` 스키마 **전체 테이블 일괄** 초기화다(보존 대상 외 부분 선택 불가). 사전에 **DB 터널이 떠 있어야** 하고, 실행 전 테이블별 현재 행 수를 출력한 뒤 확인 프롬프트를 띄운다.
 
-| 모드 | 동작 | `flyway_schema_history` | backend 재기동 |
-|------|------|------------------------|----------------|
-| **truncate** (기본, 권장) | 전 테이블 `TRUNCATE RESTART IDENTITY CASCADE` | **보존** | **불필요** |
-| **recreate** | `DROP SCHEMA powersales CASCADE` + `CREATE SCHEMA`(owner 보존) | **삭제** | **필수** (1-0-1) |
+| 모드 | 동작 | `flyway_schema_history` | `app_package`(앱 버전) | backend 재기동 |
+|------|------|------------------------|------------------------|----------------|
+| **truncate** (기본, 권장) | 전 테이블 `TRUNCATE RESTART IDENTITY CASCADE` | **보존** | **보존** | **불필요** |
+| **recreate** | `DROP SCHEMA powersales CASCADE` + `CREATE SCHEMA`(owner 보존) | **삭제** | **삭제** | **필수** (1-0-1) |
 
 ```bash
 scripts/db-reset.sh -s dev                 # dev, truncate, 확인 프롬프트
@@ -72,6 +72,7 @@ scripts/db-reset.sh --db-properties scripts/sf-data-migration/db.properties --mo
 접속 정보: `--db-properties` 명시 시 그 파일 우선, 아니면 stage 분기(dev = `localhost:15432/otkadmin`, prod = `localhost:25432/postgres`).
 
 - **마이그레이션 리허설에 recreate 는 과하다** — 스키마 + flyway 이력까지 날려 재기동 부담만 늘어난다. 깨끗한 시작은 truncate 로 충분하다.
+- **앱 버전 관리 테이블(`app_package`)은 truncate 모드에서 자동 보존**된다(옵션 없는 고정 정책). SF 비대응 자체 엔티티라 초기화 후에도 사내 배포 패키지(APK/IPA)가 남는다. `employee` FK 때문에 목록에서 빼는 것만으로는 `CASCADE` 에 함께 지워지므로, 스크립트가 한 트랜잭션 안에서 **임시 보관 → TRUNCATE → 복원**(identity 값 유지, `uploaded_by_id` 는 NULL — 업로더 employee 가 사라지므로)한다. **recreate 는 테이블 자체를 drop 하므로 보존되지 않는다.**
 - `migrate-stage1.main.kts --reset` 은 내부적으로 `db-reset.sh --mode truncate --yes` 를 호출하므로, Stage 1 을 `--reset` 으로 돌리면 본 스크립트를 별도 실행할 필요 없다.
 - **SF 산출물만 삭제**(앱 데이터 보존)가 목적이면 `kotlin scripts/sf-data-migration/reset-dev.main.kts` — `WHERE sfid IS NOT NULL` 로 dependency 역순 DELETE(운영 endpoint 감지 시 자동 거부, localhost 전용). 단 `user_permission` 은 폐기 대상이라 이미 drop 된 환경에서는 실패하므로, **전체 초기화가 목적이면 `db-reset.sh` 를 쓴다**.
 

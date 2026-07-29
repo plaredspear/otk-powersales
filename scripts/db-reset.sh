@@ -2,13 +2,15 @@
 #
 # db-reset.sh
 #
-# 타겟 DB 의 powersales 스키마 전체 데이터 초기화 (전체 테이블 일괄, 부분 선택 불가).
+# 타겟 DB 의 powersales 스키마 전체 데이터 초기화 (앱 버전 테이블 제외, 그 외 부분 선택 불가).
 #
 # 두 가지 모드:
 #   truncate (기본): powersales 의 모든 테이블 TRUNCATE RESTART IDENTITY CASCADE.
 #                    flyway_schema_history 는 보존 → backend Flyway 가 마이그레이션을 재실행하지 않음.
+#                    app_package (앱 버전 관리) 도 보존 → 초기화 후에도 모바일 배포 패키지가 유지됨.
 #   recreate       : DROP SCHEMA powersales CASCADE; CREATE SCHEMA powersales (owner 보존).
 #                    flyway_schema_history 도 함께 사라짐 → backend Flyway 가 모든 마이그레이션을 재실행함.
+#                    app_package 도 테이블째 사라지므로 보존되지 않음 (truncate 를 쓸 것).
 #
 # 접속 정보 우선순위:
 #   1) --db-properties <path>  로 명시한 properties 파일 (host/port/database/user/password)
@@ -28,6 +30,10 @@
 set -euo pipefail
 
 TARGET_SCHEMA="powersales"
+
+# truncate 모드에서 데이터를 보존할 테이블 (앱 버전 관리 — SF 마이그레이션과 무관한 자체 엔티티).
+# 옵션으로 노출하지 않는 고정 정책.
+KEEP_TABLE="app_package"
 
 ################################################################################
 # 유틸리티
@@ -91,9 +97,11 @@ Options:
 모드:
   truncate  powersales 의 모든 테이블 TRUNCATE RESTART IDENTITY CASCADE.
             flyway_schema_history 는 보존 (backend 가 마이그레이션을 다시 실행하지 않음).
+            $KEEP_TABLE (앱 버전 관리) 은 임시 보관 후 복원되어 데이터가 유지됨.
 
   recreate  DROP SCHEMA powersales CASCADE; CREATE SCHEMA powersales (owner 보존).
             flyway_schema_history 도 사라짐 → backend Flyway 가 모든 마이그레이션을 재실행해야 함.
+            $KEEP_TABLE 도 함께 사라짐 (보존 불가).
 EOH
       exit 0
       ;;
@@ -211,6 +219,9 @@ fi
 if [[ "$MODE" == "recreate" ]]; then
   warn "RECREATE 모드: flyway_schema_history 도 함께 삭제됩니다."
   warn "이후 backend 가 모든 Flyway 마이그레이션을 재실행해야 합니다."
+  warn "RECREATE 모드에서는 $KEEP_TABLE (앱 버전 관리) 이 보존되지 않습니다 — 보존하려면 truncate 모드를 쓰세요."
+else
+  log "보존 대상: flyway_schema_history, $TARGET_SCHEMA.$KEEP_TABLE (앱 버전 관리)"
 fi
 
 if [[ $ASSUME_YES -eq 0 ]]; then
@@ -226,9 +237,43 @@ fi
 
 if [[ "$MODE" == "truncate" ]]; then
   log "=== TRUNCATE 모드 실행 ==="
-  log "$TARGET_SCHEMA 의 모든 테이블 TRUNCATE RESTART IDENTITY CASCADE (flyway_schema_history 제외)"
+  log "$TARGET_SCHEMA 의 모든 테이블 TRUNCATE RESTART IDENTITY CASCADE (flyway_schema_history, $KEEP_TABLE 제외)"
 
-  "${PSQL[@]}" <<EOSQL
+  # $KEEP_TABLE 은 TRUNCATE 목록에서 빼는 것만으로는 보존되지 않는다.
+  # employee 를 FK 로 참조하므로 CASCADE 가 함께 비우기 때문 (TRUNCATE 는 ON DELETE 규칙을 따르지 않음).
+  # → 같은 트랜잭션 안에서 임시 테이블에 보관했다가 TRUNCATE 후 되돌린다.
+  KEEP_EXISTS="$("${PSQL[@]}" -t -A -c "SELECT to_regclass('$TARGET_SCHEMA.$KEEP_TABLE') IS NOT NULL;")"
+
+  KEEP_PRE_SQL=""
+  KEEP_POST_SQL=""
+  if [[ "$KEEP_EXISTS" == "t" ]]; then
+    KEEP_ROWS="$("${PSQL[@]}" -t -A -c "SELECT count(*) FROM $TARGET_SCHEMA.$KEEP_TABLE;")"
+    log "보존: $TARGET_SCHEMA.$KEEP_TABLE ($KEEP_ROWS row) — 임시 보관 후 복원"
+
+    # 업로더 employee 는 초기화로 사라지므로 FK 컬럼은 NULL (스키마의 ON DELETE SET NULL 과 동일 의미).
+    KEEP_PRE_SQL="
+CREATE TEMP TABLE _kept_app_package ON COMMIT DROP AS
+  SELECT * FROM $TARGET_SCHEMA.$KEEP_TABLE;
+UPDATE _kept_app_package SET uploaded_by_id = NULL;
+"
+    # identity 컬럼이라 값 복원에 OVERRIDING SYSTEM VALUE 가 필요하고,
+    # CASCADE TRUNCATE 의 RESTART IDENTITY 로 시퀀스가 1 로 돌아가므로 setval 로 맞춰준다.
+    KEEP_POST_SQL="
+INSERT INTO $TARGET_SCHEMA.$KEEP_TABLE OVERRIDING SYSTEM VALUE
+  SELECT * FROM _kept_app_package;
+SELECT setval(pg_get_serial_sequence('$TARGET_SCHEMA.$KEEP_TABLE', 'app_package_id'),
+              COALESCE(max(app_package_id), 1),
+              max(app_package_id) IS NOT NULL)
+  FROM $TARGET_SCHEMA.$KEEP_TABLE;
+"
+  else
+    warn "$TARGET_SCHEMA.$KEEP_TABLE 테이블이 없어 보존 단계를 건너뜁니다."
+  fi
+
+  # 보관 → TRUNCATE → 복원이 한 트랜잭션이어야 중간 실패 시 데이터가 사라지지 않는다.
+  "${PSQL[@]}" -v ON_ERROR_STOP=1 <<EOSQL
+BEGIN;
+$KEEP_PRE_SQL
 DO \$do\$
 DECLARE
   table_list text;
@@ -238,7 +283,7 @@ BEGIN
   FROM information_schema.tables
   WHERE table_schema = '$TARGET_SCHEMA'
     AND table_type = 'BASE TABLE'
-    AND table_name <> 'flyway_schema_history';
+    AND table_name NOT IN ('flyway_schema_history', '$KEEP_TABLE');
 
   IF table_list IS NULL THEN
     RAISE NOTICE '$TARGET_SCHEMA 에 대상 테이블이 없습니다.';
@@ -249,6 +294,8 @@ BEGIN
   END IF;
 END
 \$do\$;
+$KEEP_POST_SQL
+COMMIT;
 EOSQL
 
 elif [[ "$MODE" == "recreate" ]]; then
