@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
+import EmploymentStatusTag from '@/components/common/EmploymentStatusTag';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
@@ -21,13 +22,6 @@ import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 
 // 상태 태그 색. '퇴직(면직)' 은 서버가 발령명 '면직' 사원에게 부여하는 파생 표시값으로,
 // 퇴직과 동일 취급하므로 같은 색을 쓴다 (backend DismissalPolicy.DISPLAY_STATUS).
-const STATUS_TAG: Record<string, string> = {
-  재직: 'green',
-  휴직: 'orange',
-  퇴직: 'red',
-  '퇴직(면직)': 'red',
-};
-
 // 상태 필터 기본값 — 화면 진입 시 재직자만 조회한다 (backend EmploymentStatus.ACTIVE.code 와 동일 값).
 const DEFAULT_STATUS = '재직';
 
@@ -198,8 +192,7 @@ export default function EmployeePage() {
       // '퇴직(면직)' 파생 표시값이 줄바꿈되지 않도록 확보한 폭.
       width: 110,
       align: 'center',
-      render: (val: string | null) =>
-        val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
+      render: (val: string | null) => <EmploymentStatusTag status={val} />,
     },
     { title: '소속', dataIndex: 'orgName', width: 150, render: (val: string | null) => val ?? '-' },
     {
