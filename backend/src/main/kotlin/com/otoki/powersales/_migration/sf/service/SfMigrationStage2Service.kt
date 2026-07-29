@@ -59,6 +59,7 @@ class SfMigrationStage2Service(
          * - `DKRetail__CommuteLog__c` → 가드 entity `attendance_log` (근무 등록현황 목록/상세)
          * - `DKRetail__AlternativeHoliday__c` → 가드 entity `alternative_holiday` (대체휴무)
          * - `AttendInfo__c` → 가드 entity `attend_info` (기준정보 > HR 적재 근무기간)
+         * - `DailySalesHistory__c` → 가드 entity `daily_sales_history` (기준정보 > ORORA 일매출)
          *
          * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
          * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
@@ -67,6 +68,10 @@ class SfMigrationStage2Service(
          * 조회는 `work_history` 가상 자원(AdminWorkHistoryController, custom_permissions 경로) 으로
          * 분리되어 조장에게 READ 가 부여되므로 조회 화면과 지점/사원 셀렉터는 계속 동작한다
          * — 조장은 근무 실적 조회는 하되 SAP HR 적재 마스터는 보지 않는다 (사용자 결정).
+         *
+         * `DailySalesHistory__c` 회수도 기준정보 > ORORA 일매출 화면**만** 닫는다 — 이 키를 쓰는
+         * endpoint 가 그 화면의 목록/거래처 lookup 2건뿐이다. 월매출(`MonthlySalesHistory__c`) 은
+         * 별도 키라 조장 권한이 유지된다.
          */
         val REVOKED_LEADER_OBJECT_KEYS = listOf(
             "ERP_Order__c",
@@ -75,6 +80,7 @@ class SfMigrationStage2Service(
             "DKRetail__CommuteLog__c",
             "DKRetail__AlternativeHoliday__c",
             "AttendInfo__c",
+            "DailySalesHistory__c",
         )
 
         /**
@@ -693,6 +699,8 @@ class SfMigrationStage2Service(
      * - `Org__c` — 조직마스터 (가드 entity `organization`)
      * - `DKRetail__CommuteLog__c` — 근무 등록현황 (가드 entity `attendance_log`)
      * - `DKRetail__AlternativeHoliday__c` — 대체휴무 (가드 entity `alternative_holiday`)
+     * - `AttendInfo__c` — 기준정보 > HR 적재 근무기간 (가드 entity `attend_info`)
+     * - `DailySalesHistory__c` — 기준정보 > ORORA 일매출 (가드 entity `daily_sales_history`)
      *
      * 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) 은 애초에 SoT 에 없어 회수 대상이 아니다.
      *

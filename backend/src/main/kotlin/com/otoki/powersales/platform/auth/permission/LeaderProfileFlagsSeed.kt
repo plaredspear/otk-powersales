@@ -86,6 +86,10 @@ object LeaderProfileFlagsSeed {
 //   전 endpoint (적재 마스터 목록/상세/등록/수정/삭제). 근무 등록현황(`attendance_log`) 과는 다른 자원이다.
 //   인사/근무 > 근무기간 **조회** 화면은 `work_history` 가상 자원으로 분리되어 아래 custom_permissions
 //   로 별도 부여하므로, 본 키 회수가 조회 화면을 닫지 않는다 (지점/사원 셀렉터 포함).
+// - `DailySalesHistory__c` (기준정보 > ORORA 일매출, 가드 entity `daily_sales_history`) —
+//   AdminDailySalesHistoryController 목록 + 그 화면 전용 거래처 lookup(`/accounts/lookup-for-daily-sales`).
+//   이 두 endpoint 가 본 키의 유일한 사용처라 회수 파급이 그 화면에 한정된다. 월매출은 별도 키
+//   (`MonthlySalesHistory__c`, 가드 `monthly_sales_history`) 라 조장 권한이 그대로 유지된다.
 // 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체휴무(`DKRetail__AlternativeHoliday__c`)
 // 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
@@ -99,7 +103,6 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
   "DKRetail__Claim__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "DKRetail__Notice__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "DKRetail__Product__c": { "allowRead": true },
-  "DailySalesHistory__c": { "allowRead": true },
   "DKRetail__Employee__c": { "allowEdit": true, "allowRead": false },
   "DKRetail__Proposal__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },
   "DKRetail__Promotion__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true },

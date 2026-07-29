@@ -35,7 +35,7 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     }
 
     @Test
-    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 / HR 적재 근무기간 (사용자 결정)")
+    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 / HR 적재 근무기간 / ORORA 일매출 (사용자 결정)")
     fun `revoked keys cover leader hidden screens`() {
         assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS)
             .containsExactlyInAnyOrder(
@@ -45,7 +45,21 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
                 "DKRetail__CommuteLog__c",
                 "DKRetail__AlternativeHoliday__c",
                 "AttendInfo__c",
+                "DailySalesHistory__c",
             )
+    }
+
+    @Test
+    @DisplayName("ORORA 일매출(daily_sales_history) 만 회수하고 월매출(monthly_sales_history) 은 유지한다 (사용자 결정)")
+    fun `daily sales history revoked but monthly sales history kept`() {
+        // 두 자원은 가드 entity 가 달라 회수 파급이 분리된다.
+        // daily_sales_history   = 기준정보 > ORORA 일매출 (AdminDailySalesHistoryController + 전용 거래처 lookup)
+        // monthly_sales_history = 매출/실적 > 월 매출 등 — 조장이 계속 조회한다.
+        assertThat(leaderSeed.objectPermissionsJson).doesNotContain("DailySalesHistory__c")
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains("DailySalesHistory__c")
+
+        assertThat(leaderSeed.objectPermissionsJson).contains("\"MonthlySalesHistory__c\"")
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).doesNotContain("MonthlySalesHistory__c")
     }
 
     @Test

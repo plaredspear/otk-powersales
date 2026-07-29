@@ -383,8 +383,10 @@ export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsRespons
  * - `DKRetail__CommuteLog__c` → `attendance_log` (근무 등록현황)
  * - `DKRetail__AlternativeHoliday__c` → `alternative_holiday` (대체휴무)
  * - `AttendInfo__c` → `attend_info` (기준정보 > HR 적재 근무기간)
+ * - `DailySalesHistory__c` → `daily_sales_history` (기준정보 > ORORA 일매출)
  *
- * 공휴일/영업일 마스터는 조장 권한이 애초에 없어 대상이 아니다. 멱등.
+ * 공휴일/영업일 마스터는 조장 권한이 애초에 없어 대상이 아니다. 월 매출(물류배부/전산실적)은
+ * `MonthlySalesHistory__c` 라 회수 대상이 아니며 조장이 계속 조회한다. 멱등.
  */
 export async function runLeaderErpOrgRevoke(): Promise<LeaderProfileFlagsResponse> {
   const res = await client.post<ApiResponse<LeaderProfileFlagsResponse>>(

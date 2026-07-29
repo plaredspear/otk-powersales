@@ -861,6 +861,11 @@ export default function SfMigrationPage() {
             HR 적재 근무기간 — <Text code>AttendInfo__c</Text> (가드 <Text code>attend_info</Text>).
             근무기간 조회의 <Text strong>월별 근무내역 탭 지점/사원 셀렉터</Text>도 같은 가드라 함께 닫힌다
           </li>
+          <li>
+            ORORA 일매출 — <Text code>DailySalesHistory__c</Text> (가드{' '}
+            <Text code>daily_sales_history</Text>). 월 매출(물류배부/전산실적)은 별도 키
+            (<Text code>MonthlySalesHistory__c</Text>) 라 <Text strong>계속 조회 가능</Text>
+          </li>
         </ul>
         <Paragraph type="secondary">
           위 <Text strong>조장 ProfileFlags 권한 적용</Text> 과 달리 object_permissions 전체를 덮어쓰지
