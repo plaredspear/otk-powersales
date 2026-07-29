@@ -233,6 +233,7 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
         if (!mounted) return;
         _flushPendingDeepLink();
       });
+      WidgetsBinding.instance.ensureVisualUpdate();
       return;
     }
 
@@ -246,6 +247,12 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
         arguments: target.arguments,
       );
     });
+    // 프레임을 명시적으로 깨운다 — addPostFrameCallback 은 콜백을 등록만 할 뿐 프레임을
+    // 스케줄하지 않는다("after the next frame, whenever that may be, if ever").
+    // 앱을 켜 둔 채 푸시가 온 경우 화면은 유휴 상태(애니메이션·터치 없음)라 다음 프레임이
+    // 잡히지 않고, 알림을 눌러도 아무 일이 없다가 사용자가 화면을 터치하는 순간에야
+    // 뒤늦게 이동한다(iOS 배너 탭은 Flutter 뷰에 터치가 전달되지 않아 특히 잘 재현된다).
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override
