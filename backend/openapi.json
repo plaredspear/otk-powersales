@@ -14696,6 +14696,10 @@
             },
             "type" : "array"
           },
+          "lastMaterializedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "salesMonth" : {
             "type" : "string"
           },

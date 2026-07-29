@@ -23,8 +23,14 @@ import org.springframework.transaction.annotation.Transactional
  * ORORA 직접이 아닌 `DailySalesHistory__c` SObject 를 읽었다.
  *
  * ## 동작 요약
- * 거래처 1곳(거래처코드) + 매출월(`yyyyMM`) 의 일별 적재 행 + 금액 합계 3종을 반환한다.
+ * 거래처 1곳(거래처코드) + 매출월(`yyyyMM`) 의 일별 적재 행 + 금액 합계 3종 + 마지막 적재 시각
+ * (조회 결과 행의 `max(updated_at)`) 을 반환한다.
  * 거래처는 필수 조건 — 월 단위 전 거래처 스캔을 원천 차단한다. 부수 효과: 없음 (조회 전용).
+ *
+ * 적재 배치 실행 이력(`scheduled_job_run`) 은 적재 시각 출처로 쓰지 않는다 — 대상 월이 metadata
+ * JSON 에만 남아 조회 월과 대조할 수 없고(과거 월을 봐도 당월 배치 시각이 찍힘), 이력 보존이
+ * 90일이며, SF 이관 데이터에는 실행 이력 자체가 없어 신뢰 가능한 값이 나오지 않는다.
+ * 데이터 자체의 `updated_at` 만이 조회 월 기준으로 항상 정확하다.
  *
  * ## 가시성
  * 거래처 지점(`branch_code`) 이 호출자 [DataScope] 범위 밖이면 [AdminForbiddenException]

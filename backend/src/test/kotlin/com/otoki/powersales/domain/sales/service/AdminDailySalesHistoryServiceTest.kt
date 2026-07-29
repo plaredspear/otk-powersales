@@ -14,6 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 
 @DisplayName("AdminDailySalesHistoryService 테스트")
 class AdminDailySalesHistoryServiceTest {
@@ -40,6 +41,7 @@ class AdminDailySalesHistoryServiceTest {
         erpSales: Double? = null,
         erpDistribution: Double? = null,
         ledger: Double? = null,
+        updatedAt: LocalDateTime = LocalDateTime.of(2026, 7, 31, 11, 0),
     ): DailySalesHistory = DailySalesHistory(
         sapAccountCode = "1000000",
         salesDate = salesDate,
@@ -48,6 +50,7 @@ class AdminDailySalesHistoryServiceTest {
         it.erpSalesAmount = erpSales
         it.erpDistributionAmount = erpDistribution
         it.ledgerAmount = ledger
+        it.updatedAt = updatedAt
     }
 
     @Test
@@ -72,6 +75,30 @@ class AdminDailySalesHistoryServiceTest {
         assertThat(response.totalErpSalesAmount).isEqualTo(1500.0)
         assertThat(response.totalErpDistributionAmount).isEqualTo(200.0)
         assertThat(response.totalLedgerAmount).isEqualTo(50.0)
+    }
+
+    @Test
+    @DisplayName("마지막 적재 시각은 조회한 거래처+월 행의 max(updatedAt), 결과 0건이면 null")
+    fun returnsLastMaterializedAtOfQueriedMonth() {
+        every { accountRepository.findByExternalKey("1000000") } returns account()
+        every {
+            dailySalesHistoryRepository
+                .findBySapAccountCodeAndSalesDateStartingWithOrderBySalesDateAscIdAsc(any(), any())
+        } returns listOf(
+            daily("20260730", updatedAt = LocalDateTime.of(2026, 7, 30, 11, 0)),
+            daily("20260731", updatedAt = LocalDateTime.of(2026, 7, 31, 11, 5)),
+        )
+
+        assertThat(service.getDailySalesHistories(allBranchScope, "1000000", "202607").lastMaterializedAt)
+            .isEqualTo(LocalDateTime.of(2026, 7, 31, 11, 5))
+
+        every {
+            dailySalesHistoryRepository
+                .findBySapAccountCodeAndSalesDateStartingWithOrderBySalesDateAscIdAsc(any(), any())
+        } returns emptyList()
+
+        assertThat(service.getDailySalesHistories(allBranchScope, "1000000", "202605").lastMaterializedAt)
+            .isNull()
     }
 
     @Test

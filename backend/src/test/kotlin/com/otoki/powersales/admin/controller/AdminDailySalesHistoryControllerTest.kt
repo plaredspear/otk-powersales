@@ -71,6 +71,7 @@ class AdminDailySalesHistoryControllerTest : AdminControllerTestSupport() {
                     totalErpSalesAmount = 1000.0,
                     totalErpDistributionAmount = 200.0,
                     totalLedgerAmount = 0.0,
+                    lastMaterializedAt = LocalDateTime.of(2026, 7, 31, 11, 0),
                 )
 
             mockMvc.perform(
@@ -84,6 +85,7 @@ class AdminDailySalesHistoryControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.content[0].salesDate").value("20260731"))
                 .andExpect(jsonPath("$.data.totalErpSalesAmount").value(1000.0))
+                .andExpect(jsonPath("$.data.lastMaterializedAt").value("2026-07-31T11:00:00"))
         }
 
         @Test

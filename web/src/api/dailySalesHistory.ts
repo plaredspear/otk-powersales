@@ -31,6 +31,8 @@ export interface DailySalesHistoryListResponse {
   totalErpSalesAmount: number;
   totalErpDistributionAmount: number;
   totalLedgerAmount: number;
+  /** 조회한 거래처 + 매출월 행의 마지막 적재 시각 (max(updatedAt)). 결과 0건이면 null. */
+  lastMaterializedAt: string | null;
 }
 
 export interface FetchDailySalesHistoriesParams {

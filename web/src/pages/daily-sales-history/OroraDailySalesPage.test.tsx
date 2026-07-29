@@ -72,6 +72,7 @@ describe('OroraDailySalesPage', () => {
       totalErpSalesAmount: 1000,
       totalErpDistributionAmount: 200,
       totalLedgerAmount: 0,
+      lastMaterializedAt: '2026-07-31T11:05:00',
     });
 
     const user = userEvent.setup();
@@ -94,5 +95,10 @@ describe('OroraDailySalesPage', () => {
     expect(screen.getByText('물류배부매출실적 합계')).toBeInTheDocument();
     expect(screen.getAllByText('1,000').length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText('200').length).toBeGreaterThanOrEqual(2);
+
+    // 마지막 적재 시각 — 조회한 매출월 기준 (조회 결과 행의 최신 적재일시).
+    expect(
+      screen.getByText(/마지막 적재 시각: 2026-07-31 11:05 \(2026년 07월 기준\)/),
+    ).toBeInTheDocument();
   });
 });

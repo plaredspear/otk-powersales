@@ -34,6 +34,11 @@ function formatAmount(value: number | null): string {
   return value == null ? '-' : value.toLocaleString();
 }
 
+/** KST wall-clock ISO 문자열을 `YYYY-MM-DD HH:mm` 으로 표기 — null 은 '-'. */
+function formatDateTime(value: string | null): string {
+  return value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-';
+}
+
 /**
  * 기준정보 > ORORA 일매출.
  *
@@ -100,10 +105,10 @@ export default function OroraDailySalesPage() {
     },
     { title: '적재키 (Externalkey)', dataIndex: 'externalKey', width: 190, ellipsis: true },
     {
-      title: '수정일시',
+      title: '적재일시',
       dataIndex: 'updatedAt',
       width: 160,
-      render: (v: string | null) => (v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-'),
+      render: (v: string | null) => formatDateTime(v),
     },
   ];
 
@@ -185,6 +190,16 @@ export default function OroraDailySalesPage() {
               valueStyle={{ fontSize: 20 }}
             />
           </Space>
+          {/*
+            마지막 적재 시각 = 조회한 거래처 + 매출월 행의 최신 적재일시. 배치 실행 이력은 대상 월을
+            대조할 수 없고 SF 이관분에는 이력 자체가 없어 쓰지 않는다 (조회 월 기준으로 무의미해짐).
+          */}
+          <div style={{ marginTop: 12 }}>
+            <Text type="secondary">
+              마지막 적재 시각: {formatDateTime(data.lastMaterializedAt)} (
+              {formatSalesMonth(data.salesMonth)} 기준)
+            </Text>
+          </div>
         </Card>
       )}
 

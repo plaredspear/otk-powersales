@@ -64,6 +64,13 @@ data class DailySalesHistoryListResponse(
     val totalErpSalesAmount: Double,
     val totalErpDistributionAmount: Double,
     val totalLedgerAmount: Double,
+    /**
+     * 조회한 거래처 + 매출월 행의 마지막 적재 시각 (= `max(updated_at)`). 결과가 0건이면 null.
+     *
+     * 조회 월 기준으로 항상 정확한 유일한 출처다 — 배치 실행 이력(`scheduled_job_run`) 은 대상 월이
+     * metadata JSON 에만 있고 보존이 90일이며 SF 이관분에는 이력 자체가 없어 쓰지 않는다.
+     */
+    val lastMaterializedAt: LocalDateTime?,
 ) {
     companion object {
         fun of(
@@ -82,6 +89,7 @@ data class DailySalesHistoryListResponse(
                 totalErpSalesAmount = entities.sumOf { it.erpSalesAmount ?: 0.0 },
                 totalErpDistributionAmount = entities.sumOf { it.erpDistributionAmount ?: 0.0 },
                 totalLedgerAmount = entities.sumOf { it.ledgerAmount ?: 0.0 },
+                lastMaterializedAt = entities.mapNotNull { it.updatedAt }.maxOrNull(),
             )
     }
 }
