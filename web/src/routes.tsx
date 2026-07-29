@@ -62,6 +62,7 @@ const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/Holiday
 const EmployeeInputCriteriaMasterListPage = lazy(
   () => import('@/pages/employee-input-criteria-masters/EmployeeInputCriteriaMasterListPage'),
 );
+const OroraDailySalesPage = lazy(() => import('@/pages/daily-sales-history/OroraDailySalesPage'));
 const AttendInfoPage = lazy(() => import('@/pages/attend-info/AttendInfoPage'));
 const HrAttendInfoPage = lazy(() => import('@/pages/attend-info/HrAttendInfoPage'));
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
@@ -233,6 +234,12 @@ export const router = createBrowserRouter(
                   element: <PermissionRoute entity="employee_input_criteria_master" operation="READ" />,
                   children: [
                     { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute entity="daily_sales_history" operation="READ" />,
+                  children: [
+                    { path: '/settings/orora-daily-sales', element: <LazyWrapper><OroraDailySalesPage /></LazyWrapper> },
                   ],
                 },
                 {

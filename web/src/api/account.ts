@@ -250,6 +250,25 @@ export async function fetchAccountsForProductLookup(
   return res.data.data;
 }
 
+/**
+ * ORORA 일매출 화면의 거래처 lookup search — daily_sales_history 권한 보유자 호출용.
+ *
+ * Account READ 권한 없이도 호출 가능. 매출 적재 확인 화면이라 행사 lookupFilter(계정그룹/폐업 제외)를
+ * 적용하지 않아 폐업 거래처의 과거 매출도 조회 대상에 남는다.
+ */
+export async function fetchAccountsForDailySalesLookup(
+  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+): Promise<AccountListData> {
+  const res = await client.get<ApiResponse<AccountListData>>(
+    '/api/v1/admin/accounts/lookup-for-daily-sales',
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 // --- 신규 거래처 등록 (Spec #640 P2-W) ---
 
 export interface AdminAccountCreateRequest {

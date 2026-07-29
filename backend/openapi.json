@@ -5870,6 +5870,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseDailySalesHistoryListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DailySalesHistoryListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDailySalesResult" : {
         "properties" : {
           "data" : {
@@ -14611,6 +14640,79 @@
           "scheduleDate" : {
             "format" : "date",
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesHistoryListItem" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "erpDistributionAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "erpSalesAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "externalKey" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "ledgerAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "salesDate" : {
+            "type" : "string"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesHistoryListResponse" : {
+        "properties" : {
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DailySalesHistoryListItem"
+            },
+            "type" : "array"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "totalErpDistributionAmount" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "totalErpSalesAmount" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "totalLedgerAmount" : {
+            "format" : "double",
+            "type" : "number"
           }
         },
         "type" : "object"
@@ -28050,6 +28152,62 @@
         "tags" : [ "admin-account-controller" ]
       }
     },
+    "/api/v1/admin/accounts/lookup-for-daily-sales" : {
+      "get" : {
+        "operationId" : "lookupAccountsForDailySales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-account-controller" ]
+      }
+    },
     "/api/v1/admin/accounts/lookup-for-display-schedule" : {
       "get" : {
         "operationId" : "lookupAccountsForDisplaySchedule",
@@ -29503,6 +29661,50 @@
           }
         },
         "tags" : [ "admin-claim-controller" ]
+      }
+    },
+    "/api/v1/admin/daily-sales-histories" : {
+      "get" : {
+        "operationId" : "getDailySalesHistories",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountCode",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "salesMonth",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 7,
+            "minLength" : 6,
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDailySalesHistoryListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-daily-sales-history-controller" ]
       }
     },
     "/api/v1/admin/dashboard" : {
