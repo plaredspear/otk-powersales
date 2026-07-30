@@ -51,6 +51,17 @@ const PERIOD_FILTER_NOTICE =
   '시작일이 기간 밖이더라도 기간 중 진행 중인 스케줄은 포함됩니다. ' +
   '(예: 7/1~7/31 스케줄은 7/15~7/20 으로 조회해도 표시)';
 
+/**
+ * 목록의 시작일/종료일 표기 — 당해년도면 연도를 생략해 `MM-DD` 로만 보여준다 (컬럼 폭 절약).
+ * 타 년도(전년 시작 / 익년 종료 등)는 혼동을 막기 위해 `YYYY-MM-DD` 전체를 유지한다.
+ * 값은 서버가 내려주는 `YYYY-MM-DD` 문자열이므로 파싱 없이 prefix 비교로 판정한다.
+ */
+function formatScheduleDate(value: string | null): string {
+  if (!value) return '-';
+  const currentYearPrefix = `${dayjs().year()}-`;
+  return value.startsWith(currentYearPrefix) ? value.slice(currentYearPrefix.length) : value;
+}
+
 const errorColumns: ColumnsType<RowError> = [
   { title: '행', dataIndex: 'row', key: 'row', width: 60 },
   { title: '컬럼', dataIndex: 'field', key: 'field', width: 100 },
@@ -207,7 +218,15 @@ function buildListColumns(
     { title: '거래처유형', dataIndex: 'accountType', key: 'accountType', width: 100, align: 'center', render: (v) => v ?? '-' },
     { title: '근무형태3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
     { title: '근무형태5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
-    { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
+    {
+      title: '시작일',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 110,
+      align: 'center',
+      sorter: true,
+      render: (v: string | null) => formatScheduleDate(v),
+    },
     {
       title: '종료일',
       dataIndex: 'endDate',
@@ -215,7 +234,7 @@ function buildListColumns(
       width: 110,
       align: 'center',
       sorter: true,
-      render: (v) => v ?? '-',
+      render: (v: string | null) => formatScheduleDate(v),
     },
     {
       title: '거래처상태',
