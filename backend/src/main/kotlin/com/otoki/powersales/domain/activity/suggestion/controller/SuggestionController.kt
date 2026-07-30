@@ -46,7 +46,7 @@ class SuggestionController(
     ): ResponseEntity<ApiResponse<SuggestionCreateResponse>> {
         // 물류 클레임 category 만 기능 토글로 차단한다 (신제품/기존제품 제안은 별개 기능).
         if (request.category == SuggestionCategory.LOGISTICS_CLAIM) {
-            featureToggleService.ensureEnabled(FeatureFlag.LOGISTICS_CLAIM)
+            featureToggleService.ensureEnabled(FeatureFlag.LOGISTICS_CLAIM, principal.userId)
         }
         val result = suggestionService.create(
             employeeId = principal.userId,

@@ -48,7 +48,7 @@ class OrderRequestCreatePostTest : MobileControllerTestSupport() {
     @BeforeEach
     fun setUpFeatureToggle() {
         // 기본은 주문 등록 활성 — gate 통과.
-        every { featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST) } just Runs
+        every { featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST, any()) } just Runs
     }
 
     @Test

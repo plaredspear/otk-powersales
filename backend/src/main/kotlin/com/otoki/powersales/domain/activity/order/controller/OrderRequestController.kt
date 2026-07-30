@@ -146,7 +146,7 @@ class OrderRequestController(
         @RequestHeader(value = "Idempotency-Key", required = false) idempotencyKey: String?,
         @Valid @RequestBody request: OrderRequestCreateRequest,
     ): ResponseEntity<ApiResponse<OrderRequestCreateResponse>> {
-        featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST)
+        featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST, principal.userId)
         val resolved = if (!idempotencyKey.isNullOrBlank()) {
             request.copy(clientRequestId = idempotencyKey)
         } else request

@@ -53,7 +53,7 @@ class ClaimController(
         @RequestParam labelPhoto: MultipartFile,
         @RequestParam(required = false) receiptPhoto: MultipartFile?
     ): ResponseEntity<ApiResponse<ClaimCreateResponse>> {
-        featureToggleService.ensureEnabled(FeatureFlag.PRODUCT_CLAIM)
+        featureToggleService.ensureEnabled(FeatureFlag.PRODUCT_CLAIM, principal.userId)
         val result = mobileClaimService.createClaim(
             userId = principal.userId,
             request = request,
