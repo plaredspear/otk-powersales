@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotio
 import com.otoki.powersales.domain.activity.promotion.entity.QProfessionalPromotionTeamMaster.Companion.professionalPromotionTeamMaster
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.repository.EmploymentStatusPredicate
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -28,6 +29,7 @@ class PPTMasterRepositoryCustomImpl(
         teamType: ProfessionalPromotionTeamType?,
         branchCodeFilter: List<String>?,
         validOnly: Boolean,
+        employmentStatus: String?,
         today: LocalDate,
         pageable: Pageable
     ): Page<PPTMasterSearchResult> {
@@ -51,6 +53,12 @@ class PPTMasterRepositoryCustomImpl(
         // 지점 스코프 — 데이터의 branch_code 컬럼(빈값)이 아니라 사원 소속 지점(costCenterCode) 기준.
         if (!branchCodeFilter.isNullOrEmpty()) {
             builder.and(employee.costCenterCode.`in`(branchCodeFilter))
+        }
+
+        // 「재직상태」 필터 — 여사원 현황 목록과 동일 술어(사원 원본 status + 면직 보정) 를 공유한다.
+        // 사원 미배정(employeeId=null) 마스터는 조건 대상이 없어 자연히 제외된다.
+        if (!employmentStatus.isNullOrBlank()) {
+            builder.and(EmploymentStatusPredicate.matching(employmentStatus))
         }
 
         if (validOnly) {
@@ -77,8 +85,7 @@ class PPTMasterRepositoryCustomImpl(
                     account.name,
                     employee.orgName,
                     employee.status,
-                    employee.appLoginActive,
-                    employee.endDate,
+                    employee.ordDetailNode,
                     account.accountType
                 )
             )

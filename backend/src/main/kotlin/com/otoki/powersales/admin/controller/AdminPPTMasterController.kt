@@ -108,11 +108,13 @@ class AdminPPTMasterController(
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
         @RequestParam(required = false) branchCode: String?,
-        @RequestParam(defaultValue = "true") validOnly: Boolean
+        @RequestParam(defaultValue = "true") validOnly: Boolean,
+        // 「재직상태」 (재직/휴직/퇴직) — 여사원 현황 목록의 `status` 파라미터와 동일 축.
+        @RequestParam(required = false) employmentStatus: String?
     ): ResponseEntity<ApiResponse<PPTMasterListResponse>> {
         val response = adminPPTMasterService.getMasters(
             resolveBranchScope(principal, branchCode), employeeName, employeeCode, teamType, branchCode, validOnly,
-            PageRequest.of(page, size)
+            employmentStatus, PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -193,10 +195,12 @@ class AdminPPTMasterController(
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
         @RequestParam(required = false) branchCode: String?,
-        @RequestParam(defaultValue = "true") validOnly: Boolean
+        @RequestParam(defaultValue = "true") validOnly: Boolean,
+        @RequestParam(required = false) employmentStatus: String?
     ): ResponseEntity<ByteArray> {
         val result = adminPPTMasterService.exportToExcel(
-            resolveBranchScope(principal, branchCode), employeeName, employeeCode, teamType, branchCode, validOnly
+            resolveBranchScope(principal, branchCode), employeeName, employeeCode, teamType, branchCode, validOnly,
+            employmentStatus
         )
         return ExcelResponseUtils.build(result)
     }

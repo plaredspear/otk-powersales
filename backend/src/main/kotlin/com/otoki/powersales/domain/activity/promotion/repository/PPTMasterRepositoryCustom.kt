@@ -14,12 +14,18 @@ interface PPTMasterRepositoryCustom {
      *   전문행사조 데이터의 `branch_code` 컬럼은 SF `CostCenterCode__c`(dead field) 출처라 비어 있으므로,
      *   지점 가시성은 사원 조인 후 `employee.costCenterCode` 기준으로 평가한다.
      */
+    /**
+     * @param employmentStatus 「재직상태」 필터 — 사원 원본 `employee.status` (재직/휴직/퇴직) 축.
+     *   여사원 현황 목록과 **동일 술어**([com.otoki.powersales.domain.org.employee.repository.EmploymentStatusPredicate])
+     *   를 써서 발령명 '면직' 을 퇴직으로 취급한다. `null`/blank 면 전체.
+     */
     fun searchMasters(
         employeeName: String?,
         employeeCode: String?,
         teamType: ProfessionalPromotionTeamType?,
         branchCodeFilter: List<String>?,
         validOnly: Boolean,
+        employmentStatus: String?,
         today: LocalDate,
         pageable: Pageable
     ): Page<PPTMasterSearchResult>
@@ -70,10 +76,10 @@ data class PPTMasterSearchResult(
     val accountName: String?,
     // SF listView 정합 — 사원 소속 지점명(BranchName__c = FullName__r.DKRetail__OrgName__c)
     val branchName: String?,
-    // SF 재직상태(ValidConditionData__c) 프론트 산출용 raw 필드 (재직/휴직/퇴직예정/퇴직)
+    // 재직상태 표시/조회 축 — 사원 원본 status + 발령명(면직 보정용). 여사원 현황과 동일 값으로 표시한다
+    // ([com.otoki.powersales.domain.org.employee.enums.DismissalPolicy.displayStatus]).
     val employeeStatus: String?,
-    val employeeAppLoginActive: Boolean?,
-    val employeeEndDate: LocalDate?,
+    val employeeOrdDetailNode: String?,
     // SF 거래처유형(AccountType__c = Account.Type)
     val accountType: String?
 )

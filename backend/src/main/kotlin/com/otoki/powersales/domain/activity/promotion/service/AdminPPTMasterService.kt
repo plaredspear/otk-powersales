@@ -98,6 +98,11 @@ class AdminPPTMasterService(
         return PPTMasterFormMetaResponse(teamTypes = teamTypes)
     }
 
+    /**
+     * @param employmentStatus 「재직상태」 필터 (재직/휴직/퇴직) — 여사원 현황 목록과 동일 축.
+     *   사원 원본 `status` 매칭 + 발령명 '면직' 을 퇴직으로 취급하며, blank 면 전체
+     *   ([com.otoki.powersales.domain.org.employee.repository.EmploymentStatusPredicate]).
+     */
     fun getMasters(
         scope: DataScope,
         employeeName: String?,
@@ -105,6 +110,7 @@ class AdminPPTMasterService(
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean,
+        employmentStatus: String?,
         pageable: Pageable
     ): PPTMasterListResponse {
         // 지점 스코프 — 여사원 현황과 동일 출처(DashboardBranchResolver). 지점 권한자는 본인 조직 트리,
@@ -118,7 +124,8 @@ class AdminPPTMasterService(
         }
         val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
         val page = pptMasterRepository.searchMasters(
-            employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, LocalDate.now(), pageable
+            employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, employmentStatus,
+            LocalDate.now(), pageable
         )
         return PPTMasterListResponse(
             content = page.content.map { PPTMasterResponse.from(it) },
@@ -156,8 +163,7 @@ class AdminPPTMasterService(
             account?.externalKey, account?.name,
             branchName = employee?.orgName,
             employeeStatus = employee?.status,
-            employeeAppLoginActive = employee?.appLoginActive,
-            employeeEndDate = employee?.endDate,
+            employeeOrdDetailNode = employee?.ordDetailNode,
             accountType = account?.accountType
         )
     }
@@ -196,8 +202,7 @@ class AdminPPTMasterService(
             account.externalKey, account.name,
             branchName = employee.orgName,
             employeeStatus = employee.status,
-            employeeAppLoginActive = employee.appLoginActive,
-            employeeEndDate = employee.endDate,
+            employeeOrdDetailNode = employee.ordDetailNode,
             accountType = account.accountType
         )
     }
@@ -256,8 +261,7 @@ class AdminPPTMasterService(
             account.externalKey, account.name,
             branchName = employee.orgName,
             employeeStatus = employee.status,
-            employeeAppLoginActive = employee.appLoginActive,
-            employeeEndDate = employee.endDate,
+            employeeOrdDetailNode = employee.ordDetailNode,
             accountType = account.accountType
         )
     }
@@ -393,7 +397,8 @@ class AdminPPTMasterService(
         employeeCode: String?,
         teamType: String?,
         branchCode: String?,
-        validOnly: Boolean
+        validOnly: Boolean,
+        employmentStatus: String?
     ): ExcelResult {
         // 엑셀 다운로드도 목록 화면과 동일한 지점 가시 범위로 제한 (사원 소속 지점 기준).
         // NoAccess(권한 밖 지점 요청)는 쿼리를 생략하고 헤더만 있는 빈 엑셀을 반환한다 —
@@ -409,7 +414,7 @@ class AdminPPTMasterService(
             }
             val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
             pptMasterRepository.searchMasters(
-                employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly,
+                employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, employmentStatus,
                 LocalDate.now(), PageRequest.of(0, EXPORT_MAX_ROWS)
             ).content
         }

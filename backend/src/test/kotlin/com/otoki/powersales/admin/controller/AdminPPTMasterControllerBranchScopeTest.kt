@@ -91,7 +91,7 @@ class AdminPPTMasterControllerBranchScopeTest : AdminControllerTestSupport() {
         val scopeSlot = slot<DataScope>()
         every {
             adminPPTMasterService.getMasters(
-                capture(scopeSlot), any(), any(), any(), any(), any(), any(),
+                capture(scopeSlot), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns emptyMasterList()
 
@@ -118,7 +118,7 @@ class AdminPPTMasterControllerBranchScopeTest : AdminControllerTestSupport() {
         val scopeSlot = slot<DataScope>()
         every {
             adminPPTMasterService.getMasters(
-                capture(scopeSlot), any(), any(), any(), any(), any(), any(),
+                capture(scopeSlot), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns emptyMasterList()
 
@@ -139,7 +139,7 @@ class AdminPPTMasterControllerBranchScopeTest : AdminControllerTestSupport() {
         val scopeSlot = slot<DataScope>()
         every {
             adminPPTMasterService.getMasters(
-                capture(scopeSlot), any(), any(), any(), any(), any(), any(),
+                capture(scopeSlot), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns emptyMasterList()
 
@@ -179,7 +179,7 @@ class AdminPPTMasterControllerBranchScopeTest : AdminControllerTestSupport() {
         )
         val scopeSlot = slot<DataScope>()
         every {
-            adminPPTMasterService.exportToExcel(capture(scopeSlot), any(), any(), any(), any(), any())
+            adminPPTMasterService.exportToExcel(capture(scopeSlot), any(), any(), any(), any(), any(), any())
         } returns ExcelResult(ByteArray(0), "전문행사조.xlsx")
 
         mockMvc.perform(get("/api/v1/admin/ppt-masters/export"))
@@ -229,7 +229,7 @@ class AdminPPTMasterControllerBranchScopeTest : AdminControllerTestSupport() {
         val scopeSlot = slot<DataScope>()
         every {
             adminPPTMasterService.getMasters(
-                capture(scopeSlot), any(), any(), any(), any(), any(), any(),
+                capture(scopeSlot), any(), any(), any(), any(), any(), any(), any(),
             )
         } returns emptyMasterList()
 

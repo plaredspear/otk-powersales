@@ -89,9 +89,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
         isConfirmed = true,
         branchCode = "1100",
         branchName = "강남지점",
-        employeeStatus = "재직",
-        employeeAppLoginActive = true,
-        employeeEndDate = null,
+        employmentStatus = "재직",
         accountType = null,
         createdAt = LocalDateTime.of(2026, 3, 22, 9, 0),
         updatedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
@@ -108,7 +106,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 content = listOf(createResponse()),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getMasters(any(), any(), any(), any(), any(), any(), any()) } returns listResponse
+            every { adminPPTMasterService.getMasters(any(), any(), any(), any(), any(), any(), any(), any()) } returns listResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters"))
                 .andExpect(status().isOk)

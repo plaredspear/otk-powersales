@@ -22,7 +22,9 @@ import {
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
+import EmploymentStatusTag from '@/components/common/EmploymentStatusTag';
 import PermissionGate from '@/components/PermissionGate';
+import { EMPLOYMENT_STATUS_FILTER_OPTIONS } from '@/constants/employmentStatus';
 
 const PPT_ENTITY = 'professional_promotion_team_master';
 import { usePermission } from '@/hooks/usePermission';
@@ -32,6 +34,16 @@ import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
+
+// 재직상태 필터 — 여사원 현황과 동일 구성. value '' = 상태 전체(미필터) 는 화면에서만 붙인다.
+const EMPLOYMENT_STATUS_OPTIONS_WITH_ALL = [
+  { value: '', label: '상태 전체' },
+  ...EMPLOYMENT_STATUS_FILTER_OPTIONS,
+];
+
+// 재직상태 기본값 — 여사원 현황과 동일하게 진입 시 재직자만 조회한다.
+// '상태 전체'('') 는 기본값과 다르므로 URL 에 남아 새로고침/복귀에도 유지된다.
+const DEFAULT_EMPLOYMENT_STATUS = '재직';
 
 // SF Valid__c / ValidData__c 정합 — 확정·시작일·종료일로 유효 상태(신호등) 산출.
 //   미확정(주황) / 유효(녹색) / 예정(노랑) / 종료(빨강)
@@ -48,20 +60,6 @@ function getValidStatus(record: PPTMaster): ValidStatus {
   return { label: '종료', status: 'error' };
 }
 
-// SF ValidConditionData__c 정합 — 사원 재직상태 산출.
-//   퇴직/앱비활성 + 종료일 경과 → "퇴직", 미경과 → "퇴직예정", 휴직 → "휴직", 그 외 → "재직"
-function getEmployeeStatusLabel(record: PPTMaster): string {
-  const { employeeStatus, employeeAppLoginActive, employeeEndDate } = record;
-  const isQuit = employeeStatus === '퇴직' || employeeAppLoginActive === false;
-  if (isQuit && employeeEndDate) {
-    const end = dayjs(employeeEndDate).startOf('day');
-    const today = dayjs().startOf('day');
-    return end.isBefore(today) ? '퇴직' : '퇴직예정';
-  }
-  if (employeeStatus === '휴직') return '휴직';
-  return employeeStatus ?? '재직';
-}
-
 export default function PPTMasterPage() {
   // 페이지 전체 스크롤 제거 — 필터 카드·액션버튼은 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단
   // 가변 요소(대행 배너 등)를 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
@@ -75,6 +73,7 @@ export default function PPTMasterPage() {
       teamType: '',
       branchCode: '',
       validOnly: 'true',
+      employmentStatus: DEFAULT_EMPLOYMENT_STATUS,
     },
   });
   const validOnly = filters.validOnly !== 'false';
@@ -111,6 +110,7 @@ export default function PPTMasterPage() {
   const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
   const [filterBranchCode, setFilterBranchCode] = useState(filters.branchCode);
   const [filterValidOnly, setFilterValidOnly] = useState(validOnly);
+  const [filterEmploymentStatus, setFilterEmploymentStatus] = useState(filters.employmentStatus);
 
   const { data, isLoading, refetch, isFetching } = usePPTMasters({
     page,
@@ -120,6 +120,7 @@ export default function PPTMasterPage() {
     teamType: filters.teamType || undefined,
     branchCode: filters.branchCode || undefined,
     validOnly,
+    employmentStatus: filters.employmentStatus || undefined,
   });
   const deleteMutation = useDeletePPTMaster();
   const confirmByIdsMutation = useConfirmPPTMastersByIds();
@@ -138,6 +139,7 @@ export default function PPTMasterPage() {
       teamType: filterTeamType,
       branchCode: filterBranchCode,
       validOnly: String(filterValidOnly),
+      employmentStatus: filterEmploymentStatus,
     });
   };
 
@@ -147,12 +149,15 @@ export default function PPTMasterPage() {
     setFilterTeamType('');
     setFilterBranchCode('');
     setFilterValidOnly(true);
+    setFilterEmploymentStatus(DEFAULT_EMPLOYMENT_STATUS);
     setFilters({
       employeeName: '',
       employeeCode: '',
       teamType: '',
       branchCode: '',
       validOnly: 'true',
+      // 초기화는 화면 진입 상태로 되돌린다 — 재직상태는 '상태 전체' 가 아니라 기본값 '재직'.
+      employmentStatus: DEFAULT_EMPLOYMENT_STATUS,
     });
   };
 
@@ -221,6 +226,7 @@ export default function PPTMasterPage() {
         ...(filters.employeeCode ? { employeeCode: filters.employeeCode } : {}),
         ...(filters.teamType ? { teamType: filters.teamType } : {}),
         ...(filters.branchCode ? { branchCode: filters.branchCode } : {}),
+        ...(filters.employmentStatus ? { employmentStatus: filters.employmentStatus } : {}),
         validOnly,
       },
       totalCount: data?.totalElements,
@@ -271,10 +277,13 @@ export default function PPTMasterPage() {
         ),
     },
     {
+      // 여사원 현황과 동일 표시값(재직/휴직/퇴직/퇴직(면직)) — 서버가 계산해 내려주며, 아래 조회 조건과 동일 축.
       title: '재직상태',
+      dataIndex: 'employmentStatus',
       width: 100,
       align: 'center',
-      render: (_, record) => getEmployeeStatusLabel(record),
+      // 컬럼 16개의 광폭 표라 색 없는 텍스트(variant='plain') — 진열스케줄마스터와 동일 기준.
+      render: (val: string | null) => <EmploymentStatusTag status={val} variant="plain" />,
     },
     { title: '거래처코드', dataIndex: 'accountCode', width: 120, align: 'center' },
     {
@@ -399,6 +408,13 @@ export default function PPTMasterPage() {
             onChange={(e) => setFilterEmployeeNumber(e.target.value)}
             style={{ width: 120 }}
             onPressEnter={handleSearch}
+          />
+          {/* 재직상태 — 여사원 현황과 동일 축(사원 원본 상태 + 면직 보정). 기본값 '재직'. */}
+          <Select
+            value={filterEmploymentStatus ?? ''}
+            onChange={setFilterEmploymentStatus}
+            style={{ width: 140 }}
+            options={EMPLOYMENT_STATUS_OPTIONS_WITH_ALL}
           />
           <Select
             placeholder="전문행사조"

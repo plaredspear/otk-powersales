@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.promotion.repository
 
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -134,6 +135,7 @@ class PPTMasterRepositoryCustomImplTest {
             teamType = null,
             branchCodeFilter = null,
             validOnly = true,
+            employmentStatus = null,
             today = today,
             pageable = PageRequest.of(0, 20),
         )
@@ -171,6 +173,7 @@ class PPTMasterRepositoryCustomImplTest {
             teamType = null,
             branchCodeFilter = null,
             validOnly = false,
+            employmentStatus = null,
             today = today,
             pageable = PageRequest.of(0, 20),
         )
@@ -198,11 +201,73 @@ class PPTMasterRepositoryCustomImplTest {
             teamType = null,
             branchCodeFilter = null,
             validOnly = false,
+            employmentStatus = null,
             today = today,
             pageable = PageRequest.of(0, 20),
         )
 
         assertThat(result.content.map { it.master.id })
             .contains(unconfirmed.id, ended.id, valid.id)
+    }
+
+    private fun persistEmployee(status: String?, ordDetailNode: String? = null): Employee =
+        em.persistAndFlush(
+            Employee(employeeCode = null, name = "테스트여사원", status = status, ordDetailNode = ordDetailNode),
+        )
+
+    private fun persistForEmployee(employeeId: Long): ProfessionalPromotionTeamMaster =
+        em.persistAndFlush(
+            ProfessionalPromotionTeamMaster(
+                employeeId = employeeId,
+                teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = today.minusDays(1),
+                endDate = today.plusDays(10),
+                isConfirmed = true,
+            ),
+        )
+
+    private fun searchByEmploymentStatus(status: String?) = repository.searchMasters(
+        employeeName = null,
+        employeeCode = null,
+        teamType = null,
+        branchCodeFilter = null,
+        validOnly = false,
+        employmentStatus = status,
+        today = today,
+        pageable = PageRequest.of(0, 20),
+    )
+
+    @Test
+    @DisplayName("searchMasters 재직상태 - 여사원 현황과 동일 축(사원 원본 status 매칭), 미지정이면 전체")
+    fun searchMasters_employmentStatus_matchesEmployeeStatus() {
+        val active = persistForEmployee(persistEmployee("재직").id)
+        val onLeave = persistForEmployee(persistEmployee("휴직").id)
+        val resigned = persistForEmployee(persistEmployee("퇴직").id)
+        // 사원 미배정 마스터 — 재직상태 조회 대상이 없어 어떤 상태로도 잡히지 않는다.
+        val noEmployee = persist(today.minusDays(1), today.plusDays(10), isConfirmed = true)
+        em.clear()
+
+        assertThat(searchByEmploymentStatus("재직").content.map { it.master.id })
+            .containsExactly(active.id)
+        assertThat(searchByEmploymentStatus("휴직").content.map { it.master.id })
+            .containsExactly(onLeave.id)
+        assertThat(searchByEmploymentStatus("퇴직").content.map { it.master.id })
+            .containsExactly(resigned.id)
+        assertThat(searchByEmploymentStatus(null).content.map { it.master.id })
+            .contains(active.id, onLeave.id, resigned.id, noEmployee.id)
+    }
+
+    @Test
+    @DisplayName("searchMasters 재직상태 - 발령명 '면직' 은 퇴직 취급 (퇴직 조회에 포함 / 재직 조회에서 제외) — 여사원 현황 정합")
+    fun searchMasters_employmentStatus_treatsDismissalAsResigned() {
+        // status 가 아직 '재직' 으로 남은 면직자 (SAP 상태 갱신 누락) — DismissalPolicy 정합
+        val dismissed = persistForEmployee(persistEmployee("재직", ordDetailNode = "면직").id)
+        val active = persistForEmployee(persistEmployee("재직").id)
+        em.clear()
+
+        assertThat(searchByEmploymentStatus("재직").content.map { it.master.id })
+            .containsExactly(active.id)
+        assertThat(searchByEmploymentStatus("퇴직").content.map { it.master.id })
+            .containsExactly(dismissed.id)
     }
 }

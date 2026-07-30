@@ -167,16 +167,12 @@ class EmployeeRepositoryCustomImpl(
      *
      * 면직 보정 전면 적용이 전 화면의 목표 동작이며, 전환이 끝나면 [statusPredicate] 를 삭제하고
      * 본 함수만 남긴다.
+     *
+     * 술어 자체는 [EmploymentStatusPredicate] 단일 출처를 쓴다 — 전문행사조 마스터 목록의
+     * 「재직상태」 필터가 같은 축(여사원 현황과 동일 결과) 을 요구하므로 SQL 을 공유한다.
      */
-    private fun employmentStatusPredicate(status: String): BooleanBuilder {
-        val dismissed = employee.ordDetailNode.eq(DismissalPolicy.ORD_DETAIL_NODE)
-        return if (status == EmploymentStatus.RESIGNED.code) {
-            BooleanBuilder().and(employee.status.eq(status).or(dismissed))
-        } else {
-            BooleanBuilder().and(employee.status.eq(status))
-                .and(employee.ordDetailNode.isNull.or(dismissed.not()))
-        }
-    }
+    private fun employmentStatusPredicate(status: String): BooleanBuilder =
+        EmploymentStatusPredicate.matching(status)
 
     override fun findDashboardBasicStatsProjection(
         branchCodes: List<String>?

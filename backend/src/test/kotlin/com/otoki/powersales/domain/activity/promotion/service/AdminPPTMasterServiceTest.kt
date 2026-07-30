@@ -537,17 +537,50 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 목록 조회 -> 페이지 응답")
         fun getMasters_success() {
             val master = createMaster()
-            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeAppLoginActive = true, employeeEndDate = null, accountType = null)
+            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeOrdDetailNode = null, accountType = null)
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 20), 1)
 
             every {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getMasters(allBranchesScope(), null, null, null, null, true, PageRequest.of(0, 20))
+            val result = service.getMasters(allBranchesScope(), null, null, null, null, true, null, PageRequest.of(0, 20))
 
             assertThat(result.content).hasSize(1)
             assertThat(result.totalElements).isEqualTo(1)
+            assertThat(result.content[0].employmentStatus).isEqualTo("재직")
+        }
+
+        @Test
+        @DisplayName("재직상태 표시값 - 발령명 '면직' 사원은 '퇴직(면직)' 으로 내려간다 (여사원 현황 정합)")
+        fun getMasters_dismissedEmployeeStatusDisplay() {
+            val master = createMaster()
+            // status 가 아직 '재직' 으로 남은 면직자 — DismissalPolicy.displayStatus 로 보정해 표시한다.
+            val searchResult = PPTMasterSearchResult(
+                master, "12345678", "홍길동", "SAP001", "이마트 강남점",
+                branchName = "강남지점", employeeStatus = "재직", employeeOrdDetailNode = "면직", accountType = null,
+            )
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(searchResult), PageRequest.of(0, 20), 1)
+
+            val result = service.getMasters(allBranchesScope(), null, null, null, null, true, null, PageRequest.of(0, 20))
+
+            assertThat(result.content[0].employmentStatus).isEqualTo("퇴직(면직)")
+        }
+
+        @Test
+        @DisplayName("재직상태 필터 - 조회 파라미터를 repository 로 그대로 전달한다")
+        fun getMasters_passesEmploymentStatusFilter() {
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList<PPTMasterSearchResult>(), PageRequest.of(0, 20), 0)
+
+            service.getMasters(allBranchesScope(), null, null, null, null, true, "퇴직", PageRequest.of(0, 20))
+
+            verify {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), "퇴직", any(), any())
+            }
         }
 
         @Test
@@ -555,16 +588,16 @@ class AdminPPTMasterServiceTest {
         fun getMasters_branchScoped() {
             val page = PageImpl(emptyList<PPTMasterSearchResult>(), PageRequest.of(0, 20), 0)
             every {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             } returns page
 
             // 본인 지점 "3233" 단일 권한 (전사 아님)
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
-            service.getMasters(scope, null, null, null, null, true, PageRequest.of(0, 20))
+            service.getMasters(scope, null, null, null, null, true, null, PageRequest.of(0, 20))
 
             // branchCodeFilter 인자(4번째)에 본인 지점 코드가 전달되어야 한다
             verify {
-                pptMasterRepository.searchMasters(any(), any(), any(), listOf("3233"), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), listOf("3233"), any(), any(), any(), any())
             }
         }
 
@@ -573,12 +606,12 @@ class AdminPPTMasterServiceTest {
         fun getMasters_noAccess() {
             // 본인 지점은 "3233" 인데 "9999" 지점 요청 -> NoAccess
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
-            val result = service.getMasters(scope, null, null, null, "9999", true, PageRequest.of(0, 20))
+            val result = service.getMasters(scope, null, null, null, "9999", true, null, PageRequest.of(0, 20))
 
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
             verify(exactly = 0) {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             }
         }
     }
@@ -724,13 +757,13 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 검색 조건에 맞는 마스터를 xlsx 로 반환")
         fun exportToExcel_success() {
             val master = createMaster()
-            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeAppLoginActive = true, employeeEndDate = null, accountType = null)
+            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeOrdDetailNode = null, accountType = null)
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 50_000), 1)
             every {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
+            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true, null)
 
             // xlsx 파일 시그니처 (PK\x03\x04 — ZIP 형식) 확인
             assertThat(result.bytes).isNotEmpty
@@ -743,11 +776,11 @@ class AdminPPTMasterServiceTest {
         @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 헤더만 빈 xlsx")
         fun exportToExcel_noAccess() {
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
-            val result = service.exportToExcel(scope, null, null, null, "9999", true)
+            val result = service.exportToExcel(scope, null, null, null, "9999", true, null)
 
             assertThat(result.bytes).isNotEmpty // 헤더 행만 있는 빈 엑셀
             verify(exactly = 0) {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             }
         }
 
@@ -756,10 +789,10 @@ class AdminPPTMasterServiceTest {
         fun exportToExcel_empty() {
             val page = PageImpl<PPTMasterSearchResult>(emptyList(), PageRequest.of(0, 50_000), 0)
             every {
-                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
+            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true, null)
 
             assertThat(result.bytes).isNotEmpty
         }

@@ -19,10 +19,11 @@ export interface PPTMaster {
   branchCode: string | null;
   /** SF BranchName__c — 사원 소속 지점명 */
   branchName: string | null;
-  /** SF ValidConditionData__c 산출용 raw — 재직상태 계산 */
-  employeeStatus: string | null;
-  employeeAppLoginActive: boolean | null;
-  employeeEndDate: string | null;
+  /**
+   * 재직상태 표시값 — 여사원 현황과 동일 값(재직/휴직/퇴직/퇴직(면직)). 서버가 계산해 내려준다.
+   * (기존 SF formula 4분류 파생 계산(퇴직예정 포함)은 재직상태 조회 필터와 축을 맞추며 폐기)
+   */
+  employmentStatus: string | null;
   /** SF AccountType__c — 거래처유형 (수퍼/할인점 등) */
   accountType: string | null;
   createdAt: string;
@@ -54,6 +55,8 @@ export interface PPTMasterSearchParams {
   teamType?: string;
   branchCode?: string;
   validOnly?: boolean;
+  /** 재직상태(재직/휴직/퇴직) — 여사원 현황 목록의 `status` 와 동일 축(사원 원본 상태 + 면직 보정). */
+  employmentStatus?: string;
 }
 
 /** 전문행사조 화면 지점 셀렉터 옵션 (마스터/이력/확정인원 공용). */

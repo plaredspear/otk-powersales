@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromoti
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterSearchResult
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -24,10 +25,15 @@ data class PPTMasterResponse(
     val branchCode: String?,
     // SF BranchName__c — 사원 소속 지점명(Employee.orgName)
     val branchName: String?,
-    // SF ValidConditionData__c 프론트 산출용 raw — 재직상태(재직/휴직/퇴직예정/퇴직) 계산
-    val employeeStatus: String?,
-    val employeeAppLoginActive: Boolean?,
-    val employeeEndDate: LocalDate?,
+    /**
+     * 「재직상태」 표시값 — 여사원 현황과 **동일 값** (재직 / 휴직 / 퇴직 / 퇴직(면직)).
+     *
+     * 과거에는 SF formula `ValidConditionData__c` 정합으로 raw 3필드(status/appLoginActive/endDate)를
+     * 내려 화면이 4분류(퇴직예정 포함)를 계산했으나, 「재직상태」 조회 필터를 여사원 현황과 같은 축
+     * (사원 원본 status + 면직 보정) 으로 맞추면서 표시값도 같은 축으로 통일했다 (2026-07-30 사용자 결정).
+     * 서버가 [DismissalPolicy.displayStatus] 로 계산해 내려주므로 화면 파생 로직이 없다.
+     */
+    val employmentStatus: String?,
     // SF AccountType__c — 거래처유형 (Account.Type, 한국어 raw 값)
     val accountType: String?,
     val createdAt: LocalDateTime,
@@ -51,9 +57,10 @@ data class PPTMasterResponse(
                 isConfirmed = m.isConfirmed,
                 branchCode = m.branchCode,
                 branchName = result.branchName,
-                employeeStatus = result.employeeStatus,
-                employeeAppLoginActive = result.employeeAppLoginActive,
-                employeeEndDate = result.employeeEndDate,
+                employmentStatus = DismissalPolicy.displayStatus(
+                    result.employeeStatus,
+                    result.employeeOrdDetailNode,
+                ),
                 accountType = result.accountType,
                 createdAt = m.createdAt,
                 updatedAt = m.updatedAt
@@ -68,8 +75,7 @@ data class PPTMasterResponse(
             accountName: String?,
             branchName: String? = null,
             employeeStatus: String? = null,
-            employeeAppLoginActive: Boolean? = null,
-            employeeEndDate: LocalDate? = null,
+            employeeOrdDetailNode: String? = null,
             accountType: String? = null
         ): PPTMasterResponse {
             return PPTMasterResponse(
@@ -87,9 +93,7 @@ data class PPTMasterResponse(
                 isConfirmed = master.isConfirmed,
                 branchCode = master.branchCode,
                 branchName = branchName,
-                employeeStatus = employeeStatus,
-                employeeAppLoginActive = employeeAppLoginActive,
-                employeeEndDate = employeeEndDate,
+                employmentStatus = DismissalPolicy.displayStatus(employeeStatus, employeeOrdDetailNode),
                 accountType = accountType,
                 createdAt = master.createdAt,
                 updatedAt = master.updatedAt
