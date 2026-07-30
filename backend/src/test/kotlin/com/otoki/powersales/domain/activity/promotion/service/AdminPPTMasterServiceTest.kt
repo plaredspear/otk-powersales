@@ -773,6 +773,39 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
+        @DisplayName("컬럼 - 목록 테이블과 동일한 13개 컬럼/순서 + 파생값(유효·재직상태) 반영")
+        fun exportToExcel_matchesListColumns() {
+            val master = createMaster(
+                // 확정 + 시작일 과거 + 종료일 없음 → 「유효」 = '유효'
+                startDate = LocalDate.now().minusDays(1), endDate = null, isConfirmed = true,
+            ).apply { name = "PM0000921" }
+            // status 가 아직 '재직' 인 면직자 → 「재직상태」 = '퇴직(면직)' (여사원 현황 정합)
+            val searchResult = PPTMasterSearchResult(
+                master, "12345678", "홍길동", "SAP001", "이마트 강남점",
+                branchName = "강남지점", employeeStatus = "재직", employeeOrdDetailNode = "면직",
+                accountType = "할인점",
+            )
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(searchResult), PageRequest.of(0, 50_000), 1)
+
+            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true, null)
+
+            val sheet = XSSFWorkbook(ByteArrayInputStream(result.bytes)).getSheetAt(0)
+            val header = sheet.getRow(0)
+            assertThat((0..12).map { header.getCell(it).stringCellValue }).containsExactly(
+                "전문행사조 마스터 번호", "유효", "지점명", "사번", "사원명", "재직상태",
+                "거래처코드", "거래처명", "거래처유형", "전문행사조", "시작일", "종료일", "확정",
+            )
+            val row = sheet.getRow(1)
+            assertThat((0..12).map { row.getCell(it).stringCellValue }).containsExactly(
+                "PM0000921", "유효", "강남지점", "12345678", "홍길동", "퇴직(면직)",
+                "SAP001", "이마트 강남점", "할인점", ProfessionalPromotionTeamType.RAMEN_SALE.displayName,
+                master.startDate.toString(), "", "Y",
+            )
+        }
+
+        @Test
         @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 헤더만 빈 xlsx")
         fun exportToExcel_noAccess() {
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)

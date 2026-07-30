@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.promotion.sap
 
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.domain.activity.promotion.service.internal.PPTMasterValidDataCalculator
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -55,18 +56,10 @@ class PPTMasterPayloadFactory {
     /**
      * 레거시 `ValidData__c.field-meta.xml` 수식 재현 (Spec #765 §6.1.1).
      *
-     * `IF(Confirmed__c == false, "미확정", IF(StartDate <= TODAY AND (EndDate >= TODAY OR EndDate IS NULL), "유효",
-     *   IF(StartDate > TODAY AND (EndDate >= TODAY OR EndDate IS NULL), "예정", "종료")))`
+     * 목록 엑셀의 「유효」 컬럼과 동일 계산을 쓰도록 [PPTMasterValidDataCalculator] 단일 출처에 위임한다.
      */
-    private fun computeValidData(master: ProfessionalPromotionTeamMaster, today: LocalDate): String {
-        if (!master.isConfirmed) return "미확정"
-        val endDateOk = master.endDate == null || !master.endDate!!.isBefore(today)
-        return when {
-            !master.startDate.isAfter(today) && endDateOk -> "유효"
-            master.startDate.isAfter(today) && endDateOk -> "예정"
-            else -> "종료"
-        }
-    }
+    private fun computeValidData(master: ProfessionalPromotionTeamMaster, today: LocalDate): String =
+        PPTMasterValidDataCalculator.of(master.isConfirmed, master.startDate, master.endDate, today)
 
     /**
      * 레거시 `ValidConditionData__c.field-meta.xml` 수식 재현 (Spec #765 §6.1.2).

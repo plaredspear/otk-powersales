@@ -29,6 +29,8 @@ import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PPTHistorySearchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
+import com.otoki.powersales.domain.activity.promotion.service.internal.PPTMasterValidDataCalculator
+import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.auth.entity.AppAuthority
@@ -385,8 +387,17 @@ class AdminPPTMasterService(
     /**
      * 현재 검색 조건 기준 전문행사조 마스터 데이터를 xlsx 로 export.
      *
-     * 페이징 없이 매칭 레코드 전량을 단일 시트로 출력. 컬럼: 사번 / 사원명 / 거래처코드 / 거래처명 /
-     * 전문행사조 / 시작일 / 종료일 / 확정 여부 / 지점코드. 응답은 byte array (Controller 에서 attachment 헤더 부여).
+     * 페이징 없이 매칭 레코드 전량을 단일 시트로 출력.
+     *
+     * ## 컬럼 = 목록 화면 테이블과 동일 구성/순서 (2026-07-30)
+     *
+     * 전문행사조 마스터 번호 / 유효 / 지점명 / 사번 / 사원명 / 재직상태 / 거래처코드 / 거래처명 /
+     * 거래처유형 / 전문행사조 / 시작일 / 종료일 / 확정.
+     * 화면 전용 컬럼 2개(행번호 `#`, 액션 버튼) 만 빠지며, 파생 컬럼도 화면과 같은 계산을 쓴다 —
+     * 「유효」는 [PPTMasterValidDataCalculator], 「재직상태」는 [DismissalPolicy.displayStatus]
+     * (여사원 현황 정합). 이전 컬럼 구성에 있던 `지점코드`(마스터의 dead field `branch_code`) 는
+     * 테이블에 없으므로 제외하고, 같은 축인 `지점명`(사원 소속 조직명) 으로 대체했다.
+     * 「확정」은 화면의 ✅/- 대신 엑셀 필터에 쓰기 쉬운 Y/N 을 유지한다.
      *
      * 레거시 매핑: List View Button 「전문행사조마스터 다운로드」 (ExcelIO 관리형 패키지 호출) — UC-11.
      * 레거시 차이: ExcelIO 패키지 내부 로직 미공개로 컬럼 구성 / 정렬 / 헤더 스타일은 신규 자체 결정.
@@ -403,6 +414,8 @@ class AdminPPTMasterService(
         // 엑셀 다운로드도 목록 화면과 동일한 지점 가시 범위로 제한 (사원 소속 지점 기준).
         // NoAccess(권한 밖 지점 요청)는 쿼리를 생략하고 헤더만 있는 빈 엑셀을 반환한다 —
         // branchCodeFilter 를 빈 리스트로 두면 repository 가 필터를 생략해 전사가 노출되므로 분기로 차단.
+        // 「유효」/「재직상태」 파생 컬럼은 목록 화면과 동일하게 조회 시점(today) 기준으로 계산한다.
+        val today = LocalDate.now()
         val scopeResult = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })
         val rows = if (scopeResult is EffectiveBranchResult.NoAccess) {
             emptyList()
@@ -415,7 +428,7 @@ class AdminPPTMasterService(
             val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
             pptMasterRepository.searchMasters(
                 employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, employmentStatus,
-                LocalDate.now(), PageRequest.of(0, EXPORT_MAX_ROWS)
+                today, PageRequest.of(0, EXPORT_MAX_ROWS)
             ).content
         }
 
@@ -424,7 +437,11 @@ class AdminPPTMasterService(
         val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
         val headerRow = sheet.createRow(0)
-        val headers = listOf("사번", "사원명", "거래처코드", "거래처명", "전문행사조", "시작일", "종료일", "확정", "지점코드")
+        // 목록 테이블 컬럼 순서와 1:1 (화면 전용 '#'/'액션' 제외).
+        val headers = listOf(
+            "전문행사조 마스터 번호", "유효", "지점명", "사번", "사원명", "재직상태",
+            "거래처코드", "거래처명", "거래처유형", "전문행사조", "시작일", "종료일", "확정",
+        )
         headers.forEachIndexed { i, h ->
             headerRow.createCell(i).apply {
                 setCellValue(h)
@@ -436,15 +453,24 @@ class AdminPPTMasterService(
         rows.forEachIndexed { index, result ->
             val m = result.master
             val row = sheet.createRow(index + 1)
-            row.createCell(0).setCellValue(result.employeeCode ?: "")
-            row.createCell(1).setCellValue(result.employeeName ?: "")
-            row.createCell(2).setCellValue(result.accountCode ?: "")
-            row.createCell(3).setCellValue(result.accountName ?: "")
-            row.createCell(4).setCellValue(m.teamType?.displayName ?: "")
-            row.createCell(5).setCellValue(m.startDate.toString())
-            row.createCell(6).setCellValue(m.endDate?.toString() ?: "")
-            row.createCell(7).setCellValue(if (m.isConfirmed) "Y" else "N")
-            row.createCell(8).setCellValue(m.branchCode ?: "")
+            row.createCell(0).setCellValue(m.name ?: "")
+            // 화면의 신호등 dot 은 상태명(미확정/유효/예정/종료) 을 tooltip 으로만 보여주므로 엑셀은 그 텍스트를 쓴다.
+            row.createCell(1).setCellValue(
+                PPTMasterValidDataCalculator.of(m.isConfirmed, m.startDate, m.endDate, today)
+            )
+            row.createCell(2).setCellValue(result.branchName ?: "")
+            row.createCell(3).setCellValue(result.employeeCode ?: "")
+            row.createCell(4).setCellValue(result.employeeName ?: "")
+            row.createCell(5).setCellValue(
+                DismissalPolicy.displayStatus(result.employeeStatus, result.employeeOrdDetailNode) ?: ""
+            )
+            row.createCell(6).setCellValue(result.accountCode ?: "")
+            row.createCell(7).setCellValue(result.accountName ?: "")
+            row.createCell(8).setCellValue(result.accountType ?: "")
+            row.createCell(9).setCellValue(m.teamType?.displayName ?: "")
+            row.createCell(10).setCellValue(m.startDate.toString())
+            row.createCell(11).setCellValue(m.endDate?.toString() ?: "")
+            row.createCell(12).setCellValue(if (m.isConfirmed) "Y" else "N")
         }
 
         headers.indices.forEach { sheet.autoSizeColumn(it) }
