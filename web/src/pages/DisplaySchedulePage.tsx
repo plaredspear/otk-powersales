@@ -27,7 +27,7 @@ import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useSched
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleListMeta } from '@/hooks/schedule/useScheduleListMeta';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
-import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
+import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, ScheduleValidData, ScheduleEmploymentStatus } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
@@ -128,7 +128,21 @@ function buildListColumns(
       render: (_: string | null, row) => renderValidLight(row.valid, row.validData),
     },
     { title: '지점명', dataIndex: 'branchName', key: 'branchName', width: 110, render: (v) => v ?? '-' },
-    { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
+    {
+      title: '사번',
+      dataIndex: 'employeeCode',
+      key: 'employeeCode',
+      width: 100,
+      render: (val: string | null) =>
+        val ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {val}
+            <Typography.Text copyable={{ text: val, tooltips: ['사번 복사', '복사됨'] }} />
+          </span>
+        ) : (
+          '-'
+        ),
+    },
     {
       title: '성명',
       dataIndex: 'employeeName',
@@ -157,7 +171,21 @@ function buildListColumns(
       align: 'center',
       render: (v) => v ?? '-',
     },
-    { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
+    {
+      title: '거래처코드',
+      dataIndex: 'accountCode',
+      key: 'accountCode',
+      width: 110,
+      render: (val: string | null) =>
+        val ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {val}
+            <Typography.Text copyable={{ text: val, tooltips: ['거래처코드 복사', '복사됨'] }} />
+          </span>
+        ) : (
+          '-'
+        ),
+    },
     {
       title: '거래처명',
       dataIndex: 'accountName',
@@ -279,7 +307,6 @@ export default function DisplaySchedulePage() {
   const { isSystemAdmin } = usePermission();
   const canUnconfirm = user?.profileName === '시스템 관리자' || user?.isSalesSupport === true;
   const { run: runTemplate, downloading } = useExcelDownload();
-  const { run: runExport, downloading: exporting } = useExcelDownload();
   const { run: runExportAll, downloading: exportingAll } = useExcelDownload();
   const [uploadResult, setUploadResult] = useState<ScheduleUploadResult | null>(null);
   const uploadMutation = useScheduleUpload();
@@ -490,12 +517,6 @@ export default function DisplaySchedulePage() {
           message.error(err instanceof Error ? err.message : '확정 해제에 실패했습니다');
         }),
     });
-  };
-
-  const handleExportSelected = () => {
-    const ids = selectedRowKeys as number[];
-    if (ids.length === 0) return;
-    runExport(SCHEDULE_EXPORT_PATH, '진열스케줄.xlsx', { method: 'post', data: { ids } });
   };
 
   // 현재 적용된 검색/프리셋 필터 + 정렬을 그대로 전량 export (목록과 동일 가시 범위).
@@ -856,20 +877,10 @@ export default function DisplaySchedulePage() {
           </Button>
           <Button
             icon={<DownloadOutlined />}
-            disabled={selectedRowKeys.length === 0}
-            loading={exporting}
-            onClick={handleExportSelected}
-          >
-            {selectedRowKeys.length > 0
-              ? `선택 다운로드 (${selectedRowKeys.length}건 선택)`
-              : '선택 다운로드'}
-          </Button>
-          <Button
-            icon={<DownloadOutlined />}
             loading={exportingAll}
             onClick={handleExportAll}
           >
-            검색결과 다운로드
+            엑셀 다운로드
           </Button>
         </Space>
 
