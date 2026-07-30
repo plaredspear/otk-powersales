@@ -28,6 +28,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _confirmPasswordFocusNode = FocusNode();
+  // 각 비밀번호 입력창의 가림 여부. 눈 아이콘으로 개별 토글한다(기본 가림).
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -126,7 +129,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Widget _buildNewPasswordField() {
     return TextFormField(
       controller: _newPasswordController,
-      obscureText: true,
+      obscureText: _obscureNewPassword,
       cursorColor: AppColors.black,
       decoration: InputDecoration(
         labelText: '새 비밀번호',
@@ -136,6 +139,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           fontWeight: FontWeight.w600,
         ),
         prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: _buildObscureToggle(
+          obscured: _obscureNewPassword,
+          onPressed: () => setState(
+            () => _obscureNewPassword = !_obscureNewPassword,
+          ),
+        ),
         filled: true,
         fillColor: AppColors.surfaceVariant,
         border: OutlineInputBorder(
@@ -172,7 +181,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return TextFormField(
       controller: _confirmPasswordController,
       focusNode: _confirmPasswordFocusNode,
-      obscureText: true,
+      obscureText: _obscureConfirmPassword,
       cursorColor: AppColors.black,
       decoration: InputDecoration(
         labelText: '새 비밀번호 확인',
@@ -182,6 +191,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           fontWeight: FontWeight.w600,
         ),
         prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: _buildObscureToggle(
+          obscured: _obscureConfirmPassword,
+          onPressed: () => setState(
+            () => _obscureConfirmPassword = !_obscureConfirmPassword,
+          ),
+        ),
         filled: true,
         fillColor: AppColors.surfaceVariant,
         border: OutlineInputBorder(
@@ -212,6 +227,23 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         }
         return null;
       },
+    );
+  }
+
+  /// 비밀번호 표시/숨김 토글(눈 아이콘).
+  Widget _buildObscureToggle({
+    required bool obscured,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Icon(
+        obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        size: 20,
+      ),
+      color: AppColors.textTertiary,
+      splashRadius: 18,
+      tooltip: obscured ? '비밀번호 표시' : '비밀번호 숨기기',
+      onPressed: onPressed,
     );
   }
 

@@ -29,6 +29,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberEmployeeNumber = false;
   bool _autoLogin = false;
   bool _prefilledFromStorage = false;
+  // 비밀번호 가림 여부. 눈 아이콘으로 토글해 입력값을 확인할 수 있다(기본 가림).
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -326,7 +328,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return TextFormField(
       controller: _passwordController,
       focusNode: _passwordFocusNode,
-      obscureText: true,
+      obscureText: _obscurePassword,
       decoration: InputDecoration(
         hintText: '비밀번호 입력',
         hintStyle: AppTypography.bodyMedium.copyWith(
@@ -337,10 +339,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         fillColor: AppColors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        // 입력값이 있을 때만 전체 삭제(X) 버튼을 노출한다.
-        suffixIcon: _passwordController.text.isEmpty
-            ? null
-            : IconButton(
+        // 표시/숨김 토글은 항상, 전체 삭제(X)는 입력값이 있을 때만 노출한다.
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_passwordController.text.isNotEmpty)
+              IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 color: AppColors.textTertiary,
                 splashRadius: 18,
@@ -349,6 +353,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   _passwordController.clear();
                 },
               ),
+            IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 20,
+              ),
+              color: AppColors.textTertiary,
+              splashRadius: 18,
+              tooltip: _obscurePassword ? '비밀번호 표시' : '비밀번호 숨기기',
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+            const SizedBox(width: 4),
+          ],
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           borderSide: const BorderSide(color: Color(0xFFD0D0D0)),

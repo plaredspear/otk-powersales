@@ -36,6 +36,10 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   final _newPasswordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
   bool _isLoading = false;
+  // 각 비밀번호 입력창의 가림 여부. 눈 아이콘으로 개별 토글한다(기본 가림).
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -200,12 +204,16 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   Widget _buildCurrentPasswordField() {
     return TextFormField(
       controller: _currentPasswordController,
-      obscureText: true,
+      obscureText: _obscureCurrentPassword,
       autofocus: true,
       cursorColor: AppColors.black,
       decoration: _passwordDecoration(
         label: '현재 비밀번호',
         hint: '현재 비밀번호를 입력해주세요',
+        obscured: _obscureCurrentPassword,
+        onToggleObscured: () => setState(
+          () => _obscureCurrentPassword = !_obscureCurrentPassword,
+        ),
       ),
       textInputAction: TextInputAction.next,
       onFieldSubmitted: (_) =>
@@ -223,11 +231,15 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     return TextFormField(
       controller: _newPasswordController,
       focusNode: _newPasswordFocusNode,
-      obscureText: true,
+      obscureText: _obscureNewPassword,
       cursorColor: AppColors.black,
       decoration: _passwordDecoration(
         label: '새 비밀번호',
         hint: '새 비밀번호를 입력해주세요',
+        obscured: _obscureNewPassword,
+        onToggleObscured: () => setState(
+          () => _obscureNewPassword = !_obscureNewPassword,
+        ),
       ),
       textInputAction: TextInputAction.next,
       onFieldSubmitted: (_) =>
@@ -245,11 +257,15 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     return TextFormField(
       controller: _confirmPasswordController,
       focusNode: _confirmPasswordFocusNode,
-      obscureText: true,
+      obscureText: _obscureConfirmPassword,
       cursorColor: AppColors.black,
       decoration: _passwordDecoration(
         label: '새 비밀번호 확인',
         hint: '새 비밀번호를 다시 입력해주세요',
+        obscured: _obscureConfirmPassword,
+        onToggleObscured: () => setState(
+          () => _obscureConfirmPassword = !_obscureConfirmPassword,
+        ),
       ),
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _handleChangePassword(),
@@ -266,9 +282,13 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   }
 
   /// 비밀번호 입력창 공통 데코레이션 (네이비 플로팅 라벨 + 둥근 filled).
+  ///
+  /// [obscured]/[onToggleObscured] 로 입력값 표시/숨김 토글(눈 아이콘)을 붙인다.
   InputDecoration _passwordDecoration({
     required String label,
     required String hint,
+    required bool obscured,
+    required VoidCallback onToggleObscured,
   }) {
     return InputDecoration(
       labelText: label,
@@ -278,6 +298,16 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         fontWeight: FontWeight.w600,
       ),
       prefixIcon: const Icon(Icons.lock_outline),
+      suffixIcon: IconButton(
+        icon: Icon(
+          obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+          size: 20,
+        ),
+        color: AppColors.textTertiary,
+        splashRadius: 18,
+        tooltip: obscured ? '비밀번호 표시' : '비밀번호 숨기기',
+        onPressed: onToggleObscured,
+      ),
       filled: true,
       fillColor: AppColors.surfaceVariant,
       border: OutlineInputBorder(
