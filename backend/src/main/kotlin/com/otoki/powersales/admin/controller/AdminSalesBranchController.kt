@@ -2,7 +2,6 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -28,17 +27,17 @@ import org.springframework.web.bind.annotation.RestController
  * `team_member_schedule` READ 없는 사용자가 지점 셀렉터에서 403 이 나므로 매출/실적 계열은
  * 화면 도메인 권한으로 가드하는 이 컨트롤러로 분리한다.
  *
- * 지점 목록 산출:
- * - 월 매출(물류배부) / 월별 투입적합성 / 월 매출(전산실적)은 대시보드·근무형태별 여사원인원현황과 동일한
- *   고정 화이트리스트(34개, [DashboardBranchResolver]).
- * - 배치 적합성은 지점 단위 화면이라 행사마스터와 동일한 고정 지점 목록([WhitelistBranchScopeResolver]).
- * - 나머지 1개 화면(POS)은 여사원 일정/현황/전문행사조와 동일 단일 출처
- *   ([WomenScheduleBranchResolver], 사용자 권한 기준 조직 트리 스코프) 를 재사용한다.
+ * 지점 목록 산출 — 배치 적합성을 뺀 4화면이 대시보드·근무형태별 여사원인원현황과 동일한 고정
+ * 화이트리스트(34개, [DashboardBranchResolver]) 를 쓴다. 조직 트리를 직접 쓰던
+ * (`WomenScheduleBranchResolver`) 전산실적/POS/투입적합성은 전사 권한자에게 `FS마케팅1팀` 같은
+ * 팀 단위 조직까지 섞여 노출돼(Level5 부재 시 Level4 fallback) 인원현황 목록과 어긋났다.
+ * 배치 적합성만 지점 단위 화면이라 행사마스터와 동일한 고정 지점 목록([WhitelistBranchScopeResolver]).
+ *
+ * 셀렉터 목록만 좁히며 실제 조회 스코프는 각 화면의 `@CurrentDataScope`(sharing policy) 기준 그대로다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/sales")
 class AdminSalesBranchController(
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
     private val dashboardBranchResolver: DashboardBranchResolver,
     private val whitelistBranchScopeResolver: WhitelistBranchScopeResolver,
 ) {
@@ -54,20 +53,23 @@ class AdminSalesBranchController(
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
         ResponseEntity.ok(ApiResponse.success(dashboardBranchResolver.resolveBranches(principal)))
 
-    /** POS매출 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
+    /**
+     * POS매출 전용 지점 셀렉터 옵션 — 근무형태별 여사원인원현황과 동일 기준
+     * ([DashboardBranchResolver], 전사 권한자 34개 화이트리스트 / 그 외 본인 조직 트리).
+     */
     @GetMapping("/pos/branches")
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     fun getPosSalesBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
-        ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
+        ResponseEntity.ok(ApiResponse.success(dashboardBranchResolver.resolveBranches(principal)))
 
     /**
      * 월별 진열사원 투입적합성 전용 지점 셀렉터 옵션 — 근무형태별 여사원인원현황과 동일 기준
      * ([DashboardBranchResolver], 전사 권한자 34개 화이트리스트 / 그 외 본인 조직 트리).
      *
      * 두 화면은 같은 여사원 일정 축을 보는 화면이라 지점 셀렉터가 같아야 한다는 운영 요구.
-     * 기존 [WomenScheduleBranchResolver] 직접 위임은 전사 권한자에게 `FS마케팅1팀` 같은 팀 단위 조직까지
+     * 기존 `WomenScheduleBranchResolver` 직접 위임은 전사 권한자에게 `FS마케팅1팀` 같은 팀 단위 조직까지
      * 섞어 노출해(Level5 부재 시 Level4 fallback) 인원현황 화면의 34개 목록과 달랐다.
      *
      * 셀렉터 목록만 34개로 좁히며 실제 조회 스코프는 기존과 동일하다 — 조회는 `@CurrentDataScope`
@@ -83,7 +85,7 @@ class AdminSalesBranchController(
     /**
      * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 고정 지점 화이트리스트([WhitelistBranchScopeResolver]).
      *
-     * 다른 매출/실적 화면이 쓰는 [WomenScheduleBranchResolver] 는 `Organization` 을 필터 없이 조회한 뒤
+     * 이 화면들이 예전에 쓰던 `WomenScheduleBranchResolver` 는 `Organization` 을 필터 없이 조회한 뒤
      * Level5(지점) 가 비어 있으면 Level4(팀) 로 fallback 하므로, 전사 권한자에게 `FS마케팅1팀` /
      * `FS판매전략팀` 같은 **팀 단위 조직까지 섞여 노출**된다. 배치 적합성은 지점 단위 화면이므로
      * 행사마스터·진열스케줄마스터와 동일한 고정 지점 목록(34개)을 쓴다.
@@ -99,12 +101,7 @@ class AdminSalesBranchController(
         ResponseEntity.ok(ApiResponse.success(whitelistBranchScopeResolver.getBranches(principal)))
 
     /**
-     * 월 매출(물류배부) 전용 지점 셀렉터 옵션.
-     *
-     * 다른 매출/실적 화면이 여사원 일정 스코프([WomenScheduleBranchResolver], 조직 트리 전체) 를
-     * 반환하는 것과 달리, 월 매출(물류배부) 화면은 대시보드와 동일한 지점 기준을 요구한다.
-     * 따라서 전사 권한자에게 대시보드 고정 화이트리스트(34개) 를 노출하는 [DashboardBranchResolver] 를
-     * 재사용한다.
+     * 월 매출(물류배부) 전용 지점 셀렉터 옵션 — 대시보드 고정 화이트리스트(34개, [DashboardBranchResolver]).
      *
      * 셀렉터 목록만 34개로 좁히고 실제 조회/집계 스코프는 기존과 동일하다(셀렉터에서 고른 값은
      * 조직 트리 스코프의 부분집합).

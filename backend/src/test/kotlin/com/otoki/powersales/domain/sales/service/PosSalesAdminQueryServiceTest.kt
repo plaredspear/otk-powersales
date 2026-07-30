@@ -6,6 +6,7 @@ import com.otoki.pos.repository.PosSalesRow
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.exception.BusinessException
@@ -30,8 +31,12 @@ class PosSalesAdminQueryServiceTest {
     private val productRepository: ProductRepository = mockk()
     /** 유통형태는 거래처유형마스터 조인이 정본이라 운영 마스터 픽스처를 물린다. */
     private val accountCategoryLookup = AccountCategoryLookupFixture.lookup()
+
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
     private val service = PosSalesAdminQueryService(
-        accountRepository, posRepository, productRepository, accountCategoryLookup,
+        accountRepository, posRepository, productRepository, accountCategoryLookup, branchCodeExpander,
     )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)

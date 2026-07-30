@@ -37,7 +37,7 @@ export function fetchElectronicSalesBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/electronic/branches');
 }
 
-/** POS매출 전용 지점 셀렉터 옵션 조회 — 조직 트리 스코프. */
+/** POS매출 전용 지점 셀렉터 옵션 조회 — 근무형태별 여사원인원현황과 동일 기준(전사 고정 34개). */
 export function fetchPosSalesBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/pos/branches');
 }

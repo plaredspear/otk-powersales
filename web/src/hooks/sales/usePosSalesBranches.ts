@@ -3,7 +3,8 @@ import { fetchPosSalesBranches } from '@/api/salesBranch';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
- * POS매출 전용 지점 셀렉터 옵션 — 조직 트리 스코프.
+ * POS매출 전용 지점 셀렉터 옵션 — 근무형태별 여사원인원현황과 동일 기준
+ * (전사 권한자 고정 지점 34개 / 그 외 본인 조직 트리).
  *
  * 화면별 전용 endpoint(`/api/v1/admin/sales/pos/branches`)로 분리해 향후 화면별 권한/스코프를
  * 독립적으로 조정할 수 있게 한다. 지점 목록은 권한 주체(사용자)별로 다르므로 대행 전환 시 캐시 분리를
