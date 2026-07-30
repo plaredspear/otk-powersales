@@ -29,10 +29,11 @@ import org.springframework.web.bind.annotation.RestController
  * 화면 도메인 권한으로 가드하는 이 컨트롤러로 분리한다.
  *
  * 지점 목록 산출:
- * - 월 매출(물류배부)만 대시보드와 동일한 고정 화이트리스트(34개, [DashboardBranchResolver]).
+ * - 월 매출(물류배부) / 월별 투입적합성은 대시보드·근무형태별 여사원인원현황과 동일한 고정
+ *   화이트리스트(34개, [DashboardBranchResolver]).
  * - 배치 적합성은 지점 단위 화면이라 행사마스터와 동일한 고정 지점 목록([WhitelistBranchScopeResolver]).
- * - 나머지 3개 화면은 여사원 일정/현황/전문행사조와 동일 단일 출처([WomenScheduleBranchResolver],
- *   사용자 권한 기준 조직 트리 스코프) 를 재사용한다.
+ * - 나머지 2개 화면(전산실적 / POS)은 여사원 일정/현황/전문행사조와 동일 단일 출처
+ *   ([WomenScheduleBranchResolver], 사용자 권한 기준 조직 트리 스코프) 를 재사용한다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/sales")
@@ -58,13 +59,23 @@ class AdminSalesBranchController(
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
         ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
 
-    /** 월별 진열사원 투입적합성 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
+    /**
+     * 월별 진열사원 투입적합성 전용 지점 셀렉터 옵션 — 근무형태별 여사원인원현황과 동일 기준
+     * ([DashboardBranchResolver], 전사 권한자 34개 화이트리스트 / 그 외 본인 조직 트리).
+     *
+     * 두 화면은 같은 여사원 일정 축을 보는 화면이라 지점 셀렉터가 같아야 한다는 운영 요구.
+     * 기존 [WomenScheduleBranchResolver] 직접 위임은 전사 권한자에게 `FS마케팅1팀` 같은 팀 단위 조직까지
+     * 섞어 노출해(Level5 부재 시 Level4 fallback) 인원현황 화면의 34개 목록과 달랐다.
+     *
+     * 셀렉터 목록만 34개로 좁히며 실제 조회 스코프는 기존과 동일하다 — 조회는 `@CurrentDataScope`
+     * (sharing policy) 기반이다.
+     */
     @GetMapping("/input-adequacy/branches")
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     fun getInputAdequacyBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
-        ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
+        ResponseEntity.ok(ApiResponse.success(dashboardBranchResolver.resolveBranches(principal)))
 
     /**
      * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 고정 지점 화이트리스트([WhitelistBranchScopeResolver]).

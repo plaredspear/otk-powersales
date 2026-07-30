@@ -42,7 +42,12 @@ export function fetchPosSalesBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/pos/branches');
 }
 
-/** 월별 진열사원 투입적합성 전용 지점 셀렉터 옵션 조회 — 조직 트리 스코프. */
+/**
+ * 월별 진열사원 투입적합성 전용 지점 셀렉터 옵션 조회.
+ *
+ * 근무형태별 여사원인원현황(`/team-schedule/branches`) 과 동일 기준 — 전사 권한자는 고정 지점
+ * 화이트리스트(34개), 그 외는 본인 조직 트리. 목록만 같게 맞추며 조회 스코프는 backend 권한 기준 그대로다.
+ */
 export function fetchInputAdequacyBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/input-adequacy/branches');
 }

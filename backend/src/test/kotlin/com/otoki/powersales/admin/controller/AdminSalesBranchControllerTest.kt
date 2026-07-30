@@ -31,7 +31,7 @@ class AdminSalesBranchControllerTest : AdminControllerTestSupport() {
     private lateinit var whitelistBranchScopeResolver: WhitelistBranchScopeResolver
 
     /**
-     * 전산실적/POS/투입적합성 3개 화면은 동일하게 [WomenScheduleBranchResolver] (조직 트리 스코프) 로
+     * 전산실적/POS 2개 화면은 동일하게 [WomenScheduleBranchResolver] (조직 트리 스코프) 로
      * 위임한다 — URL 만 다르므로 대표 endpoint 1개로 위임 경로를 검증한다.
      */
     @Test
@@ -69,6 +69,28 @@ class AdminSalesBranchControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].branchCode").value("4889"))
             .andExpect(jsonPath("$.data[0].branchName").value("영업지원2팀"))
+
+        verify(exactly = 1) { dashboardBranchResolver.resolveBranches(any()) }
+        verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+    }
+
+    /**
+     * 월별 투입적합성은 근무형태별 여사원인원현황(`/team-schedule/branches`) 과 동일하게
+     * [DashboardBranchResolver] (전사 권한자 34개 화이트리스트) 로 위임한다 — 두 화면의 지점 셀렉터가
+     * 같아야 한다는 운영 요구. [WomenScheduleBranchResolver] 를 타면 팀 단위 조직이 섞여 목록이 달라진다.
+     */
+    @Test
+    @DisplayName("GET /api/v1/admin/sales/input-adequacy/branches - 대시보드 화이트리스트(dashboardBranchResolver) 위임")
+    fun inputAdequacyBranches_delegatesToDashboardResolver() {
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "5817", branchName = "강남1지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/sales/input-adequacy/branches"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].branchCode").value("5817"))
+            .andExpect(jsonPath("$.data[0].branchName").value("강남1지점"))
 
         verify(exactly = 1) { dashboardBranchResolver.resolveBranches(any()) }
         verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }

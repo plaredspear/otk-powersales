@@ -40,7 +40,7 @@ export default function MonthlyInputAdequacyPage() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(currentYear);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  // 월별 투입적합성 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프.
+  // 월별 투입적합성 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 목록은 근무형태별 여사원인원현황과 동일.
   const { data: branches = [] } = useInputAdequacyBranches();
   const [workingCategory3, setWorkingCategory3] = useState<string>('전체');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
