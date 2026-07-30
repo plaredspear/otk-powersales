@@ -8,6 +8,7 @@ import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -22,7 +23,11 @@ import java.time.LocalDateTime
 class AdminFemaleEmployeeSafetyCheckReportServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mockk()
-    private val service = AdminFemaleEmployeeSafetyCheckReportService(repository)
+
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
+    private val service = AdminFemaleEmployeeSafetyCheckReportService(repository, branchCodeExpander)
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
