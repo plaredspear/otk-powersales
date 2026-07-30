@@ -139,7 +139,8 @@ class WebAuthenticationService(
             throw TokenReuseDetectedException()
         }
 
-        if (!webRefreshTokenStore.exists(tokenId)) {
+        // 원자적 소비 (검증 + 회수) — 나누면 동일 토큰 동시 요청이 둘 다 통과해 탈취 감지가 무력화된다.
+        if (!webRefreshTokenStore.consume(tokenId)) {
             webRefreshTokenStore.revokeFamily(familyId, webJwtService.getRefreshExpirationMillis())
             throw TokenReuseDetectedException()
         }
@@ -147,8 +148,6 @@ class WebAuthenticationService(
         // 대행 토큰이면 impersonated_by claim 을 새 토큰에 보존 (§851 Q1) — 대행 세션을 refresh 만료까지 유지.
         // user_id claim 이 대상 사용자 PK 이므로 아래 findById 가 그대로 대상 권한을 재산출 (§851 §2.0/§2.4).
         val impersonatedBy: Long? = webJwtService.getImpersonatedByFromToken(token)
-
-        webRefreshTokenStore.delete(tokenId)
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
         val employee: Employee? = user.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }

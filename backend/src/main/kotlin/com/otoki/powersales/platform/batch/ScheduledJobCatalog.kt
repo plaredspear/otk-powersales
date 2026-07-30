@@ -125,6 +125,12 @@ object ScheduledJobCatalog {
             beanType = ScheduledJobRunCleanupBatch::class.java,
         ),
         Entry(
+            jobName = RefreshTokenCleanupBatch.JOB_NAME,
+            cron = "0 20 4 * * *",
+            description = "만료된 refresh token / family 무효화 행 정리 (매일 04시 20분) — Redis TTL 자동만료의 DB 대체물",
+            beanType = RefreshTokenCleanupBatch::class.java,
+        ),
+        Entry(
             jobName = OroraDailySalesMaterializeBatch.JOB_NAME,
             cron = "\${app.batch.orora.daily.cron:0 0 11 * * *}",
             description = "ORORA 일별 매출 → daily_sales_history 적재 + 월별 합계 갱신 (기본 매일 11:00) — legacy Queueable_OroraDailySalesHistory_M1 동등 (SF CronTrigger \"오로라 일별 데이터 수신\" 0 0 11 ? * 1-7 Asia/Seoul 정합)",

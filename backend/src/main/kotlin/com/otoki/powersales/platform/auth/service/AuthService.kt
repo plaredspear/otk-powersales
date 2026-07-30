@@ -37,6 +37,7 @@ import com.otoki.powersales.platform.common.dto.response.GpsConsentRecordRespons
 import com.otoki.powersales.platform.common.dto.response.GpsConsentStatusResponse
 import com.otoki.powersales.platform.common.dto.response.GpsConsentTermsResponse
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DataAccessException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -280,15 +281,12 @@ class AuthService(
             throw TokenReuseDetectedException()
         }
 
-        // 4. Redis에 Refresh Token 존재 여부 확인
-        if (!jwtTokenProvider.isRefreshTokenStored(tokenId)) {
-            // 이미 사용된 토큰 → 탈취 감지 → Family 전체 무효화
+        // 4. Refresh Token 원자적 소비 (검증 + 회수) — 실패 시 이미 사용된 토큰 → 탈취 감지 → Family 전체 무효화.
+        //    검증과 회수를 나누면 동일 토큰 동시 요청이 둘 다 통과해 탈취 감지가 무력화된다.
+        if (!jwtTokenProvider.consumeRefreshToken(tokenId)) {
             jwtTokenProvider.revokeTokenFamily(familyId)
             throw TokenReuseDetectedException()
         }
-
-        // 5. 이전 Refresh Token 삭제
-        jwtTokenProvider.deleteRefreshToken(tokenId)
 
         // 6. 사용자 정보 조회 (device_uuid 확인 위해 employeeInfo fetch)
         val userId = jwtTokenProvider.getUserIdFromToken(request.refreshToken)
@@ -341,18 +339,40 @@ class AuthService(
 
     /**
      * 로그아웃
-     * 1. Access Token을 블랙리스트에 추가
-     * 2. Redis에서 Refresh Token 삭제
+     * 1. Refresh Token 회수 (DB) — 세션을 실제로 끊는 조치
+     * 2. Access Token 블랙리스트 등재 (Redis) — 잔여 TTL 동안의 access token 차단, best-effort
+     *
+     * ## 순서와 예외 처리의 이유
+     *
+     * 구 구현은 blacklist 를 먼저 호출했고 예외를 잡지 않았다. Redis 장애 시 그 한 줄이 터지면서
+     * **아래의 refresh token 회수까지 도달하지 못해**, 로그아웃 API 가 500 을 내면서 서버 세션은
+     * 그대로 남았다 (refresh token 이 DB 에 최대 60일 잔존). 클라이언트는 500 을 삼키고 로컬
+     * 토큰을 지우므로 사용자는 로그아웃된 줄 알지만 서버 상태는 로그인 그대로인 어긋남이 생겼다.
+     *
+     * 그래서 Redis 와 무관하게 동작하는 refresh 회수(DB)를 먼저 확정하고, blacklist 는 실패를
+     * 삼킨다. blacklist 쓰기 실패를 삼켜도 잃는 것이 없다 —
+     * [com.otoki.powersales.platform.common.security.JwtTokenProvider.isBlacklisted] 가 이미
+     * Redis 장애 시 "미등재" 로 fallback 하므로, 장애 중에는 등재에 성공했더라도 조회가 통과시킨다.
+     * 남는 노출은 access token 잔여 TTL(최대 `jwt.expiration` = 1h) 뿐이다.
+     *
+     * 클래스 기본 readOnly 트랜잭션을 RW 로 재정의 — refresh token 회수가 Redis 삭제에서 **DB
+     * DELETE 로 바뀌었으므로**, readOnly 트랜잭션에 그대로 두면 PostgreSQL 이
+     * `cannot execute DELETE in a read-only transaction` 으로 거부한다 (H2 는 readOnly 를 무시해
+     * 테스트가 잡아내지 못한다).
      */
+    @Transactional
     fun logout(accessToken: String) {
-        jwtTokenProvider.blacklistToken(accessToken)
-
-        // Redis에서 Refresh Token 삭제 (userId 기반)
         try {
             val userId = jwtTokenProvider.getUserIdFromToken(accessToken)
             jwtTokenProvider.deleteRefreshTokenByUserId(userId)
         } catch (e: Exception) {
-            log.debug("Refresh token cleanup skipped during logout: {}", e.message)
+            log.warn("로그아웃 중 refresh token 회수 실패: {}", e.message)
+        }
+
+        try {
+            jwtTokenProvider.blacklistToken(accessToken)
+        } catch (e: DataAccessException) {
+            log.warn("로그아웃 중 블랙리스트 등재 실패 — refresh 회수는 완료(Redis 장애 fallback)", e)
         }
     }
 

@@ -40,7 +40,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.data.redis.RedisConnectionFailureException
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.util.*
 
@@ -367,7 +369,7 @@ class AuthServiceTest {
             every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
             every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
             every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
-            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
+            every { jwtTokenProvider.consumeRefreshToken(tokenId) } returns true
             every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
             every { jwtTokenProvider.getLongLivedFromToken(refreshToken) } returns false
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
@@ -382,7 +384,7 @@ class AuthServiceTest {
             assertThat(response.accessToken).isEqualTo(newAccessToken)
             assertThat(response.refreshToken).isEqualTo(newRefreshToken)
             assertThat(response.expiresIn).isEqualTo(expiresIn)
-            verify { jwtTokenProvider.deleteRefreshToken(tokenId) }
+            verify { jwtTokenProvider.consumeRefreshToken(tokenId) }
             verify { jwtTokenProvider.storeRefreshToken(any(), userId, familyId) }
         }
 
@@ -402,7 +404,7 @@ class AuthServiceTest {
             every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
             every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
             every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
-            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
+            every { jwtTokenProvider.consumeRefreshToken(tokenId) } returns true
             every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
             every { jwtTokenProvider.getLongLivedFromToken(refreshToken) } returns true
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
@@ -461,7 +463,7 @@ class AuthServiceTest {
             every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
             every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
             every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
-            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns false
+            every { jwtTokenProvider.consumeRefreshToken(tokenId) } returns false
 
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
@@ -793,7 +795,7 @@ class AuthServiceTest {
     // ========== Logout Tests ==========
 
     @Test
-    @DisplayName("로그아웃 성공 - Access Token 블랙리스트 + Refresh Token Redis 삭제")
+    @DisplayName("로그아웃 성공 - Refresh Token(DB) 회수 + Access Token 블랙리스트(Redis)")
     fun logout_success() {
         // Given
         val accessToken = "access_token_to_blacklist"
@@ -822,6 +824,42 @@ class AuthServiceTest {
 
         // Then
         verify { jwtTokenProvider.blacklistToken(accessToken) }
+    }
+
+    @Test
+    @DisplayName("로그아웃 - Redis 장애로 블랙리스트 등재가 실패해도 Refresh Token 회수는 완료되고 예외가 전파되지 않는다")
+    fun logout_blacklistFails_stillRevokesRefreshToken() {
+        // Given: 구 구현은 blacklist 를 먼저 호출하고 예외를 잡지 않아, Redis 장애 시 그 아래
+        // refresh token 회수까지 도달하지 못했다 (로그아웃 500 + 서버 세션 잔존).
+        val accessToken = "access_token_to_blacklist"
+        val userId = 1L
+
+        every { jwtTokenProvider.getUserIdFromToken(accessToken) } returns userId
+        every { jwtTokenProvider.blacklistToken(accessToken) } throws
+            RedisConnectionFailureException("Unable to connect to Redis")
+
+        // When: 예외가 호출자에게 전파되지 않아야 한다 (API 200)
+        authService.logout(accessToken)
+
+        // Then: 세션을 실제로 끊는 조치(DB refresh token 회수)는 반드시 수행된다
+        verify { jwtTokenProvider.deleteRefreshTokenByUserId(userId) }
+    }
+
+    @Test
+    @DisplayName("로그아웃은 RW 트랜잭션이어야 한다 - readOnly 면 PostgreSQL 이 refresh token DELETE 를 거부")
+    fun logout_mustRunInReadWriteTransaction() {
+        // refresh token 회수가 Redis 삭제 → DB DELETE 로 바뀌었으므로, 클래스 기본
+        // @Transactional(readOnly = true) 를 상속하면 운영(PostgreSQL)에서
+        // "cannot execute DELETE in a read-only transaction" 으로 로그아웃이 깨진다.
+        // H2 는 readOnly 를 무시해 동작 테스트로는 잡히지 않으므로 애노테이션을 직접 가드한다.
+        val annotation = AuthService::class.java
+            .getMethod("logout", String::class.java)
+            .getAnnotation(Transactional::class.java)
+
+        assertThat(annotation)
+            .`as`("AuthService.logout 에 @Transactional 이 없으면 클래스 기본 readOnly 가 적용된다")
+            .isNotNull
+        assertThat(annotation.readOnly).isFalse()
     }
 
     // ========== Device Binding Tests ==========

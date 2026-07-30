@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.security.WebAdminContextFilter
 import com.otoki.powersales.platform.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.platform.auth.web.WebJwtService
 import com.otoki.powersales.platform.auth.web.WebPasswordChangeRequiredFilter
+import com.otoki.powersales.platform.auth.token.RefreshTokenStore
 import com.otoki.powersales.platform.auth.web.WebRefreshTokenStore
 import com.otoki.powersales.platform.common.security.JwtAuthenticationEntryPoint
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
-import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
@@ -49,9 +49,8 @@ class WebSecurityConfig(
 
     @Bean
     fun webRefreshTokenStore(
-        redisTemplate: RedisTemplate<String, String>,
-        objectMapper: ObjectMapper,
-    ): WebRefreshTokenStore = WebRefreshTokenStore(redisTemplate, objectMapper)
+        refreshTokenStore: RefreshTokenStore,
+    ): WebRefreshTokenStore = WebRefreshTokenStore(refreshTokenStore)
 
     @Bean
     fun webJwtAuthenticationFilter(webJwtService: WebJwtService): WebJwtAuthenticationFilter =

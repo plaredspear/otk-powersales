@@ -17,8 +17,8 @@ import javax.crypto.SecretKey
  * - audience = `"web"` (Mobile: `"mobile"`) — cross-platform 토큰 사용 차단
  * - 추가 claim: `user_id`, `profile_name`, `is_sales_support`, `password_change_required`
  *
- * Refresh Rotation 의 Redis 메타데이터는 Mobile 과 공용 키 공간을 회피하기 위해 별도 prefix(`web_refresh:`)
- * 사용 — 본 spec 범위는 Web 토큰 발급/파싱까지이며, 실 Redis 저장은 [WebRefreshTokenStore] 가 담당한다.
+ * Refresh Rotation 메타데이터는 Mobile 과 저장 공간을 분리하기 위해 audience=WEB 축으로 격리한다 —
+ * 본 spec 범위는 Web 토큰 발급/파싱까지이며, 실 저장(DB)은 [WebRefreshTokenStore] 가 담당한다.
  */
 class WebJwtService(
     @Value("\${jwt.secret}") private val secret: String,

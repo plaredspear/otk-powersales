@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.common.security
 
-import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.token.RefreshTokenStore
 import com.otoki.powersales.platform.common.security.JwtTokenProvider
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import org.springframework.data.redis.RedisConnectionFailureException
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import java.time.Duration
@@ -19,7 +21,7 @@ import java.time.Duration
 class JwtTokenProviderTest {
 
     private val redisTemplate = mockk<RedisTemplate<String, String>>(relaxed = true)
-    private val objectMapper = ObjectMapper()
+    private val refreshTokenStore = mockk<RefreshTokenStore>(relaxed = true)
 
     private val jwtTokenProvider = JwtTokenProvider(
         secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
@@ -27,7 +29,7 @@ class JwtTokenProviderTest {
         refreshExpiration = 604800000,  // 7 days
         refreshExpirationLong = 5184000000,  // 60 days
         redisTemplate = redisTemplate,
-        objectMapper = objectMapper
+        refreshTokenStore = refreshTokenStore
     )
 
     @Test
@@ -86,7 +88,7 @@ class JwtTokenProviderTest {
             refreshExpiration = 1,  // 1ms
             refreshExpirationLong = 5184000000,  // 60 days
             redisTemplate = redisTemplate,
-            objectMapper = objectMapper
+            refreshTokenStore = refreshTokenStore
         )
         val shortToken = provider.createRefreshToken(1L, "f", "t1")  // longLived=false → 1ms
         val longToken = provider.createRefreshToken(1L, "f", "t2", longLived = true)  // 60일
@@ -124,7 +126,7 @@ class JwtTokenProviderTest {
             refreshExpiration = 1,  // 1ms
             refreshExpirationLong = 1,  // 1ms
             redisTemplate = redisTemplate,
-            objectMapper = objectMapper
+            refreshTokenStore = refreshTokenStore
         )
         val userId = 12345L
         val role = AppAuthority.WOMAN
@@ -160,6 +162,56 @@ class JwtTokenProviderTest {
 
         // Then
         assertFalse(isValid)
+    }
+
+    @Test
+    @DisplayName("validateToken은 Redis 장애 시에도 유효한 토큰을 통과시킨다 — 전 사용자 401 방지")
+    fun validateToken_returnsTrue_whenRedisDown() {
+        // Given: 블랙리스트 조회가 Redis 연결 실패로 터지는 상황
+        val token = jwtTokenProvider.createAccessToken(12345L, AppAuthority.WOMAN)
+        every { redisTemplate.hasKey(any<String>()) } throws
+            RedisConnectionFailureException("Unable to connect to Redis")
+
+        // When & Then: 서명/만료는 로컬 판정이므로 정상 토큰은 그대로 유효
+        assertTrue(jwtTokenProvider.validateToken(token))
+    }
+
+    @Test
+    @DisplayName("validateToken은 Redis 장애여도 만료/변조 토큰은 거부한다 — fallback 이 무효 토큰을 통과시키지 않음")
+    fun validateToken_stillRejectsInvalidTokens_whenRedisDown() {
+        // Given: 만료 토큰 + 변조 토큰, 그리고 Redis 장애
+        val shortLivedProvider = JwtTokenProvider(
+            secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
+            accessExpiration = 1,  // 1ms
+            refreshExpiration = 1,
+            refreshExpirationLong = 1,
+            redisTemplate = redisTemplate,
+            refreshTokenStore = refreshTokenStore
+        )
+        val expiredToken = shortLivedProvider.createAccessToken(1L, AppAuthority.WOMAN)
+        val tamperedToken = jwtTokenProvider.createAccessToken(1L, AppAuthority.WOMAN)
+            .dropLast(10) + "TAMPERED123"
+        Thread.sleep(10)
+        every { redisTemplate.hasKey(any<String>()) } throws
+            RedisConnectionFailureException("Unable to connect to Redis")
+
+        // When & Then
+        assertFalse(shortLivedProvider.validateToken(expiredToken))
+        assertFalse(jwtTokenProvider.validateToken(tamperedToken))
+    }
+
+    @Test
+    @DisplayName("validateToken은 변조/만료 토큰에 대해 Redis를 조회하지 않는다 — 로컬 검증 우선")
+    fun validateToken_skipsRedis_forLocallyInvalidToken() {
+        // Given
+        val tamperedToken = jwtTokenProvider.createAccessToken(1L, AppAuthority.WOMAN)
+            .dropLast(10) + "TAMPERED123"
+
+        // When
+        assertFalse(jwtTokenProvider.validateToken(tamperedToken))
+
+        // Then: 서명 검증에서 탈락했으므로 블랙리스트 조회 자체가 없어야 한다
+        verify(exactly = 0) { redisTemplate.hasKey(any<String>()) }
     }
 
     @Test
@@ -310,7 +362,7 @@ class JwtTokenProviderTest {
             refreshExpiration = 1,
             refreshExpirationLong = 1,
             redisTemplate = redisTemplate,
-            objectMapper = objectMapper
+            refreshTokenStore = refreshTokenStore
         )
         val userId = 12345L
         val role = AppAuthority.WOMAN
@@ -440,7 +492,7 @@ class JwtTokenProviderTest {
                 refreshExpiration = 1,
                 refreshExpirationLong = 1,
                 redisTemplate = redisTemplate,
-                objectMapper = objectMapper
+                refreshTokenStore = refreshTokenStore
             )
             val token = shortLivedProvider.createAccessToken(1L, AppAuthority.WOMAN)
             Thread.sleep(10)

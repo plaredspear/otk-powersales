@@ -520,6 +520,9 @@ app:
     # SF 전송실패 건 재전송 배치 (매시간 50분). 제품클레임 + 물류클레임 SEND_FAILED 이고 시도횟수 상한 미만 건 재전송.
     sf-resend:
       enabled: true
+    # 만료 refresh token / family 무효화 행 정리 배치 (매일 04:20). Redis TTL 자동만료의 DB 대체물.
+    refresh-token-cleanup:
+      enabled: true
   # SF outbound 재전송 시도횟수 상한 (초과 건은 영구 실패로 간주하고 재전송 제외).
   sf:
     resend:
@@ -603,6 +606,9 @@ app:
       enabled: true
     # SF 전송실패 건 재전송 배치 (매시간 50분). 제품클레임 + 물류클레임 SEND_FAILED 이고 시도횟수 상한 미만 건 재전송.
     sf-resend:
+      enabled: true
+    # 만료 refresh token / family 무효화 행 정리 배치 (매일 04:20). Redis TTL 자동만료의 DB 대체물.
+    refresh-token-cleanup:
       enabled: true
   # SF outbound 재전송 시도횟수 상한 (초과 건은 영구 실패로 간주하고 재전송 제외).
   sf:

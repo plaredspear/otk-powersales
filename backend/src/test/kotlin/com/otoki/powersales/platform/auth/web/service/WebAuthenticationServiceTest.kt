@@ -153,7 +153,7 @@ class WebAuthenticationServiceTest {
             every { webJwtService.getTokenIdFromToken("rt") } returns "tok-1"
             every { webJwtService.getUserIdFromToken("rt") } returns 1L
             every { webRefreshTokenStore.isFamilyRevoked("fam-1") } returns false
-            every { webRefreshTokenStore.exists("tok-1") } returns true
+            every { webRefreshTokenStore.consume("tok-1") } returns true
             every { webJwtService.getImpersonatedByFromToken("rt") } returns null
             every { userRepository.findById(1L) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
@@ -166,7 +166,7 @@ class WebAuthenticationServiceTest {
 
             assertThat(response.accessToken).isEqualTo("new-access")
             assertThat(response.refreshToken).isEqualTo("new-refresh")
-            verify { webRefreshTokenStore.delete("tok-1") }
+            verify { webRefreshTokenStore.consume("tok-1") }
             verify { webRefreshTokenStore.store(any(), 1L, "fam-1", any()) }
         }
 
@@ -200,7 +200,7 @@ class WebAuthenticationServiceTest {
             every { webJwtService.getTokenIdFromToken("rt") } returns "tok-y"
             every { webJwtService.getUserIdFromToken("rt") } returns 1L
             every { webRefreshTokenStore.isFamilyRevoked("fam-y") } returns false
-            every { webRefreshTokenStore.exists("tok-y") } returns false
+            every { webRefreshTokenStore.consume("tok-y") } returns false
             every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
 
             assertThatThrownBy { service.refresh(WebRefreshTokenRequest("rt")) }

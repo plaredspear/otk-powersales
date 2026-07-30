@@ -1,11 +1,14 @@
 package com.otoki.powersales.platform.common.security
 
-import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.platform.auth.token.RefreshTokenAudience
+import com.otoki.powersales.platform.auth.token.RefreshTokenStore
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataAccessException
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
@@ -22,9 +25,12 @@ class JwtTokenProvider(
     @Value("\${jwt.expiration}") private val accessExpiration: Long,
     @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long,
     @Value("\${jwt.refresh-expiration-long}") private val refreshExpirationLong: Long,
+    /** access token 블랙리스트 전용 — refresh 계열은 [refreshTokenStore] (DB SoT) 가 담당한다. */
     private val redisTemplate: RedisTemplate<String, String>,
-    private val objectMapper: ObjectMapper
+    private val refreshTokenStore: RefreshTokenStore,
 ) {
+
+    private val log = LoggerFactory.getLogger(JwtTokenProvider::class.java)
 
     private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray())
@@ -105,13 +111,16 @@ class JwtTokenProvider(
         if (longLived) refreshExpirationLong else refreshExpiration
 
     /**
-     * 토큰 검증 (만료, 서명, 블랙리스트 확인)
+     * 토큰 검증 (서명, 만료, 블랙리스트 확인).
+     *
+     * 판정 순서는 **로컬 검증(서명/만료) 먼저, 블랙리스트(Redis) 나중**이다.
+     * 위조/만료 토큰은 Redis 를 건드리지 않고 탈락하므로, 무인증 트래픽이 Redis 부하로 번지지 않는다.
      */
     fun validateToken(token: String): Boolean {
         return try {
-            if (isBlacklisted(token)) return false
             val claims = parseClaims(token)
-            !claims.expiration.before(Date())
+            if (claims.expiration.before(Date())) return false
+            !isBlacklisted(token)
         } catch (e: ExpiredJwtException) {
             false
         } catch (e: Exception) {
@@ -233,67 +242,60 @@ class JwtTokenProvider(
         return (accessExpiration / 1000).toInt()
     }
 
-    // ========== Redis operations for Refresh Token Rotation ==========
+    // ========== Refresh Token Rotation (DB SoT — RefreshTokenStore 위임) ==========
+    //
+    // 이전에는 본 구간이 Redis 직접 호출이었고, 그 탓에 Redis 장애 = 로그인/토큰갱신 전면 불가였다.
+    // 블랙리스트만 Redis 에 남기고(매 요청 조회) refresh 계열은 DB 를 SoT 로 삼는다.
+    // 채널 격리는 [RefreshTokenAudience.MOBILE] — 웹은 WebRefreshTokenStore 가 WEB 으로 같은 저장소를 쓴다.
 
     /**
-     * Refresh Token 메타데이터를 Redis에 저장.
+     * Refresh Token 메타데이터 저장.
      *
-     * @param longLived 자동로그인 ON 세션이면 Redis TTL 도 장수명(60일)으로 맞춘다. JWT TTL 과
-     *  일치시키지 않으면 7일 뒤 Redis 메타데이터가 먼저 소멸해, 아직 유효한 refresh JWT 가
-     *  isRefreshTokenStored=false 로 탈취 오탐되어 family 가 무효화된다.
+     * @param longLived 자동로그인 ON 세션이면 저장 TTL 도 장수명(60일)으로 맞춘다. JWT TTL 과
+     *  일치시키지 않으면 7일 뒤 메타데이터가 먼저 소멸해, 아직 유효한 refresh JWT 가
+     *  [consumeRefreshToken]=false 로 탈취 오탐되어 family 가 무효화된다.
      */
     fun storeRefreshToken(tokenId: String, userId: Long, familyId: String, longLived: Boolean = false) {
-        val ttlMillis = refreshTtlMillis(longLived)
-        val metadata = mapOf(
-            "userId" to userId,
-            "familyId" to familyId,
-            "issuedAt" to System.currentTimeMillis(),
-            "expiresAt" to System.currentTimeMillis() + ttlMillis
+        refreshTokenStore.store(
+            RefreshTokenAudience.MOBILE, tokenId, userId, familyId, refreshTtlMillis(longLived)
         )
-        val json = objectMapper.writeValueAsString(metadata)
-        val ttl = Duration.ofMillis(ttlMillis)
-        redisTemplate.opsForValue().set("refresh:$tokenId", json, ttl)
-        redisTemplate.opsForValue().set("user_refresh:$userId", tokenId, ttl)
     }
 
     /**
-     * Refresh Token을 Redis에서 삭제
+     * Refresh Token 을 원자적으로 소비 (검증 + 회수 동시).
+     *
+     * @return `false` = 이미 사용됐거나 만료된 토큰 → 재사용(탈취) 판정. 호출부가
+     *  [revokeTokenFamily] 후 `TOKEN_REUSE_DETECTED` 로 차단한다.
+     *  구 `isRefreshTokenStored` + `deleteRefreshToken` 2단계는 동시 요청에서 둘 다 통과해
+     *  탈취 감지가 무력화됐다 ([RefreshTokenStore.consume] KDoc 참조).
      */
-    fun deleteRefreshToken(tokenId: String) {
-        redisTemplate.delete("refresh:$tokenId")
-    }
+    fun consumeRefreshToken(tokenId: String): Boolean =
+        refreshTokenStore.consume(RefreshTokenAudience.MOBILE, tokenId)
 
     /**
-     * userId 기반으로 Refresh Token을 Redis에서 삭제 (로그아웃 시 사용)
+     * userId 기반 Refresh Token 회수 (로그아웃 / 비밀번호 변경 / 단말 초기화).
+     *
+     * 구 Redis 구현은 `user_refresh:<userId>` 포인터가 가리키는 최신 1건만 지웠으나, 현재는 해당
+     * 사용자의 MOBILE refresh token 을 전량 회수한다 ([RefreshTokenStore.deleteByUserId] 참조).
      */
     fun deleteRefreshTokenByUserId(userId: Long) {
-        val tokenId = redisTemplate.opsForValue().get("user_refresh:$userId")
-        if (tokenId != null) {
-            redisTemplate.delete("refresh:$tokenId")
-        }
-        redisTemplate.delete("user_refresh:$userId")
+        refreshTokenStore.deleteByUserId(RefreshTokenAudience.MOBILE, userId)
     }
 
     /**
-     * Refresh Token이 Redis에 존재하는지 확인
-     */
-    fun isRefreshTokenStored(tokenId: String): Boolean =
-        redisTemplate.hasKey("refresh:$tokenId") == true
-
-    /**
-     * Token Family 전체 무효화 (탈취 감지 시)
+     * Token Family 전체 무효화 (탈취 감지 시).
+     *
+     * 차단 기간은 장수명 TTL([refreshExpirationLong]) 기준이다 — 구 구현은 기본 TTL(7일)을 썼으나
+     * 자동로그인 ON 세션의 refresh JWT 는 60일까지 유효해, 7일 뒤 차단이 풀리면 탈취된 토큰이
+     * 되살아나는 구멍이 있었다. 차단은 family 내 최장수명 토큰보다 오래 유지되어야 한다.
      */
     fun revokeTokenFamily(familyId: String) {
-        redisTemplate.opsForValue().set(
-            "refresh_family:$familyId", "revoked", Duration.ofMillis(refreshExpiration)
-        )
+        refreshTokenStore.revokeFamily(RefreshTokenAudience.MOBILE, familyId, refreshExpirationLong)
     }
 
-    /**
-     * Token Family가 무효화되었는지 확인
-     */
+    /** Token Family 가 무효화되었는지 확인. */
     fun isTokenFamilyRevoked(familyId: String): Boolean =
-        redisTemplate.hasKey("refresh_family:$familyId") == true
+        refreshTokenStore.isFamilyRevoked(RefreshTokenAudience.MOBILE, familyId)
 
     /**
      * 토큰이 만료되었는지 확인 (서명은 유효하나 만료 시간 초과)
@@ -309,8 +311,26 @@ class JwtTokenProvider(
         }
     }
 
+    /**
+     * 블랙리스트 등재 여부. **Redis 장애 시 "미등재"(false) 로 fallback 한다.**
+     *
+     * 조회 실패를 토큰 무효로 처리하면 (구 구현) Redis 장애가 곧 전 사용자 401 로 번진다 —
+     * 모바일 401 인터셉터가 이를 세션 만료로 오인해 강제 로그아웃시키고, 재로그인마저
+     * refresh token 저장(Redis) 실패로 막혀 완전 락아웃이 된다. 반면 본 fallback 의 대가는
+     * 장애 구간 동안 로그아웃 처리된 access token 이 잔여 TTL(최대 `jwt.expiration` = 1h) 만큼
+     * 살아남는 것이며, 가용성 사고보다 작은 리스크로 판단한다.
+     *
+     * 동일 판단이 [ActiveDeviceStore] 에도 적용되어 있다 (캐시 부재를 차단으로 처리하지 않음).
+     * 서명/만료는 본 메서드와 무관하게 [validateToken] 이 로컬에서 판정하므로, 이 fallback 이
+     * 위조·만료 토큰을 통과시키지는 않는다.
+     */
     private fun isBlacklisted(token: String): Boolean {
-        return redisTemplate.hasKey("blacklist:${hashToken(token)}") == true
+        return try {
+            redisTemplate.hasKey("blacklist:${hashToken(token)}") == true
+        } catch (e: DataAccessException) {
+            log.warn("블랙리스트 조회 실패 — 미등재로 간주하고 통과(Redis 장애 fallback)", e)
+            false
+        }
     }
 
     private fun parseClaims(token: String): Claims {
