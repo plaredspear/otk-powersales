@@ -69,9 +69,9 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
         // 목록/엑셀 지점 스코프 산출 — 기본은 전사(All, 지점 필터 미적용). branchCode 필터 미지정 케이스 정합.
         //  - 목록/엑셀(getPromotions/exportPromotions) 은 whitelistBranchScopeResolver 를 사용(34개 화이트리스트 제한).
-        //  - target-actual-report 계열은 여전히 reportBranchScopeService 사용.
+        //  - target-actual-report 계열은 reportBranchScopeService 의 확장 변형(expandedEffectiveBranchCodes) 사용.
         every { whitelistBranchScopeResolver.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
-        every { reportBranchScopeService.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
+        every { reportBranchScopeService.expandedEffectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
     }
 
     @Nested
