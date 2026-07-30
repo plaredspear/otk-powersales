@@ -169,6 +169,8 @@ class AdminFemaleEmployeePlacementCheckController(
     /**
      * 거래처유형별 환산인원 현황 조회 (Spec #847). SF Report 5변형(`new_report_nNq` 1-1 / `X12_only_aM6` 1-2 /
      * `X14_cwi` 1-4 / `X15_Uyw` 1-5 / `X21_E94` (2팀)2-1) 이식. 전사 스코프 (SF scope=organization 정합).
+     * branchCode 선택 시 그 지점으로 좁히며, 지점 코드는 `BranchMapping` 확장 후 조회에 쓰여 레거시/별칭
+     * 조직코드로 적재된 일정도 함께 잡힌다.
      * variant: 1-1=PERMANENT_TEMP_ALL / 1-2=PERMANENT_ONLY_EXCL_CONSIGN / 1-4=TEMP_ALL /
      * 1-5=TEMP_ONLY_EXCL_CONSIGN / 2-1=TEAM2_PERMANENT_TEMP_ALL.
      */
@@ -181,7 +183,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: String,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ConvertedHeadcountReportResult>> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val response = convertedHeadcountReportService.getReport(parseVariant(variant), year, month, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -196,7 +198,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: String,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val result = convertedHeadcountReportService.exportReport(parseVariant(variant), year, month, branchScope)
         return ExcelResponseUtils.build(result)
     }
