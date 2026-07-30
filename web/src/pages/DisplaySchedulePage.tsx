@@ -39,7 +39,6 @@ import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
 import { usePermission } from '@/hooks/usePermission';
 
-const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 // 검색결과 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
@@ -298,7 +297,7 @@ function buildListColumns(
 
 export default function DisplaySchedulePage() {
   const navigate = useNavigate();
-  // 페이지 전체 스크롤 제거 — 상단 업로드/업로드결과 카드·필터·액션·목록헤더·페이지네이션은 고정하고
+  // 페이지 전체 스크롤 제거 — 업로드결과 카드·필터·액션·목록헤더·페이지네이션은 고정하고
   // "스케줄 목록" 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소(대행 배너/업로드결과 카드)를
   // 실측 반영. headerReserve = rowSelection 헤더 + 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
@@ -567,7 +566,7 @@ export default function DisplaySchedulePage() {
 
   return (
     // 페이지 전체 스크롤 제거 — 컨테이너를 실측 가용 높이에 고정하고, 목록 카드만 flex:1 로 남은 공간을
-    // 차지해 그 안의 테이블 body 만 스크롤. 상단 업로드/업로드결과 카드는 flexShrink:0 로 고정.
+    // 차지해 그 안의 테이블 body 만 스크롤. 상단 업로드결과 카드는 flexShrink:0 로 고정.
     <div
       ref={containerRef}
       style={{
@@ -578,47 +577,8 @@ export default function DisplaySchedulePage() {
         boxSizing: 'border-box',
       }}
     >
-      <Card title="진열스케줄마스터" style={{ flexShrink: 0 }}>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Space>
-            <Tooltip title={isSystemAdmin ? '시스템 관리자는 등록할 수 없습니다.' : ''}>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setCreateModalOpen(true)}
-                disabled={isSystemAdmin}
-              >
-                신규 등록
-              </Button>
-            </Tooltip>
-            <Button
-              icon={<DownloadOutlined />}
-              loading={downloading}
-              onClick={handleDownload}
-            >
-              양식 다운로드
-            </Button>
-            <Upload
-              accept=".xlsx"
-              showUploadList={false}
-              beforeUpload={handleUpload}
-            >
-              <Button
-                icon={<UploadOutlined />}
-                loading={uploadMutation.isPending}
-              >
-                Excel 업로드
-              </Button>
-            </Upload>
-          </Space>
-          <Text type="secondary">
-            ※ xlsx 파일만 업로드 가능합니다 (최대 500행, 5MB)
-          </Text>
-        </Space>
-      </Card>
-
       {uploadResult && (
-        <Card title="업로드 결과" style={{ marginTop: 16, flexShrink: 0 }}>
+        <Card title="업로드 결과" style={{ marginBottom: 16, flexShrink: 0 }}>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col>
               <Statistic title="전체" value={uploadResult.totalRows} suffix="건" />
@@ -711,8 +671,46 @@ export default function DisplaySchedulePage() {
 
       <Card
         title="스케줄 목록"
+        // 등록/양식/업로드 액션은 별도 상단 카드 대신 목록 카드 헤더 우측에 배치한다
+        // (카드 1개 분량의 세로 공간을 목록 테이블에 돌려줌).
+        extra={
+          <Space>
+            <Tooltip title={isSystemAdmin ? '시스템 관리자는 등록할 수 없습니다.' : ''}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setCreateModalOpen(true)}
+                disabled={isSystemAdmin}
+              >
+                신규 등록
+              </Button>
+            </Tooltip>
+            <Button
+              icon={<DownloadOutlined />}
+              loading={downloading}
+              onClick={handleDownload}
+            >
+              양식 다운로드
+            </Button>
+            <Upload
+              accept=".xlsx"
+              showUploadList={false}
+              beforeUpload={handleUpload}
+            >
+              {/* 업로드 제약(확장자/행수/용량)은 상시 문구 대신 버튼 툴팁으로 노출 */}
+              <Tooltip title="xlsx 파일만 업로드 가능합니다 (최대 500행, 5MB)">
+                <Button
+                  icon={<UploadOutlined />}
+                  loading={uploadMutation.isPending}
+                >
+                  Excel 업로드
+                </Button>
+              </Tooltip>
+            </Upload>
+          </Space>
+        }
         // flex:1 로 남은 높이를 차지하고, Card body 를 flex 컬럼으로 만들어 테이블 wrapper 가 늘어나게 한다.
-        style={{ marginTop: 16, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
         styles={{ body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }}
       >
         <Space wrap size="middle" style={{ marginBottom: 16, flexShrink: 0 }}>
