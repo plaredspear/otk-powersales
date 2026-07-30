@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import io.mockk.every
@@ -16,7 +17,12 @@ class WhitelistBranchScopeResolverTest {
     private val reportBranchScopeService: ReportBranchScopeService = mockk()
     private val dashboardBranchResolver: DashboardBranchResolver = mockk()
 
-    private val resolver = WhitelistBranchScopeResolver(reportBranchScopeService, dashboardBranchResolver)
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
+
+    private val resolver =
+        WhitelistBranchScopeResolver(reportBranchScopeService, dashboardBranchResolver, branchCodeExpander)
 
     @Test
     @DisplayName("getBranches 전사 권한자 - 대시보드 고정 화이트리스트 34개")
@@ -86,13 +92,13 @@ class WhitelistBranchScopeResolverTest {
     fun effectiveBranchCodes_scopedUser_delegates() {
         val principal = principalOf(costCenterCode = "5457")
         every { dashboardBranchResolver.isAllBranches(principal) } returns false
-        every { reportBranchScopeService.effectiveBranchCodes(principal, null) } returns
+        every { reportBranchScopeService.expandedEffectiveBranchCodes(principal, null) } returns
             EffectiveBranchResult.Filtered(listOf("5457"))
 
         val result = resolver.effectiveBranchCodes(principal, null)
 
         assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5457")))
-        verify { reportBranchScopeService.effectiveBranchCodes(principal, null) }
+        verify { reportBranchScopeService.expandedEffectiveBranchCodes(principal, null) }
     }
 
     private fun principalOf(

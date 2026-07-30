@@ -80,8 +80,8 @@ class ReportBranchScopeService(
      * 레거시/별칭 조직코드로 적재된 데이터가 지점 선택 시 누락되지 않게 하려는 것으로, 근무형태별
      * 여사원인원현황·전문행사조 확정 인원 등 기존 화면과 동일한 순서다.
      *
-     * [effectiveBranchCodes] 를 그대로 두고 별도 메서드로 둔 이유: 확장 없는 원본 결과를 쓰는 호출부
-     * ([WhitelistBranchScopeResolver] → 행사마스터·진열스케줄마스터·배치 적합성) 가 있어 일괄 적용 대상이 아니다.
+     * 조회 필터로 쓰는 호출부는 모두 이쪽을 쓴다 — [effectiveBranchCodes] 는 확장 전 원본(=권한 판정 결과) 을
+     * 노출하는 단계로 남겨 두 축(판정 / 조회 필터) 이 코드에서 구분되게 한다.
      */
     fun expandedEffectiveBranchCodes(principal: WebUserPrincipal, requestedBranchCode: String?): EffectiveBranchResult {
         return when (val result = effectiveBranchCodes(principal, requestedBranchCode)) {
