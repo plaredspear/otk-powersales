@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.foundation.product.dto.response.ProductLookup
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.foundation.product.service.AdminProductService
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.config.CacheConfig
@@ -67,6 +68,8 @@ class ElectronicSalesAdminQueryService(
     private val adminProductService: AdminProductService,
     /** 유통형태 라벨/옵션 정본 (거래처유형마스터 캐시). */
     private val accountCategoryLookup: AccountCategoryLookup,
+    /** 지점 선택값 → `BranchMapping` 확장 코드 (레거시/별칭 조직코드로 적재된 거래처 누락 방지). */
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -502,12 +505,20 @@ class ElectronicSalesAdminQueryService(
     private fun toCustCd(externalKey: String?): String? =
         if (externalKey.isNullOrBlank()) null else "$CUST_CD_PREFIX$externalKey"
 
+    /**
+     * 지점 선택값 → 실제 조회에 쓸 조직코드 목록.
+     *
+     * 권한 판정은 **확장 전 원본 코드**로 하고([BranchCodeExpander] KDoc — 화이트리스트를 확장하면 롤업 행이
+     * 권한을 넓힌다), 판정을 통과한 코드만 [BranchCodeExpander.expand] 로 넓혀 조회 필터에 쓴다.
+     * 거래처(`Account.branchCode`)가 레거시/별칭 조직코드로 적재된 건이 지점 선택 시 누락되지 않게 하려는 것으로,
+     * 근무형태별 여사원인원현황 등 기존 화면과 동일한 순서다.
+     */
     internal fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String> {
-        if (scope.isAllBranches) return costCenterCodes
+        if (scope.isAllBranches) return branchCodeExpander.expand(costCenterCodes).toList()
         val allowed = scope.branchCodes.toSet()
         val intersect = costCenterCodes.filter { it in allowed }
         if (intersect.isEmpty()) throw AdminForbiddenException()
-        return intersect
+        return branchCodeExpander.expand(intersect).toList()
     }
 
     /**

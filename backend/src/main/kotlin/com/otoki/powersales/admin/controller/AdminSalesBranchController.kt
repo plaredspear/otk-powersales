@@ -29,10 +29,10 @@ import org.springframework.web.bind.annotation.RestController
  * 화면 도메인 권한으로 가드하는 이 컨트롤러로 분리한다.
  *
  * 지점 목록 산출:
- * - 월 매출(물류배부) / 월별 투입적합성은 대시보드·근무형태별 여사원인원현황과 동일한 고정
- *   화이트리스트(34개, [DashboardBranchResolver]).
+ * - 월 매출(물류배부) / 월별 투입적합성 / 월 매출(전산실적)은 대시보드·근무형태별 여사원인원현황과 동일한
+ *   고정 화이트리스트(34개, [DashboardBranchResolver]).
  * - 배치 적합성은 지점 단위 화면이라 행사마스터와 동일한 고정 지점 목록([WhitelistBranchScopeResolver]).
- * - 나머지 2개 화면(전산실적 / POS)은 여사원 일정/현황/전문행사조와 동일 단일 출처
+ * - 나머지 1개 화면(POS)은 여사원 일정/현황/전문행사조와 동일 단일 출처
  *   ([WomenScheduleBranchResolver], 사용자 권한 기준 조직 트리 스코프) 를 재사용한다.
  */
 @RestController
@@ -43,13 +43,16 @@ class AdminSalesBranchController(
     private val whitelistBranchScopeResolver: WhitelistBranchScopeResolver,
 ) {
 
-    /** 월 매출(전산실적) 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
+    /**
+     * 월 매출(전산실적) 전용 지점 셀렉터 옵션 — 근무형태별 여사원인원현황과 동일 기준
+     * ([DashboardBranchResolver], 전사 권한자 34개 화이트리스트 / 그 외 본인 조직 트리).
+     */
     @GetMapping("/electronic/branches")
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     fun getElectronicSalesBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
-        ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
+        ResponseEntity.ok(ApiResponse.success(dashboardBranchResolver.resolveBranches(principal)))
 
     /** POS매출 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
     @GetMapping("/pos/branches")

@@ -32,7 +32,7 @@ export function fetchMonthlySalesBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/monthly/branches');
 }
 
-/** 월 매출(전산실적) 전용 지점 셀렉터 옵션 조회 — 조직 트리 스코프. */
+/** 월 매출(전산실적) 전용 지점 셀렉터 옵션 조회 — 근무형태별 여사원인원현황과 동일 기준(전사 고정 34개). */
 export function fetchElectronicSalesBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/electronic/branches');
 }

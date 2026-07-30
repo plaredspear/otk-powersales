@@ -30,19 +30,16 @@ class AdminSalesBranchControllerTest : AdminControllerTestSupport() {
     @MockkBean
     private lateinit var whitelistBranchScopeResolver: WhitelistBranchScopeResolver
 
-    /**
-     * 전산실적/POS 2개 화면은 동일하게 [WomenScheduleBranchResolver] (조직 트리 스코프) 로
-     * 위임한다 — URL 만 다르므로 대표 endpoint 1개로 위임 경로를 검증한다.
-     */
+    /** POS매출만 [WomenScheduleBranchResolver] (조직 트리 스코프) 로 위임한다. */
     @Test
-    @DisplayName("GET /api/v1/admin/sales/electronic/branches - 조직 트리 스코프(womenScheduleBranchResolver) 위임")
-    fun electronicBranches_delegatesToWomenScheduleResolver() {
+    @DisplayName("GET /api/v1/admin/sales/pos/branches - 조직 트리 스코프(womenScheduleBranchResolver) 위임")
+    fun posBranches_delegatesToWomenScheduleResolver() {
         every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
             BranchResponse(branchCode = "A002", branchName = "서울2지점"),
         )
 
-        mockMvc.perform(get("/api/v1/admin/sales/electronic/branches"))
+        mockMvc.perform(get("/api/v1/admin/sales/pos/branches"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].branchCode").value("A001"))
@@ -51,6 +48,27 @@ class AdminSalesBranchControllerTest : AdminControllerTestSupport() {
 
         verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
         verify(exactly = 0) { dashboardBranchResolver.resolveBranches(any()) }
+    }
+
+    /**
+     * 월 매출(전산실적)은 근무형태별 여사원인원현황과 동일하게 [DashboardBranchResolver]
+     * (전사 권한자 34개 화이트리스트) 로 위임한다.
+     */
+    @Test
+    @DisplayName("GET /api/v1/admin/sales/electronic/branches - 대시보드 화이트리스트(dashboardBranchResolver) 위임")
+    fun electronicBranches_delegatesToDashboardResolver() {
+        every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "5817", branchName = "강남1지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/sales/electronic/branches"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].branchCode").value("5817"))
+            .andExpect(jsonPath("$.data[0].branchName").value("강남1지점"))
+
+        verify(exactly = 1) { dashboardBranchResolver.resolveBranches(any()) }
+        verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
     }
 
     /**
