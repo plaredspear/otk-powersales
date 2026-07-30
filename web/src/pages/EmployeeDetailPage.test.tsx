@@ -116,14 +116,14 @@ describe('EmployeeDetailPage', () => {
     });
   });
 
-  it('6개 그룹 카드 + 사원 기본 정보 렌더링', () => {
+  it('5개 그룹 카드 + 사원 기본 정보 렌더링', () => {
     renderPage();
     expect(screen.getByText('인사 정보')).toBeInTheDocument();
     expect(screen.getByText('조직 정보')).toBeInTheDocument();
     expect(screen.getByText('직무 정보')).toBeInTheDocument();
     expect(screen.getByText('연락처')).toBeInTheDocument();
     expect(screen.getByText('앱 설정')).toBeInTheDocument();
-    expect(screen.getByText('근무 정보')).toBeInTheDocument();
+    expect(screen.queryByText('근무 정보')).not.toBeInTheDocument();
     expect(screen.getByText('100100')).toBeInTheDocument();
     expect(screen.getByText('SAP사원')).toBeInTheDocument();
   });
@@ -149,7 +149,7 @@ describe('EmployeeDetailPage', () => {
     expect(screen.getByRole('button', { name: '발령정보 승인' })).toBeDisabled();
   });
 
-  it('유예 발령 보유 -> 「발령정보 승인」 버튼 활성 + 근무 정보에 반영 대기 표시', () => {
+  it('유예 발령 보유 -> 「발령정보 승인」 버튼 활성', () => {
     sapEmployee.postponedAppointment = {
       appointmentId: 7,
       appointDate: '2026-03-01',
@@ -159,7 +159,6 @@ describe('EmployeeDetailPage', () => {
     try {
       renderPage();
       expect(screen.getByRole('button', { name: '발령정보 승인' })).toBeEnabled();
-      expect(screen.getByText('반영 대기')).toBeInTheDocument();
     } finally {
       sapEmployee.postponedAppointment = null;
     }

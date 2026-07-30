@@ -341,31 +341,6 @@ export default function EmployeeDetailPage() {
         </Descriptions>
       </Card>
 
-      <Card title="근무 정보" style={{ marginBottom: 12 }}>
-        <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="CRM 근무형태">{employee.crmWorkType ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="CRM 근무 시작일">
-            {employee.crmWorkStartDate ?? '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label="총 연차">{employee.totalAnnualLeave ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="사용 연차">{employee.usedAnnualLeave ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="유예된 발령" span={2}>
-            {employee.postponedAppointment ? (
-              <>
-                <Tag color="orange">반영 대기</Tag>
-                발령일 {employee.postponedAppointment.appointDate ?? '-'} ·{' '}
-                {employee.postponedAppointment.afterOrgName ?? '-'}
-                {employee.postponedAppointment.ordDetailNode
-                  ? ` · ${employee.postponedAppointment.ordDetailNode}`
-                  : ''}
-              </>
-            ) : (
-              '-'
-            )}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-
       {employeeId && <WorkHistorySection employeeId={employeeId} isFemale={isFemale} />}
 
       {editOpen && (
