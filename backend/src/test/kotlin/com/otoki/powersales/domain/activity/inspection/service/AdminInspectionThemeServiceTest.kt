@@ -2,8 +2,10 @@ package com.otoki.powersales.domain.activity.inspection.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.domain.activity.inspection.exception.InspectionThemeForbiddenException
 import com.otoki.powersales.domain.org.organization.entity.Organization
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
@@ -46,6 +48,10 @@ class AdminInspectionThemeServiceTest {
     private val dataScopeService: AdminDataScopeService = mockk()
     private val organizationRepository: OrganizationRepository = mockk()
 
+    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
+    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
+    private val branchCodeExpander = BranchCodeExpander(mockk())
+
     private val service = AdminInspectionThemeService(
         inspectionThemeRepository = inspectionThemeRepository,
         siteActivityRepository = siteActivityRepository,
@@ -54,6 +60,7 @@ class AdminInspectionThemeServiceTest {
         uploadFileRepository = uploadFileRepository,
         dataScopeService = dataScopeService,
         organizationRepository = organizationRepository,
+        branchCodeExpander = branchCodeExpander,
     )
 
     private fun theme(
@@ -147,8 +154,26 @@ class AdminInspectionThemeServiceTest {
             }
         }
 
+        /**
+         * 전사 권한자가 Select 로 지점을 고르면 그 지점으로 좁힌다 — 보고서 계열
+         * (`DataScope.effectiveBranchCodes`) 과 동일 규칙. 종전에는 선택값이 무시되고 늘 전건이 나와
+         * 셀렉터가 동작하지 않는 것처럼 보였다.
+         */
         @Test
-        fun `전사 권한자는 지점 스코프를 null(전건)로 전달한다`() {
+        fun `전사 권한자도 Select 로 고른 지점으로 스코프를 좁힌다`() {
+            scopeAllBranches()
+            every {
+                inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("5832")), any())
+            } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
+            every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
+
+            service.search(principal, keyword = null, department = null, branchCode = "5832", page = 0, size = 20)
+
+            verify { inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("5832")), any()) }
+        }
+
+        @Test
+        fun `전사 권한자는 지점 미선택 시 지점 스코프를 null(전건)로 전달한다`() {
             scopeAllBranches()
             every {
                 inspectionThemeRepository.searchForAdmin(any(), any(), isNull(), any())
@@ -258,16 +283,15 @@ class AdminInspectionThemeServiceTest {
     @DisplayName("지점 셀렉터 옵션")
     inner class GetBranches {
         @Test
-        fun `전사 권한자는 전 지점 목록을 반환한다`() {
+        fun `전사 권한자는 대시보드 고정 지점 화이트리스트 34개를 반환한다`() {
             scopeAllBranches()
-            every { organizationRepository.findAllTeamScheduleBranches() } returns listOf(
-                BranchResponse("5832", "원주1지점"),
-                BranchResponse("5481", "창원1지점"),
-            )
 
             val result = service.getBranches(principal)
 
-            assertThat(result).hasSize(2)
+            // 근무형태별 여사원인원현황·대시보드와 동일 목록. 팀 단위 조직이 섞이던
+            // Organization 전건 조회(findAllTeamScheduleBranches) 경로는 더 이상 타지 않는다.
+            assertThat(result).isEqualTo(DashboardBranchResolver.DASHBOARD_ALL_BRANCHES)
+            assertThat(result).hasSize(34)
             assertThat(result.map { it.branchName }).contains("원주1지점", "창원1지점")
         }
 

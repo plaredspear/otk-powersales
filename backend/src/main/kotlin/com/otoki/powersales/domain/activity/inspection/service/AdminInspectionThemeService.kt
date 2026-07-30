@@ -13,6 +13,8 @@ import com.otoki.powersales.domain.activity.inspection.repository.InspectionThem
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepositoryCustomImpl
 import com.otoki.powersales.domain.activity.inspection.repository.SiteActivityRepository
 import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.admin.service.DashboardBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
@@ -47,11 +49,12 @@ import org.springframework.transaction.annotation.Transactional
  * 신규는 관리 편의를 위해 admin 목록/상세/엑셀에 **본인 지점 스코프**를 적용한다(`branch_code` 기준, deviation).
  *
  * 스코프는 [AdminDataScopeService] 의 [DataScope] 로 판정한다 — 전사 권한자(시스템개발자/영업지원/본부장,
- * `isAllBranches`)는 전건, 그 외는 **본인 `costCenterCode` 단일값** + 전사공통 화이트리스트
+ * `isAllBranches`)는 지점 미선택 시 전건, 그 외는 **본인 `costCenterCode` 단일값** + 전사공통 화이트리스트
  * ([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES) 로 `branch_code IN (...)` 제한.
  * 테마 `branch_code` 는 생성자 사원의 `costCenterCode`(단일 지점) 로 적재되므로, 조직 트리를 확장하는
  * 여사원 일정용 `findTeamScheduleBranches`(상위 조직 매칭 시 형제 지점까지 딸려옴) 는 쓰지 않는다.
- * 사용자가 Select 로 특정 지점을 고르면 그 지점으로 좁히되, 권한 스코프 밖 값은 무시(IDOR 차단).
+ * 사용자가 Select 로 특정 지점을 고르면 (전사 권한자 포함) 그 지점으로 좁히되, 권한 스코프 밖 값은 무시(IDOR 차단).
+ * 판정을 통과한 코드는 `BranchMapping` 확장 후 조회 필터로 쓴다 — 다른 화면과 동일한 순서.
  * 대행(impersonation) 시 principal/DataScope 는 대행 대상 기준이라 대상의 본인 지점으로 정상 스코프된다.
  */
 @Service
@@ -64,6 +67,8 @@ class AdminInspectionThemeService(
     private val uploadFileRepository: UploadFileRepository,
     private val dataScopeService: AdminDataScopeService,
     private val organizationRepository: OrganizationRepository,
+    /** 지점 선택값 → `BranchMapping` 확장 코드 (레거시/별칭 조직코드로 적재된 테마 누락 방지). */
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     companion object {
@@ -91,8 +96,8 @@ class AdminInspectionThemeService(
         val pageable = PageRequest.of(page.coerceAtLeast(0), pageSize)
 
         val scopeBranchCodes: List<String>? = when (val scope = resolveScope(principal, branchCode)) {
-            is ThemeScope.All -> null                    // 전사 — 스코프 미적용(전건)
-            is ThemeScope.Branches -> scope.codes        // 본인 지점 (repository 가 COMMON 병합)
+            is ThemeScope.All -> null                          // 전사 + 지점 미선택 — 스코프 미적용(전건)
+            is ThemeScope.Branches -> expandForQuery(scope.codes)  // 선택/본인 지점 (repository 가 COMMON 병합)
             is ThemeScope.None -> return AdminThemeListResponse(
                 content = emptyList(), page = page, size = pageSize, totalElements = 0, totalPages = 0
             )
@@ -270,13 +275,18 @@ class AdminInspectionThemeService(
     /**
      * 현장점검 테마 관리 화면 지점 셀렉터 옵션.
      *
-     * 전사 권한자(시스템개발자/영업지원/본부장) 는 전 지점([OrganizationRepository.findAllTeamScheduleBranches]),
-     * 그 외는 본인 `costCenterCode` 단일 지점 1건. 여사원 일정용 조직 트리 확장을 쓰지 않아 형제 지점이 딸려오지 않는다.
+     * 전사 권한자(시스템개발자/영업지원/본부장) 는 근무형태별 여사원인원현황·대시보드와 동일한 고정 지점
+     * 화이트리스트([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES] 34개), 그 외는 본인 `costCenterCode`
+     * 단일 지점 1건. 여사원 일정용 조직 트리 확장을 쓰지 않아 형제 지점이 딸려오지 않는다.
+     *
+     * 전사 목록을 34개로 좁힌 이유: 종전 `Organization` 전건 조회는 Level5(지점) 부재 시 Level4(팀) 로
+     * fallback 해 `FS마케팅1팀` 같은 팀 단위 조직까지 섞어 노출했고, 같은 지점을 고르는 다른 화면들과
+     * 목록이 달랐다.
      */
     fun getBranches(principal: WebUserPrincipal): List<BranchResponse> {
         val scope = dataScopeService.resolve(principal)
         if (scope.isAllBranches) {
-            return organizationRepository.findAllTeamScheduleBranches()
+            return DashboardBranchResolver.DASHBOARD_ALL_BRANCHES
         }
         val code = principal.costCenterCode?.takeIf { it.isNotBlank() } ?: return emptyList()
         val org = organizationRepository.findFirstByAnyOrgCodeLevel(code) ?: return emptyList()
@@ -306,7 +316,7 @@ class AdminInspectionThemeService(
         // 단건 검증은 특정 지점 선택 없이 전체 스코프 기준. 전사면 항상 통과.
         val scopeBranchCodes: List<String> = when (val scope = resolveScope(principal, null)) {
             is ThemeScope.All -> return                  // 전사 — 모든 테마 통과
-            is ThemeScope.Branches -> scope.codes
+            is ThemeScope.Branches -> expandForQuery(scope.codes)
             is ThemeScope.None -> emptyList()            // 권한 없음 — COMMON 만 통과, 나머지 403
         }
         if (!InspectionThemeRepositoryCustomImpl.isBranchInScope(theme.branchCode, scopeBranchCodes)) {
@@ -317,22 +327,37 @@ class AdminInspectionThemeService(
     /**
      * 조회 지점 스코프 산출 — [AdminDataScopeService] 의 [DataScope] 기준.
      *
-     * 전사 권한자([DataScope.isAllBranches])는 [ThemeScope.All](전건). 그 외는 본인 지점(costCenterCode) 단일 +
-     * 전사공통([ThemeScope.Branches]). 권한 지점이 없으면 [ThemeScope.None]. `requestedBranchCode`(Select 선택값)가
-     * 권한 지점 안이면 그 지점으로 좁히고, 밖이면 전체 권한 지점(IDOR 차단).
+     * 전사 권한자([DataScope.isAllBranches])는 선택값이 있으면 그 지점([ThemeScope.Branches]), 없으면
+     * 전건([ThemeScope.All]). 그 외는 본인 지점(costCenterCode) 단일 + 전사공통([ThemeScope.Branches]).
+     * 권한 지점이 없으면 [ThemeScope.None]. `requestedBranchCode`(Select 선택값)가 권한 지점 안이면 그 지점으로
+     * 좁히고, 밖이면 전체 권한 지점(IDOR 차단).
+     *
+     * 전사 권한자의 선택값을 반영하는 것은 다른 화면(보고서 계열 `DataScope.effectiveBranchCodes`) 정합 —
+     * 종전에는 전사 권한자가 지점을 골라도 무시되고 늘 전건이 나와, 셀렉터가 동작하지 않는 것처럼 보였다.
+     *
+     * 반환 코드는 **확장 전 원본**(권한 판정 기준). 실제 조회 필터로 쓸 때만 [expandForQuery] 로 넓힌다.
      */
     private fun resolveScope(principal: WebUserPrincipal, requestedBranchCode: String?): ThemeScope {
         val scope = dataScopeService.resolve(principal)
-        if (scope.isAllBranches) return ThemeScope.All
+        val requested = requestedBranchCode?.takeIf { it.isNotBlank() }
+        if (scope.isAllBranches) {
+            return if (requested == null) ThemeScope.All else ThemeScope.Branches(listOf(requested))
+        }
         val allowed = scope.branchCodes
         if (allowed.isEmpty()) return ThemeScope.None
-        val codes = if (!requestedBranchCode.isNullOrBlank() && requestedBranchCode in allowed) {
-            listOf(requestedBranchCode)
-        } else {
-            allowed
-        }
+        val codes = if (requested != null && requested in allowed) listOf(requested) else allowed
         return ThemeScope.Branches(codes)
     }
+
+    /**
+     * 권한 판정을 통과한 지점 코드를 조회 필터용으로 확장한다 ([BranchCodeExpander]).
+     *
+     * 테마 `branch_code` 가 레거시/별칭 조직코드로 적재된 건이 지점 선택 시 누락되지 않게 하려는 것으로,
+     * 근무형태별 여사원인원현황과 동일한 순서다 — 판정은 확장 전 원본 코드로 끝내고([resolveScope]),
+     * 통과한 코드만 넓힌다([BranchCodeExpander] KDoc — 화이트리스트를 확장하면 롤업 행이 권한 범위를 넓힌다).
+     * 목록과 단건 가드가 같은 집합을 보도록 두 경로 모두 이 함수를 거친다.
+     */
+    private fun expandForQuery(codes: List<String>): List<String> = branchCodeExpander.expand(codes).toList()
 
     /** 테마 조회 지점 스코프 — 전건 / 지점 목록 / 권한없음. */
     private sealed interface ThemeScope {
