@@ -321,6 +321,17 @@
         },
         "type" : "object"
       },
+      "AddFeatureToggleExemptEmployeeRequest" : {
+        "properties" : {
+          "employeeCode" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "employeeCode" ],
+        "type" : "object"
+      },
       "AdminAccountCreateRequest" : {
         "properties" : {
           "employeeCode" : {
@@ -12460,6 +12471,17 @@
         },
         "type" : "object"
       },
+      "FeatureToggleExemptEmployee" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "FeatureToggleItem" : {
         "properties" : {
           "code" : {
@@ -12467,6 +12489,12 @@
           },
           "enabled" : {
             "type" : "boolean"
+          },
+          "exemptEmployees" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FeatureToggleExemptEmployee"
+            },
+            "type" : "array"
           },
           "label" : {
             "type" : "string"
@@ -14967,14 +14995,7 @@
             "format" : "date-time",
             "type" : "string"
           },
-          "employeeAppLoginActive" : {
-            "type" : [ "boolean", "null" ]
-          },
           "employeeCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "employeeEndDate" : {
-            "format" : "date",
             "type" : [ "string", "null" ]
           },
           "employeeId" : {
@@ -14984,7 +15005,7 @@
           "employeeName" : {
             "type" : [ "string", "null" ]
           },
-          "employeeStatus" : {
+          "employmentStatus" : {
             "type" : [ "string", "null" ]
           },
           "endDate" : {
@@ -27355,6 +27376,13 @@
             "default" : true,
             "type" : "boolean"
           }
+        }, {
+          "in" : "query",
+          "name" : "employmentStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -27609,6 +27637,13 @@
           "schema" : {
             "default" : true,
             "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employmentStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -33446,6 +33481,24 @@
         "tags" : [ "sf-migration-stage-2-controller" ]
       }
     },
+    "/api/v1/admin/sf-migration/stage2/leader-sales-dashboard-grant" : {
+      "post" : {
+        "operationId" : "runLeaderSalesDashboardGrant",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/sf-migration/stage2/notice-rta-placeholder" : {
       "post" : {
         "operationId" : "runNoticeRtaPlaceholder",
@@ -34507,6 +34560,75 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFeatureToggleItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feature-toggle-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/feature-toggles/{code}/exempt-employees" : {
+      "post" : {
+        "operationId" : "addExemptEmployee",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddFeatureToggleExemptEmployeeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFeatureToggleItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feature-toggle-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/feature-toggles/{code}/exempt-employees/{employeeCode}" : {
+      "delete" : {
+        "operationId" : "removeExemptEmployee",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "employeeCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
