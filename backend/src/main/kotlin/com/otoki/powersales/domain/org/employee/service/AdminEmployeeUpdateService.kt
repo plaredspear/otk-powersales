@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateR
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
+import com.otoki.powersales.domain.org.employee.policy.EmployeeLockingPolicy
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
@@ -20,15 +21,19 @@ import org.springframework.transaction.annotation.Transactional
  * ## 정책
  * - SAP 가 원천인 사원 (origin=SAP) 은 web admin 에서 수정 금지 — 차단 + 명시적 예외 (SAP 인입과 경합 회피).
  * - MANUAL 사원만 수정 가능. 신규 등록 흐름 (UC-06) 으로 등록된 사원은 origin=MANUAL 로 저장됨.
- * - 사용자 액션의 부수 효과는 [EmployeeTriggerEffects] 가 일괄 적용 — 전화번호 미러링, 잠금 자동 제어,
- *   전문행사조 허용값 검증은 신규 시스템 P0 단계에서는 서비스 자체 호출로 보장. 이력 자동 생성, 미래 일정
- *   자동 삭제, 사용자 부서 동기 등 chain 1-hop 부수 효과는 P1 단계에서 보강.
+ * - 사용자 액션의 부수 효과 중 잠금 축은 [EmployeeLockingPolicy] 가 적용한다 (SAP 인입 경로
+ *   [EmployeeUpsertService] 와 동일 정책 공유 — SF 는 전역 트리거라 경로 무관 동일 규칙).
+ *   전문행사조 허용값 검증은 서비스 자체 호출로 보장. 이력 자동 생성, 미래 일정 자동 삭제,
+ *   사용자 부서 동기 등 chain 1-hop 부수 효과는 P1 단계에서 보강.
  *
  * ## 동등성 매핑
  * - 레거시 EmployeeTriggerHandler 의 before/after update 자동 처리 중 P0 범위:
  *   - 전문행사조 허용값 검증 — [applyProfessionalPromotionTeam] 의 enum 변환이 겸한다
  *     (허용값 밖 문자열은 예외. '일반' 은 미배정 복귀 신호라 별도 처리)
- *   - 잠금 ON → 앱 로그인 자동 비활성화 — `applyLockingFlag` 가 적용
+ *   - 잠금 ON → 앱 로그인 자동 비활성화 + 현장 여사원 직군 보호 복원 — [EmployeeLockingPolicy]
+ * - **[updateEmployeeRole] 은 잠금 정책 대상이 아니다** — SF 는 트리거가 전역이라 권한만 바꿔도
+ *   보호 규칙이 함께 발화하지만, 신규의 해당 API 는 origin=SAP 사원도 허용하는 role 전용 경로라
+ *   잠금/앱로그인까지 건드리면 "role 외 필드 무변경 = SAP SoT 불가침" 전제가 깨진다. 의도적 이탈.
  * - 미구현 영역은 매핑 문서 [docs/plan/legacy-pages/기본 여사원 현황/IMPLEMENTATION_MAPPING.md] P1·P2 참조.
  */
 @Service
@@ -49,8 +54,8 @@ class AdminEmployeeUpdateService(
         }
 
         applyMutableFields(employee, request)
-        // before update Trigger 동등 — 전화번호 미러링 + 잠금 자동 제어 (P0 범위)
-        applyTriggerEffects(employee)
+        // before update Trigger 동등 — 잠금 ↔ 앱 로그인 축 (SAP 인입 경로와 동일 정책 공유)
+        EmployeeLockingPolicy.applyBeforeSave(employee)
 
         val saved = employeeRepository.save(employee)
         syncUserCache(saved)
@@ -150,14 +155,4 @@ class AdminEmployeeUpdateService(
             ?: throw IllegalArgumentException("유효하지 않은 전문행사조 유형: $value")
     }
 
-    /**
-     * before insert/update Trigger 동등 부수 효과 (P0 범위).
-     *
-     * - 잠금 ON → 앱 로그인 자동 OFF (역방향 자동 활성화는 P1 보강 대상)
-     */
-    private fun applyTriggerEffects(entity: Employee) {
-        if (entity.lockingFlag == true) {
-            entity.appLoginActive = false
-        }
-    }
 }

@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.domain.org.employee.enums.FemaleStaffJobCode
 import com.otoki.powersales.domain.org.employee.enums.Gender
+import com.otoki.powersales.domain.org.employee.policy.EmployeeLockingPolicy
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
@@ -106,7 +106,7 @@ class EmployeeUpsertService(
                     applyMutableFields(it, command, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                     cache[employeeCode] = it
                 }
-                applyLockingFlagException(entity)
+                EmployeeLockingPolicy.applyBeforeSave(entity)
                 toSave += entity
             } catch (ex: IllegalArgumentException) {
                 failures += EmployeeUpsertFailedRow(command.employeeCode, ex.message ?: "INVALID")
@@ -200,33 +200,9 @@ class EmployeeUpsertService(
         entity.birthDate = birthDate
         entity.costCenterCode = command.orgCode
         // SAP LockingFlag raw 반영 (Y → 잠금). appLoginActive 는 그 역(Y → false).
-        // 판촉/레이디/OSC 여사원·조장 보호는 applyLockingFlagException 이 이후 단계에서 덮어쓴다.
+        // 판촉/레이디/OSC 여사원·조장 보호는 [EmployeeLockingPolicy] 가 이후 단계에서 덮어쓴다.
         entity.lockingFlag = command.lockingFlag == "Y"
         entity.appLoginActive = appLoginActive
-    }
-
-    /**
-     * SF EmployeeTrigger.lockingFlagException() 동등 — 판촉/레이디/OSC 여사원·조장 계정 잠금 보호.
-     *
-     * 레거시 조건 (`EmployeeTriggerHandler.lockingFlagException`, beforeInsert/beforeUpdate):
-     *   `(JobCode ∈ {판촉직,레이디직,OSC직}) AND (Status != 퇴직) AND (AppAuthority ∈ {여사원,조장})`
-     * → `LockingFlag=false`, `APPLoginActive=true` 로 강제 복원.
-     *
-     * 즉 SAP 가 LockingFlag='Y'(잠금) 로 보내도 현장 여사원/조장(판촉직군) 의 앱 로그인은 막지 않는다.
-     * 미적용 시 SAP 데이터 오류로 현장 인력 계정이 의도치 않게 잠긴다. lockingFlag 컬럼은 SAP raw 값을
-     * 보존하지 않고 보호 결과(false)를 반영한다 — 레거시가 LockingFlag__c 자체를 덮어쓰는 것과 동일.
-     *
-     * 판정 기준은 적용 완료된 entity (라벨 변환된 jobCode/status + 발령으로 채워진 role) — 레거시가
-     * upsert 최종 레코드 기준으로 trigger 평가하는 것과 정합.
-     */
-    private fun applyLockingFlagException(entity: Employee) {
-        val protected = entity.jobCode in PROTECTED_JOB_CODES &&
-            entity.status != STATUS_RETIRED &&
-            entity.role in PROTECTED_APP_AUTHORITIES
-        if (protected) {
-            entity.lockingFlag = false
-            entity.appLoginActive = true
-        }
     }
 
     /**
@@ -262,11 +238,8 @@ class EmployeeUpsertService(
         // SF Util.convertStringToDate 빈값/00000000 센티넬 (날짜 미정). ErpOrder 와 동일 정합.
         private val DATE_SENTINEL: LocalDate = LocalDate.of(2999, 12, 31)
 
-        // SF EmployeeTrigger.lockingFlagException 보호 대상. jobCode 는 H10060 라벨 변환 후 한글값.
-        // (2024-01-02 레이디직 → OSC직 명칭 변경, 하위호환으로 레이디직 유지)
-        private val PROTECTED_JOB_CODES = FemaleStaffJobCode.ALL_CODES
-        // role 은 AppAuthority picklist 한글 raw value (여사원 / 조장).
-        private val PROTECTED_APP_AUTHORITIES = setOf("여사원", "조장")
+        // 잠금 ↔ 앱 로그인 축 (SF EmployeeTrigger 동등) 은 [EmployeeLockingPolicy] 가 전담한다.
+        // 보호 직군 / 보호 권한 상수도 그쪽에 있다.
         private const val STATUS_RETIRED = "퇴직"
 
         // SF IF_REST_SAP_EmployeeMaster.cls:231-236 의 excHrCode 동등 — 본사 부서 등 User 계정을

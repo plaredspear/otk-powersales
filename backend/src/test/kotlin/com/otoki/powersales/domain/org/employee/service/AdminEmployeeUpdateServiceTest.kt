@@ -103,6 +103,52 @@ class AdminEmployeeUpdateServiceTest {
     }
 
     @Test
+    @DisplayName("Trigger 부수 효과 - 판촉직 여사원 잠금 시도 -> 보호 복원 (잠금 해제 + 앱 로그인 유지)")
+    fun update_protectedFieldStaff_lockingRestored() {
+        val existing = Employee(id = 14L, employeeCode = "100500", name = "판촉여사원")
+            .apply {
+                origin = EmployeeOrigin.MANUAL
+                jobCode = "판촉직"
+                status = "재직"
+                role = AppAuthority.WOMAN
+                appLoginActive = true
+                lockingFlag = false
+            }
+        every { employeeRepository.findWithEmployeeInfoById(14L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.update(
+            14L,
+            AdminEmployeeUpdateRequest(lockingFlag = true, appLoginActive = false)
+        )
+
+        // SF EmployeeTriggerHandler.lockingFlagException 동등 — 현장 여사원은 잠금 자체가 성립하지 않는다
+        assertThat(response.lockingFlag).isFalse()
+        assertThat(response.appLoginActive).isTrue()
+    }
+
+    @Test
+    @DisplayName("Trigger 부수 효과 - 퇴직 판촉직 여사원 -> 보호 미적용, 잠금 반영")
+    fun update_retiredFieldStaff_lockingApplied() {
+        val existing = Employee(id = 15L, employeeCode = "100600", name = "퇴직여사원")
+            .apply {
+                origin = EmployeeOrigin.MANUAL
+                jobCode = "판촉직"
+                status = "퇴직"
+                role = AppAuthority.WOMAN
+                appLoginActive = true
+                lockingFlag = false
+            }
+        every { employeeRepository.findWithEmployeeInfoById(15L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.update(15L, AdminEmployeeUpdateRequest(lockingFlag = true))
+
+        assertThat(response.lockingFlag).isTrue()
+        assertThat(response.appLoginActive).isFalse()
+    }
+
+    @Test
     @DisplayName("costCenterCode 변경 시 매칭 User 의 derived 캐시도 동기화")
     fun update_syncsUserCostCenterCode() {
         val existing = Employee(id = 13L, employeeCode = "100400", name = "조직이동")
