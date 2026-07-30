@@ -18,12 +18,15 @@ import org.springframework.web.bind.annotation.RestController
  * 매출/실적 계열 화면(월 매출 물류배부·전산실적·POS·월별 투입적합성·배치 적합성) 지점 셀렉터 endpoint.
  *
  * **화면별 전용 endpoint** 로 분리한다 — 화면마다 지점 셀렉터 권한/스코프를 독립적으로 조정할 수 있게
- * 하기 위함. 현재는 모두 `monthly_sales_history` READ 로 게이팅되지만, 향후 특정 화면만 권한 entity
- * 를 세분화하거나 지점 스코프를 달리해야 할 때 다른 화면에 영향 없이 해당 핸들러만 바꾼다.
+ * 하기 위함. 그 분리가 실제로 쓰인 사례가 아래 가드 이원화다:
+ *
+ * - 대시보드 3화면(물류배부 / 전산실적 / POS매출): [SALES_DASHBOARD_RESOURCE] READ — 화면 게이팅과 동일.
+ * - 월별 투입적합성 / 배치 적합성: `monthly_sales_history` READ 유지 — 두 화면은 이번 자원 분리 대상이
+ *   아니라 메뉴 게이팅 entity 가 그대로다. 셀렉터만 옮기면 메뉴는 보이는데 지점 목록만 403 이 된다.
  *
  * 여사원 일정관리의 `/team-schedule/branches` (`team_member_schedule` 가드) 를 빌려쓰면
  * `team_member_schedule` READ 없는 사용자가 지점 셀렉터에서 403 이 나므로 매출/실적 계열은
- * `monthly_sales_history` 가드의 이 컨트롤러로 분리한다.
+ * 화면 도메인 권한으로 가드하는 이 컨트롤러로 분리한다.
  *
  * 지점 목록 산출:
  * - 월 매출(물류배부)만 대시보드와 동일한 고정 화이트리스트(34개, [DashboardBranchResolver]).
@@ -41,7 +44,7 @@ class AdminSalesBranchController(
 
     /** 월 매출(전산실적) 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
     @GetMapping("/electronic/branches")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     fun getElectronicSalesBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
@@ -49,7 +52,7 @@ class AdminSalesBranchController(
 
     /** POS매출 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
     @GetMapping("/pos/branches")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     fun getPosSalesBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
@@ -93,7 +96,7 @@ class AdminSalesBranchController(
      * 조직 트리 스코프의 부분집합).
      */
     @GetMapping("/monthly/branches")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     fun getMonthlySalesBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =

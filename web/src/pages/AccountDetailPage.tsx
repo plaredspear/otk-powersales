@@ -65,8 +65,10 @@ function won(v: number | string | null | undefined): string {
  * 거래처 상세 페이지 (`/account/:id`).
  *
  * 레거시 SF Account 레코드 페이지(`Account_Record_Page`) 동등 — "기본 정보" + "매출 이력" 탭.
- * 매출 이력 탭은 `monthly_sales_history` READ 권한 보유자에게만 노출 (SF 매출 그래프 컴포넌트가
- * 별도 권한 컨텍스트였던 것과 정합). 수금/여신/원장 탭은 현 시점 데이터 소스 부재로 미포함.
+ * 매출 이력 탭은 `sales_dashboard` READ 권한 보유자에게만 노출 (SF 매출 그래프 컴포넌트가
+ * 별도 권한 컨텍스트였던 것과 정합) — 탭 본문이 월 매출(물류배부) 대시보드의 상세 endpoint 를 그대로
+ * 임베드하므로 그 화면과 같은 자원으로 게이팅해야 API 가드와 어긋나지 않는다.
+ * 수금/여신/원장 탭은 현 시점 데이터 소스 부재로 미포함.
  */
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -74,7 +76,7 @@ export default function AccountDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { hasEntityPermission } = usePermission();
-  const canViewSales = hasEntityPermission('monthly_sales_history', 'READ');
+  const canViewSales = hasEntityPermission('sales_dashboard', 'READ');
   const canEditAccount = hasEntityPermission('account', 'EDIT');
 
   // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
@@ -460,7 +462,7 @@ function handleAddressError(err: unknown): void {
 /**
  * 매출 이력 탭 — 당월 기준 월매출 단건 상세를 임베드 (월매출 대시보드 상세와 동일 본문).
  *
- * 월매출 상세 API(`GET /api/v1/admin/sales/monthly/detail/{customerId}`)는 `monthly_sales_history`
+ * 월매출 상세 API(`GET /api/v1/admin/sales/monthly/detail/{customerId}`)는 `sales_dashboard`
  * READ 권한으로 가드되므로, 본 탭은 해당 권한 보유 시에만 [AccountDetailPage] 가 렌더한다.
  */
 function AccountSalesTab({

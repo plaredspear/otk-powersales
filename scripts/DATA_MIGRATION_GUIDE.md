@@ -121,7 +121,8 @@ cd scripts/sf-data-migration
 | 5 | **UserRole Hierarchy 재계산** | depth / all_subordinate_ids / ancestor_path. **Natural Key FK 해소 완료 후** |
 | 6 | **Derived 캐시 동기화 (Stage 2-B)** | Employee.cost_center_code → User / ProfessionalPromotionTeamMaster 백필 |
 | — | **비밀번호 해시 (Stage 2-C)** | 사번 기반 초기 평문 `{사번}@pwrs` → BCrypt hash. **`password IS NULL OR ''` 인 row 만** (`POST .../stage2/password`) |
-| 7 | **조장 화면 권한 회수** | `6.조장` 에서 ERP주문(`erp_order`) / 조직마스터(`organization`) / 근무 등록현황(`attendance_log`) / 대체휴무(`alternative_holiday`) / HR 적재 근무기간(`attend_info`) / ORORA 일매출(`daily_sales_history`) 권한 키 제거. **dirty row 에도 강제 적용**(대상 키만 제거라 다른 편집분 보존) (`POST .../stage2/leader-erp-org-revoke`) |
+| 7 | **조장 화면 권한 회수** | `6.조장` 에서 ERP주문(`erp_order`) / 조직마스터(`organization`) / 근무 등록현황(`attendance_log`) / 대체휴무(`alternative_holiday`) / HR 적재 근무기간(`attend_info`) / ORORA 일매출(`daily_sales_history`) / ORORA 월매출·투입적합성·배치 적합성(`monthly_sales_history` — 3화면 공유 키라 함께 닫힘) 권한 키 제거. 매출/실적 대시보드 3화면은 `sales_dashboard` 라 영향 없음. **dirty row 에도 강제 적용**(대상 키만 제거라 다른 편집분 보존) (`POST .../stage2/leader-erp-org-revoke`) |
+| 8 | **조장 매출/실적 대시보드 권한 부여** | `6.조장` 의 `custom_permissions` 에 `sales_dashboard: allowRead` 병합 → 월 매출(물류배부/전산실적)·POS매출 3화면 + 거래처 상세 매출 이력 탭 개방. 3화면 가드를 `monthly_sales_history` 에서 화면 전용 가상 자원으로 분리하면서 승계 없이 배포했으므로 본 substep 이 조장 권한을 복구한다. **dirty row 에도 강제 적용**(대상 키만 병합이라 다른 편집분 보존) (`POST .../stage2/leader-sales-dashboard-grant`) |
 | 최종 | **조장/지정 사번 비밀번호 초기화** | profile `6.조장` + 지정 사번 8명. **기존 비밀번호도 덮어씀**(가드 없음) — 화면 **최하단 카드** (`POST .../stage2/leader-password-reset`) |
 
 > **두 비밀번호 카드의 차이** — Stage 2-C 는 미설정 row 만 채우는 **적재**용(멱등), 최하단 카드는 이미 쓰던 비밀번호까지 되돌리는 **초기화**용(반복 적용). 후자는 `profile_id` 가 확정된 뒤(FK Resolve → Natural Key FK → User Profile 정합 이후) 실행해야 조장 대상이 정확히 잡히므로 Stage 2 최종 단계에 둔다. 대상 사번은 backend `SfMigrationStage2Service.MANUAL_PASSWORD_RESET_EMPLOYEE_CODES` 상수에서 관리한다.

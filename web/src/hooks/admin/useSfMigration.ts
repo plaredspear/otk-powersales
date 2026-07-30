@@ -4,6 +4,7 @@ import {
   getFkResolveProgress,
   getSharingRecalcStatus,
   runLeaderErpOrgRevoke,
+  runLeaderSalesDashboardGrant,
   runLeaderPasswordReset,
   runLeaderProfileFlags,
   runNaturalKeyFkResolve,
@@ -164,6 +165,18 @@ export function useRunLeaderProfileFlags() {
 export function useRunLeaderErpOrgRevoke() {
   return useMutation<LeaderProfileFlagsResponse>({
     mutationFn: runLeaderErpOrgRevoke,
+  });
+}
+
+/**
+ * 조장 매출/실적 대시보드 권한(`sales_dashboard` READ) 부여 Mutation 훅.
+ *
+ * 회수 훅과 대칭 — 대상 키만 병합하므로 `is_locally_modified=TRUE` 인 운영 편집분에도 강제 적용된다
+ * (다른 권한은 보존). backend 가 권한 캐시를 자동 invalidate 한다.
+ */
+export function useRunLeaderSalesDashboardGrant() {
+  return useMutation<LeaderProfileFlagsResponse>({
+    mutationFn: runLeaderSalesDashboardGrant,
   });
 }
 

@@ -6,17 +6,18 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
- * 조장(`6.조장`) 권한 SoT ↔ 회수 키 집합 정합 검증.
+ * 조장(`6.조장`) 권한 SoT ↔ 회수/부여 키 집합 정합 검증.
  *
- * `leader-erp-org-revoke` substep 은 이미 DB 에 적재된 권한을 **회수**하는 축이고,
- * [LeaderProfileFlagsSeed] 는 "조장이 가져야 할 권한" 의 SoT 다. 두 축이 어긋나면
- * (SoT 에 키가 남아 있는데 회수 대상이거나, 그 반대) 신규 환경과 기존 환경의 조장 권한이
- * 달라진다 — 그 드리프트를 부팅 전에 잡는다.
+ * [LeaderProfileFlagsSeed] 는 "조장이 가져야 할 권한" 의 SoT 이고, Stage 2 의 두 substep 은 이미 DB 에
+ * 적재된 권한을 키 단위로 조정하는 축이다 — `leader-erp-org-revoke` 가 **회수**,
+ * `leader-sales-dashboard-grant` 가 **부여**. SoT 와 두 축이 어긋나면 (SoT 에 키가 남아 있는데 회수
+ * 대상이거나, 부여 대상이 SoT 에 없거나) 신규 환경과 기존 환경의 조장 권한이 달라진다 — 그 드리프트를
+ * 부팅 전에 잡는다.
  *
- * substep 의 실제 실행은 jsonb `-` 가 PostgreSQL 전용이라 H2 통합 테스트로 검증할 수 없어
+ * substep 의 실제 실행은 jsonb `-` / `||` 가 PostgreSQL 전용이라 H2 통합 테스트로 검증할 수 없어
  * dev 환경 수동 검증에 맡긴다 (SfMigrationStage2ServiceIntegrationTest 주석 참조).
  */
-@DisplayName("조장 권한 SoT ↔ 회수 키 정합")
+@DisplayName("조장 권한 SoT ↔ 회수/부여 키 정합")
 class LeaderProfileFlagsSeedRevokedKeysTest {
 
     private val leaderSeed = LeaderProfileFlagsSeed.SEEDS.first { it.profileName == "6.조장" }
@@ -35,7 +36,7 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     }
 
     @Test
-    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 / HR 적재 근무기간 / ORORA 일매출 (사용자 결정)")
+    @DisplayName("회수 대상 범위 고정 — ERP주문 / 조직마스터 / 근무 등록현황 / 대체휴무 / HR 적재 근무기간 / ORORA 일·월매출 (사용자 결정)")
     fun `revoked keys cover leader hidden screens`() {
         assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS)
             .containsExactlyInAnyOrder(
@@ -46,20 +47,48 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
                 "DKRetail__AlternativeHoliday__c",
                 "AttendInfo__c",
                 "DailySalesHistory__c",
+                "MonthlySalesHistory__c",
             )
     }
 
     @Test
-    @DisplayName("ORORA 일매출(daily_sales_history) 만 회수하고 월매출(monthly_sales_history) 은 유지한다 (사용자 결정)")
-    fun `daily sales history revoked but monthly sales history kept`() {
-        // 두 자원은 가드 entity 가 달라 회수 파급이 분리된다.
-        // daily_sales_history   = 기준정보 > ORORA 일매출 (AdminDailySalesHistoryController + 전용 거래처 lookup)
-        // monthly_sales_history = 매출/실적 > 월 매출 등 — 조장이 계속 조회한다.
-        assertThat(leaderSeed.objectPermissionsJson).doesNotContain("DailySalesHistory__c")
-        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains("DailySalesHistory__c")
+    @DisplayName("ORORA 일매출/월매출 두 키를 모두 회수한다 (사용자 결정)")
+    fun `both sales history keys revoked`() {
+        // daily_sales_history   = 기준정보 > ORORA 일매출 (목록 + 전용 거래처 lookup) — 파급이 화면 하나.
+        // monthly_sales_history = 기준정보 > ORORA 월매출 + 월별 투입적합성 + 배치 적합성 — 3화면 공유 키라
+        //                         회수가 함께 파급된다 (각 화면 전용 지점/거래처 셀렉터 포함).
+        for (key in listOf("DailySalesHistory__c", "MonthlySalesHistory__c")) {
+            assertThat(leaderSeed.objectPermissionsJson).doesNotContain("\"$key\"")
+            assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains(key)
+        }
+    }
 
-        assertThat(leaderSeed.objectPermissionsJson).contains("\"MonthlySalesHistory__c\"")
-        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).doesNotContain("MonthlySalesHistory__c")
+    @Test
+    @DisplayName("조장은 매출/실적 대시보드 3화면(sales_dashboard) READ 를 보유한다 (사용자 결정)")
+    fun `leader has sales dashboard read`() {
+        // 물류배부/전산실적/POS매출 3화면을 monthly_sales_history 에서 화면 전용 가상 자원으로 분리했고,
+        // 조장은 분리 이후에도 3화면을 계속 조회한다 — SoT 에서 빠지면 신규 환경의 조장이 화면을 잃는다.
+        assertThat(leaderSeed.customPermissionsJson)
+            .withFailMessage("매출/실적 대시보드 권한(sales_dashboard READ)이 6.조장 SoT 에 없습니다")
+            .contains("\"sales_dashboard\"")
+
+        // 3화면 모두 조회 전용이라 READ 단독 — 나머지 비트는 대응 가드가 없는 죽은 키다.
+        assertThat(leaderSeed.customPermissionsJson).contains("\"sales_dashboard\": { \"allowRead\": true }")
+
+        // 자원 분리의 핵심 — MonthlySalesHistory__c 는 회수하면서 대시보드 3화면은 남긴다.
+        // 분리 전이었다면 두 결과가 양립할 수 없었다 (한 키가 5화면을 함께 여닫았음).
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains("MonthlySalesHistory__c")
+        assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).contains("\"sales_dashboard\"")
+    }
+
+    @Test
+    @DisplayName("부여 substep 의 JSON 과 6.조장 SoT 가 같은 자원을 가리킨다 (SoT ↔ 부여 축 정합)")
+    fun `granted custom permissions match seed`() {
+        // 신규 환경(clean row)은 leader-profile-flags 가 SoT 전체를, 기존 환경(dirty row)은
+        // leader-sales-dashboard-grant 가 이 키만 병합한다. 두 축이 어긋나면 환경별 권한이 달라진다.
+        assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).contains("\"sales_dashboard\"")
+        assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).contains("\"allowRead\": true")
+        assertThat(leaderSeed.customPermissionsJson).contains("\"sales_dashboard\"")
     }
 
     @Test

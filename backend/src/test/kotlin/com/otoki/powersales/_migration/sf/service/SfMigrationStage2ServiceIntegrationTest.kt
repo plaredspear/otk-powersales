@@ -612,11 +612,12 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(applied).doesNotContain("Org__c")
     }
 
-    // leader-erp-org-revoke substep 의 실행 검증은 통합 테스트로 작성하지 않는다 —
-    // jsonb `-` (key 제거) 연산자가 PostgreSQL 전용이라 H2(MODE=PostgreSQL, object_permissions=VARCHAR)
-    // 에서 "Feature not supported: CHARACTER VARYING -" 로 실패한다. SfMigrationStage2FkServiceTest 가
+    // leader-erp-org-revoke / leader-sales-dashboard-grant substep 의 실행 검증은 통합 테스트로 작성하지
+    // 않는다 — jsonb `-` (key 제거) / `||` (key 병합) 연산자가 PostgreSQL 전용이라
+    // H2(MODE=PostgreSQL, object_permissions/custom_permissions=VARCHAR) 에서
+    // "Feature not supported: CHARACTER VARYING -" 로 실패한다. SfMigrationStage2FkServiceTest 가
     // UPDATE FROM + LEFT JOIN 미지원으로 통합 테스트를 생략한 것과 동일한 선례.
-    // 회수 대상 키 집합의 정합은 아래 SoT 단위 검증(LeaderProfileFlagsSeedRevokedKeysTest)이 담당하고,
+    // 회수/부여 대상 키 집합의 정합은 SoT 단위 검증(LeaderProfileFlagsSeedRevokedKeysTest)이 담당하고,
     // 실제 실행은 PostgreSQL dev 환경에서 수동 검증한다.
 
     @Test

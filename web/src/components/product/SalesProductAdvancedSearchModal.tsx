@@ -55,7 +55,7 @@ export interface Props {
  * 행사마스터 대표제품 고급 검색(`pages/promotion/components/ProductAdvancedSearchModal`) 과 동일한
  * 구성(필터 + 검색창 + 결과 그리드 + 선택 버튼) 이나, 두 가지가 다르다:
  *  1. 다중 선택 (checkbox) — 조회 조건의 제품은 복수 지정이 가능하다.
- *  2. 전용 endpoint (`/sales/electronic/product-lookup/advanced`, monthly_sales_history 가드) —
+ *  2. 전용 endpoint (`/sales/electronic/product-lookup/advanced`, sales_dashboard 가드) —
  *     행사마스터판은 promotion.READ 가드라 본 화면 권한만 가진 사용자가 403 이 된다.
  *
  * 검색 대상은 드롭다운 빠른 검색과 동일한 소비자 바코드 보유 제품 한정이다. 바코드가 없는 제품은

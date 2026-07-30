@@ -5,10 +5,12 @@ import type { Branch } from './team-schedule';
 /**
  * 매출/실적 계열 화면 지점 셀렉터 옵션 조회.
  *
- * 화면마다 전용 endpoint 로 분리한다 — 향후 화면별 권한/지점 스코프를 독립적으로 조정하기 위함.
- * 모두 `monthly_sales_history` READ 로 가드된다. 여사원 일정의 `/team-schedule/branches`
- * (`team_member_schedule` 가드) 를 빌려쓰면 `team_member_schedule` READ 없는 사용자가 지점 셀렉터에서
- * 403 이 나므로 매출/실적 계열은 `monthly_sales_history` 가드의 전용 endpoint 로 분리한다.
+ * 화면마다 전용 endpoint 로 분리한다 — 화면별 권한/지점 스코프를 독립적으로 조정하기 위함.
+ * 가드는 각 화면의 메뉴 게이팅 entity 와 일치시킨다:
+ * 대시보드 3화면(물류배부/전산실적/POS)은 `sales_dashboard` READ, 투입적합성/배치 적합성은
+ * `monthly_sales_history` READ. 여사원 일정의 `/team-schedule/branches` (`team_member_schedule` 가드) 를
+ * 빌려쓰면 `team_member_schedule` READ 없는 사용자가 지점 셀렉터에서 403 이 나므로 매출/실적 계열은
+ * 화면 도메인 권한으로 가드되는 전용 endpoint 로 분리한다.
  * 반환 지점 범위는 backend 에서 권한 기준으로 제한된다.
  */
 async function fetchBranches(path: string): Promise<Branch[]> {

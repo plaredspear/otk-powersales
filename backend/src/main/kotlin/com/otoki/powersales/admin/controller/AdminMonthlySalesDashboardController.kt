@@ -20,16 +20,23 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 「월 매출(물류배부)」 web admin 대시보드.
+ *
+ * 권한 가드는 매출/실적 대시보드 3화면 공용 가상 자원 [SALES_DASHBOARD_RESOURCE] / READ —
+ * 분리 배경과 부여 경로는 그 상수의 KDoc 참조. 적재 테이블 entity(`monthly_sales_history`) 가
+ * 아니므로 「기준정보 > ORORA 월매출」 권한과는 독립이다.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/sales/monthly")
-@PermissionResource("monthly_sales_history")
+@PermissionResource(SALES_DASHBOARD_RESOURCE)
 class AdminMonthlySalesDashboardController(
     private val queryService: MonthlySalesAdminQueryService,
     private val excelExporter: MonthlySalesDashboardExcelExporter,
 ) {
 
     /** 상단 KPI + 최근 6개월 월별 추이. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/summary")
     fun getSummary(
         @CurrentDataScope scope: DataScope,
@@ -52,7 +59,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 거래처별 명세 — 페이징 + 정렬 + 필터. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
         @CurrentDataScope scope: DataScope,
@@ -84,7 +91,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 거래처별 명세 엑셀 다운로드. 페이징 미적용 (권한 범위 전체 export). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
         @CurrentDataScope scope: DataScope,
@@ -115,7 +122,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 단건 거래처 상세 — 모바일 동등 6 영역. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail/{customerId}")
     fun getDetail(
         @CurrentDataScope scope: DataScope,

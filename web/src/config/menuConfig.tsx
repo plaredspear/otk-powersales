@@ -122,9 +122,11 @@ export const menuRoute: MenuRoute = {
       name: '매출/실적',
       icon: <BarChartOutlined />,
       children: [
-        { path: '/sales/monthly', name: '월 매출(물류배부)', entity: 'monthly_sales_history', operation: 'READ' },
-        { path: '/sales/electronic', name: '월 매출(전산실적)', entity: 'monthly_sales_history', operation: 'READ' },
-        { path: '/sales/pos', name: 'POS매출', entity: 'monthly_sales_history', operation: 'READ' },
+        // 대시보드 3화면은 적재 테이블 entity(monthly_sales_history) 가 아니라 화면 전용 가상 자원
+        // sales_dashboard 로 게이팅한다 — 기준정보 > ORORA 월매출 / 투입적합성 / 배치 적합성과 분리.
+        { path: '/sales/monthly', name: '월 매출(물류배부)', entity: 'sales_dashboard', operation: 'READ' },
+        { path: '/sales/electronic', name: '월 매출(전산실적)', entity: 'sales_dashboard', operation: 'READ' },
+        { path: '/sales/pos', name: 'POS매출', entity: 'sales_dashboard', operation: 'READ' },
       ],
     },
     {

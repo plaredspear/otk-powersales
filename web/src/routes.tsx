@@ -160,7 +160,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
                 {
-                  element: <PermissionRoute entity="monthly_sales_history" operation="READ" />,
+                  element: <PermissionRoute entity="sales_dashboard" operation="READ" />,
                   children: [
                     { path: '/sales/monthly', element: <LazyWrapper><MonthlySalesDashboardPage /></LazyWrapper> },
                     { path: '/sales/electronic', element: <LazyWrapper><ElectronicSalesDashboardPage /></LazyWrapper> },

@@ -60,6 +60,8 @@ class SfMigrationStage2Service(
          * - `DKRetail__AlternativeHoliday__c` → 가드 entity `alternative_holiday` (대체휴무)
          * - `AttendInfo__c` → 가드 entity `attend_info` (기준정보 > HR 적재 근무기간)
          * - `DailySalesHistory__c` → 가드 entity `daily_sales_history` (기준정보 > ORORA 일매출)
+         * - `MonthlySalesHistory__c` → 가드 entity `monthly_sales_history` (기준정보 > ORORA 월매출 +
+         *   월별 진열사원 투입적합성 + 진열사원 배치 적합성 — 3화면 공유 키)
          *
          * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
          * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
@@ -69,9 +71,14 @@ class SfMigrationStage2Service(
          * 분리되어 조장에게 READ 가 부여되므로 조회 화면과 지점/사원 셀렉터는 계속 동작한다
          * — 조장은 근무 실적 조회는 하되 SAP HR 적재 마스터는 보지 않는다 (사용자 결정).
          *
-         * `DailySalesHistory__c` 회수도 기준정보 > ORORA 일매출 화면**만** 닫는다 — 이 키를 쓰는
-         * endpoint 가 그 화면의 목록/거래처 lookup 2건뿐이다. 월매출(`MonthlySalesHistory__c`) 은
-         * 별도 키라 조장 권한이 유지된다.
+         * `DailySalesHistory__c` 회수는 기준정보 > ORORA 일매출 화면**만** 닫는다 — 이 키를 쓰는
+         * endpoint 가 그 화면의 목록/거래처 lookup 2건뿐이다.
+         *
+         * `MonthlySalesHistory__c` 회수는 반대로 **3개 화면에 함께 파급된다** (사용자 결정) — 기준정보 >
+         * ORORA 월매출 / 월별 진열사원 투입적합성 / 진열사원 배치 적합성이 이 키 하나를 공유하기 때문이다
+         * (각 화면의 전용 지점·거래처 셀렉터 포함). 매출/실적 대시보드 3화면(물류배부/전산실적/POS)은
+         * `sales_dashboard` 가상 자원으로 분리되어 [GRANTED_LEADER_CUSTOM_PERMISSIONS] 로 별도 부여하므로
+         * 본 회수의 영향을 받지 않는다 — 자원 분리가 없었다면 이 회수가 그 3화면까지 닫았을 것이다.
          */
         val REVOKED_LEADER_OBJECT_KEYS = listOf(
             "ERP_Order__c",
@@ -81,7 +88,30 @@ class SfMigrationStage2Service(
             "DKRetail__AlternativeHoliday__c",
             "AttendInfo__c",
             "DailySalesHistory__c",
+            "MonthlySalesHistory__c",
         )
+
+        /**
+         * `leader-sales-dashboard-grant` substep 이 조장 `custom_permissions` 에 **병합**할 가상 자원 권한.
+         *
+         * [REVOKED_LEADER_OBJECT_KEYS] 의 정반대 축 — 이쪽은 **이미 운영 DB 에 적재된 권한에 키를 더한다**
+         * (SoT 수정만으로는 dirty row 가 갱신되지 않으므로).
+         *
+         * - `sales_dashboard` → 매출/실적 > 월 매출(물류배부) / 월 매출(전산실적) / POS매출 3화면
+         *   (`com.otoki.powersales.admin.controller.SALES_DASHBOARD_RESOURCE`, @PermissionResource).
+         *   3화면이 적재 테이블 entity `monthly_sales_history` 를 공유하던 것을 화면 전용 가상 자원으로
+         *   분리하면서, 기존에 `MonthlySalesHistory__c` READ 로 3화면을 보던 조장이 그대로 보려면 신규
+         *   자원을 다시 부여해야 한다 (사용자 결정). 3화면 모두 조회 전용이라 READ 단독.
+         *
+         * SF object 가 아닌 가상 자원이라 `object_permissions` 가 아니라 `custom_permissions` 경로다.
+         * 추가 부여가 필요하면 본 JSON 에 키를 더하면 된다 — jsonb `||` 가 top-level 키 단위로 병합하므로
+         * 기재된 키만 덮어쓰고 나머지 운영 편집분은 보존된다.
+         *
+         * [com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed] 의 `6.조장` SoT 에도
+         * 동일 키가 기재되어 있다 — 신규 환경(clean row)은 `leader-profile-flags` 가, 기존 환경(dirty row)은
+         * 본 substep 이 담당해 양쪽 결과가 같아진다.
+         */
+        const val GRANTED_LEADER_CUSTOM_PERMISSIONS = """{"sales_dashboard": {"allowRead": true}}"""
 
         /**
          * `leader-password-reset` substep 의 profile 무관 초기화 대상 사번 (사용자 지정).
@@ -701,6 +731,11 @@ class SfMigrationStage2Service(
      * - `DKRetail__AlternativeHoliday__c` — 대체휴무 (가드 entity `alternative_holiday`)
      * - `AttendInfo__c` — 기준정보 > HR 적재 근무기간 (가드 entity `attend_info`)
      * - `DailySalesHistory__c` — 기준정보 > ORORA 일매출 (가드 entity `daily_sales_history`)
+     * - `MonthlySalesHistory__c` — 기준정보 > ORORA 월매출 + 월별 진열사원 투입적합성 +
+     *   진열사원 배치 적합성 (가드 entity `monthly_sales_history` — 3화면 공유 키라 함께 닫힌다)
+     *
+     * 매출/실적 대시보드 3화면(물류배부/전산실적/POS)은 `sales_dashboard` 가상 자원이라 본 회수와 무관하며,
+     * [runLeaderSalesDashboardGrant] 로 별도 부여된다.
      *
      * 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) 은 애초에 SoT 에 없어 회수 대상이 아니다.
      *
@@ -748,6 +783,73 @@ class SfMigrationStage2Service(
 
         return SfMigrationStage2Response(
             substep = "leaderErpOrgPermissionRevoke",
+            results = results,
+            totalRowsAffected = results.sumOf { it.rowsAffected },
+        )
+    }
+
+    /**
+     * 조장(`6.조장`) 에게 매출/실적 대시보드 권한(`sales_dashboard` READ) **부여** —
+     * `is_locally_modified` 무시하고 강제 적용.
+     *
+     * ## 왜 leader-profile-flags 와 분리하는가
+     * [runLeaderProfileFlags] 는 `object_permissions` / `custom_permissions` **전체를 SoT JSON 으로
+     * 덮어쓰므로** dirty row 를 skip 한다. 운영 DB 의 조장 row 는 web admin 편집으로 이미
+     * `is_locally_modified = TRUE` 일 가능성이 높아, SoT 에 키를 더하는 것만으로는 실제 부여가 되지 않는다.
+     *
+     * 본 substep 은 [GRANTED_LEADER_CUSTOM_PERMISSIONS] **키만 병합**한다 (jsonb `||`). 나머지 키는
+     * 손대지 않으므로 dirty row 에 적용해도 운영 편집분이 보존된다 — [runLeaderErpOrgPermissionRevoke]
+     * 가 키만 제거하기에 강제 적용이 안전한 것과 정확히 대칭이다.
+     *
+     * ## 배경
+     * 매출/실적 3화면(물류배부 / 전산실적 / POS매출)의 가드를 적재 테이블 entity `monthly_sales_history`
+     * 에서 화면 전용 가상 자원 `sales_dashboard` 로 분리했다. 분리 자체는 승계 마이그레이션 없이
+     * 배포되므로(사용자 결정), 기존에 3화면을 보던 조장은 본 substep 으로만 권한이 복구된다.
+     * 기준정보 > ORORA 월매출(`MonthlySalesHistory__c`) 은 분리 대상이 아니라 영향이 없다.
+     *
+     * ## 실행 순서
+     * `fk` → `fk-natural-key` **이후** (profile_flags.profile_id 가 채워진 뒤). 그 전에는 profile 조인이
+     * 전건 미해소되어 0 row 로 보고된다.
+     *
+     * 멱등 — 이미 병합된 값은 `IS DISTINCT FROM` 가드에 걸려 재실행 시 0 row. 적용 후 권한 캐시는
+     * 컨트롤러가 invalidate 한다 ([runLeaderProfileFlags] 와 동일 정책).
+     */
+    @Transactional
+    fun runLeaderSalesDashboardGrant(): SfMigrationStage2Response {
+        val results = mutableListOf<SubstepResult>()
+
+        for (profileName in LEADER_FLAGS_TARGET_PROFILE_NAMES) {
+            // jsonb `||` (top-level 병합) — 기재된 키만 덮어쓰고 나머지 custom_permissions 는 보존한다.
+            // custom_permissions 가 NULL 인 row 도 대상이라 COALESCE 로 빈 객체를 깔고 병합한다.
+            // is_locally_modified 가드 없음 — 키 단위 병합이라 다른 편집분을 건드리지 않는다.
+            //
+            // revoke substep 과 동일한 SQL 제약을 따른다: jsonb `?`(key-exists) 계열을 쓰지 않고
+            // "병합 결과가 원본과 다른가"(IS DISTINCT FROM) 로 변경 대상을 판별해 Hibernate 의
+            // `?` → JDBC ordinal 파라미터 오인을 피한다.
+            val mergedExpr = "(COALESCE(pf.custom_permissions, CAST('{}' AS jsonb)) || CAST(:grant AS jsonb))"
+            val updated = em.createNativeQuery(
+                """
+                UPDATE powersales.profile_flags pf
+                SET custom_permissions = $mergedExpr
+                FROM powersales.profile p
+                WHERE p.profile_id = pf.profile_id
+                  AND p.name = :profileName
+                  AND $mergedExpr IS DISTINCT FROM pf.custom_permissions
+                """.trimIndent()
+            )
+                .setParameter("grant", GRANTED_LEADER_CUSTOM_PERMISSIONS)
+                .setParameter("profileName", profileName)
+                .executeUpdate()
+
+            results += SubstepResult(
+                label = "profile_flags['$profileName'] 매출/실적 대시보드 권한 부여 " +
+                    "(custom_permissions ← $GRANTED_LEADER_CUSTOM_PERMISSIONS)",
+                rowsAffected = updated,
+            )
+        }
+
+        return SfMigrationStage2Response(
+            substep = "leaderSalesDashboardGrant",
             results = results,
             totalRowsAffected = results.sumOf { it.rowsAffected },
         )

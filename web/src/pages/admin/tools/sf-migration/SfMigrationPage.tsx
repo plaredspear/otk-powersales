@@ -21,6 +21,7 @@ import {
   useRunLeaderErpOrgRevoke,
   useRunLeaderPasswordReset,
   useRunLeaderProfileFlags,
+  useRunLeaderSalesDashboardGrant,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
   useRunPasswordHash,
@@ -102,6 +103,7 @@ export default function SfMigrationPage() {
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
   const runLeaderErpOrgRevokeMutation = useRunLeaderErpOrgRevoke();
+  const runLeaderSalesDashboardGrantMutation = useRunLeaderSalesDashboardGrant();
   const runPasswordHashMutation = useRunPasswordHash();
   const runLeaderPasswordResetMutation = useRunLeaderPasswordReset();
   const runSharingRecalcMutation = useRunSharingRecalcAll();
@@ -149,6 +151,10 @@ export default function SfMigrationPage() {
   const leaderErpOrgRevokeResult = runLeaderErpOrgRevokeMutation.data;
   const leaderErpOrgRevokeError = runLeaderErpOrgRevokeMutation.error as Error | null;
   const leaderErpOrgRevokePending = runLeaderErpOrgRevokeMutation.isPending;
+
+  const leaderSalesDashboardGrantResult = runLeaderSalesDashboardGrantMutation.data;
+  const leaderSalesDashboardGrantError = runLeaderSalesDashboardGrantMutation.error as Error | null;
+  const leaderSalesDashboardGrantPending = runLeaderSalesDashboardGrantMutation.isPending;
 
   const passwordHashResult = runPasswordHashMutation.data;
   const passwordHashError = runPasswordHashMutation.error as Error | null;
@@ -863,8 +869,16 @@ export default function SfMigrationPage() {
           </li>
           <li>
             ORORA 일매출 — <Text code>DailySalesHistory__c</Text> (가드{' '}
-            <Text code>daily_sales_history</Text>). 월 매출(물류배부/전산실적)은 별도 키
-            (<Text code>MonthlySalesHistory__c</Text>) 라 <Text strong>계속 조회 가능</Text>
+            <Text code>daily_sales_history</Text>). 목록 + 전용 거래처 lookup 2건이 유일한 사용처라
+            파급이 그 화면에 한정된다
+          </li>
+          <li>
+            ORORA 월매출 — <Text code>MonthlySalesHistory__c</Text> (가드{' '}
+            <Text code>monthly_sales_history</Text>). 이 키는 <Text strong>3화면이 공유</Text>하므로{' '}
+            <Text strong>기준정보 &gt; ORORA 월매출 · 월별 진열사원 투입적합성 · 진열사원 배치 적합성</Text>{' '}
+            이 함께 닫힌다 (각 화면의 전용 지점/거래처 셀렉터 포함). 매출/실적 대시보드 3화면
+            (물류배부/전산실적/POS)은 <Text code>sales_dashboard</Text> 가상 자원으로 분리되어{' '}
+            <Text strong>영향 없음</Text> — 아래 <Text strong>매출/실적 대시보드 권한 부여</Text> 가 담당한다
           </li>
         </ul>
         <Paragraph type="secondary">
@@ -943,6 +957,104 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={leaderErpOrgRevokeResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="조장 매출/실적 대시보드 권한 부여 (6.조장)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          조장(<Text code>6.조장</Text>) 의 <Text code>custom_permissions</Text> 에{' '}
+          <Text code>{'{"sales_dashboard": {"allowRead": true}}'}</Text> 를 <Text strong>병합</Text>한다.
+          부여 시 아래 3화면의 메뉴 게이팅과 API 가드가 함께 열린다.
+        </Paragraph>
+        <ul style={{ margin: '0 0 16px', paddingLeft: 20, color: 'rgba(0,0,0,0.45)' }}>
+          <li>매출/실적 &gt; 월 매출(물류배부)</li>
+          <li>매출/실적 &gt; 월 매출(전산실적)</li>
+          <li>매출/실적 &gt; POS매출</li>
+          <li>
+            거래처 상세의 <Text strong>매출 이력 탭</Text> — 월 매출(물류배부) 상세 API 를 그대로
+            임베드하므로 같은 가드다
+          </li>
+        </ul>
+        <Paragraph type="secondary">
+          위 3화면은 원래 적재 테이블 entity <Text code>monthly_sales_history</Text> 로 가드됐으나, 그 키가{' '}
+          기준정보 &gt; ORORA 월매출 · 투입적합성 · 배치 적합성까지 한꺼번에 여닫아 화면 단위 통제가
+          불가능해 화면 전용 가상 자원 <Text code>sales_dashboard</Text> 로 분리했다. 분리는 승계
+          마이그레이션 없이 배포되므로, 기존에 3화면을 보던 조장의 권한은{' '}
+          <Text strong>본 substep 으로만 복구</Text>된다.
+          <br />위 <Text strong>조장 ProfileFlags 권한 적용</Text> 과 달리 custom_permissions 전체를
+          덮어쓰지 않고 <Text strong>대상 키만 병합</Text>하므로,{' '}
+          <Text code>is_locally_modified = TRUE</Text> 인 web admin 편집분에도{' '}
+          <Text strong>강제 적용</Text>된다 — 다른 권한 편집은 보존된다.
+          <br />
+          실행 순서: <Text code>FK Resolve</Text> → <Text code>Natural Key FK</Text> 이후 (profile_flags
+          의 profile_id 가 채워진 뒤). 이미 부여된 상태면 적용 row 0 — <Text strong>멱등</Text>.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={leaderSalesDashboardGrantPending}
+            disabled={leaderSalesDashboardGrantPending}
+            onClick={() => {
+              runLeaderSalesDashboardGrantMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {leaderSalesDashboardGrantError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="권한 부여 실패"
+            description={leaderSalesDashboardGrantError.message}
+            closable
+            onClose={() => {
+              runLeaderSalesDashboardGrantMutation.reset();
+            }}
+          />
+        )}
+
+        {leaderSalesDashboardGrantResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{leaderSalesDashboardGrantResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적용 row">
+                {leaderSalesDashboardGrantResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {leaderSalesDashboardGrantResult.totalRowsAffected === 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적용된 row 가 없습니다"
+                description="이미 부여된 상태이거나(멱등), profile_flags 의 profile_id 가 아직 채워지지 않았을 수 있습니다 (FK Resolve / Natural Key FK 선행 필요)."
+              />
+            )}
+            <ResizableTable<LeaderProfileFlagsSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={leaderSalesDashboardGrantResult.results}
             />
           </div>
         )}

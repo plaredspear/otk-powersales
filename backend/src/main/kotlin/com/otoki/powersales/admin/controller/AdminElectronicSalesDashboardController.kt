@@ -33,12 +33,13 @@ import java.time.LocalDate
  * 「월 매출(전산실적)」 web admin 대시보드 — POS `live_tot_sales_dh` 거래처/제품별 전산매출.
  *
  * 레거시 「월 매출 조회(전산)」 (`/sales/abcMain` → `abcmain.jsp`) 동등. 물류배부
- * ([AdminMonthlySalesDashboardController]) 와 동일한 권한 entity(`monthly_sales_history`)/READ 사용.
- * filter-options / product-lookup 도 본 화면 도메인 권한으로 가드 (lookup 권한 정책 정합).
+ * ([AdminMonthlySalesDashboardController]) 와 동일한 권한 자원 [SALES_DASHBOARD_RESOURCE]/READ 사용.
+ * filter-options / product-lookup 도 본 화면 도메인 권한으로 가드 (lookup 권한 정책 정합) — 물류배부·POS
+ * 화면이 이 두 endpoint 를 재사용하는데 3화면이 같은 자원이라 교차 403 이 나지 않는다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/sales/electronic")
-@PermissionResource("monthly_sales_history")
+@PermissionResource(SALES_DASHBOARD_RESOURCE)
 @Validated
 class AdminElectronicSalesDashboardController(
     private val queryService: ElectronicSalesAdminQueryService,
@@ -46,7 +47,7 @@ class AdminElectronicSalesDashboardController(
 ) {
 
     /** 거래처별 전산매출 명세 — 기간(일 단위) + 유통형태/거래처유형/제품/분류 필터 + 페이징 + 정렬. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
         @CurrentDataScope scope: DataScope,
@@ -80,7 +81,7 @@ class AdminElectronicSalesDashboardController(
     }
 
     /** 거래처별 전산매출 명세 엑셀 다운로드. 페이징 미적용 (권한 범위 전체 export). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
         @CurrentDataScope scope: DataScope,
@@ -113,7 +114,7 @@ class AdminElectronicSalesDashboardController(
     }
 
     /** 단건 거래처 상세 — 제품별 전산매출 명세 (목록과 동일한 기간/제품/분류 필터 반영). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail/{customerId}")
     fun getDetail(
         @CurrentDataScope scope: DataScope,
@@ -137,14 +138,14 @@ class AdminElectronicSalesDashboardController(
     }
 
     /** 조회 조건 옵션 — 유통형태 / 거래처유형 / 제품 중·소분류 (메인 DB distinct). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/filter-options")
     fun getFilterOptions(): ResponseEntity<ApiResponse<ElectronicSalesDashboardFilterOptionsResponse>> {
         return ResponseEntity.ok(ApiResponse.success(queryService.getFilterOptions()))
     }
 
     /** 조회 조건 제품 검색 — 제품명/제품코드/바코드 부분일치 (바코드 보유 제품 한정, 최대 50건). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/product-lookup")
     fun lookupProducts(
         @RequestParam keyword: String,
@@ -165,7 +166,7 @@ class AdminElectronicSalesDashboardController(
      *
      * POS 매출 조회(`/list`) 화면과 월 매출(전산실적) 화면이 공유한다.
      */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/product-lookup/advanced")
     fun lookupProductsAdvanced(
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
@@ -195,7 +196,7 @@ class AdminElectronicSalesDashboardController(
      * `/products/lookup-filter-options` 는 promotion.READ 가드라 재사용 불가.
      * 모달을 여는 시점에만 조회한다.
      */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/product-lookup/filter-options")
     fun productLookupFilterOptions(): ResponseEntity<ApiResponse<ProductLookupFilterOptions>> {
         return ResponseEntity.ok(ApiResponse.success(queryService.getProductLookupFilterOptions()))

@@ -51,7 +51,7 @@ interface QueryParams {
 export default function ElectronicSalesDashboardPage() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs()]);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  // 월 매출(전산실적) 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프.
+  // 월 매출(전산실적) 전용 지점 셀렉터 (sales_dashboard 게이팅) — 조직 트리 스코프.
   const { data: branches = [] } = useElectronicSalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);

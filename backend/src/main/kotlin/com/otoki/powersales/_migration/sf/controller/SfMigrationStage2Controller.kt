@@ -241,7 +241,10 @@ class SfMigrationStage2Controller(
      * **키만 제거**해 다른 운영 편집분을 보존한다. 그래서 dirty row 에도 안전하게 강제 적용한다 (사용자 결정).
      *
      * 대상: ERP주문(`erp_order`) / 조직마스터(`organization`) / 근무 등록현황(`attendance_log`) /
-     * 대체휴무(`alternative_holiday`). 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다.
+     * 대체휴무(`alternative_holiday`) / HR 적재 근무기간(`attend_info`) / ORORA 일매출(`daily_sales_history`) /
+     * ORORA 월매출 + 투입적합성 + 배치 적합성(`monthly_sales_history` — 3화면 공유 키).
+     * 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다. 매출/실적 대시보드 3화면은
+     * `sales_dashboard` 자원이라 본 회수와 무관하다 (leader-sales-dashboard-grant 가 별도 부여).
      *
      * 실행 순서: `fk` → `fk-natural-key` 이후 (profile_flags.profile_id 가 채워진 뒤). 멱등.
      */
@@ -255,6 +258,38 @@ class SfMigrationStage2Controller(
             adminPermissionCache.invalidateAll()
             adminDataScopeCache.invalidateAll()
             log.info("[leader-erp-org-revoke] 권한 캐시 invalidate — rowsAffected={}", response.totalRowsAffected)
+        }
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 조장(`6.조장`) 에게 매출/실적 대시보드 권한(`sales_dashboard` READ) **부여** — `is_locally_modified`
+     * 무시 강제 적용.
+     *
+     * 월 매출(물류배부/전산실적)·POS매출 3화면의 가드를 적재 테이블 entity `monthly_sales_history` 에서
+     * 화면 전용 가상 자원 `sales_dashboard` 로 분리하면서, 기존에 3화면을 보던 조장의 권한을 신규 자원으로
+     * 복구한다 (분리는 승계 마이그레이션 없이 배포 — 사용자 결정).
+     *
+     * `leader-profile-flags` 는 custom_permissions 전체를 SoT JSON 으로 덮어쓰므로 dirty row 를 skip 하지만,
+     * 본 endpoint 는
+     * [com.otoki.powersales._migration.sf.service.SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS]
+     * **키만 병합**해(jsonb `||`) 다른 운영 편집분을 보존한다. 그래서 dirty row 에도 안전하게 강제 적용한다.
+     *
+     * 실행 순서: `fk` → `fk-natural-key` 이후 (profile_flags.profile_id 가 채워진 뒤). 멱등.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/leader-sales-dashboard-grant")
+    fun runLeaderSalesDashboardGrant(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runLeaderSalesDashboardGrant()
+        if (response.totalRowsAffected > 0) {
+            // profile_flags 직접 UPDATE — leader-profile-flags 와 동일 범위로 권한 캐시 무효화.
+            cacheManager.getCache(CacheConfig.CACHE_PROFILE_FLAGS)?.clear()
+            cacheManager.getCache(CacheConfig.CACHE_PERMISSION_MATRIX)?.clear()
+            adminPermissionCache.invalidateAll()
+            adminDataScopeCache.invalidateAll()
+            log.info(
+                "[leader-sales-dashboard-grant] 권한 캐시 invalidate — rowsAffected={}",
+                response.totalRowsAffected,
+            )
         }
         return ResponseEntity.ok(ApiResponse.success(response))
     }

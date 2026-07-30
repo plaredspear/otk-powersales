@@ -74,10 +74,10 @@ interface PosQueryParams {
  * POS매출 조회로 오인되던 UX 혼란이 있었다. 메인에는 POS 조회 조건(기간/제품)과 선택 거래처 칩,
  * 그리고 최종 [POS 매출 조회] 버튼만 남긴다.
  *
- * 조건 옵션/제품 검색은 월매출(전산실적)과 동일 endpoint 재사용 (동일 권한 `monthly_sales_history`).
+ * 조건 옵션/제품 검색은 월매출(전산실적)과 동일 endpoint 재사용 (동일 권한 `sales_dashboard`).
  */
 export default function SalesQueryPage() {
-  // POS매출 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프. 모달에 주입.
+  // POS매출 전용 지점 셀렉터 (sales_dashboard 게이팅) — 조직 트리 스코프. 모달에 주입.
   const { data: branches = EMPTY_BRANCHES } = usePosSalesBranches();
 
   // 거래처 선택 (모달에서 확정). id + 칩 라벨 메타.

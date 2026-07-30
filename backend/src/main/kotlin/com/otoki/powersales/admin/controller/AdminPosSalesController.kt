@@ -27,7 +27,7 @@ import java.time.LocalDate
  * 「POS매출」 web admin 대시보드 — POS `live_pos_sales_dh` 거래처/제품별 POS매출.
  *
  * 레거시 「POS매출 조회」 (`/sales/posMain` → `posmain.jsp`) 의 거래처별 확장. 전산실적
- * ([AdminElectronicSalesDashboardController]) 과 동일한 권한 entity(`monthly_sales_history`)/READ +
+ * ([AdminElectronicSalesDashboardController]) 과 동일한 권한 자원 [SALES_DASHBOARD_RESOURCE]/READ +
  * endpoint 구성. 유통형태/거래처유형/중·소분류 옵션과 제품 검색은 전산실적의
  * `/filter-options` / `/product-lookup` 을 재사용한다 (동일 권한 가드, 메인 DB 메타).
  *
@@ -37,14 +37,14 @@ import java.time.LocalDate
  */
 @RestController
 @RequestMapping("/api/v1/admin/sales/pos")
-@PermissionResource("monthly_sales_history")
+@PermissionResource(SALES_DASHBOARD_RESOURCE)
 class AdminPosSalesController(
     private val queryService: PosSalesAdminQueryService,
     private val excelExporter: PosSalesDashboardExcelExporter,
 ) {
 
     /** 1단 — 조건에 맞는 거래처 목록 조회 (외부 POS DB 미접촉). 지점/거래처명/유통형태/거래처유형 필터. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/accounts")
     fun getAccounts(
         @CurrentDataScope scope: DataScope,
@@ -64,7 +64,7 @@ class AdminPosSalesController(
     }
 
     /** 2단 — 선택 거래처별 POS매출 명세. 기간(일 단위, 최대 31일) + 제품/분류 필터 + 페이징 + 정렬. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
         @CurrentDataScope scope: DataScope,
@@ -89,7 +89,7 @@ class AdminPosSalesController(
     }
 
     /** 2단 — 선택 거래처별 POS매출 명세 엑셀 다운로드. 페이징 미적용 (선택 거래처 전체 export). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
         @CurrentDataScope scope: DataScope,
@@ -113,7 +113,7 @@ class AdminPosSalesController(
     }
 
     /** 단건 거래처 상세 — 제품별 POS매출 명세 (목록과 동일한 기간/제품/분류 필터 반영). */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail/{customerId}")
     fun getDetail(
         @CurrentDataScope scope: DataScope,
