@@ -175,7 +175,9 @@ class AdminSuggestionController(
 
     /**
      * (영업본부) 물류 클레임 보고서 조회 (Spec #844). period=THIS_MONTH/LAST_MONTH/CUSTOM.
-     * CUSTOM 이면 startDate/endDate 필수. branchCode 선택 시 그 지점(등록 사원 소속)으로 좁힘.
+     * CUSTOM 이면 startDate/endDate 필수. branchCode 선택 시 그 지점(등록 사원 소속)으로 좁힘 —
+     * 지점 코드는 `BranchMapping` 확장(`expandedEffectiveBranchCodes`) 후 조회에 쓰여 레거시/별칭
+     * 조직코드로 적재된 클레임도 함께 잡힌다.
      */
     @GetMapping("/logistics-claim-report")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
@@ -186,7 +188,7 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<LogisticsClaimReportResponse>> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val response = logisticsClaimReportService.getReport(period, startDate, endDate, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -201,7 +203,7 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val result = logisticsClaimReportService.exportReport(period, startDate, endDate, branchScope)
         return ExcelResponseUtils.build(result)
     }

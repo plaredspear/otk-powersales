@@ -115,7 +115,9 @@ class AdminClaimController(
 
     /**
      * 기간별 클레임 보고서 조회 (Spec #843). type=PACKAGING(포장불량만)/ALL(모든 클레임).
-     * 기간 미지정 시 당월 1일~오늘. branchCode 선택 시 그 지점(사원 소속)으로 좁힘.
+     * 기간 미지정 시 당월 1일~오늘. branchCode 선택 시 그 지점(사원 소속)으로 좁힘 —
+     * 지점 코드는 `BranchMapping` 확장(`expandedEffectiveBranchCodes`) 후 조회에 쓰여 레거시/별칭
+     * 조직코드로 적재된 클레임도 함께 잡힌다.
      */
     @GetMapping("/period-report")
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
@@ -126,7 +128,7 @@ class AdminClaimController(
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ClaimPeriodReportResponse>> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val response = adminClaimPeriodReportService.getReport(startDate, endDate, type, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -141,7 +143,7 @@ class AdminClaimController(
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
         val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type, branchScope)
         return ExcelResponseUtils.build(result)
     }
