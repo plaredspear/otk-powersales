@@ -496,9 +496,9 @@ class NoticeServiceTest {
                 createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
-            every { noticeRepository.findAllNotices(null, null, any()) } returns page
+            every { noticeRepository.findAllNotices(null, null, null, any()) } returns page
 
-            val result = noticeService.getPostsForAdmin(null, null, 1, 10)
+            val result = noticeService.getPostsForAdmin(null, null, null, 1, 10)
 
             assertThat(result.content).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
@@ -507,8 +507,34 @@ class NoticeServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - INVALID -> InvalidNoticeCategoryException")
         fun getPostsForAdmin_invalidCategory() {
-            assertThatThrownBy { noticeService.getPostsForAdmin("INVALID", null, 1, 10) }
+            assertThatThrownBy { noticeService.getPostsForAdmin("INVALID", null, null, 1, 10) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
+        }
+
+        @Test
+        @DisplayName("지점 조회 - branchCode 전달 시 repository 에 그대로 위임 (공백은 null 정규화)")
+        fun getPostsForAdmin_withBranchCode() {
+            val notices = listOf(
+                createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
+            )
+            val page = PageImpl(notices, PageRequest.of(0, 10), 1)
+            every { noticeRepository.findAllNotices(null, null, "1101", any()) } returns page
+
+            val result = noticeService.getPostsForAdmin(null, null, " 1101 ", 1, 10)
+
+            assertThat(result.content).hasSize(1)
+            verify { noticeRepository.findAllNotices(null, null, "1101", any()) }
+        }
+
+        @Test
+        @DisplayName("지점 조회 - branchCode 가 빈 문자열이면 지점 조건 없음(null)")
+        fun getPostsForAdmin_blankBranchCode() {
+            val page = PageImpl(emptyList<Notice>(), PageRequest.of(0, 10), 0)
+            every { noticeRepository.findAllNotices(null, null, null, any()) } returns page
+
+            noticeService.getPostsForAdmin(null, null, "   ", 1, 10)
+
+            verify { noticeRepository.findAllNotices(null, null, null, any()) }
         }
     }
 

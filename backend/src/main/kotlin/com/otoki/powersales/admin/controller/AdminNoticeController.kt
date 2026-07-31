@@ -33,10 +33,11 @@ class AdminNoticeController(
     fun getPosts(
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false, defaultValue = "1") page: Int,
         @RequestParam(required = false, defaultValue = "10") size: Int
     ): ResponseEntity<ApiResponse<NoticePostListResponse>> {
-        val response = noticeService.getPostsForAdmin(category, search, page, size)
+        val response = noticeService.getPostsForAdmin(category, search, branchCode, page, size)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

@@ -305,12 +305,28 @@ class NoticeService(
         )
     }
 
-    fun getPostsForAdmin(category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
+    /**
+     * web admin 공지 목록 조회 (임시저장 포함).
+     *
+     * @param branchCode 지점 조회 조건. 지정 시 그 지점코드로 작성된 공지(=지점공지)만 조회한다.
+     *   지점코드는 작성 시 화이트리스트에서 고른 값이 그대로 저장되고, 모바일 노출도 사용자
+     *   `costCenterCode` 와 **정확 일치**로 판정하므로(NoticeRepositoryCustomImpl#buildCategoryCondition)
+     *   목록 필터도 확장(BranchCodeExpander) 없이 정확 일치로 맞춘다 — "이 공지가 실제로 노출되는
+     *   지점" 과 조회 결과가 어긋나지 않게 하기 위함.
+     */
+    fun getPostsForAdmin(
+        category: String?,
+        search: String?,
+        branchCode: String?,
+        page: Int,
+        size: Int
+    ): NoticePostListResponse {
         val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
+        val normalizedBranchCode = branchCode?.trim()?.ifBlank { null }
         val pageable = PageRequest.of(page - 1, size)
-        val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, pageable)
+        val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, normalizedBranchCode, pageable)
 
         val content = noticePage.content.map { it.toSummaryResponse() }
 

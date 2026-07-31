@@ -387,6 +387,63 @@ class NoticeRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findAllNotices - Admin 목록 조회 (QueryDSL)")
+    inner class FindAllNoticesTests {
+
+        private val pageable = PageRequest.of(0, 10)
+
+        @Test
+        @DisplayName("지점 조건 없음 (branchCode=null) - 전 지점 공지 + 임시저장까지 반환")
+        fun noBranchFilter() {
+            // Given
+            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "부산지점 임시저장", category = NoticeCategory.BRANCH, branchCode = "부산지점", status = NoticeStatus.DRAFT)
+
+            // When
+            val result = noticeRepository.findAllNotices(null, null, null, pageable)
+
+            // Then
+            assertThat(result.content.map { it.name })
+                .containsExactlyInAnyOrder("전체 공지", "서울지점 공지", "부산지점 임시저장")
+        }
+
+        @Test
+        @DisplayName("지점 조회 (branchCode 지정) - 정확 일치 공지만 반환, 지점코드 없는 회사공지는 제외")
+        fun filterByBranchCode() {
+            // Given
+            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "서울지점 임시저장", category = NoticeCategory.BRANCH, branchCode = "서울지점", status = NoticeStatus.DRAFT)
+            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
+
+            // When
+            val result = noticeRepository.findAllNotices(null, null, "서울지점", pageable)
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(2)
+            assertThat(result.content.map { it.name })
+                .containsExactlyInAnyOrder("서울지점 공지", "서울지점 임시저장")
+        }
+
+        @Test
+        @DisplayName("지점 + 카테고리/검색어 동시 적용 - AND 결합")
+        fun filterByBranchCodeWithOtherConditions() {
+            // Given
+            persistNotice(name = "서울지점 이벤트 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "서울지점 안내", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "부산지점 이벤트 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
+
+            // When
+            val result = noticeRepository.findAllNotices(NoticeCategory.BRANCH, "이벤트", "서울지점", pageable)
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(1)
+            assertThat(result.content[0].name).isEqualTo("서울지점 이벤트 공지")
+        }
+    }
+
+    @Nested
     @DisplayName("findPushTargets - 푸시 대상 FCM 토큰 조회 (활성 사용자 필터)")
     inner class FindPushTargetsTests {
 

@@ -14,9 +14,16 @@ interface NoticeRepositoryCustom {
         pageable: Pageable
     ): Page<Notice>
 
+    /**
+     * web admin 목록 조회 — 발행/임시저장, 전 지점 공지를 모두 포함한다.
+     *
+     * @param branchCode 지정 시 `notice.branchCode` 정확 일치 공지만 (지점공지 한정 결과가 된다).
+     *   null 이면 지점 조건 없음.
+     */
     fun findAllNotices(
         category: NoticeCategory?,
         search: String?,
+        branchCode: String?,
         pageable: Pageable
     ): Page<Notice>
 

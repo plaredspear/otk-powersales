@@ -15,6 +15,8 @@ function serverErrorMessage(error: unknown, fallback: string): string {
 export interface NoticeListParams {
   category?: string;
   search?: string;
+  /** 지점 조회 조건 (지점코드). 지정 시 그 지점으로 작성된 지점공지만 조회된다. */
+  branchCode?: string;
   page: number;
   size: number;
 }

@@ -33,12 +33,14 @@ export default function NoticeListPage() {
     defaultFilters: {
       category: '',
       search: '',
+      branchCode: '',
     },
   });
 
   const { data, isLoading, refetch, isFetching } = useNotices({
     category: filters.category || undefined,
     search: filters.search || undefined,
+    branchCode: filters.branchCode || undefined,
     page: page + 1,
     size,
   });
@@ -105,6 +107,12 @@ export default function NoticeListPage() {
     ...(formMeta?.categories.map((c) => ({ value: c.code, label: c.name })) ?? []),
   ];
 
+  // 지점 조회 옵션 — 작성 폼과 동일한 권한별 지점 화이트리스트(form-meta)를 그대로 쓴다.
+  // 지점명 가나다순 정렬. 선택 시 그 지점코드로 작성된 지점공지만 조회되며, 미선택(전체)이면 지점 조건 없음.
+  const branchOptions = (formMeta?.branches ?? [])
+    .map((b) => ({ value: b.branchCode, label: b.branchName }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+
   return (
     <div
       ref={containerRef}
@@ -133,6 +141,21 @@ export default function NoticeListPage() {
           options={categoryOptions}
           onChange={(val) => setFilter('category', val)}
         />
+        {/* 지점 조회 — 목록은 권한 스코프되지 않으므로 단일 지점 사용자에게도 고정 Tag 가 아닌
+            선택 UI 로 노출한다(선택 전 기본은 전체 지점). 지점명 타이핑으로 검색 가능. */}
+        {branchOptions.length > 0 && (
+          <Select
+            style={{ width: 200 }}
+            placeholder="지점 (전체)"
+            value={filters.branchCode || undefined}
+            options={branchOptions}
+            onChange={(val) => setFilter('branchCode', val ?? '')}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            notFoundContent="항목 없음"
+          />
+        )}
         <Input.Search
           placeholder="제목 또는 내용 입력"
           allowClear
