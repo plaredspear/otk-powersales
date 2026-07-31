@@ -64,6 +64,8 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     // DailySalesHistory__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_sfid → owner_user_id (005) /
     // owner_group_id (00G) 분기. SF 정합 누락 필드 추가 (MonthlySalesHistory / SalesProgressRateMaster 동일 패턴).
     "daily_sales_history",
+    // notice — 공지사항은 SF 이관 대상에서 제외라 실제 대상 행은 없지만, owner_group_id 를 가진 entity 는
+    // 전수 등록이 인벤토리 가드의 불변식이라 목록에는 남긴다 (등록 누락 = silent miss 차단).
     "notice",
     "product",
     "team_member_schedule",

@@ -148,6 +148,10 @@ export async function runUploadFilePolymorphicParent(): Promise<UploadFileParent
  *
  * 공지 본문 이미지 적재(Stage1 NoticeImageUploadFile) + UploadFile Parent Resolve 완료 후 1회 실행.
  * `dryRun=true` (기본) 면 변경 대상만 집계, `false` 면 실제 UPDATE. 멱등 (이미 치환된 본문 skip).
+ *
+ * **현재 화면에서 호출하지 않는다** — 공지사항이 SF 이관 대상에서 제외되어(2026-07-31 운영 결정)
+ * 치환할 본문이 없다. backend endpoint 와 이 클라이언트는 남겨 두므로, 공지 이관을 되살리면
+ * SfMigrationPage 에 카드만 복원하면 된다 (backend `Stage1Targets.NOTICE` KDoc 참조).
  */
 export interface NoticeRtaPlaceholderSubstepResult {
   label: string;

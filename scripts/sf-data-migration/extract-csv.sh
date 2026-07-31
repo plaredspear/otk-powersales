@@ -27,7 +27,7 @@
 #        sf org list
 #
 # target 옵션:
-#   --target=Organization,Account,Product,Promotion,Group,Employee,User,Notice,Permission   (기본: 모두)
+#   --target=Organization,Account,Product,Promotion,Group,Employee,User,Permission   (기본: 모두)
 #   --target=Organization                                                                   (선행 검증용)
 #   --target=Account,Product                                                                (마스터만)
 #
@@ -39,7 +39,7 @@
 #   - groups.csv                       — Group (Type IN Regular, Queue)
 #   - employees.csv                    — DKRetail__Employee__c
 #   - users.csv                        — User + Profile.Name relationship
-#   - notices.csv                      — DKRetail__Notice__c
+#   - (제외) notices.csv               — DKRetail__Notice__c (공지사항 이관 제외)
 #   - permission_set_assignments.csv   — PermissionSetAssignment (활성 사용자 + 커스텀 PermSet)
 #   - group_members.csv                — PublicGroup 멤버십 (선택, --skip-group-members 가능)
 #
@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,WorkingDayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,DailySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,WorkingDayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,DailySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -1081,9 +1081,9 @@ if contains_target "User"; then
     run_query "User" "$USER_SOQL" "$OUT_DIR/users.csv"
 fi
 
-if contains_target "Notice"; then
-    run_query "Notice (DKRetail__Notice__c)" "$NOTICE_SOQL" "$OUT_DIR/notices.csv"
-fi
+# Notice — 공지사항은 이관 대상에서 제외 (2026-07-31 운영 결정). 레거시 공지는 넘기지 않고 신규
+# 시스템에서 새로 작성한다. SOQL($NOTICE_SOQL) 정의는 남겨 두었으니 결정이 바뀌면 이 블록과 기본
+# TARGETS 목록만 되돌리면 된다 (backend Stage1Targets.NOTICE KDoc 참조).
 
 if contains_target "Suggestion"; then
     run_query "Suggestion (DKRetail__Proposal__c)" "$SUGGESTION_SOQL" "$OUT_DIR/suggestions.csv"

@@ -1917,7 +1917,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "Employee",
     "User",
     "StaffReview",
-    "Notice",
+    // "Notice" — 공지사항은 이관 대상에서 제외 (2026-07-31 운영 결정, backend Stage1Targets.NOTICE 참조).
     "AccountCategoryMaster",
     "AgreementHistory",
     "AgreementWord",

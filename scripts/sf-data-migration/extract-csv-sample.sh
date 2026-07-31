@@ -33,7 +33,7 @@ LIMIT=100
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission,GroupMember"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission,GroupMember"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -671,7 +671,6 @@ for target in "${TARGET_ARR[@]}"; do
         Group) run_query "Group (Regular + Queue)" "$GROUP_SOQL" "$OUT_DIR/groups.csv" ;;
         Employee) run_query "Employee (DKRetail__Employee__c)" "$EMPLOYEE_SOQL" "$OUT_DIR/employees.csv" ;;
         User) run_query "User" "$USER_SOQL" "$OUT_DIR/users.csv" ;;
-        Notice) run_query "Notice (DKRetail__Notice__c)" "$NOTICE_SOQL" "$OUT_DIR/notices.csv" ;;
         Suggestion) run_query "Suggestion (DKRetail__Proposal__c)" "$SUGGESTION_SOQL" "$OUT_DIR/suggestions.csv" ;;
         AccountCategoryMaster) run_query "AccountCategoryMaster" "$ACCOUNT_CATEGORY_MASTER_SOQL" "$OUT_DIR/account_category_masters.csv" ;;
         AgreementHistory) run_query "AgreementHistory" "$AGREEMENT_HISTORY_SOQL" "$OUT_DIR/agreement_historys.csv" ;;

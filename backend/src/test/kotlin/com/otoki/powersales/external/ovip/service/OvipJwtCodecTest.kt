@@ -64,8 +64,11 @@ class OvipJwtCodecTest {
         @DisplayName("서명 변조 - JwtException")
         fun parse_tampered() {
             val issued = codec.issue("client-1", listOf("ovip.write"))
-            // 원본이 이미 "AB" 로 끝나면 치환이 no-op 이 되어 검증이 통과해버린다(간헐 실패 원인) — 다른 값으로 바꾼다.
-            val tampered = issued.token.dropLast(2) + if (issued.token.endsWith("AB")) "CD" else "AB"
+            // 서명(마지막 segment)의 **첫 글자**를 바꾼다. 끝 글자는 base64url 패딩 비트를 포함해
+            // 다른 문자여도 같은 바이트로 디코딩될 수 있어(= 변조가 무효화되어 검증 통과) 간헐 실패한다.
+            val body = issued.token.substringBeforeLast('.')
+            val signature = issued.token.substringAfterLast('.')
+            val tampered = "$body.${if (signature.first() == 'A') 'B' else 'A'}${signature.drop(1)}"
             assertThatThrownBy { codec.parse(tampered) }
                 .isInstanceOf(JwtException::class.java)
         }

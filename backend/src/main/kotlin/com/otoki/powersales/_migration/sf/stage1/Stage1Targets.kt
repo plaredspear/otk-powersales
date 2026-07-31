@@ -373,6 +373,16 @@ object Stage1Targets {
         ),
     )
 
+    /**
+     * 공지(DKRetail__Notice__c) — **이관 대상 제외** (2026-07-31 운영 결정).
+     *
+     * 레거시 공지는 넘기지 않고 신규 시스템에서 새로 작성한다. [ALL] 에는 남기되
+     * [DEPENDENCY_ORDER] 에서 빼 UI 드롭다운/copy-all 에 노출되지 않는다 — 결정이 바뀌면
+     * [DEPENDENCY_ORDER] 에 `"Notice"` 한 줄을 되돌리면 그대로 동작한다.
+     *
+     * 딸린 단계들도 함께 무의미해져 실행 경로를 제거했다: 공지 본문 이미지 적재
+     * ([NOTICE_IMAGE_UPLOAD_FILE]) / Stage2 공지 본문 rtaImage placeholder 치환 / notice FK resolve.
+     */
     private val NOTICE = EntityMetadata(
         targetName = "Notice",
         sObjectName = "DKRetail__Notice__c",
@@ -1518,9 +1528,9 @@ object Stage1Targets {
      * upload-file-polymorphic-parent (record_sfid=notice SFID 직접 조인) 가 자동 처리한다. 본문 HTML 의
      * rtaImage URL → 신규 public URL 치환은 별도 스크립트(replace-notice-rta-urls)가 적재 완료 후 수행.
      *
-     * 본 타겟은 [ALL] 에만 등록하고 [DEPENDENCY_ORDER] 에는 등록하지 않는다 — UI 드롭다운 / copy-all
-     * 일괄에 노출되지 않고, 공지 본문 이미지 전용 UI 가 targetName 을 직접 지정해 single copy-from-s3 로만
-     * 호출한다 ([CLAIM_IMAGE_UPLOAD_FILE] 과 동일 패턴).
+     * **현재 미사용** — 공지사항 자체가 이관 대상에서 제외([NOTICE])되어 부모 공지가 없다. 전용 UI 카드도
+     * 제거했다. 정의만 남겨 두므로, 공지 이관을 되살리면 [CLAIM_IMAGE_UPLOAD_FILE] 과 동일 패턴
+     * (targetName 직접 지정 single copy-from-s3) 으로 다시 쓸 수 있다.
      *
      * fields 는 [UPLOAD_FILE] 과 동일 (같은 테이블/컬럼). sObjectName 은 null — SOQL 추출 대상이 아니라
      * rtaImage 서블릿 경유이므로 verify-metadata @SFField 정합 검사에서 skip 된다.
@@ -2013,7 +2023,8 @@ object Stage1Targets {
         "Group",
         "Employee",
         "User",
-        "Notice",
+        // Notice — 공지사항은 이관 대상에서 제외 (2026-07-31 운영 결정). 레거시 공지는 넘기지 않고
+        // 신규 시스템에서 새로 작성한다. 메타([NOTICE]) 는 남겨 두었으니 결정이 바뀌면 이 줄만 복구하면 된다.
         "AccountCategoryMaster",
         "AgreementHistory",
         "AgreementWord",
