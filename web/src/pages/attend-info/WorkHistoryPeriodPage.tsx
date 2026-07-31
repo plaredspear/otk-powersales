@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, DatePicker, Empty, Input, Select, Space, Tag, Typography } from 'antd';
+import { Alert, DatePicker, Empty, Select, Space, Tag, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import type { TeamMember } from '@/api/team-schedule';
@@ -16,7 +16,6 @@ export default function WorkHistoryPeriodPage() {
   // 시작/종료 년월 — 월 단위 캘린더(DatePicker picker="month") 로 선택.
   const [fromMonthDate, setFromMonthDate] = useState<Dayjs>(now);
   const [toMonthDate, setToMonthDate] = useState<Dayjs>(now);
-  const [keyword, setKeyword] = useState('');
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
   const [memberBranchCode, setMemberBranchCode] = useState<string | undefined>(undefined);
   // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 거래처별 집계 뷰로 전환.
@@ -83,8 +82,9 @@ export default function WorkHistoryPeriodPage() {
           gap: 8,
         }}
       >
-        {/* 지점 선택은 좌측 패널 하나로만 둔다 — 월별 근무내역(개인) 탭과 동일한 위치/형태.
-            여기 있던 상단 다중선택 지점 필터는 조회에 반영되지 않는 중복 UI 라 제거했다. */}
+        {/* 상단은 조회 기간만 — 지점 선택과 사번/이름 검색은 좌측 패널이 담당한다
+            (월별 근무내역(개인) 탭과 동일). 여기 있던 지점 다중선택·사번/이름 입력은 선택값이
+            어떤 조회에도 전달되지 않는 중복 UI 라 제거했다. */}
         <Space wrap align="end">
           <Space direction="vertical" size={4}>
             <span>시작 년월:</span>
@@ -106,16 +106,6 @@ export default function WorkHistoryPeriodPage() {
               allowClear={false}
               disabledDate={(d) => d.year() < 2020 || d.year() > 2099}
               style={{ width: 130 }}
-            />
-          </Space>
-          <Space direction="vertical" size={4}>
-            <span>사번/이름:</span>
-            <Input
-              allowClear
-              placeholder="사번 또는 이름"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              style={{ width: 160 }}
             />
           </Space>
         </Space>

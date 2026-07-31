@@ -68,6 +68,13 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.queryByRole('button', { name: /^조회$/ })).not.toBeInTheDocument();
   });
 
+  it('상단 조회 조건은 기간뿐이다 (지점/사번·이름 검색은 좌측 패널이 담당)', () => {
+    renderPage();
+    expect(screen.getByText('시작 년월:')).toBeInTheDocument();
+    expect(screen.queryByText('사번/이름:')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('사번 또는 이름')).not.toBeInTheDocument();
+  });
+
   it('지점 선택 UI 는 좌측 패널 1곳뿐이다 (월별 근무내역 탭과 동일)', async () => {
     // 다중지점 사용자 — 상단 필터에도 지점 셀렉터가 있던 시절의 중복 UI 회귀 가드.
     mockedBranches.mockResolvedValue([
