@@ -82,8 +82,10 @@ class DashboardBranchResolver(
     companion object {
         /**
          * 대시보드 전사 권한자 지점 화이트리스트 — Retail사업부 32개 지점 + 영업지원2팀 + CVS전략팀.
-         * 코드는 `Organization.orgCodeLevel5`(영업지원2팀만 Level5 부재로 Level4 `4889`) 기준,
-         * `org_cd3 → org_cd4 → org_cd5` 오름차순 정렬 (기존 지점 드롭다운 정렬 규칙 정합).
+         * 코드는 `Organization.orgCodeLevel5`(영업지원2팀만 Level5 부재로 Level4 `4889`) 기준.
+         *
+         * **표시 순서는 지점명 가나다순** ([BranchResponse.NAME_ORDER]) — 아래 리터럴은 유지보수를 위해
+         * 조직 계층(사업부 → 영업부) 순으로 적어 두고, 노출 시점에 이름순으로 정렬한다.
          */
         val DASHBOARD_ALL_BRANCHES: List<BranchResponse> = listOf(
             // 영업지원실 - 영업지원2팀 (Level5 부재 → Level4 코드 4889)
@@ -130,7 +132,7 @@ class DashboardBranchResolver(
             BranchResponse("5851", "창원1지점"),
             BranchResponse("5852", "부산2지점"),
             BranchResponse("5853", "진주1지점"),
-        )
+        ).sortedWith(BranchResponse.NAME_ORDER)
 
         /** [DASHBOARD_ALL_BRANCHES] 지점 코드 집합 — 조회 스코프 제한 / IDOR 검증용. */
         val WHITELIST_CODES: Set<String> = DASHBOARD_ALL_BRANCHES.map { it.branchCode }.toSet()

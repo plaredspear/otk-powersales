@@ -63,7 +63,7 @@ class DashboardBranchResolverTest {
     }
 
     @Test
-    @DisplayName("고정 화이트리스트 - 영업지원2팀(4889)/CVS전략팀(5694) 포함 + org_cd 오름차순 정렬")
+    @DisplayName("고정 화이트리스트 - 영업지원2팀(4889)/CVS전략팀(5694) 포함 + 지점명 가나다순 정렬")
     fun dashboardAllBranches_contents() {
         val list = DashboardBranchResolver.DASHBOARD_ALL_BRANCHES
 
@@ -76,8 +76,11 @@ class DashboardBranchResolverTest {
         assertThat(retailBranches).allMatch { it.branchName.endsWith("지점") }
         // 코드 중복 없음
         assertThat(list.map { it.branchCode }).doesNotHaveDuplicates()
-        // org_cd 오름차순 정렬 (4889 → 5694 → 5815 ...)
-        assertThat(list.map { it.branchCode }).isSorted()
+        // 지점명 가나다순 정렬 — 셀렉터에서 찾기 쉬움 우선 (2026-07-31 운영 결정, org_cd 순 아님)
+        assertThat(list).isSortedAccordingTo(BranchResponse.NAME_ORDER)
+        assertThat(list.first().branchName).isEqualTo("CVS전략팀")
+        assertThat(list.map { it.branchName }.filter { it.startsWith("강남") })
+            .containsExactly("강남1지점", "강남2지점", "강남3지점", "강남4지점")
     }
 
     @Test

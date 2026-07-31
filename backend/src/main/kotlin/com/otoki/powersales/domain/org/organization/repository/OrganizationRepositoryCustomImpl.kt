@@ -88,6 +88,8 @@ class OrganizationRepositoryCustomImpl(
             )
             .from(organization)
             .where(where)
+            // 조직코드 순서는 **중복 제거 기준**(같은 코드가 여러 행이면 앞선 조직 계층의 이름 채택)일 뿐,
+            // 응답 순서는 아래에서 지점명 가나다순([BranchResponse.NAME_ORDER])으로 다시 정렬한다.
             .orderBy(
                 organization.orgCodeLevel3.asc(),
                 organization.orgCodeLevel4.asc(),
@@ -110,7 +112,8 @@ class OrganizationRepositoryCustomImpl(
                 result += BranchResponse(code, name)
             }
         }
-        return result
+        // 셀렉터 표시 순서 — 지점명 가나다순 (DB collation 비의존, 34개 고정 목록과 동일 규칙).
+        return result.sortedWith(BranchResponse.NAME_ORDER)
     }
 
     override fun searchForAdmin(
