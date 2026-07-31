@@ -23,6 +23,11 @@ import org.springframework.stereotype.Component
  *
  * 하드코딩 사유: 34개 목록이 조직 개편과 무관하게 대시보드에 고정 노출되어야 한다는 운영 요구.
  * 조직 코드는 `Organization.orgCodeLevel5`(영업지원2팀은 Level5 부재로 Level4 `4889`) 기준.
+ *
+ * **2026-07-31**: 투입현황 대시보드 자체는 [UnifiedBranchScopeResolver] (셀렉터=판정 화이트리스트 +
+ * 판정 후 확장 통합) 로 전환됐다 — 본 클래스의 [effectiveBranchCodes] 는 현재 프로덕션 호출부가 없고,
+ * [isAllBranches] 전사 판정과 [DASHBOARD_ALL_BRANCHES] 34개 상수, [resolveBranches] 만 다른 화면들
+ * (여사원 현황·전문행사조 셀렉터 등)이 계속 사용한다. 대시보드 검증 완료 후 정리 예정.
  */
 @Component
 class DashboardBranchResolver(

@@ -1,11 +1,9 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.response.DashboardResponse
-import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
-import com.otoki.powersales.admin.service.DashboardBranchResolver
+import com.otoki.powersales.admin.service.UnifiedBranchScopeResolver
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -22,17 +20,16 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/dashboard")
 class AdminDashboardController(
     private val adminDashboardService: AdminDashboardService,
-    private val dashboardBranchResolver: DashboardBranchResolver
+    private val unifiedBranchScopeResolver: UnifiedBranchScopeResolver
 ) {
 
     /**
      * 투입현황 대시보드 조회. 별도 권한 가드 없이 인증된(로그인한) 모든 admin 사용자 접근 가능.
      *
-     * 조회 데이터 범위는 [CurrentDataScope] 가 사용자 권한 (VIEW_ALL_DATA / 지점 스코프) 기준으로 제한한다.
+     * 조회 데이터 범위는 [UnifiedBranchScopeResolver] 가 사용자 권한별 지점 화이트리스트로 제한한다.
      */
     @GetMapping
     fun getDashboard(
-        @CurrentDataScope scope: DataScope,
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,
         @RequestParam(required = false) branchCode: List<String>?
@@ -42,37 +39,37 @@ class AdminDashboardController(
         }
 
         // 조회 조건(지점) 라벨을 응답에 채우기 위한 코드→지점명 맵 — branches 셀렉터와 동일 산출 로직 재사용.
-        val branchNamesByCode = dashboardBranchResolver.resolveBranches(principal)
+        val branchNamesByCode = unifiedBranchScopeResolver.resolveBranches(principal)
             .associate { it.branchCode to it.branchName }
 
-        // 조회 지점 스코프 — 전사 권한자도 34개 화이트리스트로 제한(셀렉터와 동일 범위).
-        // 화면은 지점을 여러 개 선택할 수 있어 branchCode 는 코드 목록(다중 IN)으로 해석한다.
-        //  - Filtered → 그 코드들로 좁힘. NoAccess → 매칭 0건 sentinel(빈 문자열, IN 절 매칭 불가).
-        //  - repository 는 "빈 목록 = 전건" 이므로 NoAccess 를 빈 목록으로 넘기면 안 된다 → sentinel 로 0건 보장.
-        val effectiveCodes = when (
-            val result = dashboardBranchResolver.effectiveBranchCodes(principal, scope, branchCode)
+        // 조회 지점 스코프 — 판정(요청 ⊆ 셀렉터 화이트리스트) + 확장(BranchCodeExpander)을 통합 리졸버가
+        // 한 번에 산출한다. 셀렉터에 보이는 지점은 항상 조회 가능(셀렉터·판정 동일 출처).
+        //  - Allowed → grantedCodes(원본, 라벨용) / queryCodes(확장, IN 필터용).
+        //  - NoAccess → 매칭 0건 sentinel(빈 문자열). repository 는 "빈 목록 = 전건" 이므로
+        //    빈 목록으로 넘기면 안 된다 → sentinel 로 0건 보장.
+        val (grantedCodes, queryCodes) = when (
+            val result = unifiedBranchScopeResolver.resolveScope(principal, branchCode)
         ) {
-            is EffectiveBranchResult.All -> emptyList()
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> listOf("")
+            is BranchScopeResult.Allowed -> result.grantedCodes to result.queryCodes
+            is BranchScopeResult.NoAccess -> listOf("") to listOf("")
         }
 
-        val response = adminDashboardService.getDashboard(effectiveCodes, yearMonth, branchNamesByCode)
+        val response = adminDashboardService.getDashboard(grantedCodes, yearMonth, branchNamesByCode, queryCodes)
         return ResponseEntity.ok(ApiResponse.success(response, "대시보드 조회 성공"))
     }
 
     /**
      * 대시보드 지점 셀렉터 옵션. 대시보드와 동일하게 별도 권한 가드 없이 인증된 모든 admin 사용자 접근 가능.
      *
-     * [DashboardBranchResolver] 로 산출 — 전사 권한자 (SYSTEM_ADMIN / ALL_BRANCHES) 는 대시보드 전용
-     * 고정 화이트리스트 (Retail 32개 지점 + 영업지원2팀 + CVS전략팀 = 34개), 그 외는 본인 지점 스코프.
-     * 여사원일정 등과 공유하는 [WomenScheduleBranchResolver] 와 별개로, 대시보드에만 적용되는 규칙이다.
+     * [UnifiedBranchScopeResolver] 로 산출 — 전사 권한자는 대시보드 고정 화이트리스트 34개
+     * (Retail 32개 지점 + 영업지원2팀 + CVS전략팀), 그 외는 본인 조직 트리(상위 조직 사용자는 하위 지점
+     * 여러 건). 이 목록이 곧 조회 판정 화이트리스트라, 셀렉터에 보이는 지점은 항상 조회된다.
      */
     @GetMapping("/branches")
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = dashboardBranchResolver.resolveBranches(principal)
+        val result = unifiedBranchScopeResolver.resolveBranches(principal)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
