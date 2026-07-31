@@ -16894,10 +16894,10 @@
       },
       "FemaleEmployeeSafetyCheckReportItem" : {
         "properties" : {
-          "accountBranchCode" : {
+          "accountName" : {
             "type" : [ "string", "null" ]
           },
-          "accountName" : {
+          "accountSapCode" : {
             "type" : [ "string", "null" ]
           },
           "accountType" : {
@@ -16986,10 +16986,10 @@
       },
       "FemaleEmployeeSafetyCheckRpaItem" : {
         "properties" : {
-          "accountBranchCode" : {
+          "accountName" : {
             "type" : [ "string", "null" ]
           },
-          "accountName" : {
+          "accountSapCode" : {
             "type" : [ "string", "null" ]
           },
           "accountType" : {
@@ -17157,18 +17157,17 @@
       },
       "FemaleEmployeeWorkHistoryItem" : {
         "properties" : {
-          "accountBranchCode" : {
-            "type" : [ "string", "null" ]
-          },
           "accountBranchName" : {
             "type" : [ "string", "null" ]
           },
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountSapCode" : {
+            "type" : [ "string", "null" ]
+          },
           "age" : {
-            "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [ "string", "null" ]
           },
           "commuteDate" : {
             "type" : [ "string", "null" ]
@@ -18165,9 +18164,6 @@
           "createdDate" : {
             "type" : [ "string", "null" ]
           },
-          "custName" : {
-            "type" : [ "string", "null" ]
-          },
           "duplicateProposalNum" : {
             "type" : [ "string", "null" ]
           },
@@ -18196,6 +18192,9 @@
             "type" : [ "string", "null" ]
           },
           "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "proposalNumber" : {
             "type" : [ "string", "null" ]
           },
           "responsibleLogisticsCenter" : {
@@ -23732,15 +23731,20 @@
           "subtotalActualAmount" : {
             "type" : "number"
           },
+          "subtotalOtherAmount" : {
+            "type" : "number"
+          },
           "subtotalOtherQuantity" : {
+            "type" : "number"
+          },
+          "subtotalPrimaryAmount" : {
             "type" : "number"
           },
           "subtotalPrimaryQuantity" : {
             "type" : "number"
           },
           "subtotalTargetAmount" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "number"
           }
         },
         "type" : "object"
@@ -23768,15 +23772,20 @@
           "totalActualAmount" : {
             "type" : "number"
           },
+          "totalOtherAmount" : {
+            "type" : "number"
+          },
           "totalOtherQuantity" : {
+            "type" : "number"
+          },
+          "totalPrimaryAmount" : {
             "type" : "number"
           },
           "totalPrimaryQuantity" : {
             "type" : "number"
           },
           "totalTargetAmount" : {
-            "format" : "int64",
-            "type" : "integer"
+            "type" : "number"
           }
         },
         "type" : "object"
@@ -23831,6 +23840,9 @@
           "professionalPromotionTeam" : {
             "type" : [ "string", "null" ]
           },
+          "professionalPromotionTeamCurrent" : {
+            "type" : [ "string", "null" ]
+          },
           "promotionName" : {
             "type" : [ "string", "null" ]
           },
@@ -23841,8 +23853,7 @@
             "type" : [ "string", "null" ]
           },
           "targetAmount" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [ "number", "null" ]
           },
           "workType2" : {
             "type" : [ "string", "null" ]
@@ -35198,6 +35209,22 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -35222,6 +35249,22 @@
           "name" : "branchCode",
           "required" : false,
           "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
             "type" : "string"
           }
         } ],
@@ -41572,6 +41615,20 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "werk1Tx",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "werk3Tx",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -41637,6 +41694,20 @@
         }, {
           "in" : "query",
           "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "werk1Tx",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "werk3Tx",
           "required" : false,
           "schema" : {
             "type" : "string"
