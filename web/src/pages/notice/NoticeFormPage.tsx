@@ -16,6 +16,7 @@ import MobileNoticePreview from './MobileNoticePreview';
 import {
   collectPlaceholderMappings,
   findUnrecoverableImageSrcs,
+  isUnrecoverableImageSrc,
   replacePreviewsWithPlaceholders as toPlaceholders,
   uniqueKeyFromSrc,
 } from './noticeInlineImage';
@@ -141,6 +142,10 @@ export default function NoticeFormPage() {
   // 정리(S3+soft-delete)하는 대상 판별에 넘긴다. (삽입 후 삭제한 이미지의 고아 파일 방지)
   const sessionUploadedRefids = useRef<Set<string>>(new Set());
   const quillRef = useRef<ReactQuill>(null);
+  // 이번 붙여넣기에서 걸러낸 로컬 전용 이미지(file:/blob: 등) 개수 + 복구 예약 여부.
+  // matcher 는 이미지 노드마다 호출되므로, 붙여넣기 1회당 복구를 한 번만 돌리기 위한 상태다.
+  const droppedLocalImages = useRef(0);
+  const localImageRecoveryScheduled = useRef(false);
 
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { user } = useAuth();
@@ -249,6 +254,56 @@ export default function NoticeFormPage() {
     }
   };
 
+  /**
+   * Windows 에서 Word/한글 문서의 이미지를 붙여넣으면 클립보드 HTML 에 `file:///...clip_image001.png`
+   * 만 담기고 `clipboardData.files` 는 비어 있는 경우가 많다 (브라우저가 로컬 경로를 읽지 못해 에디터에서
+   * 바로 깨진다). 이때 비동기 Clipboard API 로 같은 클립보드의 **비트맵**을 다시 읽어 정상 업로드 경로로
+   * 돌린다. 권한 거부/미지원/비트맵 부재면 빈 배열을 반환해 안내 메시지로 폴백한다.
+   */
+  const readClipboardImageFiles = async (): Promise<File[]> => {
+    const clipboard = navigator.clipboard as { read?: () => Promise<ClipboardItem[]> } | undefined;
+    if (!clipboard?.read) return [];
+    try {
+      const items = await clipboard.read();
+      const files: File[] = [];
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith('image/'));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        const ext = (type.split('/')[1] ?? 'png').replace('jpeg', 'jpg');
+        files.push(new File([blob], `pasted.${ext}`, { type }));
+      }
+      return files;
+    } catch {
+      // 권한 거부(NotAllowedError) 등 — 안내 폴백.
+      return [];
+    }
+  };
+
+  // 걸러낸 로컬 이미지가 있으면 붙여넣기 1회당 한 번만 복구를 시도한다
+  // (matcher 는 이미지 노드마다 호출되므로 macrotask 로 모아서 실행).
+  const scheduleLocalImageRecovery = () => {
+    if (localImageRecoveryScheduled.current) return;
+    localImageRecoveryScheduled.current = true;
+    setTimeout(() => {
+      localImageRecoveryScheduled.current = false;
+      const dropped = droppedLocalImages.current;
+      droppedLocalImages.current = 0;
+      if (dropped === 0) return;
+      void (async () => {
+        const files = await readClipboardImageFiles();
+        if (files.length > 0) {
+          for (const file of files) await uploadAndInsert(file);
+          return;
+        }
+        message.warning(
+          `문서에서 복사한 이미지 ${dropped}건은 그대로 붙여넣을 수 없습니다. ` +
+            '이미지 파일을 직접 첨부하거나 화면 캡처(Windows: Win+Shift+S) 후 붙여넣어 주세요.',
+        );
+      })();
+    }, 0);
+  };
+
   // 붙여넣기/드래그앤드롭 이미지 삽입을 모두 Quill root(.ql-editor) capture 단계 리스너 + clipboard matcher
   // 로 일원화한다. 붙여넣기 이미지가 본문에 2번 삽입되던 버그의 원인은, 과거 wrapper div 의 onPaste 핸들러
   // (clipboardData.files 처리) 와 아래 clipboard matcher (HTML base64 <img> 처리) 가 상호 배제 없이 둘 다
@@ -289,6 +344,14 @@ export default function NoticeFormPage() {
         if (file) void uploadAndInsert(file);
         return new Delta();
       }
+      // 로컬 전용 참조(file:/blob:/cid: — Windows 워드·한글 붙여넣기)는 본문에 넣지 않는다. 넣어 봐야
+      // 에디터에서도 깨지고 저장도 막힌다. 대신 같은 클립보드의 비트맵을 비동기로 다시 읽어 업로드를 시도하고,
+      // 실패하면 안내한다.
+      if (src && isUnrecoverableImageSrc(src)) {
+        droppedLocalImages.current += 1;
+        scheduleLocalImageRecovery();
+        return new Delta();
+      }
       return delta;
     });
     // addMatcher 는 누적 등록되므로 에디터 mount 시 1회만 등록한다.
@@ -316,7 +379,8 @@ export default function NoticeFormPage() {
       root.removeEventListener('drop', onDrop, { capture: true } as EventListenerOptions);
       root.removeEventListener('dragover', onDragOver, { capture: true } as EventListenerOptions);
     };
-    // uploadAndInsert / dataUriToFile 는 ref·모듈상수·안정 import 만 참조하므로 재구독 불필요.
+    // uploadAndInsert / dataUriToFile / scheduleLocalImageRecovery 는 ref·모듈상수·안정 import 만
+    // 참조하므로 재구독 불필요.
     // clipboard matcher(addMatcher) 와 drop 리스너는 에디터 mount 시 1회만 등록해야 한다
     // (재실행 시 matcher 누적 / 리스너 중복). 정체성 안정화가 로직상 필수라 deps 를 비운다.
   }, []);

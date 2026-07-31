@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectPlaceholderMappings,
   findUnrecoverableImageSrcs,
+  isUnrecoverableImageSrc,
   replacePreviewsWithPlaceholders,
   uniqueKeyFromSrc,
 } from './noticeInlineImage';
@@ -55,6 +56,21 @@ describe('replacePreviewsWithPlaceholders', () => {
       '<p><img src="notice-image://999" data-refid="999"></p>';
 
     expect(replacePreviewsWithPlaceholders(html, mappings)).toBe(html);
+  });
+});
+
+describe('isUnrecoverableImageSrc (default-deny)', () => {
+  it.each([
+    ['file:///C:/Users/tmp/clip_image001.png', true], // Windows 워드/한글 붙여넣기
+    ['blob:https://app.local/9f2c-4d', true],
+    ['cid:image001.png@01DA', true], // Outlook 메일 붙여넣기
+    ['/assets/logo.png', true], // 상대경로 — 서버가 받아올 수 없다
+    ['https://cdn.example.com/a.jpg', false], // 서버가 S3 로 이관
+    ['http://cdn.example.com/a.jpg', false],
+    ['data:image/png;base64,AAA', false], // 업로드로 변환
+    ['notice-image://777', false], // 우리 placeholder
+  ])('%s → %s', (src, expected) => {
+    expect(isUnrecoverableImageSrc(src)).toBe(expected);
   });
 });
 

@@ -57,12 +57,29 @@ export function collectPlaceholderMappings(html: string | null | undefined): Map
   return map;
 }
 
+/** 본문 placeholder 의 커스텀 스킴 (백엔드 NoticeImagePlaceholder.SCHEME 와 동일 값). */
+const PLACEHOLDER_SCHEME = 'notice-image://';
+
 /**
- * 서버가 절대 가져올 수 없는 이미지 참조의 스킴.
- * `file:` 은 작성자 PC 의 로컬 경로(한글/워드 붙여넣기), `blob:`/`cid:` 는 브라우저·메일 클라이언트
- * 메모리 참조라 저장 순간 죽는다. 외부 http(s) 이미지는 저장 시 서버가 S3 로 이관하므로 여기 포함하지 않는다.
+ * 저장해도 살릴 수 없는 이미지 참조인지 판정한다 (default-deny).
+ *
+ * 살릴 수 있는 것만 열거하고 나머지를 전부 막는다:
+ * - `http(s)://` — 저장 시 서버가 내려받아 S3 로 이관한다 (NoticeService.normalizeInlineExternalImages)
+ * - `data:image/` — 붙여넣기 즉시 업로드로 변환되고, 남더라도 서버가 정규화한다
+ * - `notice-image://` — 이미 우리 placeholder
+ *
+ * 나머지(`file:` = 워드/한글이 만든 작성자 PC 로컬 경로, `blob:` = 브라우저 메모리, `cid:` = 메일 첨부,
+ * 상대경로 등)는 저장 순간 죽는 참조다. Windows 에서 Word/한글 문서의 이미지를 붙여넣으면 클립보드에
+ * 비트맵 대신 `file:///.../clip_image001.png` HTML 만 담기는 경우가 많아 실제로 자주 발생한다.
  */
-const UNRECOVERABLE_SCHEMES = ['file:', 'blob:', 'cid:'];
+export function isUnrecoverableImageSrc(src: string): boolean {
+  const lower = src.trim().toLowerCase();
+  if (!lower) return false;
+  if (lower.startsWith('http://') || lower.startsWith('https://')) return false;
+  if (lower.startsWith('data:image/')) return false;
+  if (lower.startsWith(PLACEHOLDER_SCHEME)) return false;
+  return true;
+}
 
 /**
  * 본문에서 저장해도 살릴 수 없는 이미지 참조를 찾는다 (저장 전 사용자 안내용).
@@ -73,9 +90,7 @@ export function findUnrecoverableImageSrcs(html: string | null | undefined): str
   const found: string[] = [];
   for (const m of html.matchAll(IMG_TAG_REGEX)) {
     const src = SRC_ATTR_REGEX.exec(m[0])?.[1];
-    if (!src) continue;
-    const lower = src.toLowerCase();
-    if (UNRECOVERABLE_SCHEMES.some((scheme) => lower.startsWith(scheme))) found.push(src);
+    if (src && isUnrecoverableImageSrc(src)) found.push(src);
   }
   return found;
 }
