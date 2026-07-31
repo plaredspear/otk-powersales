@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Checkbox,
-  DatePicker,
-  Empty,
-  Input,
-  Select,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
+import { Alert, DatePicker, Empty, Input, Select, Space, Tag, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import type { TeamMember } from '@/api/team-schedule';
@@ -26,21 +16,18 @@ export default function WorkHistoryPeriodPage() {
   // 시작/종료 년월 — 월 단위 캘린더(DatePicker picker="month") 로 선택.
   const [fromMonthDate, setFromMonthDate] = useState<Dayjs>(now);
   const [toMonthDate, setToMonthDate] = useState<Dayjs>(now);
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
   const [memberBranchCode, setMemberBranchCode] = useState<string | undefined>(undefined);
   // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 거래처별 집계 뷰로 전환.
   const [selectedMember, setSelectedMember] = useState<TeamMember | undefined>(undefined);
 
-  const { data: branches = [] } = useAttendInfoBranches();
+  const branchesQuery = useAttendInfoBranches();
+  const branches = useMemo(() => branchesQuery.data ?? [], [branchesQuery.data]);
   const branchOptions = useMemo(
     () => branches.map((b) => ({ value: b.branchCode, label: b.branchName })),
     [branches],
   );
-  const allCodes = useMemo(() => branches.map((b) => b.branchCode), [branches]);
-  const allSelected = allCodes.length > 0 && selectedCodes.length === allCodes.length;
-  const someSelected = selectedCodes.length > 0 && !allSelected;
   const singleBranch = branches.length === 1;
 
   // 좌측 패널 여사원 목록 — 월별 근무내역(개인) 탭과 동일 소스 (퇴사/휴직 포함, attend_info 권한).
@@ -84,10 +71,6 @@ export default function WorkHistoryPeriodPage() {
   const exceedsMax = inclusiveMonths > MAX_RANGE_MONTHS;
   const rangeInvalid = reversed || exceedsMax;
 
-  const handleToggleAll = () => {
-    setSelectedCodes(allSelected ? [] : allCodes);
-  };
-
   return (
     <div>
       <div
@@ -100,42 +83,9 @@ export default function WorkHistoryPeriodPage() {
           gap: 8,
         }}
       >
+        {/* 지점 선택은 좌측 패널 하나로만 둔다 — 월별 근무내역(개인) 탭과 동일한 위치/형태.
+            여기 있던 상단 다중선택 지점 필터는 조회에 반영되지 않는 중복 UI 라 제거했다. */}
         <Space wrap align="end">
-          <Space direction="vertical" size={4}>
-            <span>지점명:</span>
-            {singleBranch ? (
-              <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
-                지점: {branches[0].branchName}
-              </Tag>
-            ) : (
-              <Select
-                mode="multiple"
-                value={selectedCodes}
-                onChange={(values) => setSelectedCodes(values as string[])}
-                options={branchOptions}
-                placeholder="지점 선택 (미선택 시 전체)"
-                // 폭 고정 — 가변 폭(minWidth~maxWidth) + maxTagCount="responsive" 조합은 임계 폭
-                // 근처에서 태그 펼침(폭 확장)↔접힘(폭 축소)이 무한 반복되며 화면이 깜빡인다(flickering).
-                style={{ width: 480 }}
-                maxTagCount="responsive"
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                filterOption={(input, option) => (option?.label ?? '').toString().includes(input)}
-                popupRender={(menu) => (
-                  <>
-                    <div style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                      <Checkbox checked={allSelected} indeterminate={someSelected} onChange={handleToggleAll}>
-                        전체 ({selectedCodes.length}/{allCodes.length})
-                      </Checkbox>
-                    </div>
-                    {menu}
-                  </>
-                )}
-                notFoundContent="항목 없음"
-              />
-            )}
-          </Space>
           <Space direction="vertical" size={4}>
             <span>시작 년월:</span>
             <DatePicker
@@ -189,11 +139,18 @@ export default function WorkHistoryPeriodPage() {
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
         {/* 좌측: 월별 근무내역(개인) 탭과 동일한 여사원 선택 UI. 선택 시 우측이 거래처별 뷰로 전환. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-          {!singleBranch && (
-            <div style={{ width: 240 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                지점명
-              </Text>
+          {/* 지점명 — 단일지점은 고정 Tag, 다중/전사 권한자는 선택 드롭다운 (월별 근무내역 탭과 동일). */}
+          <div style={{ width: 240 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              지점명
+            </Text>
+            {singleBranch ? (
+              <div style={{ marginTop: 4 }}>
+                <Tag color="geekblue" style={{ fontSize: 13, padding: '3px 10px', marginInlineEnd: 0 }}>
+                  {branches[0].branchName}
+                </Tag>
+              </div>
+            ) : (
               <Select
                 size="small"
                 style={{ width: '100%', marginTop: 4 }}
@@ -203,10 +160,11 @@ export default function WorkHistoryPeriodPage() {
                 options={branchOptions}
                 showSearch
                 optionFilterProp="label"
+                loading={branchesQuery.isLoading}
                 notFoundContent="지점 없음"
               />
-            </div>
-          )}
+            )}
+          </div>
           <MonthlyMemberSelectPanel
             members={membersQuery.data ?? []}
             isLoading={membersQuery.isFetching}

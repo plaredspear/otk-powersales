@@ -68,6 +68,31 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.queryByRole('button', { name: /^조회$/ })).not.toBeInTheDocument();
   });
 
+  it('지점 선택 UI 는 좌측 패널 1곳뿐이다 (월별 근무내역 탭과 동일)', async () => {
+    // 다중지점 사용자 — 상단 필터에도 지점 셀렉터가 있던 시절의 중복 UI 회귀 가드.
+    mockedBranches.mockResolvedValue([
+      { branchCode: 'B001', branchName: '원주1지점' },
+      { branchCode: 'B002', branchName: '강릉지점' },
+    ]);
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('지점명')).toHaveLength(1);
+    });
+    expect(screen.queryByText('지점 선택 (미선택 시 전체)')).not.toBeInTheDocument();
+    expect(screen.getByText('지점 선택')).toBeInTheDocument();
+  });
+
+  it('단일지점 사용자는 좌측 패널에 지점명이 Tag 로 고정 표시된다', async () => {
+    mockedBranches.mockResolvedValue([{ branchCode: 'B001', branchName: '원주1지점' }]);
+    renderPage();
+
+    // 지점 목록 로드 전에는 셀렉터가 그려지므로, Tag 로 대체될 때까지 기다린다.
+    expect(await screen.findByText('원주1지점')).toBeInTheDocument();
+    expect(screen.getByText('지점명')).toBeInTheDocument();
+    expect(screen.queryByText('지점 선택')).not.toBeInTheDocument();
+  });
+
   describe('여사원 선택 → 거래처별 집계', () => {
     const member = {
       employeeId: 10,
