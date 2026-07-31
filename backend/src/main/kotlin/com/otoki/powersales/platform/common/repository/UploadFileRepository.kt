@@ -25,4 +25,11 @@ interface UploadFileRepository : JpaRepository<UploadFile, Long> {
         ids: Collection<Long>,
         parentType: String
     ): List<UploadFile>
+
+    // 본문에 presigned URL 로 박힌 인라인 이미지를 placeholder 로 되돌릴 때 — URL 에 내재된
+    // uniqueKey(불변) 로 원본 행을 역추적한다.
+    fun findByUniqueKeyInAndParentTypeAndIsDeletedFalse(
+        uniqueKeys: Collection<String>,
+        parentType: String
+    ): List<UploadFile>
 }

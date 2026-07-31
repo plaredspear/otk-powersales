@@ -91,6 +91,9 @@ class NoticeServiceTest {
         every { storageService.getPresignedUrl(any(), any()) } answers {
             "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/${firstArg<String>()}?X-Amz-Signature=test"
         }
+        // 본문 presigned URL → placeholder 정규화의 uniqueKey 역추적 — 기본 매칭 없음 stub
+        // (해당 경로를 검증하는 테스트에서 override).
+        every { uploadFileRepository.findByUniqueKeyInAndParentTypeAndIsDeletedFalse(any(), any()) } returns emptyList()
         // 상세 조회 시 발송 이력 조회 — 기본 미발송 stub (개별 테스트에서 override 가능).
         every { noticePushLogRepository.countByNoticeId(any()) } returns 0L
         every { noticePushLogRepository.findFirstByNoticeIdOrderByCreatedAtDesc(any()) } returns null
@@ -629,6 +632,42 @@ class NoticeServiceTest {
         }
 
         @Test
+        @DisplayName("본문에 presigned URL 이 실려 오면 - 저장 시 placeholder 로 되돌리고 파일을 이 공지로 소속")
+        fun createNotice_normalizesInlinePresignedUrl() {
+            // 웹 에디터가 placeholder 복원에 실패하면(URL 이스케이프 차이 등) presigned URL 이 그대로 넘어온다.
+            // 그대로 저장하면 30분 뒤 만료되어 이미지가 영구히 깨지므로(공지 2393 사례) 서버가 다시 정규화한다.
+            val key = "uploads/notice/2026/07/30/de9a7d0b.jpg"
+            val presigned =
+                "https://prod-bucket.s3.ap-northeast-2.amazonaws.com/private/$key" +
+                    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Expires=1800&amp;X-Amz-Signature=abc"
+            val request = NoticeCreateRequest(
+                title = "공지",
+                scope = "영업사원",
+                category = "COMPANY",
+                content = """<h1>제목</h1><p><img src="$presigned"></p>"""
+            )
+            val orphanFile = UploadFile(
+                id = 777L, uniqueKey = key, parentType = "Notice", parentId = null, uploadKbn = "INLINE"
+            )
+            val savedNotice = slot<Notice>()
+            every { noticeRepository.save(capture(savedNotice)) } answers { firstArg() }
+            every {
+                uploadFileRepository.findByUniqueKeyInAndParentTypeAndIsDeletedFalse(listOf(key), "Notice")
+            } returns listOf(orphanFile)
+            every { uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), "Notice") } returns listOf(orphanFile)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any()) } returns emptyList()
+
+            noticeService.createNotice(request, principalOf())
+
+            // 만료되는 URL 은 본문에 남지 않고 placeholder 만 저장된다 → 조회 시마다 유효한 presigned 재발급.
+            assertThat(savedNotice.captured.contents).doesNotContain("X-Amz-Signature")
+            assertThat(savedNotice.captured.contents).contains("notice-image://777")
+            assertThat(savedNotice.captured.contents).contains("""data-refid="777"""")
+            // 미소속(parent_id=null) 임시 업로드분은 이 공지로 소속되어 이후 cleanup 대상에서 보호된다.
+            assertThat(orphanFile.parentId).isEqualTo(savedNotice.captured.id)
+        }
+
+        @Test
         @DisplayName("지점공지 작성 시 선택한 지점코드를 권한 스코프 화이트리스트에서 매칭하여 저장")
         fun createNotice_branch_usesSelectedBranch() {
             val request = NoticeCreateRequest(
@@ -1002,6 +1041,12 @@ class NoticeServiceTest {
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 10L)
             } returns listOf(inlineFile)
+            every {
+                uploadFileRepository.findByUniqueKeyInAndParentTypeAndIsDeletedFalse(listOf(uniqueKey), "Notice")
+            } returns listOf(inlineFile)
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), "Notice")
+            } returns listOf(inlineFile)
 
             // 수정 화면이 보내는 본문: 웹 에디터가 data-refid 를 버려 presigned src 만 남은 형태.
             // presigned URL path 에 uniqueKey 가 내재되어 있어 cleanup 이 보존해야 한다.
@@ -1016,6 +1061,9 @@ class NoticeServiceTest {
             // 삭제되지 않아야 한다 — S3 delete 미호출 + soft-delete 미표기.
             verify(exactly = 0) { storageService.deletePrivate(uniqueKey) }
             assertThat(inlineFile.isDeleted).isNotEqualTo(true)
+            // 만료되는 presigned URL 은 본문에 남지 않고 placeholder 로 되돌아간다.
+            assertThat(existing.contents).doesNotContain("X-Amz-Signature")
+            assertThat(existing.contents).contains("notice-image://555")
         }
 
         @Test

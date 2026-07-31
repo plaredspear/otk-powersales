@@ -38,7 +38,7 @@ object NoticeImagePlaceholder {
         Regex("""<img\b[^>]*?\bsrc\s*=\s*"([^"]*)"[^>]*>""", RegexOption.IGNORE_CASE)
 
     /** private S3 key 의 세그먼트 prefix ("private/"). presigned URL path 에서 이 뒤가 uniqueKey. */
-    private const val PRIVATE_PATH_SEGMENT = "private/"
+    const val PRIVATE_PATH_SEGMENT = "private/"
 
     /**
      * base64 data URI 로 본문에 통째로 박혀 들어온 인라인 이미지 `<img src="data:image/...;base64,...">`.
@@ -93,6 +93,22 @@ object NoticeImagePlaceholder {
         return IMG_SRC_VALUE_REGEX.findAll(html)
             .mapNotNull { match -> uniqueKeyFromSrc(match.groupValues[1]) }
             .toList()
+    }
+
+    /**
+     * 본문 HTML 의 `<img>` 중 private S3 URL(presigned) 을 참조하는 태그를 [replacement] 결과로 교체한다.
+     *
+     * 클라이언트가 placeholder 복원에 실패해 만료되는 presigned URL 을 본문에 실어 보내는 경우
+     * (에디터가 `data-refid` 를 버리거나 URL 이스케이프로 치환이 어긋나는 등) 저장 시점에 서버가
+     * placeholder 로 되돌리기 위한 진입점이다. [replacement] 가 null 을 반환하면 원본 태그를 보존한다.
+     * placeholder(`notice-image://`)와 외부 URL 은 "private/" 를 포함하지 않아 자연히 대상에서 빠진다.
+     */
+    fun rewriteImgsByUniqueKey(html: String, replacement: (String) -> String?): String {
+        if (!html.contains(PRIVATE_PATH_SEGMENT)) return html
+        return IMG_SRC_VALUE_REGEX.replace(html) { match ->
+            val uniqueKey = uniqueKeyFromSrc(match.groupValues[1]) ?: return@replace match.value
+            replacement(uniqueKey) ?: match.value
+        }
     }
 
     /**

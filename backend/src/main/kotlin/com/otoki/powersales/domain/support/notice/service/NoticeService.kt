@@ -247,6 +247,37 @@ class NoticeService(
         }
     }
 
+    /**
+     * 본문에 presigned URL 로 박혀 들어온 인라인 이미지(`<img src="https://.../private/{uniqueKey}?X-Amz-...">`)를
+     * placeholder(`<img src="notice-image://{id}" data-refid="{id}">`)로 되돌린다.
+     *
+     * presigned URL 은 30분(`NOTICE_PRESIGN_TTL_SECONDS`) 뒤 만료되는 임시값이라 본문에 저장되면 그 시점부터
+     * 이미지가 영구히 깨진다(공지 2393 실제 사례). 웹 에디터가 저장 직전 placeholder 로 복원하지만,
+     * 에디터가 `data-refid` 를 버리거나 URL 이스케이프(`&` → `&amp;`)로 치환이 어긋나면 그 복원이 실패한다.
+     * 클라이언트 복원에 의존하지 않도록 **저장 시점에 서버가 다시 정규화**한다 (base64 정규화와 같은 위치).
+     *
+     * 역추적 키는 URL 에 내재된 불변 uniqueKey(= `upload_file.unique_key`). 아직 부모가 없는(parent_id=null)
+     * 임시 업로드분은 이 공지로 소속시킨다. 다른 공지 소속 파일은 소속을 바꾸지 않으며(IDOR), placeholder 로만
+     * 바뀌어 조회 시 rewrite 대상에서 빠진다(= 남의 이미지가 노출되지 않는다).
+     * upload_file 에 없는 URL(외부 링크 등)은 원본 태그를 보존한다.
+     */
+    private fun normalizeInlinePresignedImages(noticeId: Long, html: String?): String? {
+        if (html.isNullOrEmpty()) return html
+        val uniqueKeys = NoticeImagePlaceholder.extractUniqueKeys(html).toSet()
+        if (uniqueKeys.isEmpty()) return html
+
+        val filesByKey = uploadFileRepository
+            .findByUniqueKeyInAndParentTypeAndIsDeletedFalse(uniqueKeys.toList(), UploadFileParentTypes.NOTICE)
+            .associateBy { it.uniqueKey }
+
+        return NoticeImagePlaceholder.rewriteImgsByUniqueKey(html) { key ->
+            val file = filesByKey[key] ?: return@rewriteImgsByUniqueKey null
+            // 아직 부모가 없는 임시 업로드분만 이 공지로 소속시킨다 (uploadKbn 은 업로드 시점에 INLINE 으로 고정).
+            if (file.parentId == null) file.parentId = noticeId
+            NoticeImagePlaceholder.build(file.id.toString(), "")
+        }
+    }
+
     private fun extensionForContentType(contentType: String): String = when (contentType) {
         "image/png" -> "png"
         "image/jpeg", "image/jpg" -> "jpg"
@@ -257,28 +288,41 @@ class NoticeService(
     }
 
     /**
-     * 기존 공지 본문에 base64 로 저장된 인라인 이미지를 일괄 정규화(S3 업로드 + placeholder 치환)한다.
-     * 저장 시점 정규화([normalizeInlineBase64Images]) 도입 이전에 저장된 공지를 소급 복구하기 위한 일회성 관리자 작업.
-     * 공지별 실패(허용 외 타입/상한 초과 등)는 로그만 남기고 건너뛰어 나머지 공지 정규화를 계속한다.
+     * 기존 공지 본문의 비정상 인라인 이미지를 일괄 정규화한다 — 저장 시점 정규화 도입 이전 데이터의 소급 복구용
+     * 관리자 작업. 두 종류를 함께 처리한다:
+     * 1. base64 data URI ([normalizeInlineBase64Images]) — S3 업로드 + placeholder 치환
+     * 2. 만료되는 presigned URL ([normalizeInlinePresignedImages]) — uniqueKey 역추적 + placeholder 치환
+     *
+     * 2번은 웹 에디터의 placeholder 복원이 URL 이스케이프 차이로 실패해 본문에 presigned URL 이 그대로
+     * 저장된 공지(2026-07-30 이전 작성분)를 되살린다 — placeholder 로 돌려놓으면 조회 시점마다 유효한
+     * presigned 가 새로 발급된다. 공지별 실패는 로그만 남기고 건너뛴다.
      *
      * @return 실제로 본문이 정규화(변경)된 공지 수
      */
     @Transactional
     fun migrateInlineBase64Images(): Int {
-        val notices = noticeRepository.findByContentsContaining("data:image").filter { it.isDeleted != true }
+        val notices = (
+            noticeRepository.findByContentsContaining("data:image") +
+                noticeRepository.findByContentsContaining(NoticeImagePlaceholder.PRIVATE_PATH_SEGMENT)
+            )
+            .distinctBy { it.id }
+            .filter { it.isDeleted != true }
         var migrated = 0
         for (notice in notices) {
             try {
-                val normalized = normalizeInlineBase64Images(notice.id, notice.contents)
+                val normalized = normalizeInlinePresignedImages(
+                    notice.id,
+                    normalizeInlineBase64Images(notice.id, notice.contents)
+                )
                 if (normalized != notice.contents) {
                     notice.contents = normalized
                     migrated++
                 }
             } catch (ex: Exception) {
-                log.warn("공지 {} 의 base64 인라인 이미지 정규화 실패 — 건너뜀", notice.id, ex)
+                log.warn("공지 {} 의 인라인 이미지 정규화 실패 — 건너뜀", notice.id, ex)
             }
         }
-        log.info("base64 인라인 이미지 정규화 완료 — 대상 {}건 중 {}건 변경", notices.size, migrated)
+        log.info("인라인 이미지 정규화 완료 — 대상 {}건 중 {}건 변경", notices.size, migrated)
         return migrated
     }
 
@@ -394,6 +438,9 @@ class NoticeService(
         // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다
         // (parentId=noticeId 로 즉시 소속 → 이어지는 syncInlineImages 가 본문 참조로 자연히 보존).
         saved.contents = normalizeInlineBase64Images(saved.id, saved.contents)
+        // 클라이언트가 placeholder 복원에 실패해 넘긴 presigned URL 도 서버가 placeholder 로 되돌린다
+        // (만료 URL 이 본문에 영구 저장돼 이미지가 깨지는 것을 구조적으로 차단).
+        saved.contents = normalizeInlinePresignedImages(saved.id, saved.contents)
         syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
         return NoticeMutationResponse.Companion.from(saved)
     }
@@ -421,6 +468,7 @@ class NoticeService(
         notice.category = cat
         // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다.
         notice.contents = normalizeInlineBase64Images(notice.id, request.content)
+        notice.contents = normalizeInlinePresignedImages(notice.id, notice.contents)
         // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
         notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 
