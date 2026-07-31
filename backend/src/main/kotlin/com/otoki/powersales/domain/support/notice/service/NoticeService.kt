@@ -44,8 +44,8 @@ import com.otoki.powersales.platform.push.service.PushBadgeService
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
 import org.slf4j.LoggerFactory
@@ -66,8 +66,7 @@ class NoticeService(
     private val storageService: StorageService,
     private val fcmSender: FcmSender,
     private val pushBadgeService: PushBadgeService,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
-    private val branchCodeExpander: BranchCodeExpander
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     companion object {
@@ -311,13 +310,13 @@ class NoticeService(
      * web admin 공지 목록 조회 (임시저장 포함).
      *
      * @param branchCode 지점 조회 조건. 지정 시 그 지점의 공지(=지점공지)만 조회한다.
-     *   조회 필터에는 [BranchCodeExpander] 확장 코드(조직 개편 전/후 계보 + 롤업)를 적용한다 —
-     *   다른 지점 조회 화면(전문행사조/행사마스터/여사원 일정 등)과 동일 규약이라, 개편 전 코드로
-     *   작성된 과거 공지가 현행 코드 조회에서 누락되지 않는다.
-     *   (확장은 권한 판정이 아니라 최종 조회 필터에만 쓴다 — [BranchCodeExpander] KDoc 참조.
-     *   admin 목록은 지점 스코프 가드가 없어 판정 단계 자체가 없다.)
+     *   판정과 확장은 [BranchScopeGateway] + [BranchScopeProfile.NOTICE] 가 수행한다 — 셀렉터
+     *   옵션([getNoticeFormMeta])과 같은 화이트리스트로 판정한 뒤, 통과한 코드만 `BranchMapping`
+     *   계보(개편 전/후 + 롤업)로 확장해 필터에 쓴다. 개편 전 코드로 작성된 과거 공지가 현행 코드
+     *   조회에서 누락되지 않으며, 권한 밖 지점 코드를 넣으면 0건이다(IDOR 차단).
      */
     fun getPostsForAdmin(
+        principal: WebUserPrincipal,
         category: String?,
         search: String?,
         branchCode: String?,
@@ -327,8 +326,11 @@ class NoticeService(
         val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
-        val branchCodes = branchCode?.trim()?.ifBlank { null }
-            ?.let { branchCodeExpander.expand(setOf(it)).toList() }
+        // 지점 검색은 셀렉터 옵션([getNoticeFormMeta])과 같은 출처로 판정하고, 통과한 코드만
+        // BranchMapping 으로 확장해 필터로 쓴다 — 권한 밖 지점 코드를 넣으면 0건(IDOR 차단).
+        val branchCodes = branchScopeGateway
+            .resolveScope(principal, branchCode?.trim(), BranchScopeProfile.NOTICE)
+            .queryCodesOrNull()
         val pageable = PageRequest.of(page - 1, size)
         val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, branchCodes, pageable)
 
@@ -712,9 +714,11 @@ class NoticeService(
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
-        // 지점공지 선택 지점 옵션 — 행사마스터/여사원일정과 동일한 WomenScheduleBranchResolver 권한별 화이트리스트.
-        // 전사 권한자는 다중 지점, 조장/지점장은 본인 지점 단일(프론트가 단일 시 고정 표시). costCenterCode(=OrgCode) 차원.
-        val branches = womenScheduleBranchResolver.resolveBranches(principal)
+        // 지점공지 선택 지점 옵션 — 다른 조회 화면과 동일한 [BranchScopeGateway] 화이트리스트
+        // (전사 권한자 34개 지점 고정 / 그 외 본인 조직 트리). 지점공지는 지점 단위라 팀 단위 조직은
+        // 대상이 아니므로 전사도 34개로 제한한다. 목록 화면의 지점 검색 옵션도 이 응답을 재사용한다.
+        // 조장/지점장은 본인 지점 단일(프론트가 단일 시 고정 표시). costCenterCode(=OrgCode) 차원.
+        val branches = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.NOTICE)
             .map { BranchOption(branchCode = it.branchCode, branchName = it.branchName) }
 
         return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
@@ -740,8 +744,9 @@ class NoticeService(
      * 지점공지(BRANCH) 저장 시 (지점명, 지점코드) 를 작성자가 고른 지점코드에서 해석한다.
      * - 회사공지/교육: (null, null)
      * - 지점공지: 요청 branchCode 필수(미보유 시 BranchRequiredException). 그 코드가 작성자 권한 스코프
-     *   (WomenScheduleBranchResolver 화이트리스트) 안에 있어야 하며(아니면 BranchNotAllowedException/IDOR 차단),
-     *   지점명은 화이트리스트에서 코드로 매칭한다.
+     *   ([BranchScopeGateway] + [BranchScopeProfile.NOTICE] 화이트리스트) 안에 있어야 하며
+     *   (아니면 BranchNotAllowedException/IDOR 차단), 지점명은 화이트리스트에서 코드로 매칭한다.
+     *   셀렉터 옵션([getNoticeFormMeta])과 같은 출처라 화면에 보이는 지점은 항상 저장할 수 있다.
      */
     private fun resolveSelectedBranch(
         category: NoticeCategory,
@@ -752,7 +757,7 @@ class NoticeService(
 
         val branchCode = requestedBranchCode?.takeIf { it.isNotBlank() } ?: throw BranchRequiredException()
 
-        val allowed = womenScheduleBranchResolver.resolveBranches(principal)
+        val allowed = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.NOTICE)
         val match = allowed.firstOrNull { it.branchCode == branchCode } ?: throw BranchNotAllowedException()
         return match.branchName to match.branchCode
     }

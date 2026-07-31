@@ -51,6 +51,13 @@ enum class BranchScopeProfile(
     SALES(restrictsAllBranches = false, allBranchesSelectorWhitelisted = true),
 
     /**
+     * 공지사항 — 목록의 지점 검색 + 지점공지 등록 대상 선택(IDOR 판정) 이 같은 목록을 공유한다.
+     * 지점공지는 지점 단위이므로 전사 권한자에게도 34개 지점만 노출한다(팀 단위 조직 제외).
+     * LEGACY: 셀렉터/판정 모두 `WomenScheduleBranchResolver`(전사 조직 전건) — 전환 이전 동작.
+     */
+    NOTICE(restrictsAllBranches = true, allBranchesSelectorWhitelisted = true),
+
+    /**
      * 조직 전건 계열 — 거래처 조회·매출진도율마스터.
      * 전사 권한자는 셀렉터·조회 모두 종전대로 전건(34개로 좁히면 34개 밖 거래처가 사라진다).
      * LEGACY: 셀렉터 `WomenScheduleBranchResolver` + 조회 `DataScope`(선택값만 확장).

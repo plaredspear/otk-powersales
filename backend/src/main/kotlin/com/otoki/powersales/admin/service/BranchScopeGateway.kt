@@ -57,7 +57,10 @@ class BranchScopeGateway(
 
             BranchScopeProfile.MASTER_LIST -> whitelistBranchScopeResolver.getBranches(principal)
             BranchScopeProfile.REPORT -> reportBranchScopeService.getBranches(principal)
-            BranchScopeProfile.ORG_WIDE -> womenScheduleBranchResolver.resolveBranches(principal)
+
+            BranchScopeProfile.NOTICE,
+            BranchScopeProfile.ORG_WIDE,
+            -> womenScheduleBranchResolver.resolveBranches(principal)
         }
     }
 
@@ -121,8 +124,9 @@ class BranchScopeGateway(
      * - [BranchScopeProfile.MASTER_LIST]: [WhitelistBranchScopeResolver](전사 34개 / 비전사 본인 1건, 확장 포함).
      * - [BranchScopeProfile.REPORT]: [ReportBranchScopeService](전사 미선택은 전건 / 비전사 본인 1건, 확장 포함).
      * - [BranchScopeProfile.SALES]: [DataScope] 교집합만 — 매출/실적 계열은 선택 코드를 확장하지 않았다.
-     * - [BranchScopeProfile.ORG_WIDE]: 가시성은 [DataScope](별도 [applyDataScope] 경로) 가 판정하고,
-     *   지점 필터는 선택값 확장뿐이었다 — 미선택이면 필터 없음.
+     * - [BranchScopeProfile.ORG_WIDE] / [BranchScopeProfile.NOTICE]: 가시성은 [DataScope](별도
+     *   [applyDataScope] 경로) 또는 공지 카테고리가 판정하고, 지점 필터는 선택값 확장뿐이었다 —
+     *   미선택이면 필터 없음.
      */
     private fun legacyScope(
         principal: WebUserPrincipal,
@@ -150,7 +154,10 @@ class BranchScopeGateway(
                 dataScopeService.resolve(principal).effectiveBranchCodes(requested)
                     .toBranchScopeResult(requested, expand = false)
 
-            BranchScopeProfile.ORG_WIDE ->
+            // 두 계열 모두 가시성은 다른 축(DataScope / 공지 카테고리) 이 판정하고, 지점은 선택값 확장뿐이었다.
+            BranchScopeProfile.NOTICE,
+            BranchScopeProfile.ORG_WIDE,
+            ->
                 if (requested.isEmpty()) BranchScopeResult.Unrestricted
                 else BranchScopeResult.Allowed(requested, branchCodeExpander.expand(requested).toList())
         }

@@ -78,7 +78,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 currentPage = 1,
                 size = 10
             )
-            every { noticeService.getPostsForAdmin(null, null, null, eq(1), eq(10)) } returns response
+            every { noticeService.getPostsForAdmin(any(), null, null, null, eq(1), eq(10)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices"))
                 .andExpect(status().isOk)

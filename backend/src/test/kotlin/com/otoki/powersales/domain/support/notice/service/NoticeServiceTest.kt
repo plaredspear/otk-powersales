@@ -33,8 +33,9 @@ import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundEx
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.admin.dto.BranchScopeResult
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
@@ -69,8 +70,7 @@ class NoticeServiceTest {
     private val storageService: StorageService = mockk()
     private val fcmSender: FcmSender = mockk()
     private val pushBadgeService: PushBadgeService = mockk()
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk()
-    private val branchCodeExpander: BranchCodeExpander = mockk()
+    private val branchScopeGateway: BranchScopeGateway = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -85,8 +85,7 @@ class NoticeServiceTest {
             storageService,
             fcmSender,
             pushBadgeService,
-            womenScheduleBranchResolver,
-            branchCodeExpander
+            branchScopeGateway,
         )
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
         every { storageService.getPresignedUrl(any(), any()) } answers {
@@ -99,12 +98,17 @@ class NoticeServiceTest {
         every { noticeRepository.countPushTargets(any(), any()) } returns 0L
         // 지점 스코프 화이트리스트 — 기본은 서울1지점(1101) 단일. 지점공지 저장/검증에 사용.
         // 개별 테스트에서 override 가능(전사 다중 지점, 빈 목록 등).
-        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+        every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
             BranchResponse(branchCode = "1101", branchName = "[수도권] 서울1지점")
         )
         // 지점 조회 코드 확장 — 기본은 입력 그대로 pass-through (BranchMapping 매칭 없음).
         // 확장 반영을 검증하는 테스트에서 override.
-        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+        // 지점 검색 — 선택값이 있으면 확장 코드 목록(기본은 pass-through), 없으면 지점 조건 없음.
+        every { branchScopeGateway.resolveScope(any(), any<String>(), any()) } answers {
+            val requested = secondArg<String?>()
+            if (requested.isNullOrBlank()) BranchScopeResult.Unrestricted
+            else BranchScopeResult.Allowed(listOf(requested), listOf(requested))
+        }
     }
 
     /** 테스트용 WebUserPrincipal 생성 — 지점공지 지점 스코프/role 검증에 필요한 필드만 채운다. */
@@ -504,7 +508,7 @@ class NoticeServiceTest {
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
             every { noticeRepository.findAllNotices(null, null, null, any()) } returns page
 
-            val result = noticeService.getPostsForAdmin(null, null, null, 1, 10)
+            val result = noticeService.getPostsForAdmin(principalOf(), null, null, null, 1, 10)
 
             assertThat(result.content).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
@@ -513,22 +517,23 @@ class NoticeServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - INVALID -> InvalidNoticeCategoryException")
         fun getPostsForAdmin_invalidCategory() {
-            assertThatThrownBy { noticeService.getPostsForAdmin("INVALID", null, null, 1, 10) }
+            assertThatThrownBy { noticeService.getPostsForAdmin(principalOf(), "INVALID", null, null, 1, 10) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
         }
 
         @Test
-        @DisplayName("지점 조회 - branchCode 를 BranchCodeExpander 확장 집합으로 조회 (공백 trim)")
+        @DisplayName("지점 조회 - 게이트웨이가 판정/확장한 코드 집합으로 조회 (공백 trim)")
         fun getPostsForAdmin_withBranchCode() {
             val notices = listOf(
                 createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            // 조직 개편 계보 — 현행 5829 선택 시 구/하위 코드(5826~5828)까지 확장.
-            every { branchCodeExpander.expand(setOf("5829")) } returns setOf("5829", "5826", "5827", "5828")
+            // 조직 개편 계보 — 현행 5829 선택 시 구/하위 코드(5826~5828)까지 확장(게이트웨이 산출).
+            every { branchScopeGateway.resolveScope(any(), "5829", any()) } returns
+                BranchScopeResult.Allowed(listOf("5829"), listOf("5829", "5826", "5827", "5828"))
             every { noticeRepository.findAllNotices(null, null, any<List<String>>(), any()) } returns page
 
-            val result = noticeService.getPostsForAdmin(null, null, " 5829 ", 1, 10)
+            val result = noticeService.getPostsForAdmin(principalOf(), null, null, " 5829 ", 1, 10)
 
             assertThat(result.content).hasSize(1)
             verify {
@@ -542,15 +547,15 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("지점 조회 - branchCode 가 빈 문자열이면 확장 없이 지점 조건 없음(null)")
+        @DisplayName("지점 조회 - branchCode 가 빈 문자열이면 지점 조건 없음(null)")
         fun getPostsForAdmin_blankBranchCode() {
             val page = PageImpl(emptyList<Notice>(), PageRequest.of(0, 10), 0)
             every { noticeRepository.findAllNotices(null, null, null, any()) } returns page
 
-            noticeService.getPostsForAdmin(null, null, "   ", 1, 10)
+            noticeService.getPostsForAdmin(principalOf(), null, null, "   ", 1, 10)
 
             verify { noticeRepository.findAllNotices(null, null, null, any()) }
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            verify(exactly = 0) { branchScopeGateway.resolveScope(any(), any<List<String>>(), any()) }
         }
     }
 
@@ -656,7 +661,7 @@ class NoticeServiceTest {
                 branchCode = "1101"
             )
             // 화이트리스트는 타지점(9999)만 — 요청한 1101 은 스코프 밖.
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 BranchResponse(branchCode = "9999", branchName = "타지점")
             )
 
@@ -1170,9 +1175,18 @@ class NoticeServiceTest {
         }
 
         @Test
+        @DisplayName("지점 목록은 다른 조회 화면과 동일한 NOTICE 프로파일 화이트리스트를 쓴다")
+        fun getNoticeFormMeta_usesNoticeProfile() {
+            noticeService.getNoticeFormMeta(principalOf())
+
+            // 전사 권한자에게 조직 전건(팀 단위 포함)이 아니라 34개 지점 화이트리스트가 나가야 한다.
+            verify { branchScopeGateway.resolveBranches(any(), BranchScopeProfile.NOTICE) }
+        }
+
+        @Test
         @DisplayName("전사 권한 - resolver 다중 지점을 그대로 노출")
         fun getNoticeFormMeta_multipleBranches() {
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 BranchResponse(branchCode = "1101", branchName = "[수도권] 서울1지점"),
                 BranchResponse(branchCode = "1102", branchName = "[수도권] 서울2지점")
             )
@@ -1185,9 +1199,9 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("resolver 빈 목록 - branches 빈 배열")
+        @DisplayName("게이트웨이 빈 목록 - branches 빈 배열")
         fun getNoticeFormMeta_empty() {
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns emptyList()
 
             val result = noticeService.getNoticeFormMeta(principalOf())
 
