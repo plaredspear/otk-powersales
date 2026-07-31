@@ -58,14 +58,19 @@ interface PPTMasterRepositoryCustom {
     /**
      * 전문행사조 확정 인원 보고서 조회 (Spec #846 — SF Report `new_report_swJ` 이식).
      * `professional_promotion_team_master` ⋈ employee ⋈ account.
-     * 필터: isConfirmed=true (확정), soft-delete 제외.
-     * 정렬: branchCode 오름차순.
+     * 필터: isConfirmed=true (확정), soft-delete 제외,
+     *   startDateFrom/startDateTo 지정 시 시작일 범위 (SF timeFrameFilter StartDate__c 런타임 지정 정합).
+     * 정렬: 사원 소속 지점명(orgName) → 사번 오름차순 (레거시는 무정렬 — 화면 표시 축 기준 신규 정렬).
      *
      * @param branchCodeFilter 사원(`employee`) 소속 지점(costCenterCode) 스코프 필터.
      *   `null` 이면 전사(SF scope=organization 동등), 비어있지 않으면 해당 지점들로 제한.
      *   [searchMasters] 와 동일하게 `employee.costCenterCode` 기준으로 평가한다.
      */
-    fun findConfirmedReport(branchCodeFilter: List<String>?): List<ProfessionalPromotionTeamMaster>
+    fun findConfirmedReport(
+        branchCodeFilter: List<String>?,
+        startDateFrom: LocalDate? = null,
+        startDateTo: LocalDate? = null,
+    ): List<ProfessionalPromotionTeamMaster>
 }
 
 data class PPTMasterSearchResult(

@@ -116,7 +116,11 @@ class PPTMasterRepositoryCustomImpl(
         return PageableExecutionUtils.getPage(content, pageable) { countQuery.fetchOne() ?: 0L }
     }
 
-    override fun findConfirmedReport(branchCodeFilter: List<String>?): List<ProfessionalPromotionTeamMaster> {
+    override fun findConfirmedReport(
+        branchCodeFilter: List<String>?,
+        startDateFrom: LocalDate?,
+        startDateTo: LocalDate?,
+    ): List<ProfessionalPromotionTeamMaster> {
         val builder = BooleanBuilder()
         // 확정 인원만 (SF Confirmed__c = 1)
         builder.and(professionalPromotionTeamMaster.isConfirmed.isTrue)
@@ -130,12 +134,16 @@ class PPTMasterRepositoryCustomImpl(
         if (!branchCodeFilter.isNullOrEmpty()) {
             builder.and(employee.costCenterCode.`in`(branchCodeFilter))
         }
+        // 시작일 기간 — SF timeFrameFilter(StartDate__c, 런타임 지정) 정합. 미입력 시 무제한.
+        startDateFrom?.let { builder.and(professionalPromotionTeamMaster.startDate.goe(it)) }
+        startDateTo?.let { builder.and(professionalPromotionTeamMaster.startDate.loe(it)) }
         return queryFactory
             .selectFrom(professionalPromotionTeamMaster)
             .leftJoin(professionalPromotionTeamMaster.employee, employee).fetchJoin()
             .leftJoin(professionalPromotionTeamMaster.account, account).fetchJoin()
             .where(builder)
-            .orderBy(professionalPromotionTeamMaster.branchCode.asc())
+            // 지점명(사원 소속) → 사번 순 — 화면 표시 축 기준 (레거시는 무정렬)
+            .orderBy(employee.orgName.asc(), employee.employeeCode.asc())
             .fetch()
     }
 

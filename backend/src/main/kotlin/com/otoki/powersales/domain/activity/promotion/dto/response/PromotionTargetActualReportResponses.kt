@@ -15,17 +15,21 @@ data class PromotionTargetActualReportResponse(
     val totalTargetAmount: BigDecimal,
     val totalActualAmount: BigDecimal,
     val totalPrimaryQuantity: BigDecimal,
+    val totalPrimaryAmount: BigDecimal,
     val totalOtherQuantity: BigDecimal,
+    val totalOtherAmount: BigDecimal,
     val chart: List<PromotionTargetActualChartItem>,
 )
 
-/** 행사명 그룹 — rows + 그룹 소계. */
+/** 행사명 그룹 — rows + 그룹 소계 (SF Summary Sum 6종: 목표/실적/대표수량/대표금액/기타수량/기타금액). */
 data class PromotionTargetActualReportGroup(
     val promotionName: String?,
     val subtotalTargetAmount: BigDecimal,
     val subtotalActualAmount: BigDecimal,
     val subtotalPrimaryQuantity: BigDecimal,
+    val subtotalPrimaryAmount: BigDecimal,
     val subtotalOtherQuantity: BigDecimal,
+    val subtotalOtherAmount: BigDecimal,
     val rows: List<PromotionTargetActualReportRow>,
 )
 
@@ -40,6 +44,7 @@ data class PromotionTargetActualChartItem(
  *
  * targetAmount = SF Formula `DKRetail__DailyTargetAmount__c` 재현(목표갯수×기준단가, dkDailyTargetAmount 파생).
  * actualAmount = SF Formula `DailyActualSalesAmount__c`(총 실적 = 대표금액+기타금액) 재현(dailyTotalActualSalesAmount 파생).
+ * professionalPromotionTeamCurrent = 사원 마스터의 현재 소속 조 (SF 임철민팀장용 변형의 "전문행사조(현재)" 컬럼),
  * professionalPromotionTeam = 조원일정(투입 당시) 값. isWorkReport/commuteDate 는 teamMemberSchedule 조인.
  */
 data class PromotionTargetActualReportRow(
@@ -53,6 +58,7 @@ data class PromotionTargetActualReportRow(
     val employeeCode: String?,
     val employeeOrgName: String?,
     val employeeName: String?,
+    val professionalPromotionTeamCurrent: String?,
     val professionalPromotionTeam: String?,
     val scheduleDate: String?,
     val targetAmount: BigDecimal?,

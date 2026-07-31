@@ -76,12 +76,13 @@ export default function PromotionTargetActualReportPage() {
       { title: '거래처명', dataIndex: 'accountName', width: 150, render: (v) => v ?? '-' },
       { title: '거래처코드', dataIndex: 'accountCode', width: 100, render: (v) => v ?? '-' },
       { title: '대표제품', dataIndex: 'primaryProductName', width: 130, render: (v) => v ?? '-' },
-      { title: '매대조건', dataIndex: 'category1', width: 100, render: (v) => v ?? '-' },
+      { title: '제품유형', dataIndex: 'category1', width: 100, render: (v) => v ?? '-' },
       { title: '기타제품', dataIndex: 'otherProduct', width: 120, render: (v) => v ?? '-' },
       { title: '사번', dataIndex: 'employeeCode', width: 90, render: (v) => v ?? '-' },
       { title: '소속', dataIndex: 'employeeOrgName', width: 100, render: (v) => v ?? '-' },
       { title: '사원명', dataIndex: 'employeeName', width: 90, render: (v) => v ?? '-' },
-      { title: '전문행사조', dataIndex: 'professionalPromotionTeam', width: 110, render: (v) => v ?? '-' },
+      { title: '전문행사조(현재)', dataIndex: 'professionalPromotionTeamCurrent', width: 130, render: (v) => v ?? '-' },
+      { title: '전문행사조(투입당시)', dataIndex: 'professionalPromotionTeam', width: 150, render: (v) => v ?? '-' },
       { title: '행사일자', dataIndex: 'scheduleDate', width: 110, render: (v) => v ?? '-' },
       { title: '목표금액', dataIndex: 'targetAmount', width: 110, align: 'right', render: num },
       { title: '실적금액', dataIndex: 'actualAmount', width: 110, align: 'right', render: num },
@@ -149,8 +150,10 @@ export default function PromotionTargetActualReportPage() {
               <Text type="secondary" style={{ marginLeft: 12 }}>
                 소계 — 목표 {group.subtotalTargetAmount.toLocaleString()} / 실적{' '}
                 {group.subtotalActualAmount.toLocaleString()} / 대표수량{' '}
-                {group.subtotalPrimaryQuantity.toLocaleString()} / 기타수량{' '}
-                {group.subtotalOtherQuantity.toLocaleString()}
+                {group.subtotalPrimaryQuantity.toLocaleString()} / 대표금액{' '}
+                {group.subtotalPrimaryAmount.toLocaleString()} / 기타수량{' '}
+                {group.subtotalOtherQuantity.toLocaleString()} / 기타금액{' '}
+                {group.subtotalOtherAmount.toLocaleString()}
               </Text>
               <ResizableTable
                 rowKey={(r, idx) => `${r.employeeCode ?? ''}-${r.scheduleDate ?? ''}-${idx}`}
@@ -168,8 +171,10 @@ export default function PromotionTargetActualReportPage() {
           <Text strong>
             합계 — 목표 {query.data.totalTargetAmount.toLocaleString()} / 실적{' '}
             {query.data.totalActualAmount.toLocaleString()} / 대표수량{' '}
-            {query.data.totalPrimaryQuantity.toLocaleString()} / 기타수량{' '}
-            {query.data.totalOtherQuantity.toLocaleString()}
+            {query.data.totalPrimaryQuantity.toLocaleString()} / 대표금액{' '}
+            {query.data.totalPrimaryAmount.toLocaleString()} / 기타수량{' '}
+            {query.data.totalOtherQuantity.toLocaleString()} / 기타금액{' '}
+            {query.data.totalOtherAmount.toLocaleString()}
           </Text>
         </>
       ) : (

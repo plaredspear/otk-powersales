@@ -12,6 +12,7 @@ import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
 /**
  * 전문행사조 확정 인원 보고서 조회 + 엑셀 export (Spec #846).
@@ -42,21 +43,31 @@ class AdminPPTConfirmedReportService(
      * 지점 코드는 최종 필터 직전에 `BranchMapping` 확장을 1회 적용한다 — 조직 개편 전 코드가 남아 있는
      * 사원이 누락되지 않도록 ([AdminPPTMasterService] 의 `expandBranchCodes` 와 동일 축).
      */
-    fun getReport(scope: DataScope, branchCode: String?): PPTConfirmedReportResponse {
+    fun getReport(
+        scope: DataScope,
+        branchCode: String?,
+        startDateFrom: LocalDate? = null,
+        startDateTo: LocalDate? = null,
+    ): PPTConfirmedReportResponse {
         val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.All -> null
             is EffectiveBranchResult.Filtered -> branchCodeExpander.expand(result.codes).toList()
             is EffectiveBranchResult.NoAccess -> return PPTConfirmedReportResponse(emptyList())
         }
-        val masters = pptMasterRepository.findConfirmedReport(branchCodeFilter)
+        val masters = pptMasterRepository.findConfirmedReport(branchCodeFilter, startDateFrom, startDateTo)
         return PPTConfirmedReportResponse(masters.map { toItem(it) })
     }
 
     /**
-     * 확정 인원 엑셀 export — 6컬럼 시트 (조회와 동일 필터).
+     * 확정 인원 엑셀 export — 6컬럼 시트 + 총 건수 행 (조회와 동일 필터).
      */
-    fun exportReport(scope: DataScope, branchCode: String?): ExcelResult {
-        val response = getReport(scope, branchCode)
+    fun exportReport(
+        scope: DataScope,
+        branchCode: String?,
+        startDateFrom: LocalDate? = null,
+        startDateTo: LocalDate? = null,
+    ): ExcelResult {
+        val response = getReport(scope, branchCode, startDateFrom, startDateTo)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("전문행사조확정인원")
@@ -81,6 +92,8 @@ class AdminPPTConfirmedReportService(
             row.createCell(4).setCellValue(item.accountCode ?: "")
             row.createCell(5).setCellValue(item.professionalPromotionTeam ?: "")
         }
+        // 총 건수 행 — SF Report GrandTotal(레코드 수) 정합
+        sheet.createRow(response.items.size + 1).createCell(0).setCellValue("총 ${response.items.size}건")
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)

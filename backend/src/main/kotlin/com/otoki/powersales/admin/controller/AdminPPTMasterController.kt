@@ -130,8 +130,12 @@ class AdminPPTMasterController(
     fun getConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) branchCode: String?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDateFrom: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDateTo: LocalDate?,
     ): ResponseEntity<ApiResponse<PPTConfirmedReportResponse>> {
-        val response = pptConfirmedReportService.getReport(resolveBranchScope(principal, branchCode), branchCode)
+        val response = pptConfirmedReportService.getReport(
+            resolveBranchScope(principal, branchCode), branchCode, startDateFrom, startDateTo,
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -141,8 +145,12 @@ class AdminPPTMasterController(
     fun exportConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) branchCode: String?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDateFrom: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDateTo: LocalDate?,
     ): ResponseEntity<ByteArray> {
-        val result = pptConfirmedReportService.exportReport(resolveBranchScope(principal, branchCode), branchCode)
+        val result = pptConfirmedReportService.exportReport(
+            resolveBranchScope(principal, branchCode), branchCode, startDateFrom, startDateTo,
+        )
         return ExcelResponseUtils.build(result)
     }
 

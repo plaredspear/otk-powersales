@@ -14,6 +14,7 @@ export interface PromotionTargetActualReportRow {
   employeeCode: string | null;
   employeeOrgName: string | null;
   employeeName: string | null;
+  professionalPromotionTeamCurrent: string | null;
   professionalPromotionTeam: string | null;
   scheduleDate: string | null;
   targetAmount: number | null;
@@ -35,7 +36,9 @@ export interface PromotionTargetActualReportGroup {
   subtotalTargetAmount: number;
   subtotalActualAmount: number;
   subtotalPrimaryQuantity: number;
+  subtotalPrimaryAmount: number;
   subtotalOtherQuantity: number;
+  subtotalOtherAmount: number;
   rows: PromotionTargetActualReportRow[];
 }
 
@@ -52,7 +55,9 @@ export interface PromotionTargetActualReportResponse {
   totalTargetAmount: number;
   totalActualAmount: number;
   totalPrimaryQuantity: number;
+  totalPrimaryAmount: number;
   totalOtherQuantity: number;
+  totalOtherAmount: number;
   chart: PromotionTargetActualChartItem[];
 }
 

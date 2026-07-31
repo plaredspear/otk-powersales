@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Space, Typography } from 'antd';
+import { Alert, Button, Space, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -15,6 +15,31 @@ import { listTableLocale } from '@/lib/listTableLocale';
 const { Text } = Typography;
 
 const num = (v: number | null) => (v == null ? '-' : v.toLocaleString());
+
+/** 유효 신호등 색상 (SF formula `Valid__c` 의 IMAGE() Greenlight/Yellowlight/Redlight 대체 — DisplaySchedulePage 정합). */
+const VALID_LIGHT_COLOR: Record<string, string> = {
+  GREEN: '#52c41a',
+  YELLOW: '#faad14',
+  RED: '#ff4d4f',
+};
+
+function renderValidLight(valid: string | null, validData: string | null) {
+  if (!valid) return <span>-</span>;
+  const color = VALID_LIGHT_COLOR[valid] ?? '#d9d9d9';
+  return (
+    <Tooltip title={validData ?? ''}>
+      <span
+        style={{
+          display: 'inline-block',
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          backgroundColor: color,
+        }}
+      />
+    </Tooltip>
+  );
+}
 
 /**
  * 진열사원 스케줄 마스터 2-2. 유효사원(확정) 보고서 — SF Report X1_m0t 이식.
@@ -43,17 +68,30 @@ export default function ValidEmployeeConfirmedReportPage() {
     runExport(SCHEDULE_EXPORT_PATH, '진열스케줄.xlsx', { method: 'post', data: { ids } });
   };
 
+  // SF Report X1_m0t 컬럼 순서 정합 (CUST_ID 링크 컬럼 제외 15개)
   const columns: ColumnsType<ScheduleListItem> = useMemo(
     () => [
+      {
+        title: '유효',
+        dataIndex: 'valid',
+        width: 60,
+        align: 'center' as const,
+        fixed: 'left' as const,
+        render: (_: unknown, r: ScheduleListItem) => renderValidLight(r.valid, r.validData),
+      },
+      { title: '지점명', dataIndex: 'branchName', width: 110, fixed: 'left', render: (v) => v ?? '-' },
       { title: '사번', dataIndex: 'employeeCode', width: 100, fixed: 'left' },
       { title: '성명', dataIndex: 'employeeName', width: 90, fixed: 'left' },
+      { title: '재직상태', dataIndex: 'employmentStatus', width: 130, render: (v) => v ?? '-' },
       { title: '거래처코드', dataIndex: 'accountCode', width: 110, render: (v) => v ?? '-' },
       { title: '거래처명', dataIndex: 'accountName', width: 160, render: (v) => v ?? '-' },
+      { title: '거래처유형', dataIndex: 'accountType', width: 100, render: (v) => v ?? '-' },
       { title: '근무유형3', dataIndex: 'typeOfWork3', width: 100, render: (v) => v ?? '-' },
+      { title: '근무유형4', dataIndex: 'typeOfWork4', width: 100, render: (v) => v ?? '-' },
       { title: '근무유형5', dataIndex: 'typeOfWork5', width: 100, render: (v) => v ?? '-' },
       { title: '시작일', dataIndex: 'startDate', width: 110, render: (v) => v ?? '-' },
       { title: '종료일', dataIndex: 'endDate', width: 110, render: (v) => v ?? '-' },
-      { title: '코스트센터', dataIndex: 'costCenterCode', width: 100, render: (v) => v ?? '-' },
+      { title: '거래처상태', dataIndex: 'accountStatus', width: 100, render: (v) => v ?? '-' },
       {
         title: '전월매출',
         dataIndex: 'lastMonthRevenue',
@@ -104,6 +142,21 @@ export default function ValidEmployeeConfirmedReportPage() {
         pagination={false}
         scroll={{ x: 'max-content' }}
         locale={listTableLocale({ searched: requested })}
+        summary={() =>
+          rows.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>
+                    합계 — 전월매출{' '}
+                    {rows.reduce((acc, r) => acc + (r.lastMonthRevenue ?? 0), 0).toLocaleString()} (총{' '}
+                    {rows.length}건)
+                  </Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );

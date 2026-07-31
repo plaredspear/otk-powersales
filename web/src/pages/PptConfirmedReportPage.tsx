@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Select, Space, Tag, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Select, Space, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
+import type { Dayjs } from 'dayjs';
 import {
   fetchPptConfirmedReport,
   exportPptConfirmedReport as apiExport,
   type PptConfirmedReportItem,
+  type PptConfirmedReportPeriod,
 } from '@/api/pptConfirmedReport';
 import { usePPTBranches } from '@/hooks/promotion/usePPTBranches';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -32,27 +34,45 @@ export default function PptConfirmedReportPage() {
   // 지점 선택 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음).
   const [branchCode, setBranchCode] = useState<string>('');
   const [appliedBranchCode, setAppliedBranchCode] = useState<string>('');
+  // 시작일 기간 (선택) — SF timeFrameFilter(StartDate__c, 런타임 지정) 정합. 버퍼/적용값 분리.
+  const [startDateFrom, setStartDateFrom] = useState<Dayjs | null>(null);
+  const [startDateTo, setStartDateTo] = useState<Dayjs | null>(null);
+  const [appliedPeriod, setAppliedPeriod] = useState<PptConfirmedReportPeriod>({});
   // 마운트 자동 조회 없음 — 조회 버튼 클릭 시점에만 fetch.
   const [requested, setRequested] = useState(false);
 
   const query = useQuery({
-    queryKey: ['pptConfirmedReport', appliedBranchCode],
-    queryFn: () => fetchPptConfirmedReport(appliedBranchCode || undefined),
+    queryKey: ['pptConfirmedReport', appliedBranchCode, appliedPeriod.startDateFrom, appliedPeriod.startDateTo],
+    queryFn: () => fetchPptConfirmedReport(appliedBranchCode || undefined, appliedPeriod),
     enabled: requested,
   });
 
   const handleSearch = () => {
-    if (requested && appliedBranchCode === branchCode) {
+    if (startDateFrom && startDateTo && startDateTo.isBefore(startDateFrom)) {
+      message.warning('시작일(종료)은 시작일(시작) 이후여야 합니다.');
+      return;
+    }
+    const period: PptConfirmedReportPeriod = {
+      startDateFrom: startDateFrom?.format('YYYY-MM-DD'),
+      startDateTo: startDateTo?.format('YYYY-MM-DD'),
+    };
+    if (
+      requested &&
+      appliedBranchCode === branchCode &&
+      appliedPeriod.startDateFrom === period.startDateFrom &&
+      appliedPeriod.startDateTo === period.startDateTo
+    ) {
       query.refetch();
     } else {
       setAppliedBranchCode(branchCode);
+      setAppliedPeriod(period);
       setRequested(true);
     }
   };
 
   const handleExport = async () => {
     try {
-      await apiExport(appliedBranchCode || undefined);
+      await apiExport(appliedBranchCode || undefined, appliedPeriod);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -90,6 +110,16 @@ export default function PptConfirmedReportPage() {
             지점: {singleBranch.branchName}
           </Tag>
         )}
+        <DatePicker
+          placeholder="시작일(시작)"
+          value={startDateFrom}
+          onChange={(v) => setStartDateFrom(v)}
+        />
+        <DatePicker
+          placeholder="시작일(종료)"
+          value={startDateTo}
+          onChange={(v) => setStartDateTo(v)}
+        />
         <Button type="primary" onClick={handleSearch} loading={query.isFetching}>
           조회
         </Button>
@@ -122,6 +152,17 @@ export default function PptConfirmedReportPage() {
         pagination={false}
         scroll={{ x: 'max-content' }}
         locale={listTableLocale({ searched: requested })}
+        summary={() =>
+          query.data && query.data.items.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>총 {query.data.items.length}건</Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );
