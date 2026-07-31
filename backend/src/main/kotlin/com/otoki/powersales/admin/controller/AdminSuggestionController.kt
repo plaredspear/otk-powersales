@@ -179,6 +179,7 @@ class AdminSuggestionController(
      * CUSTOM 이면 startDate/endDate 필수. branchCode 선택 시 그 지점(등록 사원 소속)으로 좁힘 —
      * 지점 코드는 `BranchMapping` 확장(`expandedEffectiveBranchCodes`) 후 조회에 쓰여 레거시/별칭
      * 조직코드로 적재된 클레임도 함께 잡힌다.
+     * werk1Tx/werk3Tx 입력 시 거래처 물류센터명(상온/냉동) contains 필터 (SF WERK1_TX/WERK3_TX 정합).
      */
     @GetMapping("/logistics-claim-report")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
@@ -188,10 +189,12 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
+        @RequestParam(required = false) werk1Tx: String?,
+        @RequestParam(required = false) werk3Tx: String?,
     ): ResponseEntity<ApiResponse<LogisticsClaimReportResponse>> {
         val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
             .toEffectiveBranchResult()
-        val response = logisticsClaimReportService.getReport(period, startDate, endDate, branchScope)
+        val response = logisticsClaimReportService.getReport(period, startDate, endDate, branchScope, werk1Tx, werk3Tx)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -204,10 +207,12 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
+        @RequestParam(required = false) werk1Tx: String?,
+        @RequestParam(required = false) werk3Tx: String?,
     ): ResponseEntity<ByteArray> {
         val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
             .toEffectiveBranchResult()
-        val result = logisticsClaimReportService.exportReport(period, startDate, endDate, branchScope)
+        val result = logisticsClaimReportService.exportReport(period, startDate, endDate, branchScope, werk1Tx, werk3Tx)
         return ExcelResponseUtils.build(result)
     }
 }

@@ -62,15 +62,29 @@ export async function fetchLogisticsClaimReportBranches(): Promise<LogisticsClai
   return res.data.data;
 }
 
+/** 물류센터명 검색 필터 — SF WERK1_TX(상온)/WERK3_TX(냉동) 런타임 필터 정합. 거래처 물류센터명 contains. */
+export interface LogisticsCenterFilter {
+  werk1Tx?: string;
+  werk3Tx?: string;
+}
+
 /** 물류 클레임 조회 (category='물류 클레임' + period 기간). CUSTOM 이면 start/end 필요. branchCode 지정 시 그 지점(등록 사원 소속)으로 좁힘. */
 export async function fetchLogisticsClaimReport(
   period: LogisticsClaimReportPeriod,
   startDate?: string,
   endDate?: string,
   branchCode?: string,
+  centerFilter?: LogisticsCenterFilter,
 ): Promise<LogisticsClaimReportResponse> {
   const res = await client.get<ApiResponse<LogisticsClaimReportResponse>>(BASE, {
-    params: { period, startDate, endDate, branchCode: branchCode || undefined },
+    params: {
+      period,
+      startDate,
+      endDate,
+      branchCode: branchCode || undefined,
+      werk1Tx: centerFilter?.werk1Tx || undefined,
+      werk3Tx: centerFilter?.werk3Tx || undefined,
+    },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('물류 클레임', res));
   return res.data.data;
@@ -82,8 +96,16 @@ export async function exportLogisticsClaimReport(
   startDate?: string,
   endDate?: string,
   branchCode?: string,
+  centerFilter?: LogisticsCenterFilter,
 ): Promise<void> {
   await downloadExcel(`${BASE}/export`, `물류클레임보고서_${period}.xlsx`, {
-    params: { period, startDate, endDate, branchCode: branchCode || undefined },
+    params: {
+      period,
+      startDate,
+      endDate,
+      branchCode: branchCode || undefined,
+      werk1Tx: centerFilter?.werk1Tx || undefined,
+      werk3Tx: centerFilter?.werk3Tx || undefined,
+    },
   });
 }

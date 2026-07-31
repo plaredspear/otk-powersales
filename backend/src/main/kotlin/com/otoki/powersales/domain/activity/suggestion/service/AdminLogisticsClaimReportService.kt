@@ -31,7 +31,7 @@ enum class LogisticsClaimReportPeriod {
  *
  * 신규 차이: 기존 [AdminSuggestionService] 목록(DataScope·페이지네이션)과 별개 보고서 —
  *   전사 고정(SF scope=organization, "(영업본부)") + category 고정 + 기간 프리셋 + 엑셀.
- *   SF WERK1_TX/WERK3_TX 의 'contains 빈값' 필터는 항상 참(no-op)이라 미구현.
+ *   werk1Tx/werk3Tx 입력 시 거래처 물류센터명(상온/냉동) contains 필터 (SF WERK1_TX/WERK3_TX 런타임 필터 정합).
  */
 @Service
 @Transactional(readOnly = true)
@@ -45,18 +45,22 @@ class AdminLogisticsClaimReportService(
      * period=THIS_MONTH/LAST_MONTH 면 서버가 기간 산출(start/end 인자 무시), CUSTOM 이면 start/end 필수(미입력 시 예외).
      * 지점 스코프: branchScope(등록 사원 소속 지점 orgCostCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
      * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
+     * werk1Tx/werk3Tx 입력 시 거래처 물류센터명(상온/냉동) contains 로 추가 필터.
      */
     fun getReport(
         period: LogisticsClaimReportPeriod,
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
+        werk1Tx: String? = null,
+        werk3Tx: String? = null,
     ): LogisticsClaimReportResponse {
         val (start, end) = resolvePeriod(period, startDate, endDate)
         val suggestions = when (branchScope) {
-            is EffectiveBranchResult.All -> suggestionRepository.findLogisticsClaimReport(start, end, emptyList())
+            is EffectiveBranchResult.All ->
+                suggestionRepository.findLogisticsClaimReport(start, end, emptyList(), werk1Tx, werk3Tx)
             is EffectiveBranchResult.Filtered ->
-                suggestionRepository.findLogisticsClaimReport(start, end, branchScope.codes)
+                suggestionRepository.findLogisticsClaimReport(start, end, branchScope.codes, werk1Tx, werk3Tx)
             is EffectiveBranchResult.NoAccess -> emptyList()
         }
         val items = suggestions.map { toItem(it) }
@@ -71,8 +75,10 @@ class AdminLogisticsClaimReportService(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
+        werk1Tx: String? = null,
+        werk3Tx: String? = null,
     ): ExcelResult {
-        val response = getReport(period, startDate, endDate, branchScope)
+        val response = getReport(period, startDate, endDate, branchScope, werk1Tx, werk3Tx)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("물류클레임")
@@ -118,6 +124,8 @@ class AdminLogisticsClaimReportService(
             row.createCell(21).setCellValue(item.actionContent ?: "")
             row.createCell(22).setCellValue(item.duplicateProposalNum ?: "")
         }
+        // 총 건수 행 — SF Report GrandTotal(레코드 수) 정합
+        sheet.createRow(response.items.size + 1).createCell(0).setCellValue("총 ${response.items.size}건")
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)

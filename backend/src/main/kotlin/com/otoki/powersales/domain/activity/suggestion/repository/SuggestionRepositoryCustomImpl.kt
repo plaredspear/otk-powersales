@@ -127,6 +127,8 @@ class SuggestionRepositoryCustomImpl(
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
+        werk1Tx: String?,
+        werk3Tx: String?,
     ): List<Suggestion> {
         return queryFactory
             .selectFrom(suggestion)
@@ -138,7 +140,10 @@ class SuggestionRepositoryCustomImpl(
                 suggestion.category.eq(SuggestionCategory.LOGISTICS_CLAIM),
                 suggestion.claimDate.between(startDate, endDate),
                 suggestion.isDeleted.eq(false),
-                // SF WERK1_TX/WERK3_TX 'contains 빈값' 은 no-op (항상 참) — 미구현
+                // 거래처 물류센터명 contains — SF WERK1_TX(상온)/WERK3_TX(냉동) 런타임 필터 정합.
+                // 레거시는 Proposal formula(AccountId__r.WERK*_TX__c) 라 거래처 없는 건은 검색 시 제외 — leftJoin + 조건으로 동일.
+                werk1Tx?.takeIf { it.isNotBlank() }?.let { account.werk1Tx.contains(it) },
+                werk3Tx?.takeIf { it.isNotBlank() }?.let { account.werk3Tx.contains(it) },
                 // 지점 스코프 — 등록 사원 소속 지점(suggestion.orgCostCenterCode) IN. 빈 목록이면 전사(null → 미적용).
                 branchScopeCodes.takeIf { it.isNotEmpty() }?.let { suggestion.orgCostCenterCode.`in`(it) },
             )

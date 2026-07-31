@@ -59,7 +59,8 @@ interface SuggestionRepositoryCustom {
      * 물류 클레임 보고서 조회 (Spec #844 — SF Report `OLS_dmK`/`new_report_6dy`/`OLS_NDx` 이식).
      * `suggestion` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출.
      * 필터: category='물류 클레임'(LOGISTICS_CLAIM), claimDate ∈ [startDate, endDate], soft-delete 제외.
-     *       SF WERK1_TX/WERK3_TX 의 'contains 빈값' 은 항상 참(no-op)이라 미구현.
+     *       werk1Tx/werk3Tx 입력 시 거래처 물류센터명(상온/냉동) contains — SF WERK1_TX/WERK3_TX
+     *       런타임 필터 정합 (레거시는 Proposal formula = AccountId__r.WERK1_TX__c/WERK3_TX__c).
      * 지점 스코프: branchScopeCodes 비어있지 않으면 등록 사원 소속 지점(suggestion.orgCostCenterCode) IN. 빈 목록 = 전사.
      * 정렬: claimDate 내림차순.
      */
@@ -67,5 +68,7 @@ interface SuggestionRepositoryCustom {
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
+        werk1Tx: String? = null,
+        werk3Tx: String? = null,
     ): List<Suggestion>
 }

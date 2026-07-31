@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Space, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Input, Space, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
 import {
   fetchLogisticsClaimReport,
   exportLogisticsClaimReport as apiExport,
+  type LogisticsCenterFilter,
   type LogisticsClaimReportItem,
   type LogisticsClaimReportPeriod,
 } from '@/api/logisticsClaimReport';
@@ -47,6 +48,10 @@ export default function LogisticsClaimReportPage({ period }: Props) {
   // 지점 선택 — 버퍼(입력)와 적용값(조회에 반영) 분리. 조회 버튼 클릭 시에만 적용.
   const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [appliedBranchCode, setAppliedBranchCode] = useState<string | undefined>(undefined);
+  // 물류센터명 검색 — SF WERK1_TX(상온)/WERK3_TX(냉동) 런타임 필터 정합. 지점과 동일한 버퍼/적용값 분리.
+  const [werk1Tx, setWerk1Tx] = useState<string>('');
+  const [werk3Tx, setWerk3Tx] = useState<string>('');
+  const [appliedCenterFilter, setAppliedCenterFilter] = useState<LogisticsCenterFilter>({});
   // 당월/전월은 진입 시 자동 조회 활성화
   const [autoEnabled, setAutoEnabled] = useState<boolean>(!isCustom);
 
@@ -59,17 +64,34 @@ export default function LogisticsClaimReportPage({ period }: Props) {
     setCustomRange(null);
     setBranchCode(undefined);
     setAppliedBranchCode(undefined);
+    setWerk1Tx('');
+    setWerk3Tx('');
+    setAppliedCenterFilter({});
     setAutoEnabled(period !== 'CUSTOM');
   }, [period]);
 
   const enabled = isCustom ? customRange != null : autoEnabled;
 
   const query = useQuery({
-    queryKey: ['logisticsClaimReport', period, customRange?.startDate, customRange?.endDate, appliedBranchCode],
+    queryKey: [
+      'logisticsClaimReport',
+      period,
+      customRange?.startDate,
+      customRange?.endDate,
+      appliedBranchCode,
+      appliedCenterFilter.werk1Tx,
+      appliedCenterFilter.werk3Tx,
+    ],
     queryFn: () =>
       isCustom
-        ? fetchLogisticsClaimReport(period, customRange!.startDate, customRange!.endDate, appliedBranchCode)
-        : fetchLogisticsClaimReport(period, undefined, undefined, appliedBranchCode),
+        ? fetchLogisticsClaimReport(
+            period,
+            customRange!.startDate,
+            customRange!.endDate,
+            appliedBranchCode,
+            appliedCenterFilter,
+          )
+        : fetchLogisticsClaimReport(period, undefined, undefined, appliedBranchCode, appliedCenterFilter),
     enabled,
   });
 
@@ -84,9 +106,11 @@ export default function LogisticsClaimReportPage({ period }: Props) {
         return;
       }
       setAppliedBranchCode(branchCode);
+      setAppliedCenterFilter({ werk1Tx: werk1Tx.trim() || undefined, werk3Tx: werk3Tx.trim() || undefined });
       setCustomRange({ startDate: startDate.format('YYYY-MM-DD'), endDate: endDate.format('YYYY-MM-DD') });
     } else {
       setAppliedBranchCode(branchCode);
+      setAppliedCenterFilter({ werk1Tx: werk1Tx.trim() || undefined, werk3Tx: werk3Tx.trim() || undefined });
       setAutoEnabled(true);
       query.refetch();
     }
@@ -96,9 +120,9 @@ export default function LogisticsClaimReportPage({ period }: Props) {
     try {
       if (isCustom) {
         if (!customRange) return;
-        await apiExport(period, customRange.startDate, customRange.endDate, appliedBranchCode);
+        await apiExport(period, customRange.startDate, customRange.endDate, appliedBranchCode, appliedCenterFilter);
       } else {
-        await apiExport(period, undefined, undefined, appliedBranchCode);
+        await apiExport(period, undefined, undefined, appliedBranchCode, appliedCenterFilter);
       }
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
@@ -138,6 +162,26 @@ export default function LogisticsClaimReportPage({ period }: Props) {
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap align="end">
         <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <Space direction="vertical" size={4}>
+          <span>물류센터명(상온):</span>
+          <Input
+            value={werk1Tx}
+            onChange={(e) => setWerk1Tx(e.target.value)}
+            placeholder="포함 검색"
+            allowClear
+            style={{ width: 140 }}
+          />
+        </Space>
+        <Space direction="vertical" size={4}>
+          <span>물류센터명(냉동):</span>
+          <Input
+            value={werk3Tx}
+            onChange={(e) => setWerk3Tx(e.target.value)}
+            placeholder="포함 검색"
+            allowClear
+            style={{ width: 140 }}
+          />
+        </Space>
         {isCustom ? (
           <>
             <Space direction="vertical" size={4}>
@@ -187,6 +231,17 @@ export default function LogisticsClaimReportPage({ period }: Props) {
         pagination={false}
         scroll={{ x: 'max-content' }}
         locale={listTableLocale({ searched: !isCustom || customRange != null })}
+        summary={() =>
+          query.data && query.data.items.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>총 {query.data.items.length}건</Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );

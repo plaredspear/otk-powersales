@@ -66,7 +66,8 @@ class AdminClaimRepositoryCustomImpl(
         return queryFactory
             .selectFrom(claim)
             .leftJoin(claim.employee, employee).fetchJoin()
-            .leftJoin(claim.account, account).fetchJoin()
+            // SF Report Type(CustomClaimReportType) 이 Account INNER JOIN — 거래처 없는 클레임은 레거시와 동일하게 제외
+            .join(claim.account, account).fetchJoin()
             .leftJoin(claim.product, product).fetchJoin()
             .where(
                 // ClaimDate 기준 기간 (목록 화면의 createdAt 과 다름 — SF dateColumn=ClaimDate__c)
