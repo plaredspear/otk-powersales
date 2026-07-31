@@ -105,7 +105,7 @@ class AdminFemaleEmployeeWorkHistoryService(
             row.createCell(3).setCellValue(item.age?.toString() ?: "")
             row.createCell(4).setCellValue(item.workingDate ?: "")
             row.createCell(5).setCellValue(item.accountBranchName ?: "")
-            row.createCell(6).setCellValue(item.accountBranchCode ?: "")
+            row.createCell(6).setCellValue(item.accountSapCode ?: "")
             row.createCell(7).setCellValue(item.accountName ?: "")
             row.createCell(8).setCellValue(item.workingType ?: "")
             row.createCell(9).setCellValue(item.workingCategory1 ?: "")
@@ -133,13 +133,14 @@ class AdminFemaleEmployeeWorkHistoryService(
             age = calculateAge(emp?.birthDate, asOf),
             workingDate = schedule.workingDate?.toString(),
             accountBranchName = acc?.branchName,
-            accountBranchCode = acc?.branchCode,
+            accountSapCode = acc?.externalKey,
             accountName = acc?.name,
             workingType = schedule.workingType?.displayName,
             workingCategory1 = schedule.workingCategory1?.displayName,
             workingCategory2 = schedule.workingCategory2?.displayName,
             workingCategory3 = schedule.workingCategory3?.displayName,
-            secondWorkType = schedule.secondWorkType,
+            // 레거시 `DKRetail__SecondWorkType__c` 는 출근로그 파생 formula — 저장 컬럼 `secondWorkType`(근무유형4) 아님.
+            secondWorkType = schedule.secondWorkTypeText,
             isWorkReport = schedule.isWorkReport,
             commuteDate = schedule.commuteDate?.toString(),
         )

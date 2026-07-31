@@ -10,7 +10,8 @@ export interface FemaleEmployeeWorkHistoryItem {
   age: number | null;
   workingDate: string | null;
   accountBranchName: string | null;
-  accountBranchCode: string | null;
+  /** SAP거래처코드 (레거시 `AccCode__c`) — 화면 라벨은 "거래처코드" */
+  accountSapCode: string | null;
   accountName: string | null;
   workingType: string | null;
   workingCategory1: string | null;

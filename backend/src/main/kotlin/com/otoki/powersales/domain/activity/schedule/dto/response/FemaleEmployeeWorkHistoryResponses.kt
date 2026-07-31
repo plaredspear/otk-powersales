@@ -26,7 +26,8 @@ data class FemaleEmployeeWorkHistoryItem(
     val age: Int?,
     val workingDate: String?,
     val accountBranchName: String?,
-    val accountBranchCode: String?,
+    /** 레거시 `AccCode__c` = `Account.ExternalKey__c` (SAP거래처코드). 화면 라벨은 레거시대로 "거래처코드". */
+    val accountSapCode: String?,
     val accountName: String?,
     val workingType: String?,
     val workingCategory1: String?,

@@ -8,7 +8,9 @@ import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterExc
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @DisplayName("AdminFemaleEmployeeWorkHistoryService 테스트")
 class AdminFemaleEmployeeWorkHistoryServiceTest {
@@ -36,7 +39,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
     ): Employee = Employee(employeeCode = code, name = name, birthDate = birthDate)
 
     private fun account(): Account {
-        val acc = Account(id = 1, externalKey = "B0123")
+        val acc = Account(id = 1, externalKey = "10012345")
         acc.name = "○○마트 강남점"
         acc.branchCode = "B0123"
         acc.branchName = "강남지점"
@@ -48,16 +51,23 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         emp: Employee,
         acc: Account? = account(),
         workingDate: LocalDate = LocalDate.of(2026, 5, 12),
+        withAttendanceLog: Boolean = true,
     ): TeamMemberSchedule {
         val s = TeamMemberSchedule(
             name = "2026-05-12 진열",
             workingDate = workingDate,
             workingType = WorkingType.WORK,
             workingCategory1 = WorkingCategory1.DISPLAY,
-            secondWorkType = "보조",
         )
         s.employee = emp
         s.account = acc
+        // 부근무유형은 레거시 formula 대로 출근로그 파생 (저장 컬럼 secondWorkType 아님)
+        if (withAttendanceLog) {
+            s.attendanceLog = AttendanceLog(
+                attendanceDate = LocalDateTime.of(2026, 5, 12, 9, 0),
+                secondWorkType = SecondWorkType.ROOM_TEMP,
+            )
+        }
         return s
     }
 
@@ -83,11 +93,26 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             assertThat(item.employeeCode).isEqualTo("20230016")
             assertThat(item.workingDate).isEqualTo("2026-05-12")
             assertThat(item.accountName).isEqualTo("○○마트 강남점")
-            assertThat(item.accountBranchCode).isEqualTo("B0123")
+            assertThat(item.accountSapCode).isEqualTo("10012345")
             assertThat(item.accountBranchName).isEqualTo("강남지점")
             assertThat(item.workingType).isEqualTo("근무")
             assertThat(item.workingCategory1).isEqualTo("진열")
-            assertThat(item.secondWorkType).isEqualTo("보조")
+            assertThat(item.secondWorkType).isEqualTo("상온")
+            assertThat(item.isWorkReport).isEqualTo("근무등록")
+            assertThat(item.commuteDate).isEqualTo("2026-05-12T09:00")
+        }
+
+        @Test
+        @DisplayName("출근로그가 없으면 부근무유형 null · 근무보고여부 빈값")
+        fun noAttendanceLog() {
+            every { repository.findWorkHistory(any(), any(), any(), any()) } returns
+                listOf(schedule(employee(), withAttendanceLog = false))
+
+            val item = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList()).items[0]
+
+            assertThat(item.secondWorkType).isNull()
+            assertThat(item.isWorkReport).isEmpty()
+            assertThat(item.commuteDate).isNull()
         }
 
         @Test
