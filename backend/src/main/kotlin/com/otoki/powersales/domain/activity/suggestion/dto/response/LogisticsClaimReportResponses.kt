@@ -14,12 +14,13 @@ data class LogisticsClaimReportResponse(
 )
 
 /**
- * 물류 클레임 1행 — suggestion × employee × account × product × owner(User) 조인 (22컬럼).
+ * 물류 클레임 1행 — suggestion × employee × account × product 조인 (23컬럼).
  *
- * custName = 레코드 Owner User 이름 (SF CUST_NAME 의사 컬럼).
+ * proposalNumber = 제안사항 번호 (SF Report `CUST_NAME` 토큰 = 레코드 Name AutoNumber).
+ * productCategory = 보관방법 기반 파생 "냉동/냉장" / "상온" (SF ProductCategory__c formula 정합).
  */
 data class LogisticsClaimReportItem(
-    val custName: String?,
+    val proposalNumber: String?,
     val createdDate: String?,
     val claimDate: String?,
     val responsibleLogisticsCenter: String?,

@@ -5,9 +5,9 @@ import type { ApiResponse } from './types';
 /** 물류 클레임 보고서 기간 프리셋. */
 export type LogisticsClaimReportPeriod = 'THIS_MONTH' | 'LAST_MONTH' | 'CUSTOM';
 
-/** (영업본부) 물류 클레임 보고서 1행 (22컬럼) — SF Report OLS_dmK/new_report_6dy/OLS_NDx 이식 (Spec #844). */
+/** (영업본부) 물류 클레임 보고서 1행 (23컬럼) — SF Report OLS_dmK/new_report_6dy/OLS_NDx 이식 (Spec #844). */
 export interface LogisticsClaimReportItem {
-  custName: string | null;
+  proposalNumber: string | null;
   createdDate: string | null;
   claimDate: string | null;
   responsibleLogisticsCenter: string | null;

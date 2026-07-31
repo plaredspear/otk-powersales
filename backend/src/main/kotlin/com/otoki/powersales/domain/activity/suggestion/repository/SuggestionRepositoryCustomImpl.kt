@@ -133,8 +133,6 @@ class SuggestionRepositoryCustomImpl(
             .leftJoin(suggestion.employee, employee).fetchJoin()
             .leftJoin(suggestion.account, account).fetchJoin()
             .leftJoin(suggestion.product, product).fetchJoin()
-            // CUST_NAME 컬럼 — SF Report 의사 컬럼 = 레코드 Owner. ownerUser 조인.
-            .leftJoin(suggestion.ownerUser, user).fetchJoin()
             .where(
                 // 물류 클레임 분류만 (SF Category__c = '물류 클레임')
                 suggestion.category.eq(SuggestionCategory.LOGISTICS_CLAIM),

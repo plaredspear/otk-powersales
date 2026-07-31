@@ -107,7 +107,7 @@ export default function LogisticsClaimReportPage({ period }: Props) {
 
   const columns: ColumnsType<LogisticsClaimReportItem> = useMemo(
     () => [
-      { title: '소유자명', dataIndex: 'custName', width: 100, fixed: 'left', render: (v) => v ?? '-' },
+      { title: '제안번호', dataIndex: 'proposalNumber', width: 130, fixed: 'left', render: (v) => v ?? '-' },
       { title: '생성일시', dataIndex: 'createdDate', width: 150, render: (v) => v ?? '-' },
       { title: '클레임일자', dataIndex: 'claimDate', width: 110, render: (v) => v ?? '-' },
       { title: '책임물류센터', dataIndex: 'responsibleLogisticsCenter', width: 120, render: (v) => v ?? '-' },
@@ -117,7 +117,7 @@ export default function LogisticsClaimReportPage({ period }: Props) {
       { title: '내용', dataIndex: 'content', width: 200, render: (v) => v ?? '-' },
       { title: '제품코드', dataIndex: 'productCode', width: 100, render: (v) => v ?? '-' },
       { title: '제품명', dataIndex: 'productName', width: 140, render: (v) => v ?? '-' },
-      { title: '제품카테고리', dataIndex: 'productCategory', width: 110, render: (v) => v ?? '-' },
+      { title: '제품유형', dataIndex: 'productCategory', width: 100, render: (v) => v ?? '-' },
       { title: '지점명', dataIndex: 'branchName', width: 100, render: (v) => v ?? '-' },
       { title: '거래처코드', dataIndex: 'accountCode', width: 110, render: (v) => v ?? '-' },
       { title: '거래처명', dataIndex: 'accountName', width: 160, render: (v) => v ?? '-' },
@@ -179,7 +179,7 @@ export default function LogisticsClaimReportPage({ period }: Props) {
       )}
 
       <ResizableTable
-        rowKey={(r, idx) => `${r.claimDate ?? ''}-${r.employeeCode ?? ''}-${idx}`}
+        rowKey={(r, idx) => `${r.proposalNumber ?? ''}-${idx}`}
         size="small"
         columns={columns}
         dataSource={query.data?.items ?? []}

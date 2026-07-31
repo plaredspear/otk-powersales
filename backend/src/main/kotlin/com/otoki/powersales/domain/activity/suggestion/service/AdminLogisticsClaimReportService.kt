@@ -26,7 +26,7 @@ enum class LogisticsClaimReportPeriod {
  *
  * 레거시 매핑: SF Report `OLS_dmK`(기간별) + `new_report_6dy`(당월) + `OLS_NDx`(전월).
  * 동작: period 별 기간 산출(당월/전월/사용자 지정) 후 category='물류 클레임' + claimDate 범위 Suggestion 을 전사 조회.
- *       suggestion × employee × account × product × owner 조인 결과를 22컬럼 행으로 매핑. claimDate 내림차순.
+ *       suggestion × employee × account × product 조인 결과를 23컬럼 행으로 매핑. claimDate 내림차순.
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 차이: 기존 [AdminSuggestionService] 목록(DataScope·페이지네이션)과 별개 보고서 —
@@ -64,7 +64,7 @@ class AdminLogisticsClaimReportService(
     }
 
     /**
-     * 물류 클레임 엑셀 export — 22컬럼 시트 (조회와 동일 필터/스코프).
+     * 물류 클레임 엑셀 export — 23컬럼 시트 (조회와 동일 필터/스코프).
      */
     fun exportReport(
         period: LogisticsClaimReportPeriod,
@@ -79,8 +79,8 @@ class AdminLogisticsClaimReportService(
         val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
         val headers = listOf(
-            "소유자명", "생성일시", "클레임일자", "책임물류센터", "물류책임", "클레임유형",
-            "제목", "내용", "제품코드", "제품명", "제품카테고리", "지점명", "거래처코드", "거래처명",
+            "제안번호", "생성일시", "클레임일자", "책임물류센터", "물류책임", "클레임유형",
+            "제목", "내용", "제품코드", "제품명", "제품유형", "지점명", "거래처코드", "거래처명",
             "조직명", "사번", "사원명", "직위", "직무코드", "차량번호", "처리상태", "처리내용", "중복제안번호",
         )
         val headerRow = sheet.createRow(0)
@@ -94,7 +94,7 @@ class AdminLogisticsClaimReportService(
 
         response.items.forEachIndexed { idx, item ->
             val row = sheet.createRow(idx + 1)
-            row.createCell(0).setCellValue(item.custName ?: "")
+            row.createCell(0).setCellValue(item.proposalNumber ?: "")
             row.createCell(1).setCellValue(item.createdDate ?: "")
             row.createCell(2).setCellValue(item.claimDate ?: "")
             row.createCell(3).setCellValue(item.responsibleLogisticsCenter ?: "")
@@ -153,14 +153,14 @@ class AdminLogisticsClaimReportService(
         }
     }
 
-    /** 제안 1건 → 22컬럼 행 (CUST_NAME = owner User 이름). */
+    /** 제안 1건 → 23컬럼 행. */
     private fun toItem(s: Suggestion): LogisticsClaimReportItem {
         val emp = s.employee
         val acc = s.account
         val prod = s.product
         return LogisticsClaimReportItem(
-            // SF CUST_NAME 의사 컬럼 = 레코드 Owner
-            custName = s.ownerUser?.name,
+            // SF Report CUST_NAME 토큰 = 레코드 Name (제안사항 번호 AutoNumber)
+            proposalNumber = s.proposalNumber,
             createdDate = s.createdAt?.toString(),
             claimDate = s.claimDate?.toString(),
             responsibleLogisticsCenter = s.responsibleLogisticsCenter,
@@ -170,7 +170,7 @@ class AdminLogisticsClaimReportService(
             content = s.content,
             productCode = prod?.productCode,
             productName = prod?.name,
-            productCategory = prod?.productCategory1,
+            productCategory = deriveProductCategory(prod?.storeConditionText),
             branchName = acc?.branchName,
             accountCode = acc?.externalKey,
             accountName = acc?.name,
@@ -184,5 +184,13 @@ class AdminLogisticsClaimReportService(
             actionContent = s.actionContent,
             duplicateProposalNum = s.duplicateProposalNum,
         )
+    }
+
+    /** SF ProductCategory__c formula 정합 — 보관방법 냉동/냉장/만두 → "냉동/냉장", 그 외(미매칭·null 포함) → "상온". */
+    private fun deriveProductCategory(storeCondition: String?): String =
+        if (storeCondition in COLD_STORE_CONDITIONS) "냉동/냉장" else "상온"
+
+    companion object {
+        private val COLD_STORE_CONDITIONS = setOf("냉동", "냉장", "만두")
     }
 }

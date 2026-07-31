@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.activity.suggestion.service.AdminLogisticsClaimReportService
 import com.otoki.powersales.domain.activity.suggestion.service.LogisticsClaimReportPeriod
 import io.mockk.every
@@ -115,6 +116,40 @@ class AdminLogisticsClaimReportServiceTest {
             assertThatThrownBy {
                 service.getReport(LogisticsClaimReportPeriod.CUSTOM, null, null, EffectiveBranchResult.All)
             }.isInstanceOf(IllegalArgumentException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("행 매핑 — SF Report 컬럼 정합")
+    inner class ItemMapping {
+
+        @Test
+        @DisplayName("proposalNumber = 제안사항 번호 (SF CUST_NAME = 레코드 Name)")
+        fun proposalNumber() {
+            every { repository.findLogisticsClaimReport(any(), any(), any()) } returns listOf(suggestion())
+
+            val res = service.getReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null, EffectiveBranchResult.All)
+
+            assertThat(res.items[0].proposalNumber).isEqualTo("S-20260509-000001")
+        }
+
+        @Test
+        @DisplayName("제품유형 — 보관방법 냉동/냉장/만두 → '냉동/냉장', 그 외 → '상온' (SF ProductCategory__c formula)")
+        fun productCategoryDerived() {
+            val cold = suggestion().apply {
+                product = Product(id = 1, productCode = "P001").apply { storeConditionText = "냉동" }
+            }
+            val ambient = suggestion().apply {
+                product = Product(id = 2, productCode = "P002").apply { storeConditionText = "실온" }
+            }
+            val noProduct = suggestion()
+            every { repository.findLogisticsClaimReport(any(), any(), any()) } returns listOf(cold, ambient, noProduct)
+
+            val res = service.getReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null, EffectiveBranchResult.All)
+
+            assertThat(res.items[0].productCategory).isEqualTo("냉동/냉장")
+            assertThat(res.items[1].productCategory).isEqualTo("상온")
+            assertThat(res.items[2].productCategory).isEqualTo("상온")
         }
     }
 
