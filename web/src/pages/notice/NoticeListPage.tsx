@@ -109,10 +109,15 @@ export default function NoticeListPage() {
 
   // 지점 조회 옵션 — 작성 폼과 동일한 권한별 지점 화이트리스트(form-meta)를 그대로 쓴다.
   // 지점명 가나다순 정렬. 선택 시 서버가 BranchCodeExpander 로 확장한 지점코드 집합(조직 개편 전/후
-  // 계보 + 롤업 하위 지점)으로 조회하며, 미선택(전체)이면 지점 조건 없음.
+  // 계보 + 롤업 하위 지점)으로 조회하며, 미선택이면 화이트리스트 전체로 조회한다.
   const branchOptions = (formMeta?.branches ?? [])
     .map((b) => ({ value: b.branchCode, label: b.branchName }))
     .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+  // 단일 지점 사용자(조장/지점장 등)는 고를 것이 없으므로 Select 대신 고정 Tag 로 표시한다
+  // (행사마스터/진열스케줄마스터 등 다른 목록 화면과 동일 표기). 서버가 어차피 본인 지점으로
+  // 스코프하므로 branchCode 는 보내지 않는다 — 지점 소속이 없는 회사공지도 함께 조회된다.
+  const singleBranch = branchOptions.length === 1 ? branchOptions[0] : null;
+  const isMultiBranch = branchOptions.length > 1;
 
   return (
     <div
@@ -135,16 +140,10 @@ export default function NoticeListPage() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexShrink: 0 }}>
-        <Select
-          style={{ width: 140 }}
-          value={filters.category}
-          options={categoryOptions}
-          onChange={(val) => setFilter('category', val)}
-        />
-        {/* 지점 조회 — 목록은 권한 스코프되지 않으므로 단일 지점 사용자에게도 고정 Tag 가 아닌
-            선택 UI 로 노출한다(선택 전 기본은 전체 지점). 지점명 타이핑으로 검색 가능. */}
-        {branchOptions.length > 0 && (
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexShrink: 0, alignItems: 'center' }}>
+        {/* 지점 조회 — 다중 지점은 Select(지점명 타이핑 검색), 단일 지점은 고정 Tag. 다른 목록
+            화면과 동일하게 필터 줄 맨 앞에 둔다. */}
+        {isMultiBranch && (
           <Select
             style={{ width: 200 }}
             placeholder="지점 (전체)"
@@ -157,6 +156,17 @@ export default function NoticeListPage() {
             notFoundContent="항목 없음"
           />
         )}
+        {singleBranch && (
+          <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+            지점: {singleBranch.label}
+          </Tag>
+        )}
+        <Select
+          style={{ width: 140 }}
+          value={filters.category}
+          options={categoryOptions}
+          onChange={(val) => setFilter('category', val)}
+        />
         <Input.Search
           placeholder="제목 또는 내용 입력"
           allowClear
