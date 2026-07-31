@@ -9,6 +9,7 @@ import {
   type FemaleEmployeeWorkHistoryItem,
 } from '@/api/femaleEmployeeWorkHistory';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import { useReportBranches } from '@/hooks/female-employee/useReportBranches';
 import RefreshButton from '@/components/common/RefreshButton';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -31,6 +32,8 @@ interface QueryParams {
  * 15컬럼 그리드 + 엑셀 다운로드.
  */
 export default function FemaleEmployeeWorkHistoryPage() {
+  // 지점 옵션 — 보고서 공용 /report-branches (안전점검·환산인원과 동일 소스로 통일)
+  const { data: reportBranches = [] } = useReportBranches();
   const now = new Date();
   const [employeeCode, setEmployeeCode] = useState<string>('');
   const [year, setYear] = useState<number>(now.getFullYear());
@@ -98,6 +101,7 @@ export default function FemaleEmployeeWorkHistoryPage() {
   return (
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
+        branches={reportBranches}
         year={year}
         month={month}
         selectedCodes={selectedCodes}
@@ -175,6 +179,17 @@ export default function FemaleEmployeeWorkHistoryPage() {
           searched: queryParams != null,
           beforeSearchText: '사번·조회월·지점을 선택한 후 조회 버튼을 눌러주세요.',
         })}
+        summary={() =>
+          query.data && query.data.items.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>총 {query.data.items.length}건</Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );

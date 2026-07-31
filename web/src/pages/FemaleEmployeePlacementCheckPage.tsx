@@ -9,6 +9,7 @@ import {
   type FemaleEmployeePlacementCheckItem,
 } from '@/api/femaleEmployeePlacementCheck';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import { useReportBranches } from '@/hooks/female-employee/useReportBranches';
 import RefreshButton from '@/components/common/RefreshButton';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -28,6 +29,8 @@ interface QueryParams {
  * 나이/근속연수는 SF formula 정합상 조회월이 아닌 **오늘** 기준이며, 여사원이 아닌 행(조장) 은 공백이다.
  */
 export default function FemaleEmployeePlacementCheckPage() {
+  // 지점 옵션 — 보고서 공용 /report-branches (안전점검·환산인원과 동일 소스로 통일)
+  const { data: reportBranches = [] } = useReportBranches();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
@@ -91,6 +94,7 @@ export default function FemaleEmployeePlacementCheckPage() {
   return (
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
+        branches={reportBranches}
         year={year}
         month={month}
         selectedCodes={selectedCodes}
@@ -151,6 +155,17 @@ export default function FemaleEmployeePlacementCheckPage() {
         pagination={false}
         scroll={{ x: 'max-content', y: 'calc(100vh - 320px)' }}
         locale={listTableLocale({ searched: queryParams != null })}
+        summary={() =>
+          query.data && query.data.items.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>총 {query.data.items.length}건</Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );

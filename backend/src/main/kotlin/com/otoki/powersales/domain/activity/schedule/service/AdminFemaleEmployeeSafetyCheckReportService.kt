@@ -105,6 +105,10 @@ class AdminFemaleEmployeeSafetyCheckReportService(
             row.createCell(23).setCellValue(item.secondWorkType ?: "")
             row.createCell(24).setCellValue(item.commuteDate ?: "")
         }
+        // 합계 행 — SF Report GrandTotal(레코드 수) + 예방사항 총 체크 Sum 정합
+        val totalRow = sheet.createRow(response.items.size + 1)
+        totalRow.createCell(0).setCellValue("총 ${response.items.size}건")
+        totalRow.createCell(20).setCellValue(response.items.sumOf { it.precautionChk ?: 0.0 })
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)

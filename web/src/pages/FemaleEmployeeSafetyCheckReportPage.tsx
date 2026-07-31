@@ -128,6 +128,21 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
         pagination={false}
         scroll={{ x: 'max-content' }}
         locale={listTableLocale({ searched: queryDate != null })}
+        summary={() =>
+          query.data && query.data.items.length > 0 ? (
+            <ResizableTable.Summary fixed>
+              <ResizableTable.Summary.Row>
+                <ResizableTable.Summary.Cell index={0} colSpan={columns.length}>
+                  <Text strong>
+                    합계 — 주의확인{" "}
+                    {query.data.items.reduce((acc, r) => acc + (r.precautionChk ?? 0), 0).toLocaleString()} (총{" "}
+                    {query.data.items.length}건)
+                  </Text>
+                </ResizableTable.Summary.Cell>
+              </ResizableTable.Summary.Row>
+            </ResizableTable.Summary>
+          ) : null
+        }
       />
     </div>
   );

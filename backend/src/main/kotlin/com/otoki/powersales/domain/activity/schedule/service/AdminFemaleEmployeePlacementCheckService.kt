@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.exception.AdminForbiddenException
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeePlacementCheckItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeePlacementCheckResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -33,13 +33,16 @@ import java.time.YearMonth
 @Transactional(readOnly = true)
 class AdminFemaleEmployeePlacementCheckService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
      * 여사원 배치 점검 조회.
      *
      * year/month 검증 (2020~2099 / 1~12) 후 해당 월 [1일, 말일] 로 환산하여 조회. 권한: scope.isAllBranches 면
-     * 사용자 입력 그대로, 아니면 scope.branchCodes 와 교집합 (empty → 403). 조회 결과를 orgName/employeeCode/workingDate 정렬.
+     * 사용자 입력 그대로, 아니면 scope.branchCodes 와 교집합 (교집합 없으면 빈 결과 — 안전점검 보고서와 동일).
+     * 지점 코드는 조회 직전 `BranchMapping` 확장 적용 (레거시/별칭 조직코드 적재 일정 누락 방지).
+     * 정렬: 입사일(StartDate) 오름차순 1차 (SF new_report_4Ic sortColumn 정합) + 소속/사번/근무일자 후순위.
      *
      * 나이/근속연수 기준일은 조회월이 아니라 **오늘** — SF formula 가 `TODAY()` 이므로 과거 월을 조회해도
      * 현재 시점 값이 나온다 (레거시 리포트 정합).
@@ -55,22 +58,25 @@ class AdminFemaleEmployeePlacementCheckService(
         val from = yearMonth.atDay(1)
         val to = yearMonth.atEndOfMonth()
         val effectiveCodes = applyScope(scope, costCenterCodes)
+            ?: return FemaleEmployeePlacementCheckResponse(year, month, emptyList())
 
         val schedules = teamMemberScheduleRepository.findPlacementCheck(
             from = from,
             to = to,
             roles = listOf(AppAuthority.WOMAN, AppAuthority.LEADER),
-            branchCodes = effectiveCodes,
+            branchCodes = effectiveCodes.takeIf { it.isNotEmpty() }
+                ?.let { branchCodeExpander.expand(it).toList() }
+                ?: effectiveCodes,
         )
 
         val items = schedules
             .map { toItem(it, LocalDate.now()) }
             .sortedWith(
-                compareBy(
-                    { it.orgName ?: "" },
-                    { it.employeeCode },
-                    { it.workingDate ?: "" },
-                )
+                // 입사일 Asc 1차 (SF sortColumn StartDate Asc 정합, null 후순위) — 이하 안정 정렬용 후순위 키
+                compareBy<FemaleEmployeePlacementCheckItem, String?>(nullsLast()) { it.startDate }
+                    .thenBy { it.orgName ?: "" }
+                    .thenBy { it.employeeCode }
+                    .thenBy { it.workingDate ?: "" }
             )
         return FemaleEmployeePlacementCheckResponse(year, month, items)
     }
@@ -129,6 +135,8 @@ class AdminFemaleEmployeePlacementCheckService(
             row.createCell(19).setCellValue(item.age ?: "")
             row.createCell(20).setCellValue(item.yearsOfService ?: "")
         }
+        // 총 건수 행 — SF Report GrandTotal(레코드 수) 정합
+        sheet.createRow(response.items.size + 1).createCell(0).setCellValue("총 ${response.items.size}건")
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
@@ -172,7 +180,8 @@ class AdminFemaleEmployeePlacementCheckService(
         )
     }
 
-    private fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String> {
+    /** 화면 선택 지점을 권한 스코프로 해석. 교집합 없음(권한 밖 요청) → null = 빈 결과 (안전점검 NoAccess 정합). */
+    private fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String>? {
         if (scope.isAllBranches) return costCenterCodes
         val allowed = scope.branchCodes.toSet()
         if (costCenterCodes.isEmpty()) {
@@ -180,8 +189,7 @@ class AdminFemaleEmployeePlacementCheckService(
             return scope.branchCodes
         }
         val intersect = costCenterCodes.filter { it in allowed }
-        if (intersect.isEmpty()) throw AdminForbiddenException()
-        return intersect
+        return intersect.ifEmpty { null }
     }
 
     private fun validateParams(year: Int, month: Int) {

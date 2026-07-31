@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeePlacementCheckService
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
@@ -13,6 +12,7 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -28,7 +28,7 @@ import java.time.LocalDateTime
 class AdminFemaleEmployeePlacementCheckServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mockk()
-    private val service = AdminFemaleEmployeePlacementCheckService(repository)
+    private val service = AdminFemaleEmployeePlacementCheckService(repository, BranchCodeExpander(mockk()))
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
@@ -287,11 +287,12 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     inner class Scope {
 
         @Test
-        @DisplayName("isAllBranches=false 인데 스코프 외 costCenterCode 만 입력하면 403")
+        @DisplayName("isAllBranches=false 인데 스코프 외 costCenterCode 만 입력하면 빈 결과 (repository 미호출)")
         fun forbiddenWhenNoIntersection() {
-            assertThatThrownBy {
-                service.getPlacementCheck(branchScope("A001"), 2026, 5, listOf("Z999"))
-            }.isInstanceOf(AdminForbiddenException::class.java)
+            val res = service.getPlacementCheck(branchScope("A001"), 2026, 5, listOf("Z999"))
+
+            assertThat(res.items).isEmpty()
+            io.mockk.verify(exactly = 0) { repository.findPlacementCheck(any(), any(), any(), any()) }
         }
 
         @Test

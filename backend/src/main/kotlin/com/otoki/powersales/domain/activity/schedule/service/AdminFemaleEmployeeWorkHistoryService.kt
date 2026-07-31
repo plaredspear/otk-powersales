@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.exception.AdminForbiddenException
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeWorkHistoryItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -30,6 +30,7 @@ import java.time.YearMonth
 @Transactional(readOnly = true)
 class AdminFemaleEmployeeWorkHistoryService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
@@ -37,7 +38,7 @@ class AdminFemaleEmployeeWorkHistoryService(
      *
      * employeeCode 필수 + year/month 검증 (2020~2099 / 1~12) 후 해당 월 [1일, 말일] 환산하여 조회.
      * 지점 스코프: costCenterCodes(화면 지점 선택값)를 [applyScope] 로 해석 — 전사 권한자는 입력 그대로(미선택 시 전건),
-     * 지점 사용자는 권한 지점과 교집합(미선택 시 권한 전체, 교집합 없으면 403). 배치 점검(#839)과 동일 정합.
+     * 지점 사용자는 권한 지점과 교집합(미선택 시 권한 전체, 교집합 없으면 빈 결과). 배치 점검(#839)과 동일 정합.
      * 사번 미존재/해당 월 일정 없음/스코프 밖이면 빈 결과 (예외 아님).
      */
     fun getWorkHistory(
@@ -52,12 +53,16 @@ class AdminFemaleEmployeeWorkHistoryService(
         val from = yearMonth.atDay(1)
         val to = yearMonth.atEndOfMonth()
         val branchCodes = applyScope(scope, costCenterCodes)
+            ?: return FemaleEmployeeWorkHistoryResponse(employeeCode.trim(), year, month, emptyList())
 
         val schedules = teamMemberScheduleRepository.findWorkHistory(
             employeeCode = employeeCode.trim(),
             from = from,
             to = to,
-            branchCodes = branchCodes,
+            // BranchMapping 확장 — 레거시/별칭 조직코드로 적재된 일정 누락 방지 (안전점검 보고서와 동일)
+            branchCodes = branchCodes.takeIf { it.isNotEmpty() }
+                ?.let { branchCodeExpander.expand(it).toList() }
+                ?: branchCodes,
         )
 
         val items = schedules.map { toItem(it) }
@@ -112,6 +117,8 @@ class AdminFemaleEmployeeWorkHistoryService(
             row.createCell(13).setCellValue(item.isWorkReport ?: "")
             row.createCell(14).setCellValue(item.commuteDate ?: "")
         }
+        // 총 건수 행 — SF Report GrandTotal(레코드 수) 정합
+        sheet.createRow(response.items.size + 1).createCell(0).setCellValue("총 ${response.items.size}건")
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
@@ -147,9 +154,9 @@ class AdminFemaleEmployeeWorkHistoryService(
     /**
      * 화면 선택 지점(costCenterCodes)을 권한 스코프로 해석 (배치 점검 [AdminFemaleEmployeePlacementCheckService] 와 동일).
      * 전사 권한자는 입력 그대로(빈 입력이면 전건), 지점 사용자는 권한 지점과 교집합
-     * (빈 입력이면 권한 전체, 교집합 없으면 403).
+     * (빈 입력이면 권한 전체, 교집합 없으면 null = 빈 결과 — 안전점검 NoAccess 정합).
      */
-    private fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String> {
+    private fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String>? {
         if (scope.isAllBranches) return costCenterCodes
         val allowed = scope.branchCodes.toSet()
         if (costCenterCodes.isEmpty()) {
@@ -157,8 +164,7 @@ class AdminFemaleEmployeeWorkHistoryService(
             return scope.branchCodes
         }
         val intersect = costCenterCodes.filter { it in allowed }
-        if (intersect.isEmpty()) throw AdminForbiddenException()
-        return intersect
+        return intersect.ifEmpty { null }
     }
 
     private fun validateParams(employeeCode: String, year: Int, month: Int) {
