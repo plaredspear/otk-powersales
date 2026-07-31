@@ -36,7 +36,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         Employee(employeeCode = "20230016", name = "홍길동", orgName = "영업1팀")
 
     private fun account(): Account {
-        val acc = Account(id = 1, externalKey = "B0123")
+        val acc = Account(id = 1, externalKey = "10012345")
         acc.name = "○○마트 강남점"
         acc.branchCode = "B0123"
         acc.accountType = "대형마트(3대)"

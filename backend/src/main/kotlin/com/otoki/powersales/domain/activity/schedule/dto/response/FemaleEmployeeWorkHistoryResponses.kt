@@ -23,7 +23,8 @@ data class FemaleEmployeeWorkHistoryItem(
     val scheduleName: String?,
     val name: String,
     val employeeCode: String,
-    val age: Int?,
+    /** SF `Age__c` formula 정합 — "N살" 문자열, 기준 TODAY, 여사원만 (조장 등은 null). */
+    val age: String?,
     val workingDate: String?,
     val accountBranchName: String?,
     /** 레거시 `AccCode__c` = `Account.ExternalKey__c` (SAP거래처코드). 화면 라벨은 레거시대로 "거래처코드". */

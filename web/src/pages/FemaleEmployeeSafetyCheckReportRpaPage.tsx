@@ -62,7 +62,7 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
       { title: '여사원명', dataIndex: 'ladyName', width: 90, fixed: 'left' },
       { title: '소속', dataIndex: 'employeeOrgName', width: 100, render: (v) => v ?? '-' },
       { title: '거래처유형', dataIndex: 'accountType', width: 100, render: (v) => v ?? '-' },
-      { title: '거래처코드', dataIndex: 'accountBranchCode', width: 110, render: (v) => v ?? '-' },
+      { title: '거래처코드', dataIndex: 'accountSapCode', width: 110, render: (v) => v ?? '-' },
       { title: '거래처명', dataIndex: 'accountName', width: 160, render: (v) => v ?? '-' },
       { title: '근무구분1', dataIndex: 'workingCategory1', width: 90, render: (v) => v ?? '-' },
       { title: '점검시간', dataIndex: 'checkTime', width: 150, render: (v) => v ?? '-' },
@@ -121,7 +121,7 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
       )}
 
       <ResizableTable
-        rowKey={(r, idx) => `${r.employeeCode}-${r.accountBranchCode ?? ''}-${idx}`}
+        rowKey={(r, idx) => `${r.employeeCode}-${r.accountSapCode ?? ''}-${idx}`}
         size="small"
         columns={columns}
         dataSource={query.data?.items ?? []}

@@ -3,9 +3,9 @@ package com.otoki.powersales.domain.activity.schedule.dto.response
 /**
  * 판매여사원 일일 안전점검 현황 (RPA용) 응답 (Spec #842).
  *
- * 레거시 매핑: SF Report `X00/new_report_xdB` (RPA용·scope=organization·24컬럼).
- * #841 영업지원실용 23컬럼과 동일하되 마지막 컬럼이 CommuteDate 대신 여사원일정 스케줄번호.
- * 전사 고정 조회 (지점 스코프 없음).
+ * 레거시 매핑: SF Report `X00/new_report_xdB` (RPA용·scope=organization·25컬럼).
+ * #841 영업지원실용과 동일하되 마지막 컬럼이 CommuteDate 대신 여사원일정 스케줄번호.
+ * 레거시는 전사 고정이나 신규는 지점 스코프(branchCode 선택) 적용 — 기록된 이탈.
  */
 data class FemaleEmployeeSafetyCheckRpaResponse(
     val date: String,
@@ -15,7 +15,7 @@ data class FemaleEmployeeSafetyCheckRpaResponse(
 /**
  * 안전점검 현황 (RPA) 1행 — (여사원일정 1건) × employee × account 조인.
  *
- * 24컬럼: #841 23컬럼 + 여사원일정 스케줄번호. enum 필드는 `@JsonValue` 로 한글 displayName 직렬화.
+ * 25컬럼: #841 컬럼 + 여사원일정 스케줄번호(CommuteDate 대체). enum 필드는 `@JsonValue` 로 한글 displayName 직렬화.
  * scheduleName = 여사원일정 레코드의 스케줄번호(TeamMemberSchedule.name, `TS{00000000}` AutoNumber). 부재 시 null.
  */
 data class FemaleEmployeeSafetyCheckRpaItem(
@@ -23,7 +23,7 @@ data class FemaleEmployeeSafetyCheckRpaItem(
     val ladyName: String,
     val employeeOrgName: String?,
     val accountType: String?,
-    val accountBranchCode: String?,
+    val accountSapCode: String?,
     val accountName: String?,
     val workingCategory1: String?,
     val checkTime: String?,

@@ -6,7 +6,9 @@ import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployee
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -34,7 +36,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
         Employee(employeeCode = "20230016", name = "홍길동", orgName = "영업1팀")
 
     private fun account(): Account {
-        val acc = Account(id = 1, externalKey = "B0123")
+        val acc = Account(id = 1, externalKey = "10012345")
         acc.name = "○○마트 강남점"
         acc.branchCode = "B0123"
         acc.accountType = "대형마트(3대)"
@@ -53,10 +55,14 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
             precautionChk = 1.0,
             startTime = LocalDateTime.of(2026, 5, 29, 9, 5),
             hrCode = "3234",
-            secondWorkType = "보조",
         )
         s.employee = employee()
         s.account = account()
+        // 부근무유형은 레거시 formula 대로 출근로그 파생 (저장 컬럼 secondWorkType 아님)
+        s.attendanceLog = AttendanceLog(
+            attendanceDate = LocalDateTime.of(2026, 5, 29, 9, 0),
+            secondWorkType = SecondWorkType.ROOM_TEMP,
+        )
         return s
     }
 
@@ -78,14 +84,16 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
             assertThat(item.ladyName).isEqualTo("홍길동")
             assertThat(item.employeeOrgName).isEqualTo("영업1팀")
             assertThat(item.accountType).isEqualTo("대형마트(3대)")
-            assertThat(item.accountBranchCode).isEqualTo("B0123")
+            // SF AccCode__c = ExternalKey (SAP 거래처코드)
+            assertThat(item.accountSapCode).isEqualTo("10012345")
             assertThat(item.workingCategory1).isEqualTo("진열")
             assertThat(item.equipment1).isEqualTo("Y")
             assertThat(item.equipment2).isEqualTo("N")
             assertThat(item.precaution).isEqualTo("냉장고 온도 점검")
             assertThat(item.precautionChk).isEqualTo(1.0)
             assertThat(item.hrCode).isEqualTo("3234")
-            assertThat(item.secondWorkType).isEqualTo("보조")
+            // 출근로그 파생 (SF DKRetail__SecondWorkType__c formula 정합)
+            assertThat(item.secondWorkType).isEqualTo("상온")
         }
 
         @Test

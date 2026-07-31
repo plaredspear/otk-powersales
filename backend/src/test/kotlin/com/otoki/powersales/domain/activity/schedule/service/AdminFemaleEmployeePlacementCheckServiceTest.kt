@@ -76,6 +76,8 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             workingDate = workingDate,
             workingCategory1 = cat1,
             workingCategory5 = cat5,
+            // 전문행사조는 투입 당시(여사원일정) 값 — SF new_report_4Ic description 정합
+            professionalPromotionTeam = "라면세일조",
         )
         s.employee = emp
         s.account = acc
@@ -91,6 +93,17 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     @Nested
     @DisplayName("조회")
     inner class GetPlacementCheck {
+
+        @Test
+        @DisplayName("전문행사조는 사원 마스터 현재 값이 아니라 일정의 투입 당시 값이다")
+        fun pptFromScheduleNotEmployee() {
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
+                listOf(schedule(employee("100234", "홍길동"), account("마트", "B1", "지점")))
+
+            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+
+            assertThat(res.items[0].professionalPromotionTeam).isEqualTo("라면세일조")
+        }
 
         @Test
         @DisplayName("여사원·조장 일정을 행 단위로 반환하고 21컬럼을 매핑한다")

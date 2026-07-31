@@ -93,7 +93,7 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             row.createCell(1).setCellValue(item.ladyName)
             row.createCell(2).setCellValue(item.employeeOrgName ?: "")
             row.createCell(3).setCellValue(item.accountType ?: "")
-            row.createCell(4).setCellValue(item.accountBranchCode ?: "")
+            row.createCell(4).setCellValue(item.accountSapCode ?: "")
             row.createCell(5).setCellValue(item.accountName ?: "")
             row.createCell(6).setCellValue(item.workingCategory1 ?: "")
             row.createCell(7).setCellValue(item.checkTime ?: "")
@@ -131,7 +131,8 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             ladyName = emp?.name ?: "",
             employeeOrgName = emp?.orgName,
             accountType = acc?.accountType,
-            accountBranchCode = acc?.branchCode,
+            // SF AccCode__c = AccountId__r.ExternalKey__c (SAP 거래처코드) — 지점코드는 별도 hrCode 컬럼
+            accountSapCode = acc?.externalKey,
             accountName = acc?.name,
             workingCategory1 = s.workingCategory1?.displayName,
             // 레거시 StartTime - 9/24 의 KST 보정은 신규 미적용 (#841 동일)
@@ -151,7 +152,8 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             precautionChk = s.precautionChk,
             workingCategory2 = s.workingCategory2?.displayName,
             workingCategory3 = s.workingCategory3?.displayName,
-            secondWorkType = s.secondWorkType,
+            // SF DKRetail__SecondWorkType__c formula = 출근로그 파생 (저장 컬럼 secondWorkType(근무유형4) 아님)
+            secondWorkType = s.secondWorkTypeText,
             // 여사원일정 스케줄번호 (TeamMemberSchedule.name, `TS{00000000}` AutoNumber)
             scheduleName = s.name,
         )

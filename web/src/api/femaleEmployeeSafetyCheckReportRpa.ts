@@ -8,7 +8,7 @@ export interface FemaleEmployeeSafetyCheckRpaItem {
   ladyName: string;
   employeeOrgName: string | null;
   accountType: string | null;
-  accountBranchCode: string | null;
+  accountSapCode: string | null;
   accountName: string | null;
   workingCategory1: string | null;
   checkTime: string | null;

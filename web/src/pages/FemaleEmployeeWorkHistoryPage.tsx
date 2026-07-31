@@ -79,7 +79,7 @@ export default function FemaleEmployeeWorkHistoryPage() {
       { title: '일정명', dataIndex: 'scheduleName', width: 160, fixed: 'left', render: (v) => v ?? '-' },
       { title: '성명', dataIndex: 'name', width: 90, fixed: 'left' },
       { title: '사번', dataIndex: 'employeeCode', width: 100 },
-      { title: '나이', dataIndex: 'age', width: 70, align: 'right', render: (v) => v ?? '-' },
+      { title: '나이', dataIndex: 'age', width: 70, render: (v) => v ?? '-' },
       { title: '근무일자', dataIndex: 'workingDate', width: 110, render: (v) => v ?? '-' },
       { title: '거래처지점명', dataIndex: 'accountBranchName', width: 120, render: (v) => v ?? '-' },
       { title: '거래처코드', dataIndex: 'accountSapCode', width: 110, render: (v) => v ?? '-' },

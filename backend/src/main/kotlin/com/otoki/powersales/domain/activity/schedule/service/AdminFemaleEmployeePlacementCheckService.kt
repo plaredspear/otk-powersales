@@ -152,7 +152,8 @@ class AdminFemaleEmployeePlacementCheckService(
             employeeCode = emp?.employeeCode ?: "",
             jikwee = emp?.jikwee,
             name = emp?.name ?: "",
-            professionalPromotionTeam = emp?.professionalPromotionTeam?.displayName,
+            // SF new_report_4Ic description: "전문행사조는 투입당시(여사원일정)를 보여줌" — 사원 마스터 현재 값 아님
+            professionalPromotionTeam = schedule.professionalPromotionTeam,
             employmentStatus = emp?.status,
             accountType = acc?.accountType,
             accountName = acc?.name,

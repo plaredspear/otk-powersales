@@ -36,7 +36,8 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         code: String = "20230016",
         name: String = "홍길동",
         birthDate: String? = "1985-01-01",
-    ): Employee = Employee(employeeCode = code, name = name, birthDate = birthDate)
+        role: String? = com.otoki.powersales.platform.auth.entity.AppAuthority.WOMAN,
+    ): Employee = Employee(employeeCode = code, name = name, birthDate = birthDate, role = role)
 
     private fun account(): Account {
         val acc = Account(id = 1, externalKey = "10012345")
@@ -143,14 +144,16 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("나이를 조회 월 말일 기준으로 계산한다")
+        @DisplayName("나이는 SF Age__c formula 정합 — 기준 TODAY, 'N살' 문자열 (#839 와 동일 계산기)")
         fun calculatesAge() {
-            every { repository.findWorkHistory(any(), any(), any(), any()) } returns
-                listOf(schedule(employee(birthDate = "1985-01-01")))
+            val emp = employee(birthDate = "1985-01-01")
+            every { repository.findWorkHistory(any(), any(), any(), any()) } returns listOf(schedule(emp))
 
             val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
 
-            assertThat(res.items[0].age).isEqualTo(41)
+            // 기준일이 TODAY 이므로 동일 계산기의 오늘 값과 대조한다 (고정 기대값은 시간이 지나면 깨짐).
+            assertThat(res.items[0].age).isEqualTo(emp.calculateAge(java.time.LocalDate.now(), womanOnly = true))
+            assertThat(res.items[0].age).endsWith("살")
         }
 
         @Test
@@ -158,6 +161,17 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         fun nullBirthDate() {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee(birthDate = null)))
+
+            val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+
+            assertThat(res.items[0].age).isNull()
+        }
+
+        @Test
+        @DisplayName("여사원이 아닌 행(조장 등)의 나이는 SF 와 동일하게 null")
+        fun nonWomanAgeNull() {
+            every { repository.findWorkHistory(any(), any(), any(), any()) } returns
+                listOf(schedule(employee(role = com.otoki.powersales.platform.auth.entity.AppAuthority.LEADER)))
 
             val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
 

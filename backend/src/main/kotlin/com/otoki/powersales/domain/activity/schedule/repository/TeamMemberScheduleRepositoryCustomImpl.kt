@@ -613,6 +613,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .join(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 출근로그 파생 컬럼(secondWorkTypeText/isWorkReport/commuteDate) N+1 제거
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 employee.employeeCode.eq(employeeCode),
                 teamMemberSchedule.workingDate.between(from, to),
@@ -698,10 +700,15 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .join(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 출근로그 파생 컬럼(secondWorkTypeText/isWorkReport/commuteDate) N+1 제거
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.eq(date),
-                // 순회/점검 대상 (레거시 TraversalFlag = ',O')
-                teamMemberSchedule.traversalFlag.eq("O"),
+                // 순회/점검 대상 — 레거시 TraversalFlag equals ',O' 는 선두 콤마 = 빈값 포함 (빈값 OR 'O').
+                // 비순회 일반 근무의 안전점검 제출건은 플래그가 비어 있으므로 빈값을 제외하면 누락된다.
+                teamMemberSchedule.traversalFlag.isNull
+                    .or(teamMemberSchedule.traversalFlag.eq(""))
+                    .or(teamMemberSchedule.traversalFlag.eq("O")),
                 // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
                 teamMemberSchedule.yesChkCnt.isNotNull,
                 costCenterCodeIn(branchCodes),
@@ -719,10 +726,15 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .join(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 출근로그 파생 컬럼(secondWorkTypeText/isWorkReport/commuteDate) N+1 제거
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.eq(date),
-                // 순회/점검 대상 (레거시 TraversalFlag = ',O')
-                teamMemberSchedule.traversalFlag.eq("O"),
+                // 순회/점검 대상 — 레거시 TraversalFlag equals ',O' 는 선두 콤마 = 빈값 포함 (빈값 OR 'O').
+                // 비순회 일반 근무의 안전점검 제출건은 플래그가 비어 있으므로 빈값을 제외하면 누락된다.
+                teamMemberSchedule.traversalFlag.isNull
+                    .or(teamMemberSchedule.traversalFlag.eq(""))
+                    .or(teamMemberSchedule.traversalFlag.eq("O")),
                 // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
                 teamMemberSchedule.yesChkCnt.isNotNull,
                 // 지점 스코프 — 사원 소속 지점(costCenterCode). 비어있으면 전사 (일별 안전점검과 동일 정합).

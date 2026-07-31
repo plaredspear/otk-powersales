@@ -4,7 +4,7 @@ package com.otoki.powersales.domain.activity.schedule.dto.response
  * 판매여사원 일일 안전점검 현황 응답 — 영업지원실/지점용 보고서 (Spec #841).
  *
  * 레거시 매핑: SF Report `new_report_wce` (영업지원실용) + `new_report_oJO` (지점별-어제).
- * 어제자(또는 지정 일자) 안전점검 완료 건을 일정 단위로 나열 (Tabular, 24컬럼).
+ * 어제자(또는 지정 일자) 안전점검 완료 건을 일정 단위로 나열 (Tabular, 25컬럼).
  */
 data class FemaleEmployeeSafetyCheckReportResponse(
     val date: String,
@@ -14,7 +14,8 @@ data class FemaleEmployeeSafetyCheckReportResponse(
 /**
  * 안전점검 현황 1행 — (여사원일정 1건) × employee × account 조인.
  *
- * 24컬럼: 레거시 두 변형의 합집합 (CommuteDate 포함). enum 필드는 `@JsonValue` 로 한글 displayName 직렬화.
+ * 25컬럼: 레거시 두 변형의 합집합 (CommuteDate 포함). enum 필드는 `@JsonValue` 로 한글 displayName 직렬화.
+ * accountSapCode = SF `AccCode__c`(ExternalKey), secondWorkType = 출근로그 파생(SF formula 정합).
  * checkTime 은 startTime 직접 (레거시 `StartTime - 9/24` 의 KST 보정은 신규 KST 저장이라 불요).
  */
 data class FemaleEmployeeSafetyCheckReportItem(
@@ -22,7 +23,7 @@ data class FemaleEmployeeSafetyCheckReportItem(
     val ladyName: String,
     val employeeOrgName: String?,
     val accountType: String?,
-    val accountBranchCode: String?,
+    val accountSapCode: String?,
     val accountName: String?,
     val workingCategory1: String?,
     val checkTime: String?,

@@ -7,7 +7,8 @@ export interface FemaleEmployeeWorkHistoryItem {
   scheduleName: string | null;
   name: string;
   employeeCode: string;
-  age: number | null;
+  /** SF Age__c formula 정합 — "N살" 문자열, 기준 TODAY, 여사원만 (조장 등은 null) */
+  age: string | null;
   workingDate: string | null;
   accountBranchName: string | null;
   /** SAP거래처코드 (레거시 `AccCode__c`) — 화면 라벨은 "거래처코드" */
