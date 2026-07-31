@@ -11,6 +11,7 @@ import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.Projections
+import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -236,11 +237,29 @@ class NoticeRepositoryCustomImpl(
      * 집합은 호출부(NoticeService#getPostsForAdmin)가 선택 지점코드를
      * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 로 확장해 넘긴 것으로,
      * 조직 개편 전 코드로 작성된 과거 공지와 롤업 하위 지점 공지까지 함께 조회된다
-     * (다른 지점 조회 화면과 동일 규약). 지점코드가 없는 회사공지/교육은 자연히 제외된다.
+     * (다른 지점 조회 화면과 동일 규약).
+     *
+     * **지점 축은 지점공지(BRANCH)에만 적용한다.** 회사공지/교육은 지점 소속이 없는 전사 공지라
+     * 특정 지점을 조회하는 화면에서도 함께 노출되어야 한다 (모바일 목록 [buildCategoryCondition] 과 동일 규약 —
+     * 거기서도 `회사공지 OR (지점공지 AND 내 지점)`). 지점코드로만 필터하면 지점 사용자(및 지점 미선택
+     * 상태의 전사 사용자 — NOTICE 프로필은 화이트리스트 34개를 기본 필터로 넣는다)에게 회사공지가
+     * 통째로 사라진다.
+     *
+     * @param branchCodes null = 지점 필터 미적용(전건), 빈 목록 = 권한 차단(`BranchScopeResult.NoAccess`)
+     *   → 지점공지 0건. 빈 목록을 "필터 없음" 으로 취급하면 권한 밖 지점 코드를 넣었을 때 전 지점 공지가
+     *   보이는 IDOR 이 된다.
      */
     private fun buildBranchCodeCondition(branchCodes: List<String>?): Predicate? {
-        if (branchCodes.isNullOrEmpty()) return null
-        return notice.branchCode.`in`(branchCodes)
+        if (branchCodes == null) return null
+        val branchMatch = if (branchCodes.isEmpty()) {
+            Expressions.FALSE.isTrue // NoAccess — 지점공지 매칭 0건
+        } else {
+            notice.branchCode.`in`(branchCodes)
+        }
+        // 지점 소속이 없는 공지(회사공지/교육, 카테고리 미지정 잔재)는 지점 조건과 무관하게 노출.
+        return branchMatch
+            .or(notice.category.isNull)
+            .or(notice.category.ne(NoticeCategory.BRANCH))
     }
 
     private fun buildSearchCondition(search: String?): Predicate? {

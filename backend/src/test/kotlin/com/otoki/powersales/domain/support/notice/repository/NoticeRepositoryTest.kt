@@ -409,10 +409,11 @@ class NoticeRepositoryTest {
         }
 
         @Test
-        @DisplayName("지점 조회 (branchCodes 지정) - 해당 코드 공지만 반환, 지점코드 없는 회사공지는 제외")
+        @DisplayName("지점 조회 (branchCodes 지정) - 해당 코드 지점공지 + 전사 공지(회사공지/교육) 반환, 타 지점공지는 제외")
         fun filterByBranchCode() {
             // Given
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
+            persistNotice(name = "교육 공지", category = NoticeCategory.EDUCATION)
             persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
             persistNotice(name = "서울지점 임시저장", category = NoticeCategory.BRANCH, branchCode = "서울지점", status = NoticeStatus.DRAFT)
             persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
@@ -420,10 +421,10 @@ class NoticeRepositoryTest {
             // When
             val result = noticeRepository.findAllNotices(null, null, listOf("서울지점"), pageable)
 
-            // Then
-            assertThat(result.totalElements).isEqualTo(2)
+            // Then — 지점 축은 지점공지에만 적용된다 (지점 소속이 없는 전사 공지는 항상 노출).
+            assertThat(result.totalElements).isEqualTo(4)
             assertThat(result.content.map { it.name })
-                .containsExactlyInAnyOrder("서울지점 공지", "서울지점 임시저장")
+                .containsExactlyInAnyOrder("전체 공지", "교육 공지", "서울지점 공지", "서울지점 임시저장")
         }
 
         @Test
@@ -440,6 +441,21 @@ class NoticeRepositoryTest {
             // Then
             assertThat(result.content.map { it.name })
                 .containsExactlyInAnyOrder("현행 코드 공지", "개편 전 코드 공지")
+        }
+
+        @Test
+        @DisplayName("지점 차단 (branchCodes 빈 목록 = NoAccess) - 지점공지 0건, 전사 공지만 반환")
+        fun blockedByEmptyBranchCodes() {
+            // Given
+            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
+
+            // When — 권한 밖 지점 코드 요청 시 게이트웨이가 빈 목록을 넘긴다.
+            val result = noticeRepository.findAllNotices(null, null, emptyList(), pageable)
+
+            // Then — 빈 목록이 "필터 없음" 으로 뒤집혀 전 지점 공지가 보이면 IDOR 이다.
+            assertThat(result.content.map { it.name }).containsExactly("전체 공지")
         }
 
         @Test
