@@ -714,6 +714,12 @@ class NoticeService(
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
+        // 목록 조회 필터는 작성 권한과 무관하게 전 분류. 조장/지점장도 목록에 함께 나오는
+        // 회사공지/교육(지점 소속 없는 전사 공지)을 분류로 좁혀 조회할 수 있어야 한다.
+        val searchCategories = NoticeCategory.entries.map {
+            CategoryOption(code = it.apiCode, name = it.displayName)
+        }
+
         // 지점공지 선택 지점 옵션 — 다른 조회 화면과 동일한 [BranchScopeGateway] 화이트리스트
         // (전사 권한자 34개 지점 고정 / 그 외 본인 조직 트리). 지점공지는 지점 단위라 팀 단위 조직은
         // 대상이 아니므로 전사도 34개로 제한한다. 목록 화면의 지점 검색 옵션도 이 응답을 재사용한다.
@@ -721,7 +727,12 @@ class NoticeService(
         val branches = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.NOTICE)
             .map { BranchOption(branchCode = it.branchCode, branchName = it.branchName) }
 
-        return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
+        return NoticeFormMetaResponse(
+            scopes = scopes,
+            categories = categories,
+            searchCategories = searchCategories,
+            branches = branches
+        )
     }
 
     /**

@@ -101,6 +101,9 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                     ScopeOption("현장여사원", "현장여사원")
                 ),
                 categories = listOf(
+                    CategoryOption("BRANCH", "지점공지")
+                ),
+                searchCategories = listOf(
                     CategoryOption("COMPANY", "회사공지"),
                     CategoryOption("BRANCH", "지점공지"),
                     CategoryOption("EDUCATION", "교육")
@@ -116,8 +119,12 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.categories").isArray)
-                .andExpect(jsonPath("$.data.categories[0].code").value("COMPANY"))
-                .andExpect(jsonPath("$.data.categories[0].name").value("회사공지"))
+                .andExpect(jsonPath("$.data.categories[0].code").value("BRANCH"))
+                .andExpect(jsonPath("$.data.categories[0].name").value("지점공지"))
+                // 조회 필터용 분류는 작성 권한과 별개로 전 분류가 내려간다.
+                .andExpect(jsonPath("$.data.searchCategories").isArray)
+                .andExpect(jsonPath("$.data.searchCategories[0].code").value("COMPANY"))
+                .andExpect(jsonPath("$.data.searchCategories[2].code").value("EDUCATION"))
                 .andExpect(jsonPath("$.data.branches").isArray)
                 .andExpect(jsonPath("$.data.branches[0].branchCode").value("1101"))
                 .andExpect(jsonPath("$.data.branches[0].branchName").value("[제1사업부] 1영업부-서울1지점"))

@@ -103,7 +103,10 @@ export interface NoticeFormData {
 
 export interface NoticeFormMeta {
   scopes: ScopeOption[];
+  /** 작성/수정 폼의 분류 선택지 — 권한별 제한(조장/지점장은 지점공지만). */
   categories: CategoryOption[];
+  /** 목록의 분류 조회 선택지 — 전 분류 고정(작성 권한과 무관). */
+  searchCategories: CategoryOption[];
   branches: BranchOption[];
 }
 

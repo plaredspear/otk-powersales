@@ -16,6 +16,7 @@ import { listTableLocale } from '@/lib/listTableLocale';
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
   BRANCH: { color: 'green', label: '지점공지' },
+  EDUCATION: { color: 'purple', label: '교육' },
 };
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
@@ -102,9 +103,11 @@ export default function NoticeListPage() {
     },
   ];
 
+  // 분류 조회 옵션은 작성 권한(categories)이 아니라 조회용 전 분류(searchCategories)를 쓴다.
+  // 조장/지점장은 지점공지만 작성하지만 목록에는 회사공지/교육도 함께 나오므로 그 분류로도 조회 가능해야 한다.
   const categoryOptions = [
     { value: '', label: '전체' },
-    ...(formMeta?.categories.map((c) => ({ value: c.code, label: c.name })) ?? []),
+    ...(formMeta?.searchCategories.map((c) => ({ value: c.code, label: c.name })) ?? []),
   ];
 
   // 지점 조회 옵션 — 작성 폼과 동일한 권한별 지점 화이트리스트(form-meta)를 그대로 쓴다.

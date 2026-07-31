@@ -19532,6 +19532,12 @@
               "$ref" : "#/components/schemas/ScopeOption"
             },
             "type" : "array"
+          },
+          "searchCategories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryOption"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"

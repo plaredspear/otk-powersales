@@ -1220,6 +1220,19 @@ class NoticeServiceTest {
         }
 
         @Test
+        @DisplayName("조장/지점장 - 조회 필터용 분류는 작성 권한과 무관하게 전 분류")
+        fun getNoticeFormMeta_searchCategoriesNotRestricted() {
+            // 목록에는 본인 지점공지 외에 회사공지/교육(지점 소속 없는 전사 공지)도 함께 나오므로
+            // 그 분류로 좁혀 조회할 수 있어야 한다 (작성 제한과 조회 제한은 별개 축).
+            listOf(AppAuthority.LEADER, AppAuthority.BRANCH_MANAGER).forEach { role ->
+                val result = noticeService.getNoticeFormMeta(principalOf(role = role))
+
+                assertThat(result.searchCategories.map { it.code })
+                    .containsExactly("COMPANY", "BRANCH", "EDUCATION")
+            }
+        }
+
+        @Test
         @DisplayName("지점장 - 카테고리 지점공지만 노출")
         fun getNoticeFormMeta_branchManagerBranchOnly() {
             val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.BRANCH_MANAGER))
