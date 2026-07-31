@@ -187,10 +187,32 @@ export async function fetchAttendInfoMembers(branchCode?: string): Promise<TeamM
 }
 
 /**
- * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
- * 좌측 패널에서 여사원을 선택하면 선택 기간 내 근무 행을 거래처 단위로 그룹핑해 표시.
- * 모수는 출근 등록된 근무 행이라 모든 행이 거래처를 가진다 — 연차는 거래처가 없어
- * 이 표가 아니라 사원 단위 요약(WorkHistoryEmployeeAccountResponse.annualLeaveDays)으로 제공된다.
+ * 기간별 근무내역(개인) — 특정 여사원 1명의 월별 근무 집계 행 (표의 1단계).
+ * 좌측 패널에서 여사원을 선택하면 선택 기간 내 근무 행을 년월 단위로 먼저 그룹핑하고,
+ * 각 월 안에서 거래처별로 다시 나눈다(accounts, 행 펼침).
+ * 연차는 거래처가 없어 이 표가 아니라 사원 단위 요약
+ * (WorkHistoryEmployeeAccountResponse.annualLeaveDays)으로 제공된다.
+ */
+export interface WorkHistoryMonthStat {
+  /** 대상 년월 (yyyy-MM). */
+  yearMonth: string;
+  /** 이 월에 근무한 거래처 수. */
+  accountCount: number;
+  totalWorkingDays: number;
+  displayDays: number;
+  eventDays: number;
+  workDays: number;
+  /** 총 투입횟수 (이 월 거래처별 합). */
+  totalInputCount: number;
+  /** 총 환산근무일수 (이 월 거래처별 합). 문자열(BigDecimal) 또는 숫자. */
+  equivalentWorkingDays: string | number;
+  /** 이 월의 거래처별 분해 (총 근무일수 내림차순 → 거래처명 오름차순). */
+  accounts: WorkHistoryAccountStat[];
+}
+
+/**
+ * 기간별 근무내역(개인) — 월 안의 거래처별 근무 집계 행 (표의 2단계).
+ * 거래처 속성 + 통합일정 B그룹 지표(투입횟수/환산근무일수/환산인원/근무형태)를 월 단위로 제공.
  */
 export interface WorkHistoryAccountStat {
   /** 거래처명. */
@@ -209,25 +231,7 @@ export interface WorkHistoryAccountStat {
   workDays: number;
   /** 총 투입횟수 (통합일정 정의). */
   totalInputCount: number;
-  /** 총 환산근무일수 (통합일정 정의, Σ(1/N) 기간 합). 문자열(BigDecimal) 또는 숫자. */
-  equivalentWorkingDays: string | number;
-  /**
-   * 월별 분해 (yyyy-MM 오름차순). 행 펼침 시 표시. 환산인원은 여기에만 담긴다(분모가 월마다 달라 합산 불가).
-   * 단일 월 조회면 빈 배열.
-   */
-  monthlyStats: WorkHistoryAccountMonthlyStat[];
-}
-
-/**
- * 기간별 근무내역(개인) — 거래처별 행의 월별 분해 (통합일정 B그룹).
- * 환산인원(월 단위로만 정의)과 근무형태 대표값을 월별로 제공.
- */
-export interface WorkHistoryAccountMonthlyStat {
-  /** 대상 년월 (yyyy-MM). */
-  yearMonth: string;
-  totalWorkingDays: number;
-  totalInputCount: number;
-  /** 환산근무일수 (Σ(1/N)). 문자열(BigDecimal) 또는 숫자. */
+  /** 환산근무일수 (통합일정 정의, Σ(1/N)). 문자열(BigDecimal) 또는 숫자. */
   equivalentWorkingDays: string | number;
   /** 환산인원 (환산근무일수 ÷ 당월근무일수). 문자열(BigDecimal) 또는 숫자. */
   convertedHeadcount: string | number;
@@ -246,10 +250,14 @@ export interface WorkHistoryEmployeeAccountResponse {
   toYearMonth: string;
   employeeCode: string;
   employeeName: string | null;
-  items: WorkHistoryAccountStat[];
+  /** 년월 오름차순 월별 집계. 근무 행이 있는 월만 담긴다. */
+  months: WorkHistoryMonthStat[];
+  /** 월 수. */
+  monthCount: number;
+  /** 기간 전체의 distinct 거래처 수 (월이 달라도 같은 거래처는 1개). */
   totalCount: number;
   /**
-   * 기간 내 연차 일수 (사원 단위 합계). 연차는 거래처가 없어 거래처별 표에 담기지 않고
+   * 기간 내 연차 일수 (사원 단위 합계). 연차는 거래처가 없어 월/거래처 표에 담기지 않고
    * 여기에 별도로 제공된다.
    */
   annualLeaveDays: number;

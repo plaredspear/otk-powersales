@@ -20244,40 +20244,6 @@
         },
         "type" : "object"
       },
-      "WorkHistoryAccountMonthlyStat" : {
-        "properties" : {
-          "convertedHeadcount" : {
-            "type" : "number"
-          },
-          "equivalentWorkingDays" : {
-            "type" : "number"
-          },
-          "totalInputCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "totalWorkingDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "workingCategory1" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory3" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory4" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory5" : {
-            "type" : [ "string", "null" ]
-          },
-          "yearMonth" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "WorkHistoryAccountStat" : {
         "properties" : {
           "abcTypeLabel" : {
@@ -20291,6 +20257,9 @@
           },
           "accountName" : {
             "type" : [ "string", "null" ]
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
           },
           "displayDays" : {
             "format" : "int32",
@@ -20306,12 +20275,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "monthlyStats" : {
-            "items" : {
-              "$ref" : "#/components/schemas/WorkHistoryAccountMonthlyStat"
-            },
-            "type" : "array"
-          },
           "totalInputCount" : {
             "format" : "int32",
             "type" : "integer"
@@ -20323,6 +20286,18 @@
           "workDays" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -20342,9 +20317,13 @@
           "fromYearMonth" : {
             "type" : "string"
           },
-          "items" : {
+          "monthCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "months" : {
             "items" : {
-              "$ref" : "#/components/schemas/WorkHistoryAccountStat"
+              "$ref" : "#/components/schemas/WorkHistoryMonthStat"
             },
             "type" : "array"
           },
@@ -20354,6 +20333,47 @@
           "totalCount" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "WorkHistoryMonthStat" : {
+        "properties" : {
+          "accountCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "accounts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkHistoryAccountStat"
+            },
+            "type" : "array"
+          },
+          "displayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "equivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "eventDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalInputCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalWorkingDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "yearMonth" : {
+            "type" : "string"
           }
         },
         "type" : "object"

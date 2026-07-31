@@ -90,7 +90,7 @@ class WorkHistoryPeriodSummaryServiceTest {
         }
 
         @Test
-        @DisplayName("같은 거래처의 여러 일정을 1행으로 합산한다")
+        @DisplayName("같은 월 같은 거래처의 여러 일정을 1행으로 합산한다")
         fun aggregatesByAccount() {
             val emp = employee()
             val martA = namedAccount(1, "이마트 원주점")
@@ -107,9 +107,16 @@ class WorkHistoryPeriodSummaryServiceTest {
 
             assertThat(res.employeeCode).isEqualTo("20230016")
             assertThat(res.employeeName).isEqualTo("홍길동")
-            assertThat(res.items).hasSize(2)
+            assertThat(res.months).hasSize(1)
+            assertThat(res.monthCount).isEqualTo(1)
             assertThat(res.totalCount).isEqualTo(2)
-            val itemA = res.items.first { it.accountName == "이마트 원주점" }
+            val june = res.months.single()
+            assertThat(june.yearMonth).isEqualTo("2026-06")
+            assertThat(june.accountCount).isEqualTo(2)
+            assertThat(june.totalWorkingDays).isEqualTo(3)
+            assertThat(june.displayDays).isEqualTo(2)
+            assertThat(june.eventDays).isEqualTo(1)
+            val itemA = june.accounts.first { it.accountName == "이마트 원주점" }
             assertThat(itemA.totalWorkingDays).isEqualTo(2)
             assertThat(itemA.displayDays).isEqualTo(1)
             assertThat(itemA.eventDays).isEqualTo(1)
@@ -119,6 +126,30 @@ class WorkHistoryPeriodSummaryServiceTest {
             // 유통형태는 거래처유형마스터 "{코드} {이름}" — 거래처상태코드(02)는 섞이지 않는다.
             assertThat(itemA.distributionChannelLabel).isEqualTo("01 대형마트(3대)")
             assertThat(itemA.abcTypeLabel).isEqualTo("6111 이마트")
+        }
+
+        @Test
+        @DisplayName("년월 오름차순으로 월을 나누고 같은 거래처도 월마다 별도 행으로 낸다")
+        fun groupsByMonthFirst() {
+            val emp = employee()
+            val martA = namedAccount(1, "이마트 원주점")
+            val martB = namedAccount(2, "홈플러스 원주점")
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                schedule(emp, martA, LocalDate.of(2026, 6, 1)),
+                schedule(emp, martA, LocalDate.of(2026, 5, 1)),
+                schedule(emp, martB, LocalDate.of(2026, 5, 2)),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-05", "2026-06")
+
+            assertThat(res.months.map { it.yearMonth }).containsExactly("2026-05", "2026-06")
+            assertThat(res.months[0].accounts.map { it.accountName })
+                .containsExactlyInAnyOrder("이마트 원주점", "홈플러스 원주점")
+            assertThat(res.months[1].accounts.map { it.accountName }).containsExactly("이마트 원주점")
+            // 기간 전체 distinct 거래처 수 — 같은 거래처가 두 달에 나와도 1개.
+            assertThat(res.totalCount).isEqualTo(2)
         }
 
         @Test
@@ -137,8 +168,7 @@ class WorkHistoryPeriodSummaryServiceTest {
 
             val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
 
-            assertThat(res.items).hasSize(1)
-            assertThat(res.items.single().accountName).isEqualTo("이마트 원주점")
+            assertThat(res.months.single().accounts.single().accountName).isEqualTo("이마트 원주점")
             assertThat(res.annualLeaveDays).isEqualTo(3)
         }
 
@@ -161,12 +191,12 @@ class WorkHistoryPeriodSummaryServiceTest {
             assertThat(codeSlot.captured).isEqualTo("20230016")
             assertThat(codesSlot.captured).containsExactly("A001")
             // 근무 행이 없어도 연차 합계는 반환된다.
-            assertThat(res.items).isEmpty()
+            assertThat(res.months).isEmpty()
             assertThat(res.annualLeaveDays).isEqualTo(2)
         }
 
         @Test
-        @DisplayName("총 근무일수 내림차순 → 거래처명 오름차순으로 정렬한다")
+        @DisplayName("월 안의 거래처를 총 근무일수 내림차순 → 거래처명 오름차순으로 정렬한다")
         fun sortsByWorkingDaysDescThenName() {
             val emp = employee()
             val one = namedAccount(1, "하나로마트")
@@ -183,7 +213,7 @@ class WorkHistoryPeriodSummaryServiceTest {
 
             val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
 
-            assertThat(res.items.map { it.accountName })
+            assertThat(res.months.single().accounts.map { it.accountName })
                 .containsExactly("이마트", "농협마트", "하나로마트")
         }
 
@@ -198,7 +228,7 @@ class WorkHistoryPeriodSummaryServiceTest {
             val res = service.getAccountSummary(allScope, "  20230016  ", "2026-05", "2026-06")
 
             assertThat(codeSlot.captured).isEqualTo("20230016")
-            assertThat(res.items).isEmpty()
+            assertThat(res.months).isEmpty()
             assertThat(res.employeeName).isNull()
         }
 
@@ -264,20 +294,22 @@ class WorkHistoryPeriodSummaryServiceTest {
 
             val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
 
-            val a = res.items.first { it.accountName == "이마트 원주점" }
-            val b = res.items.first { it.accountName == "홈플러스 원주점" }
+            val june = res.months.single()
+            val a = june.accounts.first { it.accountName == "이마트 원주점" }
+            val b = june.accounts.first { it.accountName == "홈플러스 원주점" }
             // 환산근무일수: A = 1/1 + 1/2 = 1.5, B = 1/2 = 0.5
             assertThat(a.equivalentWorkingDays).isEqualByComparingTo("1.5000")
             assertThat(b.equivalentWorkingDays).isEqualByComparingTo("0.5000")
             // 투입횟수: 같은 조합의 distinct 근무일 — A = 2(6/1,6/2), B = 1(6/2)
             assertThat(a.totalInputCount).isEqualTo(2)
             assertThat(b.totalInputCount).isEqualTo(1)
-            // 단일 월 조회이므로 월별 분해는 비어 있다.
-            assertThat(a.monthlyStats).isEmpty()
+            // 월 헤더는 그 달 거래처 합 (환산근무일수 2.0, 투입횟수 3)
+            assertThat(june.equivalentWorkingDays).isEqualByComparingTo("2.0000")
+            assertThat(june.totalInputCount).isEqualTo(3)
         }
 
         @Test
-        @DisplayName("B그룹 — 다월 조회 시 월별 분해(환산인원 포함)를 채우고 합산 가능 지표는 기간 합계로 낸다")
+        @DisplayName("B그룹 — 다월 조회 시 같은 거래처라도 월별 지표(환산인원 포함)를 각 월 행에 낸다")
         fun fillsMonthlyBreakdownForMultiMonth() {
             val emp = employee()
             val martA = namedAccount(1, "이마트 원주점")
@@ -298,15 +330,16 @@ class WorkHistoryPeriodSummaryServiceTest {
 
             val res = service.getAccountSummary(allScope, "20230016", "2026-05", "2026-06")
 
-            val a = res.items.first { it.accountName == "이마트 원주점" }
-            // 기간 합계: 환산근무일수 1.0 + 1.0 = 2.0, 투입횟수 1 + 1 = 2
-            assertThat(a.equivalentWorkingDays).isEqualByComparingTo("2.0000")
-            assertThat(a.totalInputCount).isEqualTo(2)
-            // 월별 분해 2건 (환산인원은 월별로만)
-            assertThat(a.monthlyStats).hasSize(2)
-            assertThat(a.monthlyStats.map { it.yearMonth }).containsExactly("2026-05", "2026-06")
-            assertThat(a.monthlyStats[0].convertedHeadcount).isEqualByComparingTo("1.0000")
-            assertThat(a.monthlyStats[0].workingCategory1).isEqualTo(WorkingCategory1.DISPLAY.displayName)
+            assertThat(res.months.map { it.yearMonth }).containsExactly("2026-05", "2026-06")
+            val may = res.months[0].accounts.single()
+            val june = res.months[1].accounts.single()
+            // 월별 지표: 각 월 환산근무일수 1.0 / 투입횟수 1 (기간 합산하지 않는다)
+            assertThat(may.equivalentWorkingDays).isEqualByComparingTo("1.0000")
+            assertThat(june.equivalentWorkingDays).isEqualByComparingTo("1.0000")
+            assertThat(may.totalInputCount).isEqualTo(1)
+            // 환산인원·근무형태 대표값은 월 단위 값 그대로
+            assertThat(may.convertedHeadcount).isEqualByComparingTo("1.0000")
+            assertThat(may.workingCategory1).isEqualTo(WorkingCategory1.DISPLAY.displayName)
         }
     }
 

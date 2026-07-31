@@ -59,7 +59,7 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.getByText('시작 년월:')).toBeInTheDocument();
     expect(screen.getByText('종료 년월:')).toBeInTheDocument();
     expect(
-      screen.getByText('좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다.'),
+      screen.getByText('좌측에서 여사원을 선택하면 월별 근무내역을 조회합니다.'),
     ).toBeInTheDocument();
   });
 
@@ -137,7 +137,7 @@ describe('WorkHistoryPeriodPage', () => {
     });
   });
 
-  describe('여사원 선택 → 거래처별 집계', () => {
+  describe('여사원 선택 → 월별 → 거래처별 집계', () => {
     const member = {
       employeeId: 10,
       employeeCode: '20230016',
@@ -155,37 +155,58 @@ describe('WorkHistoryPeriodPage', () => {
         toYearMonth: '2026-06',
         employeeCode: '20230016',
         employeeName: '홍길동',
+        monthCount: 1,
         totalCount: 2,
-        // 연차는 거래처가 없어 items 가 아니라 사원 단위 합계로 온다.
+        // 연차는 거래처가 없어 월/거래처 표가 아니라 사원 단위 합계로 온다.
         annualLeaveDays: 1,
-        items: [
+        months: [
           {
-            accountName: '이마트 원주점',
-            accountExternalKey: 'A0001',
-            accountBranchName: '원주1지점',
-            distributionChannelLabel: '02 대형마트(3대)',
-            abcTypeLabel: '6111 이마트',
-            totalWorkingDays: 3,
-            displayDays: 2,
+            yearMonth: '2026-06',
+            accountCount: 2,
+            totalWorkingDays: 4,
+            displayDays: 3,
             eventDays: 1,
-            workDays: 3,
-            totalInputCount: 2,
-            equivalentWorkingDays: '2.5000',
-            monthlyStats: [],
-          },
-          {
-            accountName: '홈플러스 원주점',
-            accountExternalKey: 'A0002',
-            accountBranchName: '원주1지점',
-            distributionChannelLabel: '02 대형마트(3대)',
-            abcTypeLabel: '6112 홈플러스',
-            totalWorkingDays: 1,
-            displayDays: 1,
-            eventDays: 0,
-            workDays: 1,
-            totalInputCount: 1,
-            equivalentWorkingDays: '0.5000',
-            monthlyStats: [],
+            workDays: 4,
+            totalInputCount: 3,
+            equivalentWorkingDays: '3.0000',
+            accounts: [
+              {
+                accountName: '이마트 원주점',
+                accountExternalKey: 'A0001',
+                accountBranchName: '원주1지점',
+                distributionChannelLabel: '02 대형마트(3대)',
+                abcTypeLabel: '6111 이마트',
+                totalWorkingDays: 3,
+                displayDays: 2,
+                eventDays: 1,
+                workDays: 3,
+                totalInputCount: 2,
+                equivalentWorkingDays: '2.5000',
+                convertedHeadcount: '0.5000',
+                workingCategory1: '진열',
+                workingCategory3: null,
+                workingCategory4: null,
+                workingCategory5: null,
+              },
+              {
+                accountName: '홈플러스 원주점',
+                accountExternalKey: 'A0002',
+                accountBranchName: '원주1지점',
+                distributionChannelLabel: '02 대형마트(3대)',
+                abcTypeLabel: '6112 홈플러스',
+                totalWorkingDays: 1,
+                displayDays: 1,
+                eventDays: 0,
+                workDays: 1,
+                totalInputCount: 1,
+                equivalentWorkingDays: '0.5000',
+                convertedHeadcount: '0.1000',
+                workingCategory1: '진열',
+                workingCategory3: null,
+                workingCategory4: null,
+                workingCategory5: null,
+              },
+            ],
           },
         ],
       });
@@ -196,29 +217,46 @@ describe('WorkHistoryPeriodPage', () => {
       expect(await screen.findByText('홍길동(20230016)')).toBeInTheDocument();
     });
 
-    it('여사원을 선택하면 (조회 버튼 없이) 즉시 거래처별 집계가 표시된다', async () => {
+    it('여사원을 선택하면 (조회 버튼 없이) 즉시 월별 집계가 표시되고 월 안에 거래처가 펼쳐진다', async () => {
       renderPage();
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
       await waitFor(() => {
+        // 1단계 = 년월 행, 2단계(기본 펼침) = 그 달의 거래처들.
+        expect(screen.getByText('2026-06')).toBeInTheDocument();
         expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
         expect(screen.getByText('홈플러스 원주점')).toBeInTheDocument();
-        expect(screen.getByText('총 2개 거래처')).toBeInTheDocument();
-        // 연차는 거래처별 표가 아니라 헤더의 사원 단위 요약으로 표시된다.
+        expect(screen.getByText('총 1개월 · 거래처 2개')).toBeInTheDocument();
+        // 연차는 월/거래처 표가 아니라 헤더의 사원 단위 요약으로 표시된다.
         expect(screen.getByText('연차 1일')).toBeInTheDocument();
       });
       expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ employeeCode: '20230016' });
+    });
+
+    it('월 행을 접으면 그 달의 거래처가 숨겨진다', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('홍길동(20230016)'));
+      await screen.findByText('이마트 원주점');
+
+      fireEvent.click(screen.getByRole('button', { name: /collapse row/i }));
+
+      // 접힌 펼침행은 antd 가 DOM 에 남긴 채 display:none 처리한다 — 존재가 아니라 가시성으로 판정.
+      await waitFor(() => {
+        expect(screen.getByText('이마트 원주점')).not.toBeVisible();
+      });
+      // 월 행 자체는 남는다.
+      expect(screen.getByText('2026-06')).toBeInTheDocument();
     });
 
     it('선택된 여사원을 다시 클릭하면 선택이 해제되고 미선택 안내로 복귀한다', async () => {
       renderPage();
       const memberItem = await screen.findByText('홍길동(20230016)');
       fireEvent.click(memberItem);
-      await screen.findByText('총 2개 거래처');
+      await screen.findByText('총 1개월 · 거래처 2개');
       fireEvent.click(memberItem);
       await waitFor(() => {
-        expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
+        expect(screen.queryByText('총 1개월 · 거래처 2개')).not.toBeInTheDocument();
         expect(
-          screen.getByText('좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다.'),
+          screen.getByText('좌측에서 여사원을 선택하면 월별 근무내역을 조회합니다.'),
         ).toBeInTheDocument();
       });
     });
@@ -226,7 +264,7 @@ describe('WorkHistoryPeriodPage', () => {
     it('기간이 6개월을 초과하면 경고를 표시하고 (여사원 선택 상태여도) 조회하지 않는다', async () => {
       renderPage();
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await screen.findByText('총 2개 거래처');
+      await screen.findByText('총 1개월 · 거래처 2개');
 
       // 시작 년월(월 캘린더)을 1년 전으로 입력 → 12개월 차이 → 6개월 초과.
       // 초기값이 채워진 월 DatePicker input(현재 YYYY-MM 표시)을 찾아 이전 연도로 교체.
@@ -242,7 +280,7 @@ describe('WorkHistoryPeriodPage', () => {
       await waitFor(() => {
         expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
       });
-      // rangeInvalid 이면 거래처별 조회를 억제한다.
+      // rangeInvalid 이면 월별 조회를 억제한다.
       expect(mockedAccounts).not.toHaveBeenCalled();
     });
   });

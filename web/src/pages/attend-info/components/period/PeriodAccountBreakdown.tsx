@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Alert, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useWorkHistoryEmployeeAccounts } from '@/hooks/attend-info/useAttendInfo';
-import type { WorkHistoryAccountMonthlyStat, WorkHistoryAccountStat } from '@/api/attendInfo';
+import type { WorkHistoryAccountStat, WorkHistoryMonthStat } from '@/api/attendInfo';
 import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -30,21 +31,70 @@ function formatDecimal(value: string | number | null | undefined): string {
   return num.toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 }
 
-function numericColumn(
-  title: string,
-  dataIndex: keyof WorkHistoryAccountStat,
-  width: number,
-): ColumnsType<WorkHistoryAccountStat>[number] {
-  return {
-    title,
-    dataIndex,
-    width,
+/** 월 헤더(1단계) 컬럼 — 그 달 전체 합계. */
+const monthColumns: ColumnsType<WorkHistoryMonthStat> = [
+  {
+    title: '년월',
+    dataIndex: 'yearMonth',
+    width: 120,
+    render: (v: string) => <Text strong>{v}</Text>,
+  },
+  {
+    title: '거래처수',
+    dataIndex: 'accountCount',
+    width: 90,
     align: 'right',
     render: (v: number) => formatNumber(v),
-  };
-}
+  },
+  {
+    title: '총 근무일수',
+    dataIndex: 'totalWorkingDays',
+    width: 110,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '진열',
+    dataIndex: 'displayDays',
+    width: 80,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '행사',
+    dataIndex: 'eventDays',
+    width: 80,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '근무',
+    dataIndex: 'workDays',
+    width: 80,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '총 투입횟수',
+    dataIndex: 'totalInputCount',
+    width: 110,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '총 환산근무일수',
+    dataIndex: 'equivalentWorkingDays',
+    width: 130,
+    align: 'right',
+    render: (v: string | number) => formatDecimal(v),
+  },
+];
 
-const columns: ColumnsType<WorkHistoryAccountStat> = [
+/**
+ * 월 안의 거래처별(2단계) 컬럼.
+ * 환산인원·근무형태 대표값은 월 단위로만 정의되므로 이 표에만 표시한다.
+ */
+const accountColumns: ColumnsType<WorkHistoryAccountStat> = [
   {
     title: '거래처명',
     dataIndex: 'accountName',
@@ -80,33 +130,31 @@ const columns: ColumnsType<WorkHistoryAccountStat> = [
     ellipsis: true,
     render: (v: string | null) => v ?? '-',
   },
-  numericColumn('총 근무일수', 'totalWorkingDays', 110),
-  numericColumn('진열', 'displayDays', 80),
-  numericColumn('행사', 'eventDays', 80),
-  numericColumn('근무', 'workDays', 80),
-  {
-    title: '총 투입횟수',
-    dataIndex: 'totalInputCount',
-    width: 110,
-    align: 'right',
-    render: (v: number) => formatNumber(v),
-  },
-  {
-    title: '총 환산근무일수',
-    dataIndex: 'equivalentWorkingDays',
-    width: 130,
-    align: 'right',
-    render: (v: string | number) => formatDecimal(v),
-  },
-];
-
-/** 월별 분해(펼침) 컬럼 — 환산인원 + 근무형태 대표값은 월 단위로만 정의되어 여기에만 표시. */
-const monthlyColumns: ColumnsType<WorkHistoryAccountMonthlyStat> = [
-  { title: '년월', dataIndex: 'yearMonth', width: 100 },
   {
     title: '근무일수',
     dataIndex: 'totalWorkingDays',
     width: 90,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '진열',
+    dataIndex: 'displayDays',
+    width: 80,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '행사',
+    dataIndex: 'eventDays',
+    width: 80,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '근무',
+    dataIndex: 'workDays',
+    width: 80,
     align: 'right',
     render: (v: number) => formatNumber(v),
   },
@@ -138,10 +186,11 @@ const monthlyColumns: ColumnsType<WorkHistoryAccountMonthlyStat> = [
 ];
 
 /**
- * 기간별 근무기간 — 선택 여사원의 거래처별 근무 집계 뷰.
+ * 기간별 근무기간 — 선택 여사원의 월별 → 거래처별 근무 집계 뷰.
  *
- * 좌측 패널에서 여사원을 선택하면 선택한 기간(시작~종료 년월) 내 근무 행을 거래처 단위로
- * 집계해 표시한다. 기간 입력이 유효하지 않으면 조회하지 않는다 (상단 경고가 안내).
+ * 좌측 패널에서 여사원을 선택하면 선택한 기간(시작~종료 년월) 내 근무 행을 년월 단위로 묶어 표시하고,
+ * 각 월 행을 펼치면 그 달의 거래처별 내역이 나온다. 기간 입력이 유효하지 않으면 조회하지 않는다
+ * (상단 경고가 안내).
  */
 export default function PeriodAccountBreakdown({
   member,
@@ -154,6 +203,14 @@ export default function PeriodAccountBreakdown({
       ? null
       : { employeeCode: member.employeeCode, fromYearMonth, toYearMonth },
   );
+
+  // 월 행은 기본으로 모두 펼친 상태 — 최대 6개월이라 한눈에 보는 편이 낫다.
+  // "펼친 월" 대신 "접은 월"을 추적해야 조회 결과가 바뀌어도(사원/기간 변경) 새 월이 펼쳐진 채로 온다.
+  const [collapsedMonths, setCollapsedMonths] = useState<string[]>([]);
+  const months = data?.months ?? [];
+  const expandedMonths = months
+    .map((m) => m.yearMonth)
+    .filter((ym) => !collapsedMonths.includes(ym));
 
   return (
     <div>
@@ -178,9 +235,9 @@ export default function PeriodAccountBreakdown({
           </Tag>
         )}
         <Text type="secondary" style={{ marginLeft: 8 }}>
-          {fromYearMonth} ~ {toYearMonth} 거래처별 근무내역
+          {fromYearMonth} ~ {toYearMonth} 월별 근무내역
         </Text>
-        {/* 연차는 거래처가 없어 아래 거래처별 표에 담기지 않는다. 사원 단위 합계로 여기에 표시. */}
+        {/* 연차는 거래처가 없어 아래 월/거래처 표에 담기지 않는다. 사원 단위 합계로 여기에 표시. */}
         {data && (
           <Tag color={data.annualLeaveDays > 0 ? 'orange' : 'default'} style={{ marginLeft: 8 }}>
             연차 {formatNumber(data.annualLeaveDays)}일
@@ -191,7 +248,7 @@ export default function PeriodAccountBreakdown({
       {isError && (
         <Alert
           type="error"
-          message="거래처별 근무내역 조회 실패"
+          message="월별 근무내역 조회 실패"
           description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
           style={{ marginBottom: 16 }}
         />
@@ -199,25 +256,30 @@ export default function PeriodAccountBreakdown({
 
       {data && (
         <Text style={{ marginBottom: 8, display: 'block' }}>
-          총 {formatNumber(data.totalCount)}개 거래처
+          총 {formatNumber(data.monthCount)}개월 · 거래처 {formatNumber(data.totalCount)}개
         </Text>
       )}
       <ResizableTable
-        rowKey={(r: WorkHistoryAccountStat) => `${r.accountExternalKey ?? ''}|${r.accountName ?? ''}`}
-        columns={columns}
-        dataSource={data?.items ?? []}
+        rowKey={(r: WorkHistoryMonthStat) => r.yearMonth}
+        columns={monthColumns}
+        dataSource={months}
         loading={isLoading}
         pagination={false}
         sticky
         scroll={{ x: 'max-content' }}
         expandable={{
-          // 월별 분해(환산인원·근무형태)는 다월 조회일 때만 채워진다. 있는 행만 펼침 가능.
-          rowExpandable: (r: WorkHistoryAccountStat) => r.monthlyStats.length > 0,
-          expandedRowRender: (r: WorkHistoryAccountStat) => (
-            <Table<WorkHistoryAccountMonthlyStat>
-              rowKey={(m) => m.yearMonth}
-              columns={monthlyColumns}
-              dataSource={r.monthlyStats}
+          expandedRowKeys: expandedMonths,
+          onExpand: (expanded, record) =>
+            setCollapsedMonths((prev) =>
+              expanded
+                ? prev.filter((ym) => ym !== record.yearMonth)
+                : [...prev, record.yearMonth],
+            ),
+          expandedRowRender: (r: WorkHistoryMonthStat) => (
+            <Table<WorkHistoryAccountStat>
+              rowKey={(a) => `${a.accountExternalKey ?? ''}|${a.accountName ?? ''}`}
+              columns={accountColumns}
+              dataSource={r.accounts}
               pagination={false}
               size="small"
               scroll={{ x: 'max-content' }}

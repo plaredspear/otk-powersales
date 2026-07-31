@@ -18,7 +18,7 @@ export default function WorkHistoryPeriodPage() {
   const [toMonthDate, setToMonthDate] = useState<Dayjs>(now);
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
   const [memberBranchCode, setMemberBranchCode] = useState<string | undefined>(undefined);
-  // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 거래처별 집계 뷰로 전환.
+  // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 월별 → 거래처별 집계 뷰로 전환.
   const [selectedMember, setSelectedMember] = useState<TeamMember | undefined>(undefined);
 
   const branchesQuery = useAttendInfoBranches();
@@ -53,7 +53,7 @@ export default function WorkHistoryPeriodPage() {
     setSelectedMember(undefined);
   };
 
-  // 같은 여사원 재클릭 시 선택 해제, 다른 여사원이면 교체. 선택 즉시 우측이 거래처별 뷰로 조회된다
+  // 같은 여사원 재클릭 시 선택 해제, 다른 여사원이면 교체. 선택 즉시 우측이 월별 뷰로 조회된다
   // (월별 근무내역 탭과 동일 — 조회 버튼 없이 선택이 곧 조회).
   const handleMemberSelect = (member: TeamMember) => {
     setSelectedMember((prev) => (prev?.employeeId === member.employeeId ? undefined : member));
@@ -127,7 +127,7 @@ export default function WorkHistoryPeriodPage() {
       )}
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        {/* 좌측: 월별 근무내역(개인) 탭과 동일한 여사원 선택 UI. 선택 시 우측이 거래처별 뷰로 전환. */}
+        {/* 좌측: 월별 근무내역(개인) 탭과 동일한 여사원 선택 UI. 선택 시 우측이 월별 뷰로 전환. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           {/* 지점명 — 단일지점은 고정 Tag, 다중/전사 권한자는 선택 드롭다운 (월별 근무내역 탭과 동일). */}
           <div style={{ width: 240 }}>
@@ -173,7 +173,7 @@ export default function WorkHistoryPeriodPage() {
           )}
 
           {selectedMember ? (
-            // 여사원 선택 즉시 거래처별 뷰 조회 (월별 근무내역 탭과 동일 — 조회 버튼 없음).
+            // 여사원 선택 즉시 월별 뷰 조회 (월별 근무내역 탭과 동일 — 조회 버튼 없음).
             <PeriodAccountBreakdown
               member={selectedMember}
               fromYearMonth={fromYm}
@@ -184,7 +184,7 @@ export default function WorkHistoryPeriodPage() {
             // 여사원 미선택 안내 — 선택하면 즉시 조회된다.
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다."
+              description="좌측에서 여사원을 선택하면 월별 근무내역을 조회합니다."
               style={{ marginTop: 48 }}
             />
           )}
