@@ -67,6 +67,7 @@ class NoticeService(
     private val fcmSender: FcmSender,
     private val pushBadgeService: PushBadgeService,
     private val branchScopeGateway: BranchScopeGateway,
+    private val externalImageFetcher: NoticeExternalImageFetcher,
 ) {
 
     companion object {
@@ -288,6 +289,66 @@ class NoticeService(
         }
     }
 
+    /**
+     * 붙여넣기로 본문에 박힌 **외부 이미지 URL** 을 S3 로 이관하고 placeholder 로 치환한다.
+     *
+     * 웹 페이지에서 이미지를 복사해 붙여넣으면 그 사이트의 URL 이 그대로 저장된다. 그대로 두면 원본이
+     * 사라지는 순간 깨지고, 사내망/로그인 필요 이미지는 모바일 앱에서 처음부터 보이지 않으며, 열람 때마다
+     * 외부로 요청이 나간다. 저장 시점에 서버가 받아([NoticeExternalImageFetcher]) 우리 S3 로 옮긴다.
+     *
+     * - 대상: `<img src="http(s)://...">` 중 우리 private 객체가 아닌 것. (우리 presigned 는 앞 단계
+     *   [normalizeInlinePresignedImages] 가 이미 placeholder 로 되돌렸다.)
+     * - 다운로드 실패(내부망/타입 거부/용량 초과/타임아웃)는 원본 태그를 보존하고 경고만 남긴다 —
+     *   이미지 하나 때문에 공지 저장이 실패하면 안 되므로. 그 이미지는 종전처럼 외부 URL 로 남는다.
+     * - `file:`/`blob:` 등 서버가 받아올 수 없는 스킴은 경고만 남긴다(웹이 저장 전에 차단한다).
+     */
+    private fun normalizeInlineExternalImages(noticeId: Long, html: String?): String? {
+        if (html.isNullOrEmpty() || !html.contains("<img", ignoreCase = true)) return html
+
+        return NoticeImagePlaceholder.rewriteImgsBySrc(html) { rawSrc ->
+            val src = NoticeImagePlaceholder.unescapeAttr(rawSrc)
+            when {
+                // 우리 private 객체 / placeholder 는 대상 아님.
+                src.startsWith(NoticeImagePlaceholder.SCHEME) -> null
+                src.contains(NoticeImagePlaceholder.PRIVATE_PATH_SEGMENT) -> null
+                src.startsWith("http://", ignoreCase = true) || src.startsWith("https://", ignoreCase = true) ->
+                    adoptExternalImage(noticeId, src)
+
+                else -> {
+                    // data: 는 앞 단계에서 처리됐고, 남은 건 file:/blob: 처럼 서버가 받아올 수 없는 참조다.
+                    log.warn("공지 {} 본문에 가져올 수 없는 이미지 참조가 있다 — src prefix={}", noticeId, src.take(12))
+                    null
+                }
+            }
+        }
+    }
+
+    /** 외부 이미지 1건을 내려받아 S3 + upload_file 로 적재하고 placeholder 태그를 돌려준다. 실패 시 null. */
+    private fun adoptExternalImage(noticeId: Long, src: String): String? {
+        val fetched = externalImageFetcher.fetch(src) ?: return null
+
+        val fileName = "$INLINE_UPLOAD_STEM.${extensionForContentType(fetched.contentType)}"
+        val result = storageService.uploadPrivate(
+            domain = "notice",
+            originalName = fileName,
+            bytes = fetched.bytes,
+            contentType = fetched.contentType
+        )
+        val saved = uploadFileRepository.save(
+            UploadFile(
+                name = fetched.fileName,
+                uniqueKey = result.key,
+                fileSize = formatFileSize(fetched.bytes.size.toLong()),
+                parentType = UploadFileParentTypes.NOTICE,
+                parentId = noticeId,
+                uploadKbn = UPLOAD_KBN_INLINE,
+                isDeleted = false
+            )
+        )
+        log.info("공지 {} 외부 이미지 S3 이관 — {} → {}", noticeId, src.take(120), result.key)
+        return NoticeImagePlaceholder.build(saved.id.toString(), "")
+    }
+
     private fun extensionForContentType(contentType: String): String = when (contentType) {
         "image/png" -> "png"
         "image/jpeg", "image/jpg" -> "jpg"
@@ -320,9 +381,12 @@ class NoticeService(
         var migrated = 0
         for (notice in notices) {
             try {
-                val normalized = normalizeInlinePresignedImages(
+                val normalized = normalizeInlineExternalImages(
                     notice.id,
-                    normalizeInlineBase64Images(notice.id, notice.contents)
+                    normalizeInlinePresignedImages(
+                        notice.id,
+                        normalizeInlineBase64Images(notice.id, notice.contents)
+                    )
                 )
                 if (normalized != notice.contents) {
                     notice.contents = normalized
@@ -451,6 +515,9 @@ class NoticeService(
         // 클라이언트가 placeholder 복원에 실패해 넘긴 presigned URL 도 서버가 placeholder 로 되돌린다
         // (만료 URL 이 본문에 영구 저장돼 이미지가 깨지는 것을 구조적으로 차단).
         saved.contents = normalizeInlinePresignedImages(saved.id, saved.contents)
+        // 붙여넣기로 들어온 외부 사이트 이미지 URL 은 우리 S3 로 이관해 placeholder 로 바꾼다
+        // (원본 사이트 링크 변경/사내망 이미지로 앱에서 깨지는 것을 방지).
+        saved.contents = normalizeInlineExternalImages(saved.id, saved.contents)
         syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
         return NoticeMutationResponse.Companion.from(saved)
     }
@@ -479,6 +546,7 @@ class NoticeService(
         // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다.
         notice.contents = normalizeInlineBase64Images(notice.id, request.content)
         notice.contents = normalizeInlinePresignedImages(notice.id, notice.contents)
+        notice.contents = normalizeInlineExternalImages(notice.id, notice.contents)
         // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
         notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 

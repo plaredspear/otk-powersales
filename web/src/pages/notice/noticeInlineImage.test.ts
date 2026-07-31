@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectPlaceholderMappings,
+  findUnrecoverableImageSrcs,
   replacePreviewsWithPlaceholders,
   uniqueKeyFromSrc,
 } from './noticeInlineImage';
@@ -54,5 +55,24 @@ describe('replacePreviewsWithPlaceholders', () => {
       '<p><img src="notice-image://999" data-refid="999"></p>';
 
     expect(replacePreviewsWithPlaceholders(html, mappings)).toBe(html);
+  });
+});
+
+describe('findUnrecoverableImageSrcs', () => {
+  it('한글/워드 붙여넣기의 로컬 참조(file:/blob:)를 찾아낸다', () => {
+    const html =
+      '<p><img src="file:///C:/Users/tmp/image001.jpg"></p>' +
+      '<p><img src="blob:https://app.local/9f2c-4d"></p>';
+
+    expect(findUnrecoverableImageSrcs(html)).toHaveLength(2);
+  });
+
+  it('외부 http(s) 이미지는 서버가 S3 로 이관하므로 차단 대상이 아니다', () => {
+    const html =
+      '<p><img src="https://example.com/photo.jpg"></p>' +
+      `<p><img src="${presigned('&amp;')}"></p>` +
+      '<p><img src="notice-image://777" data-refid="777"></p>';
+
+    expect(findUnrecoverableImageSrcs(html)).toEqual([]);
   });
 });

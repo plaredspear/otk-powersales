@@ -58,6 +58,29 @@ export function collectPlaceholderMappings(html: string | null | undefined): Map
 }
 
 /**
+ * 서버가 절대 가져올 수 없는 이미지 참조의 스킴.
+ * `file:` 은 작성자 PC 의 로컬 경로(한글/워드 붙여넣기), `blob:`/`cid:` 는 브라우저·메일 클라이언트
+ * 메모리 참조라 저장 순간 죽는다. 외부 http(s) 이미지는 저장 시 서버가 S3 로 이관하므로 여기 포함하지 않는다.
+ */
+const UNRECOVERABLE_SCHEMES = ['file:', 'blob:', 'cid:'];
+
+/**
+ * 본문에서 저장해도 살릴 수 없는 이미지 참조를 찾는다 (저장 전 사용자 안내용).
+ * 반환값이 비어 있지 않으면 그대로 저장해 봐야 깨진 이미지가 되므로, 툴바/드래그앤드롭으로 다시 넣도록 안내한다.
+ */
+export function findUnrecoverableImageSrcs(html: string | null | undefined): string[] {
+  if (!html) return [];
+  const found: string[] = [];
+  for (const m of html.matchAll(IMG_TAG_REGEX)) {
+    const src = SRC_ATTR_REGEX.exec(m[0])?.[1];
+    if (!src) continue;
+    const lower = src.toLowerCase();
+    if (UNRECOVERABLE_SCHEMES.some((scheme) => lower.startsWith(scheme))) found.push(src);
+  }
+  return found;
+}
+
+/**
  * 저장 직전 본문의 presigned `<img>` 를 placeholder 로 치환한다.
  * 매핑에 없는 src(외부 링크 등)와 placeholder 태그는 원본 그대로 둔다 — 백엔드가 저장 시점에 한 번 더
  * 정규화(`NoticeService.normalizeInlinePresignedImages`)하므로 여기서 누락돼도 DB 에는 남지 않는다.

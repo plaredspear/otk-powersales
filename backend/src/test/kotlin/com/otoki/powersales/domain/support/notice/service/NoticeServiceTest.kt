@@ -71,6 +71,7 @@ class NoticeServiceTest {
     private val fcmSender: FcmSender = mockk()
     private val pushBadgeService: PushBadgeService = mockk()
     private val branchScopeGateway: BranchScopeGateway = mockk()
+    private val externalImageFetcher: NoticeExternalImageFetcher = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -86,7 +87,10 @@ class NoticeServiceTest {
             fcmSender,
             pushBadgeService,
             branchScopeGateway,
+            externalImageFetcher,
         )
+        // 외부 이미지 다운로드 — 기본은 미매칭(null) stub. 이관 경로를 검증하는 테스트에서 override.
+        every { externalImageFetcher.fetch(any()) } returns null
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
         every { storageService.getPresignedUrl(any(), any()) } answers {
             "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/${firstArg<String>()}?X-Amz-Signature=test"
@@ -665,6 +669,67 @@ class NoticeServiceTest {
             assertThat(savedNotice.captured.contents).contains("""data-refid="777"""")
             // 미소속(parent_id=null) 임시 업로드분은 이 공지로 소속되어 이후 cleanup 대상에서 보호된다.
             assertThat(orphanFile.parentId).isEqualTo(savedNotice.captured.id)
+        }
+
+        @Test
+        @DisplayName("붙여넣기 외부 이미지 URL - 저장 시 S3 로 이관하고 placeholder 로 치환")
+        fun createNotice_adoptsExternalImage() {
+            val externalUrl = "https://cdn.example.com/news/summer.jpg"
+            val request = NoticeCreateRequest(
+                title = "공지",
+                scope = "영업사원",
+                category = "COMPANY",
+                // 브라우저가 속성값을 이스케이프해 넘겨도(&amp;) 원문 URL 로 되돌려 받아야 한다.
+                content = """<p><img src="$externalUrl?w=800&amp;h=600"></p>"""
+            )
+            val savedNotice = slot<Notice>()
+            every { noticeRepository.save(capture(savedNotice)) } answers { firstArg() }
+            every { externalImageFetcher.fetch("$externalUrl?w=800&h=600") } returns FetchedImage(
+                bytes = ByteArray(128), contentType = "image/jpeg", fileName = "summer.jpg"
+            )
+            every { storageService.uploadPrivate("notice", any(), any(), "image/jpeg") } returns
+                UploadResult(
+                    key = "uploads/notice/2026/07/31/uuid.jpg",
+                    contentType = "image/jpeg",
+                    originalName = "inline.jpg",
+                    sizeBytes = 128L
+                )
+            every { uploadFileRepository.save(any<UploadFile>()) } returns UploadFile(
+                id = 888L,
+                uniqueKey = "uploads/notice/2026/07/31/uuid.jpg",
+                parentType = "Notice",
+                parentId = 0L,
+                uploadKbn = "INLINE"
+            )
+            every { uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), "Notice") } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any()) } returns emptyList()
+
+            noticeService.createNotice(request, principalOf())
+
+            verify { storageService.uploadPrivate("notice", any(), any(), "image/jpeg") }
+            // 외부 도메인 참조는 본문에 남지 않는다 — 원본 사이트가 링크를 내려도 깨지지 않는다.
+            assertThat(savedNotice.captured.contents).doesNotContain("cdn.example.com")
+            assertThat(savedNotice.captured.contents).contains("notice-image://888")
+        }
+
+        @Test
+        @DisplayName("외부 이미지 다운로드 실패 - 원본 태그를 보존하고 저장은 계속한다")
+        fun createNotice_keepsExternalImageOnFetchFailure() {
+            // 내부망/타입 거부/타임아웃 등으로 못 받아오는 경우. 이미지 1건 때문에 공지 저장이 실패하면 안 된다.
+            val request = NoticeCreateRequest(
+                title = "공지",
+                scope = "영업사원",
+                category = "COMPANY",
+                content = """<p><img src="https://cdn.example.com/gone.jpg"></p>"""
+            )
+            val savedNotice = slot<Notice>()
+            every { noticeRepository.save(capture(savedNotice)) } answers { firstArg() }
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any()) } returns emptyList()
+
+            noticeService.createNotice(request, principalOf())
+
+            assertThat(savedNotice.captured.contents).contains("https://cdn.example.com/gone.jpg")
+            verify(exactly = 0) { storageService.uploadPrivate(any(), any(), any(), any()) }
         }
 
         @Test

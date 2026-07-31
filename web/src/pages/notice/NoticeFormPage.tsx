@@ -15,6 +15,7 @@ import BranchSingleSelect, { type BranchOption } from '@/components/common/Branc
 import MobileNoticePreview from './MobileNoticePreview';
 import {
   collectPlaceholderMappings,
+  findUnrecoverableImageSrcs,
   replacePreviewsWithPlaceholders as toPlaceholders,
   uniqueKeyFromSrc,
 } from './noticeInlineImage';
@@ -365,6 +366,17 @@ export default function NoticeFormPage() {
       values = await form.validateFields();
     } catch {
       return; // 검증 실패 시 antd 가 필드 에러 표시
+    }
+
+    // 저장해도 살릴 수 없는 이미지 참조(file:/blob: — 한글·워드 붙여넣기의 로컬 경로 등)는 미리 차단한다.
+    // 외부 http(s) 이미지는 서버가 저장 시 S3 로 이관하므로 여기서 막지 않는다.
+    const unrecoverable = findUnrecoverableImageSrcs(values.content);
+    if (unrecoverable.length > 0) {
+      message.error(
+        `본문에 저장할 수 없는 이미지 ${unrecoverable.length}건이 있습니다. ` +
+          '이미지는 툴바의 이미지 버튼이나 드래그앤드롭으로 다시 넣어주세요.',
+      );
+      return;
     }
 
     // 지점공지(BRANCH)면 작성자가 고른 지점코드를 전송한다(백엔드가 권한 스코프 검증). 그 외 카테고리는

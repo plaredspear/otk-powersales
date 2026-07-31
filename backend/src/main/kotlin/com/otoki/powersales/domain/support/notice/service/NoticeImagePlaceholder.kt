@@ -112,6 +112,31 @@ object NoticeImagePlaceholder {
     }
 
     /**
+     * 본문 HTML 의 모든 `<img>` 를 src 값 기준으로 교체한다. [replacement] 가 null 이면 원본 태그 보존.
+     *
+     * 붙여넣기로 들어온 **외부 이미지 URL** 을 S3 로 이관해 placeholder 로 바꾸는 경로가 사용한다
+     * ([NoticeService.normalizeInlineExternalImages]). src 는 HTML 이스케이프된 상태(`&amp;`)일 수 있어
+     * 소비자가 [unescapeAttr] 로 되돌린 뒤 사용한다.
+     */
+    fun rewriteImgsBySrc(html: String, replacement: (String) -> String?): String {
+        if (!html.contains("<img", ignoreCase = true)) return html
+        return IMG_SRC_VALUE_REGEX.replace(html) { match ->
+            replacement(match.groupValues[1]) ?: match.value
+        }
+    }
+
+    /**
+     * HTML attribute 값 → 원문. 브라우저/에디터는 속성값의 `&` 를 `&amp;` 로 직렬화하므로,
+     * src 를 실제 URL 로 쓰려면(외부 다운로드 등) 되돌려야 한다. (`&amp;` 를 마지막에 풀어 이중 복호화 방지.)
+     */
+    fun unescapeAttr(value: String): String =
+        value.replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&")
+
+    /**
      * 단일 img src 값에서 uniqueKey 를 해석한다. "private/" 미포함 시 null.
      * URL 인코딩된 경로 세그먼트는 uniqueKey(uploads/notice/yyyy/mm/dd/uuid.ext)에 인코딩 대상 문자가
      * 없으므로 별도 디코딩 없이 그대로 비교 가능하다(영숫자/`/`/`.`/`-` 로만 구성).
