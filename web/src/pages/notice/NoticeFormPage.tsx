@@ -13,24 +13,15 @@ import { uploadNoticeInlineImage } from '@/api/notice';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import BranchSingleSelect, { type BranchOption } from '@/components/common/BranchSingleSelect';
 import MobileNoticePreview from './MobileNoticePreview';
+import {
+  collectPlaceholderMappings,
+  replacePreviewsWithPlaceholders as toPlaceholders,
+  uniqueKeyFromSrc,
+} from './noticeInlineImage';
 
 // 본문 인라인 이미지 허용 타입/용량 (백엔드 StorageConstants 와 정합).
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
-// private S3 key 의 세그먼트 prefix. presigned URL path 에서 이 뒤가 uniqueKey
-// (백엔드 NoticeImagePlaceholder.PRIVATE_PATH_SEGMENT 와 동일 값).
-const PRIVATE_PATH_SEGMENT = 'private/';
-
-// presigned URL 에서 불변 uniqueKey(= upload_file.unique_key) 추출. 서명 쿼리스트링(`?X-Amz-...`)은
-// 매번 바뀌고 HTML 이스케이프(`&` → `&amp;`)도 받으므로 매칭 키로 쓸 수 없어, `?` 앞 경로의
-// "private/" 이후만 취한다 (백엔드 NoticeImagePlaceholder.uniqueKeyFromSrc 와 동일 규칙).
-function uniqueKeyFromSrc(src: string): string | null {
-  const path = src.split('?')[0];
-  const idx = path.indexOf(PRIVATE_PATH_SEGMENT);
-  if (idx < 0) return null;
-  return path.slice(idx + PRIVATE_PATH_SEGMENT.length) || null;
-}
-
 // 정렬(align)은 Quill 기본이 class 기반(ql-align-*)이라 CSS 가 없는 환경(모바일 HtmlWidget)에서 렌더되지 않는다.
 // 인라인 style(text-align) 로 출력하도록 style attributor 를 등록해 웹/모바일 렌더를 일치시킨다.
 // (color/background 는 기본이 이미 인라인 style 이라 별도 등록 불요.)
@@ -355,31 +346,16 @@ export default function NoticeFormPage() {
   // uniqueKey → placeholder 매핑을 미리 등록한다. Quill 이 로드하며 data-refid 를 버리기 전에 원본 HTML 에서
   // 추출해야 하므로 setFieldsValue 직전에 호출한다. 저장 직전 replacePreviewsWithPlaceholders 가 이 매핑으로
   // presigned URL 을 placeholder 로 되돌려, 만료 URL 이 DB 본문에 영구 저장되는 것을 막는다.
+  // (변환 규칙과 회귀 케이스는 noticeInlineImage.ts / .test.ts 가 소유.)
   const registerExistingImagePlaceholders = (html: string | null | undefined) => {
-    if (!html) return;
-    // src / data-refid 속성 순서에 무관하게 태그 전체를 잡아 각 속성을 개별 파싱한다.
-    for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
-      const tag = m[0];
-      const src = /\bsrc\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
-      const refid = /\bdata-refid\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
-      if (!src || !refid || !/^https?:/i.test(src)) continue;
-      const key = uniqueKeyFromSrc(src);
-      if (!key) continue;
-      // 백엔드 placeholder 형식과 동일하게 재구성 (NoticeImagePlaceholder.build 정합).
-      previewToPlaceholder.current.set(key, `<img src="notice-image://${refid}" data-refid="${refid}">`);
+    for (const [key, placeholder] of collectPlaceholderMappings(html)) {
+      previewToPlaceholder.current.set(key, placeholder);
     }
   };
 
   // 저장 직전 본문의 presigned previewUrl 을 placeholder 로 치환 (만료 URL 영구 저장 방지).
-  // src 문자열 전문이 아니라 uniqueKey 로 매칭하므로 Quill 의 `&amp;` 이스케이프/재서명에 영향받지 않는다.
   const replacePreviewsWithPlaceholders = (html: string): string =>
-    html.replace(/<img\b[^>]*>/gi, (tag) => {
-      const src = /\bsrc\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
-      if (!src) return tag;
-      const key = uniqueKeyFromSrc(src);
-      if (!key) return tag;
-      return previewToPlaceholder.current.get(key) ?? tag;
-    });
+    toPlaceholders(html, previewToPlaceholder.current);
 
   // 저장/발행 버튼 공통 제출. publish=false 임시저장(DRAFT), true 발행(PUBLISHED).
   // antd onFinish 는 인자를 넘길 수 없어, 버튼 onClick 에서 validateFields 후 직접 호출한다.

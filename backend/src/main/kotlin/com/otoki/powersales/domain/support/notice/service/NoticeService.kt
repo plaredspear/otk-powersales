@@ -271,7 +271,17 @@ class NoticeService(
             .associateBy { it.uniqueKey }
 
         return NoticeImagePlaceholder.rewriteImgsByUniqueKey(html) { key ->
-            val file = filesByKey[key] ?: return@rewriteImgsByUniqueKey null
+            val file = filesByKey[key]
+            if (file == null) {
+                // 되돌릴 근거(upload_file)가 없으면 만료되는 URL 이 본문에 그대로 남는다 = 이후 깨짐 확정.
+                // 조용히 저장되면 재발을 알 수 없으므로 경고로 남겨 관측 가능하게 한다.
+                log.warn(
+                    "공지 {} 본문의 인라인 이미지 uniqueKey={} 에 대응하는 upload_file 이 없어 placeholder 로 되돌리지 못했다 " +
+                        "— 만료 URL 이 본문에 남아 이미지가 깨질 수 있다",
+                    noticeId, key
+                )
+                return@rewriteImgsByUniqueKey null
+            }
             // 아직 부모가 없는 임시 업로드분만 이 공지로 소속시킨다 (uploadKbn 은 업로드 시점에 INLINE 으로 고정).
             if (file.parentId == null) file.parentId = noticeId
             NoticeImagePlaceholder.build(file.id.toString(), "")
