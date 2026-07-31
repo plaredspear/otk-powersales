@@ -100,6 +100,43 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.queryByText('지점 선택')).not.toBeInTheDocument();
   });
 
+  describe('좌측 패널 재직상태 필터 기본값', () => {
+    const active = { employeeId: 10, employeeCode: '20230016', name: '홍길동', orgName: '원주1지점', jikwee: 'OSPM', status: '재직' };
+    const resigned = { employeeId: 11, employeeCode: '20200001', name: '이퇴사', orgName: '원주1지점', jikwee: 'OSPM', status: '퇴사' };
+
+    beforeEach(() => {
+      mockedBranches.mockResolvedValue([{ branchCode: 'B001', branchName: '원주1지점' }]);
+    });
+
+    it('기본값이 재직이라 퇴사자는 목록에서 빠진다', async () => {
+      mockedMembers.mockResolvedValue([active, resigned]);
+      renderPage();
+
+      expect(await screen.findByText('홍길동(20230016)')).toBeInTheDocument();
+      expect(screen.queryByText('이퇴사(20200001)')).not.toBeInTheDocument();
+      // 총원은 유지하고 실제 표시 건수를 덧붙인다.
+      expect(screen.getByText(/2명/)).toBeInTheDocument();
+      expect(screen.getByText(/표시 1/)).toBeInTheDocument();
+    });
+
+    it('전체 버튼을 누르면 퇴사자까지 보인다', async () => {
+      mockedMembers.mockResolvedValue([active, resigned]);
+      renderPage();
+      await screen.findByText('홍길동(20230016)');
+
+      fireEvent.click(screen.getByText(/^전체/));
+
+      expect(await screen.findByText('이퇴사(20200001)')).toBeInTheDocument();
+    });
+
+    it('재직자가 없는 지점이면 전체로 떨어져 목록이 비지 않는다', async () => {
+      mockedMembers.mockResolvedValue([resigned]);
+      renderPage();
+
+      expect(await screen.findByText('이퇴사(20200001)')).toBeInTheDocument();
+    });
+  });
+
   describe('여사원 선택 → 거래처별 집계', () => {
     const member = {
       employeeId: 10,
