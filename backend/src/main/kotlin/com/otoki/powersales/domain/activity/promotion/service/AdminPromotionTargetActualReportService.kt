@@ -22,7 +22,8 @@ import java.time.LocalDate
  * 레거시 매핑: SF Report `new_report_AtQ` (영업지원실용·Summary·도넛 차트·INTERVAL_CUSTOM·scope=organization).
  * 동작: ScheduleDate 기간 내 PromotionEmployee 를 전사 조회 (promotion/account/product/employee/teamMemberSchedule 조인).
  *       행사명(promotion.name) 그룹 + 그룹별 소계(목표/실적/수량 Sum) + 전체 합계 + 행사명별 실적금액 차트 데이터 산출.
- *       실적금액 = PromotionEmployee.dkDailyActualSalesAmount (SF formula 재현).
+ *       목표금액 = dkDailyTargetAmount(목표갯수×기준단가), 실적금액 = dailyTotalActualSalesAmount(총 실적 = 대표금액+기타금액)
+ *       — SF Report 컬럼(DailyTargetAmount__c/DailyActualSalesAmount__c) formula 재현.
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 차이: 기존 행사마스터 화면(PromotionController CRUD)과 별개 보고서 — ScheduleDate 기간 + 전량 추출 +
@@ -63,8 +64,8 @@ class AdminPromotionTargetActualReportService(
             val mappedRows = pes.map { toRow(it) }
             PromotionTargetActualReportGroup(
                 promotionName = promotionName,
-                subtotalTargetAmount = pes.sumOf { it.targetAmount ?: 0L },
-                subtotalActualAmount = pes.sumOf { it.dkDailyActualSalesAmount ?: BigDecimal.ZERO },
+                subtotalTargetAmount = pes.sumOf { it.dkDailyTargetAmount ?: BigDecimal.ZERO },
+                subtotalActualAmount = pes.sumOf { it.dailyTotalActualSalesAmount ?: BigDecimal.ZERO },
                 subtotalPrimaryQuantity = pes.sumOf { it.primarySalesQuantity ?: BigDecimal.ZERO },
                 subtotalOtherQuantity = pes.sumOf { it.otherSalesQuantity ?: BigDecimal.ZERO },
                 rows = mappedRows,
@@ -77,7 +78,7 @@ class AdminPromotionTargetActualReportService(
             startDate = startDate.toString(),
             endDate = endDate.toString(),
             groups = groups,
-            totalTargetAmount = groups.sumOf { it.subtotalTargetAmount },
+            totalTargetAmount = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalTargetAmount },
             totalActualAmount = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalActualAmount },
             totalPrimaryQuantity = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalPrimaryQuantity },
             totalOtherQuantity = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalOtherQuantity },
@@ -157,7 +158,7 @@ class AdminPromotionTargetActualReportService(
         row.createCell(9).setCellValue(item.employeeName ?: "")
         row.createCell(10).setCellValue(item.professionalPromotionTeam ?: "")
         row.createCell(11).setCellValue(item.scheduleDate ?: "")
-        row.createCell(12).setCellValue((item.targetAmount ?: 0L).toDouble())
+        row.createCell(12).setCellValue((item.targetAmount ?: BigDecimal.ZERO).toDouble())
         row.createCell(13).setCellValue((item.actualAmount ?: BigDecimal.ZERO).toDouble())
         row.createCell(14).setCellValue(item.standLocation ?: "")
         row.createCell(15).setCellValue((item.primarySalesQuantity ?: BigDecimal.ZERO).toDouble())
@@ -170,7 +171,7 @@ class AdminPromotionTargetActualReportService(
         row.createCell(22).setCellValue(item.commuteDate ?: "")
     }
 
-    /** PromotionEmployee 1건 → 23컬럼 행. enum 은 displayName, 실적금액은 SF formula 파생. */
+    /** PromotionEmployee 1건 → 23컬럼 행. enum 은 displayName, 목표/실적 금액은 SF Report 컬럼 formula 파생. */
     private fun toRow(pe: PromotionEmployee): PromotionTargetActualReportRow {
         val promo = pe.promotion
         val acc = promo?.account
@@ -180,18 +181,21 @@ class AdminPromotionTargetActualReportService(
             promotionName = promo?.promotionNumber,
             branchName = acc?.branchName,
             accountName = acc?.name,
-            accountCode = acc?.branchCode,
+            // SF AccCode__c = AccId__r.ExternalKey__c (SAP 거래처코드)
+            accountCode = acc?.externalKey,
             primaryProductName = promo?.primaryProduct?.name,
             category1 = promo?.category1,
             otherProduct = promo?.otherProduct,
             employeeCode = emp?.employeeCode,
             employeeOrgName = emp?.orgName,
             employeeName = emp?.name,
-            professionalPromotionTeam = emp?.professionalPromotionTeam?.displayName,
+            // SF(영업지원실용) 전문행사조 컬럼 = 조원일정에 기록된 투입 당시 값 (사원 마스터의 현재 소속 조 아님)
+            professionalPromotionTeam = sch?.professionalPromotionTeam,
             scheduleDate = pe.scheduleDate?.toString(),
-            targetAmount = pe.targetAmount,
-            // SF Formula DailyActualSalesAmount__c 재현 (의미 오류 포함 보존)
-            actualAmount = pe.dkDailyActualSalesAmount,
+            // SF Report 목표금액 컬럼 = DKRetail__DailyTargetAmount__c formula (목표갯수×기준단가)
+            targetAmount = pe.dkDailyTargetAmount,
+            // SF Report 총 실적 컬럼 = DailyActualSalesAmount__c formula (대표금액+기타금액)
+            actualAmount = pe.dailyTotalActualSalesAmount,
             standLocation = promo?.standLocation?.displayName,
             primarySalesQuantity = pe.primarySalesQuantity,
             primaryProductAmount = pe.primaryProductAmount,

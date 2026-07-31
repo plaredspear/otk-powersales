@@ -461,7 +461,8 @@ class AdminDisplayWorkScheduleService(
         branchCodes: List<String>?,
         sort: Sort,
     ): Page<ScheduleListItemDto> {
-        val pageSize = size.coerceIn(1, 100)
+        // 상한 10,000 — 유효사원(확정) 보고서 등 전량 조회 용도(SF Report 전건 표시 정합). 관리 화면 페이징은 소형 size 그대로.
+        val pageSize = size.coerceIn(1, 10_000)
         val pageable = PageRequest.of(page, pageSize, sort)
 
         val accountIds = if (!accountName.isNullOrBlank()) {

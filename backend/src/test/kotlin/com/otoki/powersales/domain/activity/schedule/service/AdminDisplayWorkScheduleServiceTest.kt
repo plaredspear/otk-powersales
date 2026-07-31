@@ -1264,16 +1264,16 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("페이지 크기 제한 - 100 초과 시 100으로 제한")
+        @DisplayName("페이지 크기 제한 - 10,000 초과 시 10,000으로 제한 (유효사원 확정 보고서 전량 조회 허용)")
         fun listSchedules_pageSizeLimit() {
             val scope = mockAdminScope()
-            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 100), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 10_000), 0)
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), any()) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20_000, null, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), match<Pageable> { it.pageSize == 100 }
+                null, null, null, null, null, null, null, null, null, any(), any(), any(), any(), match<Pageable> { it.pageSize == 10_000 }
             ) }
         }
 

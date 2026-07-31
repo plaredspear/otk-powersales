@@ -28,8 +28,8 @@ export default function ValidEmployeeConfirmedReportPage() {
 
   const query = useQuery({
     queryKey: ['validEmployeeConfirmedReport'],
-    // 보고서는 전체 단면 — 큰 페이지 사이즈로 일괄 조회 (VALID_CONFIRMED preset 고정)
-    queryFn: () => fetchScheduleList({ preset: 'VALID_CONFIRMED', page: 0, size: 1000 }),
+    // 보고서는 전체 단면 — 서버 상한(10,000)까지 일괄 조회 (VALID_CONFIRMED preset 고정, SF Report 전건 정합)
+    queryFn: () => fetchScheduleList({ preset: 'VALID_CONFIRMED', page: 0, size: 10000 }),
     enabled: requested,
   });
 

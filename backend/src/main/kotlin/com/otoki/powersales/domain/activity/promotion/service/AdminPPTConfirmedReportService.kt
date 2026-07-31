@@ -92,8 +92,8 @@ class AdminPPTConfirmedReportService(
         val emp = m.employee
         val acc = m.account
         return PPTConfirmedReportItem(
-            // SF BranchName__c — 거래처 소재 지점명
-            branchName = acc?.branchName,
+            // SF BranchName__c = FullName__r.DKRetail__OrgName__c — 사원 소속 지점명 (거래처 소재 지점 아님)
+            branchName = emp?.orgName,
             fullName = emp?.name,
             employeeNumber = emp?.employeeCode,
             accountName = acc?.name,

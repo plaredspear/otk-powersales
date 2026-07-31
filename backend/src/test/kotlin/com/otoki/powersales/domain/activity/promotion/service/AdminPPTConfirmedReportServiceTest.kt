@@ -64,7 +64,8 @@ class AdminPPTConfirmedReportServiceTest {
 
             assertThat(res.items).hasSize(1)
             val item = res.items[0]
-            assertThat(item.branchName).isEqualTo("서울지점")
+            // SF BranchName__c = 사원 소속 지점명(FullName__r.OrgName)
+            assertThat(item.branchName).isEqualTo("영업1팀")
             assertThat(item.fullName).isEqualTo("홍길동")
             assertThat(item.employeeNumber).isEqualTo("20230016")
             assertThat(item.accountName).isEqualTo("○○마트 강남점")
