@@ -17,13 +17,15 @@ interface NoticeRepositoryCustom {
     /**
      * web admin 목록 조회 — 발행/임시저장, 전 지점 공지를 모두 포함한다.
      *
-     * @param branchCode 지정 시 `notice.branchCode` 정확 일치 공지만 (지점공지 한정 결과가 된다).
-     *   null 이면 지점 조건 없음.
+     * @param branchCodes 지점 조회 조건. 지정 시 `notice.branchCode` 가 이 집합에 속한 공지만
+     *   (지점공지 한정 결과가 된다). 호출부가 선택 지점코드를
+     *   [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 로 확장해 넘긴다.
+     *   null/빈 목록이면 지점 조건 없음.
      */
     fun findAllNotices(
         category: NoticeCategory?,
         search: String?,
-        branchCode: String?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<Notice>
 

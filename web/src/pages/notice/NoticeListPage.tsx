@@ -108,7 +108,8 @@ export default function NoticeListPage() {
   ];
 
   // 지점 조회 옵션 — 작성 폼과 동일한 권한별 지점 화이트리스트(form-meta)를 그대로 쓴다.
-  // 지점명 가나다순 정렬. 선택 시 그 지점코드로 작성된 지점공지만 조회되며, 미선택(전체)이면 지점 조건 없음.
+  // 지점명 가나다순 정렬. 선택 시 서버가 BranchCodeExpander 로 확장한 지점코드 집합(조직 개편 전/후
+  // 계보 + 롤업 하위 지점)으로 조회하며, 미선택(전체)이면 지점 조건 없음.
   const branchOptions = (formMeta?.branches ?? [])
     .map((b) => ({ value: b.branchCode, label: b.branchName }))
     .sort((a, b) => a.label.localeCompare(b.label, 'ko'));

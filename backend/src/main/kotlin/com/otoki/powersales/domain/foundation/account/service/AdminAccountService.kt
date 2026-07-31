@@ -86,9 +86,13 @@ class AdminAccountService(
 
         // branchCode request param 은 별도 추가 필터로 AND 합성 — BooleanBuilder 합성.
         // sharing policy 가 가시성 평가 → branchCode 가 가시 범위 외면 매칭 0건 (자연 처리).
+        // 선택 지점코드는 [BranchCodeExpander] 로 확장해 IN 매칭한다 — 확장 없이 eq 로 두면 같은 지점이라도
+        // 조직 개편 전 코드로 적재된 거래처가 빠진다 (아래 [myBranchScopePredicate] 의 가시성 조건이 이미
+        // 확장 집합 IN 이라, 검색 필터만 eq 로 두면 같은 화면 안에서도 매칭 축이 어긋난다).
+        // 확장은 권한 판정이 아니라 조회 필터에만 적용 — 가시성은 위 visibilityPredicate 가 이미 판정했다.
         val composedPolicyPredicate = BooleanBuilder().and(visibilityPredicate).also {
             if (!branchCode.isNullOrBlank()) {
-                it.and(account.branchCode.eq(branchCode))
+                it.and(account.branchCode.`in`(branchCodeExpander.expand(setOf(branchCode))))
             }
         }
 

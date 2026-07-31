@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.sales.dto.response.SalesProgressRateMasterDetailResponse
 import com.otoki.powersales.domain.sales.dto.response.SalesProgressRateMasterListItem
@@ -23,11 +24,15 @@ import org.springframework.transaction.annotation.Transactional
 class AdminSalesProgressRateMasterService(
     private val repository: SalesProgressRateMasterRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
      * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
      * @param branchCode 거래처 지점코드(account.branchCode) 필터 — 가시 범위와 AND 합성.
+     *   선택 코드는 [BranchCodeExpander] 로 확장해 IN 매칭한다 (조직 개편 전 코드로 적재된 거래처
+     *   누락 방지 — 다른 지점 조회 화면과 동일 규약). 확장은 권한 판정이 아니라 조회 필터에만 적용하며,
+     *   가시성은 policyPredicate 가 이미 판정한다.
      */
     fun getList(
         scope: DataScope,
@@ -50,7 +55,8 @@ class AdminSalesProgressRateMasterService(
             keyword = keyword,
             targetYear = targetYear,
             targetMonth = targetMonth,
-            branchCode = branchCode,
+            branchCodes = branchCode?.takeIf { it.isNotBlank() }
+                ?.let { branchCodeExpander.expand(setOf(it)).toList() },
             pageable = pageable
         )
 

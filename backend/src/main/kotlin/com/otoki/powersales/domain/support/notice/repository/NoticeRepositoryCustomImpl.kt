@@ -56,13 +56,13 @@ class NoticeRepositoryCustomImpl(
     override fun findAllNotices(
         category: NoticeCategory?,
         search: String?,
-        branchCode: String?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<Notice> {
         val where = BooleanBuilder()
             .and(buildDeletedCondition())
             .and(buildAdminCategoryCondition(category))
-            .and(buildBranchCodeCondition(branchCode))
+            .and(buildBranchCodeCondition(branchCodes))
             .and(buildSearchCondition(search))
 
         val content = queryFactory
@@ -231,17 +231,16 @@ class NoticeRepositoryCustomImpl(
     }
 
     /**
-     * admin 목록의 지점 조회 조건 — `notice.branchCode` 정확 일치.
+     * admin 목록의 지점 조회 조건 — `notice.branchCode` IN 확장 코드 집합.
      *
-     * 공지의 지점코드는 작성 시 권한 화이트리스트에서 고른 값이 그대로 저장되고, 앱 노출 판정도
-     * [buildCategoryCondition] 이 사용자 `costCenterCode` 와 정확 일치로 하므로 조회 필터에도
-     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 확장을 쓰지 않는다.
-     * (확장하면 롤업 코드 선택 시 실제로는 그 공지가 노출되지 않는 타 지점 공지까지 결과에 섞인다.)
-     * 지점코드가 없는 회사공지/교육은 자연히 제외된다.
+     * 집합은 호출부(NoticeService#getPostsForAdmin)가 선택 지점코드를
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 로 확장해 넘긴 것으로,
+     * 조직 개편 전 코드로 작성된 과거 공지와 롤업 하위 지점 공지까지 함께 조회된다
+     * (다른 지점 조회 화면과 동일 규약). 지점코드가 없는 회사공지/교육은 자연히 제외된다.
      */
-    private fun buildBranchCodeCondition(branchCode: String?): Predicate? {
-        if (branchCode.isNullOrBlank()) return null
-        return notice.branchCode.eq(branchCode)
+    private fun buildBranchCodeCondition(branchCodes: List<String>?): Predicate? {
+        if (branchCodes.isNullOrEmpty()) return null
+        return notice.branchCode.`in`(branchCodes)
     }
 
     private fun buildSearchCondition(search: String?): Predicate? {

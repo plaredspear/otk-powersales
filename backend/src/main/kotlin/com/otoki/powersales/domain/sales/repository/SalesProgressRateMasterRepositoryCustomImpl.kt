@@ -19,7 +19,7 @@ class SalesProgressRateMasterRepositoryCustomImpl(
         keyword: String?,
         targetYear: String?,
         targetMonth: String?,
-        branchCode: String?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<SalesProgressRateMaster> {
         val builder = BooleanBuilder()
@@ -46,8 +46,9 @@ class SalesProgressRateMasterRepositoryCustomImpl(
 
         // 화면 표시 컬럼(거래처지점명 = account.branchName)과 정합인 account.branchCode 기준 필터.
         // entity 자체의 account_branch_code(SF 조회권한용 복제 컬럼)는 SF 적재 시점 스냅샷이라 사용하지 않음.
-        if (!branchCode.isNullOrBlank()) {
-            builder.and(account.branchCode.eq(branchCode))
+        // 코드 집합은 호출부가 BranchCodeExpander 로 확장한 것 — 조직 개편 전 코드로 적재된 거래처 누락 방지.
+        if (!branchCodes.isNullOrEmpty()) {
+            builder.and(account.branchCode.`in`(branchCodes))
         }
 
         val content = queryFactory

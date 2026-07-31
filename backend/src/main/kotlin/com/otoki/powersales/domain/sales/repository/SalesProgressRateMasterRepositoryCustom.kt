@@ -16,15 +16,17 @@ interface SalesProgressRateMasterRepositoryCustom {
      *
      * 거래처명/지점명/코드/유형 컬럼은 `account` lookup 의 값을 fetchJoin 으로 함께 적재 (SF Formula 동등).
      *
-     * `branchCode` 는 `account.branchCode` 기준 지점 필터 — 가시 범위 Predicate 와 AND 합성되어
-     * 권한 외 지점 요청 시 자연히 0건 반환된다 (IDOR 자연 차단).
+     * `branchCodes` 는 `account.branchCode` 기준 지점 필터 — 호출부가 선택 지점코드를
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 로 확장해 넘긴
+     * 집합이며, 가시 범위 Predicate 와 AND 합성되어 권한 외 지점 요청 시 자연히 0건 반환된다
+     * (IDOR 자연 차단). null/빈 목록이면 지점 조건 없음.
      */
     fun searchForAdmin(
         policyPredicate: Predicate,
         keyword: String?,
         targetYear: String?,
         targetMonth: String?,
-        branchCode: String?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<SalesProgressRateMaster>
 

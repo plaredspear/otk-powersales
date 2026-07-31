@@ -409,7 +409,7 @@ class NoticeRepositoryTest {
         }
 
         @Test
-        @DisplayName("지점 조회 (branchCode 지정) - 정확 일치 공지만 반환, 지점코드 없는 회사공지는 제외")
+        @DisplayName("지점 조회 (branchCodes 지정) - 해당 코드 공지만 반환, 지점코드 없는 회사공지는 제외")
         fun filterByBranchCode() {
             // Given
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
@@ -418,12 +418,28 @@ class NoticeRepositoryTest {
             persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
 
             // When
-            val result = noticeRepository.findAllNotices(null, null, "서울지점", pageable)
+            val result = noticeRepository.findAllNotices(null, null, listOf("서울지점"), pageable)
 
             // Then
             assertThat(result.totalElements).isEqualTo(2)
             assertThat(result.content.map { it.name })
                 .containsExactlyInAnyOrder("서울지점 공지", "서울지점 임시저장")
+        }
+
+        @Test
+        @DisplayName("지점 조회 (확장 코드 다건) - BranchCodeExpander 확장 집합 IN 매칭")
+        fun filterByExpandedBranchCodes() {
+            // Given — 조직 개편 전 코드로 작성된 과거 공지가 현행 코드 조회에 함께 나와야 한다.
+            persistNotice(name = "현행 코드 공지", category = NoticeCategory.BRANCH, branchCode = "5829")
+            persistNotice(name = "개편 전 코드 공지", category = NoticeCategory.BRANCH, branchCode = "5826")
+            persistNotice(name = "타 지점 공지", category = NoticeCategory.BRANCH, branchCode = "9999")
+
+            // When
+            val result = noticeRepository.findAllNotices(null, null, listOf("5829", "5826", "5827"), pageable)
+
+            // Then
+            assertThat(result.content.map { it.name })
+                .containsExactlyInAnyOrder("현행 코드 공지", "개편 전 코드 공지")
         }
 
         @Test
@@ -435,7 +451,7 @@ class NoticeRepositoryTest {
             persistNotice(name = "부산지점 이벤트 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
 
             // When
-            val result = noticeRepository.findAllNotices(NoticeCategory.BRANCH, "이벤트", "서울지점", pageable)
+            val result = noticeRepository.findAllNotices(NoticeCategory.BRANCH, "이벤트", listOf("서울지점"), pageable)
 
             // Then
             assertThat(result.totalElements).isEqualTo(1)

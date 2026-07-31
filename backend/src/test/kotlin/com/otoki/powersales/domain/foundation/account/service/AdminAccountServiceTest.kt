@@ -189,11 +189,18 @@ class AdminAccountServiceTest {
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
 
+            // 선택 지점은 BranchCodeExpander 확장 집합으로 IN 매칭된다 (개편 전 코드 적재분 누락 방지).
+            every { branchCodeExpander.expand(setOf("A001")) } returns setOf("A001", "A001-OLD")
+
             adminAccountService.getAccounts(scope, null, null, "A001", null, 0, 20)
 
-            // composed predicate 가 evaluator 결과 + branchCode AND 합성
+            // composed predicate 가 evaluator 결과 + branchCode 확장 IN AND 합성
             // BooleanBuilder 표현 — toString 에 stub + branchCode 모두 포함
-            assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
+            val predicateStr = composedSlot.captured.toString()
+            assertThat(predicateStr).contains("account.branchCode in [")
+            assertThat(predicateStr).contains("A001")
+            assertThat(predicateStr).contains("A001-OLD")
+            verify(exactly = 1) { branchCodeExpander.expand(setOf("A001")) }
         }
 
         @Test
@@ -386,15 +393,19 @@ class AdminAccountServiceTest {
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
 
+            // 요청 지점 확장은 검색 필터 경로에서만 1회 — 지점 화이트리스트(resolveBranches) 경로는 타지 않는다.
+            every { branchCodeExpander.expand(setOf("A001")) } returns setOf("A001")
+
             adminAccountService.getAccounts(
                 DataScope(branchCodes = emptyList(), isAllBranches = false),
                 null, null, "A001", null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // 전사 predicate(true) + branchCode request param AND 합성만 — 지점 화이트리스트 IN 아님
+            // 전사 predicate(true) + branchCode request param AND 합성만 — 지점 화이트리스트 IN 아님.
+            // (확장 결과가 1건이면 QueryDSL 이 IN 을 `=` 로 렌더링한다.)
             assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
-            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+            verify(exactly = 1) { branchCodeExpander.expand(setOf("A001")) }
         }
 
         @Test

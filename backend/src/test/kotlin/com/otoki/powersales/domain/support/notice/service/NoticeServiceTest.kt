@@ -34,6 +34,7 @@ import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
@@ -69,6 +70,7 @@ class NoticeServiceTest {
     private val fcmSender: FcmSender = mockk()
     private val pushBadgeService: PushBadgeService = mockk()
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk()
+    private val branchCodeExpander: BranchCodeExpander = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -83,7 +85,8 @@ class NoticeServiceTest {
             storageService,
             fcmSender,
             pushBadgeService,
-            womenScheduleBranchResolver
+            womenScheduleBranchResolver,
+            branchCodeExpander
         )
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
         every { storageService.getPresignedUrl(any(), any()) } answers {
@@ -99,6 +102,9 @@ class NoticeServiceTest {
         every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "1101", branchName = "[수도권] 서울1지점")
         )
+        // 지점 조회 코드 확장 — 기본은 입력 그대로 pass-through (BranchMapping 매칭 없음).
+        // 확장 반영을 검증하는 테스트에서 override.
+        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
     }
 
     /** 테스트용 WebUserPrincipal 생성 — 지점공지 지점 스코프/role 검증에 필요한 필드만 채운다. */
@@ -512,22 +518,31 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("지점 조회 - branchCode 전달 시 repository 에 그대로 위임 (공백은 null 정규화)")
+        @DisplayName("지점 조회 - branchCode 를 BranchCodeExpander 확장 집합으로 조회 (공백 trim)")
         fun getPostsForAdmin_withBranchCode() {
             val notices = listOf(
                 createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            every { noticeRepository.findAllNotices(null, null, "1101", any()) } returns page
+            // 조직 개편 계보 — 현행 5829 선택 시 구/하위 코드(5826~5828)까지 확장.
+            every { branchCodeExpander.expand(setOf("5829")) } returns setOf("5829", "5826", "5827", "5828")
+            every { noticeRepository.findAllNotices(null, null, any<List<String>>(), any()) } returns page
 
-            val result = noticeService.getPostsForAdmin(null, null, " 1101 ", 1, 10)
+            val result = noticeService.getPostsForAdmin(null, null, " 5829 ", 1, 10)
 
             assertThat(result.content).hasSize(1)
-            verify { noticeRepository.findAllNotices(null, null, "1101", any()) }
+            verify {
+                noticeRepository.findAllNotices(
+                    null,
+                    null,
+                    match<List<String>> { it.toSet() == setOf("5829", "5826", "5827", "5828") },
+                    any()
+                )
+            }
         }
 
         @Test
-        @DisplayName("지점 조회 - branchCode 가 빈 문자열이면 지점 조건 없음(null)")
+        @DisplayName("지점 조회 - branchCode 가 빈 문자열이면 확장 없이 지점 조건 없음(null)")
         fun getPostsForAdmin_blankBranchCode() {
             val page = PageImpl(emptyList<Notice>(), PageRequest.of(0, 10), 0)
             every { noticeRepository.findAllNotices(null, null, null, any()) } returns page
@@ -535,6 +550,7 @@ class NoticeServiceTest {
             noticeService.getPostsForAdmin(null, null, "   ", 1, 10)
 
             verify { noticeRepository.findAllNotices(null, null, null, any()) }
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
         }
     }
 

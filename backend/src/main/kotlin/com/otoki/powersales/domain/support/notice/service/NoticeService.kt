@@ -45,6 +45,7 @@ import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
 import org.slf4j.LoggerFactory
@@ -65,7 +66,8 @@ class NoticeService(
     private val storageService: StorageService,
     private val fcmSender: FcmSender,
     private val pushBadgeService: PushBadgeService,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchCodeExpander: BranchCodeExpander
 ) {
 
     companion object {
@@ -308,11 +310,12 @@ class NoticeService(
     /**
      * web admin 공지 목록 조회 (임시저장 포함).
      *
-     * @param branchCode 지점 조회 조건. 지정 시 그 지점코드로 작성된 공지(=지점공지)만 조회한다.
-     *   지점코드는 작성 시 화이트리스트에서 고른 값이 그대로 저장되고, 모바일 노출도 사용자
-     *   `costCenterCode` 와 **정확 일치**로 판정하므로(NoticeRepositoryCustomImpl#buildCategoryCondition)
-     *   목록 필터도 확장(BranchCodeExpander) 없이 정확 일치로 맞춘다 — "이 공지가 실제로 노출되는
-     *   지점" 과 조회 결과가 어긋나지 않게 하기 위함.
+     * @param branchCode 지점 조회 조건. 지정 시 그 지점의 공지(=지점공지)만 조회한다.
+     *   조회 필터에는 [BranchCodeExpander] 확장 코드(조직 개편 전/후 계보 + 롤업)를 적용한다 —
+     *   다른 지점 조회 화면(전문행사조/행사마스터/여사원 일정 등)과 동일 규약이라, 개편 전 코드로
+     *   작성된 과거 공지가 현행 코드 조회에서 누락되지 않는다.
+     *   (확장은 권한 판정이 아니라 최종 조회 필터에만 쓴다 — [BranchCodeExpander] KDoc 참조.
+     *   admin 목록은 지점 스코프 가드가 없어 판정 단계 자체가 없다.)
      */
     fun getPostsForAdmin(
         category: String?,
@@ -324,9 +327,10 @@ class NoticeService(
         val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
-        val normalizedBranchCode = branchCode?.trim()?.ifBlank { null }
+        val branchCodes = branchCode?.trim()?.ifBlank { null }
+            ?.let { branchCodeExpander.expand(setOf(it)).toList() }
         val pageable = PageRequest.of(page - 1, size)
-        val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, normalizedBranchCode, pageable)
+        val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, branchCodes, pageable)
 
         val content = noticePage.content.map { it.toSummaryResponse() }
 
