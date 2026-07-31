@@ -28,6 +28,21 @@ enum class NoticeCategory(
         }
 
     companion object {
+        /**
+         * 화면에서 고를 수 있는 분류 — 작성 폼 선택지와 목록 조회 필터가 공유한다.
+         *
+         * **교육(EDUCATION)은 제외**한다. 레거시 Heroku 는 2020-11-04 에 교육을 공지에서 분리해
+         * 별도 화면/테이블로 뺐고(`CommunityController#noticeSelectList` 주석 "교육검색 삭제해야함(따로뺌)"
+         * + `eduSelectList` → education 테이블), 공지 목록 쿼리(`communityMapper.xml#selectNotice`)의
+         * 분류 분기도 회사공지/지점공지 둘뿐이다. 신규 시스템도 교육을 별도 도메인(`/education`)으로
+         * 구현했으므로 공지 분류의 교육 축은 쓰지 않는다. SF 데이터 마이그레이션 대상에서도 공지사항이
+         * 제외되어 교육 분류 공지가 적재될 경로가 없다.
+         *
+         * enum 값 자체는 남겨 둔다 — DB 에 '교육' 값이 들어오더라도 [NoticeCategoryConverter] 가
+         * 읽을 수 있어야 하고, 홈 카드 묶음([homeDisplayName])도 그 값을 다룬다.
+         */
+        val SELECTABLE: List<NoticeCategory> = entries.filter { it != EDUCATION }
+
         fun fromApiCode(code: String): NoticeCategory {
             return entries.find { it.apiCode == code }
                 ?: throw IllegalArgumentException("Invalid category: $code")

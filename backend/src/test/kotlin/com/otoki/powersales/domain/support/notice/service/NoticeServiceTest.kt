@@ -670,22 +670,19 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("교육 공지 작성 성공 - category=EDUCATION")
-        fun createNotice_education_success() {
+        @DisplayName("교육 공지 작성 차단 - category=EDUCATION -> InvalidNoticeCategoryException")
+        fun createNotice_educationRejected() {
+            // 교육은 레거시에서 이미 공지와 분리된 별도 도메인(/education) — 공지 분류 선택지에 없다.
             val request = NoticeCreateRequest(
                 title = "교육 공지",
                 scope = "영업사원",
                 category = "EDUCATION",
                 content = "<p>교육 내용</p>"
             )
-            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, principalOf())
-
-            assertThat(result.category).isEqualTo("EDUCATION")
-            assertThat(result.categoryName).isEqualTo("교육")
-            assertThat(result.branch).isNull()
-            assertThat(result.branchCode).isNull()
+            assertThatThrownBy { noticeService.createNotice(request, principalOf()) }
+                .isInstanceOf(InvalidNoticeCategoryException::class.java)
+            verify(exactly = 0) { noticeRepository.save(any<Notice>()) }
         }
 
         @Test
@@ -741,12 +738,12 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("지점장이 교육 작성 시도 -> BranchNoticeOnlyException")
+        @DisplayName("지점장이 교육 작성 시도 -> InvalidNoticeCategoryException (분류 자체가 선택 불가)")
         fun createNotice_branchManagerRejectsEducation() {
             val request = NoticeCreateRequest(title = "교육 공지", scope = "영업사원", category = "EDUCATION", content = "내용")
 
             assertThatThrownBy { noticeService.createNotice(request, principalOf(role = AppAuthority.BRANCH_MANAGER)) }
-                .isInstanceOf(BranchNoticeOnlyException::class.java)
+                .isInstanceOf(InvalidNoticeCategoryException::class.java)
         }
 
         @Test
@@ -1154,19 +1151,19 @@ class NoticeServiceTest {
     inner class GetNoticeFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 카테고리 3개 + 지점 목록은 권한 스코프 resolver 결과")
+        @DisplayName("정상 조회 - 카테고리 2개(교육 제외) + 지점 목록은 권한 스코프 resolver 결과")
         fun getNoticeFormMeta_success() {
             // 지점 목록 산출(레벨별 지점명 조합/중복제거/불완전제외)은 WomenScheduleBranchResolver 책임 —
             // 여기서는 resolver 가 내려준 화이트리스트를 그대로 branches 로 노출하는지만 검증한다.
             val result = noticeService.getNoticeFormMeta(principalOf())
 
-            assertThat(result.categories).hasSize(3)
+            // 교육은 레거시에서 이미 공지와 분리된 별도 도메인(/education) — 공지 분류 선택지에 없다.
+            assertThat(result.categories).hasSize(2)
             assertThat(result.categories[0].code).isEqualTo("COMPANY")
             assertThat(result.categories[0].name).isEqualTo("회사공지")
             assertThat(result.categories[1].code).isEqualTo("BRANCH")
             assertThat(result.categories[1].name).isEqualTo("지점공지")
-            assertThat(result.categories[2].code).isEqualTo("EDUCATION")
-            assertThat(result.categories[2].name).isEqualTo("교육")
+            assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
 
             // 기본 resolver stub = [수도권] 서울1지점(1101) 단일.
             assertThat(result.branches).hasSize(1)
@@ -1205,7 +1202,7 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta(principalOf())
 
-            assertThat(result.categories).hasSize(3)
+            assertThat(result.categories).hasSize(2)
             assertThat(result.branches).isEmpty()
         }
 
@@ -1220,15 +1217,15 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("조장/지점장 - 조회 필터용 분류는 작성 권한과 무관하게 전 분류")
+        @DisplayName("조장/지점장 - 조회 필터용 분류는 작성 권한과 무관하게 선택 가능 전 분류")
         fun getNoticeFormMeta_searchCategoriesNotRestricted() {
-            // 목록에는 본인 지점공지 외에 회사공지/교육(지점 소속 없는 전사 공지)도 함께 나오므로
+            // 목록에는 본인 지점공지 외에 회사공지(지점 소속 없는 전사 공지)도 함께 나오므로
             // 그 분류로 좁혀 조회할 수 있어야 한다 (작성 제한과 조회 제한은 별개 축).
             listOf(AppAuthority.LEADER, AppAuthority.BRANCH_MANAGER).forEach { role ->
                 val result = noticeService.getNoticeFormMeta(principalOf(role = role))
 
                 assertThat(result.searchCategories.map { it.code })
-                    .containsExactly("COMPANY", "BRANCH", "EDUCATION")
+                    .containsExactly("COMPANY", "BRANCH")
             }
         }
 
@@ -1242,11 +1239,11 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("여사원 - 카테고리 3개 모두 노출")
+        @DisplayName("여사원 - 선택 가능 카테고리(회사공지/지점공지) 모두 노출")
         fun getNoticeFormMeta_womanAllCategories() {
             val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.WOMAN))
 
-            assertThat(result.categories).hasSize(3)
+            assertThat(result.categories.map { it.code }).containsExactly("COMPANY", "BRANCH")
         }
     }
 

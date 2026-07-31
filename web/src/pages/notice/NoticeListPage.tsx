@@ -13,10 +13,11 @@ import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
+// 교육(EDUCATION)은 공지 분류에서 제외 — 레거시에서 이미 공지와 분리된 별도 도메인(/education).
+// 서버도 선택지/저장 양쪽에서 막으므로(NoticeCategory.SELECTABLE) 목록에 나올 수 없다.
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
   BRANCH: { color: 'green', label: '지점공지' },
-  EDUCATION: { color: 'purple', label: '교육' },
 };
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {

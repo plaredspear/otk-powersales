@@ -369,6 +369,7 @@ class NoticeService(
     @Transactional
     fun createNotice(request: NoticeCreateRequest, principal: WebUserPrincipal): NoticeMutationResponse {
         val cat = parseCategory(request.category)
+        requireSelectableCategory(cat)
         requireBranchNoticeForLeader(principal.role, cat)
         val noticeScope = parseScope(request.scope)
 
@@ -411,6 +412,7 @@ class NoticeService(
         }
 
         val cat = parseCategory(request.category)
+        requireSelectableCategory(cat)
         requireBranchNoticeForLeader(principal.role, cat)
         val noticeScope = parseScope(request.scope)
 
@@ -705,18 +707,19 @@ class NoticeService(
 
         // 조장/지점장은 지점공지만 작성 가능 → 카테고리 옵션도 지점공지(BRANCH)만 노출한다.
         // 프론트는 내려온 옵션을 그대로 렌더링하므로 UI 제한이 서버 권위로 통일된다.
+        // (교육은 레거시에서 이미 공지와 분리된 별도 도메인 — [NoticeCategory.SELECTABLE] KDoc 참조.)
         val visibleCategories = if (isBranchNoticeOnlyRole(principal.role)) {
             listOf(NoticeCategory.BRANCH)
         } else {
-            NoticeCategory.entries
+            NoticeCategory.SELECTABLE
         }
         val categories = visibleCategories.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
-        // 목록 조회 필터는 작성 권한과 무관하게 전 분류. 조장/지점장도 목록에 함께 나오는
-        // 회사공지/교육(지점 소속 없는 전사 공지)을 분류로 좁혀 조회할 수 있어야 한다.
-        val searchCategories = NoticeCategory.entries.map {
+        // 목록 조회 필터는 작성 권한과 무관하게 선택 가능한 전 분류. 조장/지점장도 목록에 함께 나오는
+        // 회사공지(지점 소속 없는 전사 공지)를 분류로 좁혀 조회할 수 있어야 한다.
+        val searchCategories = NoticeCategory.SELECTABLE.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
@@ -749,6 +752,14 @@ class NoticeService(
         if (isBranchNoticeOnlyRole(role) && category != NoticeCategory.BRANCH) {
             throw BranchNoticeOnlyException()
         }
+    }
+
+    /**
+     * 화면 선택지에 없는 분류(교육)로 등록/수정을 시도하면 차단한다 — 셀렉터 옵션([getNoticeFormMeta])과
+     * 저장 검증을 같은 출처([NoticeCategory.SELECTABLE])로 맞춘다. 교육은 별도 도메인(`/education`) 소관.
+     */
+    private fun requireSelectableCategory(category: NoticeCategory) {
+        if (category !in NoticeCategory.SELECTABLE) throw InvalidNoticeCategoryException()
     }
 
     /**
