@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.domain.sales.exception.SalesProgressRateMasterNotFoundException
@@ -23,12 +22,9 @@ class AdminSalesProgressRateMasterServiceTest {
 
     private val repository: SalesProgressRateMasterRepository = mockk()
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk(relaxed = true)
-    private val branchCodeExpander: BranchCodeExpander = mockk()
-
     private val service = AdminSalesProgressRateMasterService(
         repository = repository,
         policyEvaluator = policyEvaluator,
-        branchCodeExpander = branchCodeExpander,
     )
 
     private val scope: DataScope = mockk(relaxed = true)
@@ -37,8 +33,6 @@ class AdminSalesProgressRateMasterServiceTest {
     fun setUp() {
         // 가시 범위 단건 검증 기본 통과 — forbidden 케이스는 개별 override.
         every { repository.existsVisibleById(any(), any()) } returns true
-        // 지점 코드 확장 — 기본은 입력 그대로 pass-through (BranchMapping 매칭 없음). 확장 검증 테스트에서 override.
-        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
     }
 
     @Nested
@@ -101,13 +95,13 @@ class AdminSalesProgressRateMasterServiceTest {
         }
 
         @Test
-        @DisplayName("키워드/목표년도/목표월 필터를 repository 에 그대로 전달하고, 지점코드는 확장 집합으로 전달한다")
+        @DisplayName("키워드/목표년도/목표월/지점코드 필터를 repository 에 그대로 전달한다")
         fun passesFiltersToRepository() {
             every {
                 repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList())
 
-            service.getList(scope, "역삼", "2026", "3", "1100", 0, 20)
+            service.getList(scope, "역삼", "2026", "3", listOf("1100"), 0, 20)
 
             verify {
                 repository.searchForAdmin(any(), "역삼", "2026", "3", listOf("1100"), any())
@@ -115,14 +109,14 @@ class AdminSalesProgressRateMasterServiceTest {
         }
 
         @Test
-        @DisplayName("지점코드는 BranchCodeExpander 확장 집합으로 조회한다 (개편 전 코드 적재분 누락 방지)")
+        @DisplayName("확장 집합(호출부 산출)을 그대로 조회 조건으로 쓴다 (개편 전 코드 적재분 누락 방지)")
         fun expandsBranchCode() {
-            every { branchCodeExpander.expand(setOf("5815")) } returns setOf("5815", "5452")
+            // 확장은 컨트롤러(BranchScopeGateway) 가 판정 후 수행한다 — 서비스는 결과 목록만 소비.
             every {
                 repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList())
 
-            service.getList(scope, null, null, null, "5815", 0, 20)
+            service.getList(scope, null, null, null, listOf("5815", "5452"), 0, 20)
 
             verify {
                 repository.searchForAdmin(
@@ -137,7 +131,7 @@ class AdminSalesProgressRateMasterServiceTest {
         }
 
         @Test
-        @DisplayName("지점코드 미지정 - 확장 없이 지점 조건 없음(null) 으로 조회한다")
+        @DisplayName("지점코드 미지정 - 지점 조건 없음(null) 으로 조회한다")
         fun noBranchCode() {
             every {
                 repository.searchForAdmin(any(), any(), any(), any(), any(), any())
@@ -146,7 +140,6 @@ class AdminSalesProgressRateMasterServiceTest {
             service.getList(scope, null, null, null, null, 0, 20)
 
             verify { repository.searchForAdmin(any(), any(), any(), any(), null, any()) }
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
         }
 
         @Test

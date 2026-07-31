@@ -25,9 +25,9 @@ import com.otoki.powersales.domain.activity.schedule.enums.ScheduleEmploymentSta
 import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -46,7 +46,7 @@ import java.time.LocalDate
 @RequestMapping("/api/v1/admin/display-work-schedule")
 class AdminDisplayWorkScheduleController(
     private val adminDisplayWorkScheduleService: AdminDisplayWorkScheduleService,
-    private val whitelistBranchScopeResolver: WhitelistBranchScopeResolver,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
@@ -54,21 +54,23 @@ class AdminDisplayWorkScheduleController(
      *
      * 대시보드/행사마스터와 동일하게 전사 권한자는 고정 화이트리스트 34개
      * ([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES]), 그 외는 본인 지점 1건
-     * ([WhitelistBranchScopeResolver]). 화면 게이팅과 동일한 display_work_schedule READ 로 가드.
+     * ([BranchScopeGateway] + [BranchScopeProfile.MASTER_LIST]).
+     * 비전사 사용자는 본인 costCenterCode 의 조직 트리(상위 조직 계정이면 하위 지점 여러 건) 다.
+     * 화면 게이팅과 동일한 display_work_schedule READ 로 가드.
      */
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/branches")
     fun getScheduleBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(whitelistBranchScopeResolver.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.MASTER_LIST)))
     }
 
     /**
      * 진열스케줄마스터 목록 화면 조회 조건 로드 — "권한 기반 조건/UI 제어" 표준 패턴.
      *
      * 정적 조건(근무유형3/확정상태/텍스트/날짜 필터 + 기본값)은 서비스가, 권한 의존 지점(branchCode)
-     * 셀렉터 옵션은 컨트롤러가 [WhitelistBranchScopeResolver] 로 산출해 조립한다. 셀렉터-조회 스코프가
+     * 셀렉터 옵션은 컨트롤러가 [BranchScopeGateway] 로 산출해 조립한다. 셀렉터-조회 스코프가
      * 동일 리졸버를 공유해 드리프트를 방지한다(목록/엑셀 [resolveBranchCodes] 와 동일 출처).
      *
      * 지점(branchCode) 옵션 길이로 프론트가 단일/다중을 판별한다(단일이면 Tag, 다중이면 Select).
@@ -80,7 +82,7 @@ class AdminDisplayWorkScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<ScheduleListMetaResponse>> {
         val base = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
-        val branchOptions = whitelistBranchScopeResolver.getBranches(principal)
+        val branchOptions = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.MASTER_LIST)
             .map { ScheduleFilterOption(value = it.branchCode, label = it.branchName) }
         val response = base.copy(
             filters = base.filters + ScheduleFilterMeta(
@@ -160,19 +162,15 @@ class AdminDisplayWorkScheduleController(
     /**
      * 목록/엑셀 지점 필터에 넘길 지점 코드 목록 산출 (대시보드/행사마스터 정합).
      *
-     * [WhitelistBranchScopeResolver.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다.
+     * [BranchScopeGateway.resolveScope] 결과를 목록 쿼리용 `List<String>?` 로 변환한다 — 셀렉터
+     * ([getScheduleBranches]) 와 동일 출처로 판정하고 통과한 코드만 `BranchMapping` 으로 확장한다.
      * 대시보드와 동일하게 전사 권한자도 34개 화이트리스트로 제한되므로, 선택 없이 조회해도 34개 코드로 좁혀진다:
-     * - All (지점 사용자 위임 경로에서만 발생 가능) → null (지점 필터 미적용)
-     * - Filtered → 해당 지점 코드 (전사 권한자 선택 없음 = 34개 전체 / 선택 시 그 지점 / 지점 사용자 본인 지점)
-     * - NoAccess (선택값이 34개 밖 / 본인 지점 밖 / 권한 지점 없음) → emptyList (매칭 0건, IDOR 차단)
+     * - null (지점 필터 미적용) — 전건. 두 방식 모두 이 화면에서는 나오지 않는다.
+     * - 코드 목록 → 선택 지점(미선택이면 화이트리스트 전체) 의 확장 집합
+     * - emptyList (선택값이 화이트리스트 밖 / 권한 지점 없음) → 매칭 0건, IDOR 차단
      */
-    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? {
-        return when (val result = whitelistBranchScopeResolver.effectiveBranchCodes(principal, branchCode)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> emptyList()
-        }
-    }
+    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? =
+        branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.MASTER_LIST).queryCodesOrNull()
 
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.EDIT)
     @PatchMapping("/confirm")

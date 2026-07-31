@@ -1,8 +1,10 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.service.ReportBranchScopeService
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -47,7 +49,7 @@ class AdminFemaleEmployeePlacementCheckController(
     private val safetyCheckReportService: AdminFemaleEmployeeSafetyCheckReportService,
     private val safetyCheckRpaService: AdminFemaleEmployeeSafetyCheckRpaService,
     private val convertedHeadcountReportService: AdminConvertedHeadcountReportService,
-    private val reportBranchScopeService: ReportBranchScopeService,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
@@ -61,7 +63,7 @@ class AdminFemaleEmployeePlacementCheckController(
     fun getReportBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.REPORT)))
     }
 
     /** 월간 배치 점검 조회 (퇴직자 포함 · 여사원/조장). */
@@ -122,11 +124,11 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report")
     fun getSafetyCheckReport(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckReportResponse>> {
-        val response = safetyCheckReportService.getReport(scope, branchCode, parseDate(date))
+        val response = safetyCheckReportService.getReport(resolveReportBranchScope(principal, branchCode), parseDate(date))
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -134,11 +136,11 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report/export")
     fun exportSafetyCheckReport(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = safetyCheckReportService.exportReport(scope, branchCode, parseDate(date))
+        val result = safetyCheckReportService.exportReport(resolveReportBranchScope(principal, branchCode), parseDate(date))
         return ExcelResponseUtils.build(result)
     }
 
@@ -146,11 +148,11 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report-rpa")
     fun getSafetyCheckReportRpa(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckRpaResponse>> {
-        val response = safetyCheckRpaService.getReport(scope, branchCode, parseDate(date))
+        val response = safetyCheckRpaService.getReport(resolveReportBranchScope(principal, branchCode), parseDate(date))
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -158,11 +160,11 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report-rpa/export")
     fun exportSafetyCheckReportRpa(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = safetyCheckRpaService.exportReport(scope, branchCode, parseDate(date))
+        val result = safetyCheckRpaService.exportReport(resolveReportBranchScope(principal, branchCode), parseDate(date))
         return ExcelResponseUtils.build(result)
     }
 
@@ -183,7 +185,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: String,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ConvertedHeadcountReportResult>> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = resolveReportBranchScope(principal, branchCode)
         val response = convertedHeadcountReportService.getReport(parseVariant(variant), year, month, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -198,10 +200,19 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: String,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = resolveReportBranchScope(principal, branchCode)
         val result = convertedHeadcountReportService.exportReport(parseVariant(variant), year, month, branchScope)
         return ExcelResponseUtils.build(result)
     }
+
+    /**
+     * 이 컨트롤러 보고서들의 지점 스코프 — 셀렉터([getReportBranches]) 와 동일 출처로 판정하고
+     * 통과한 코드만 `BranchMapping` 으로 확장한다 ([BranchScopeGateway] + [BranchScopeProfile.REPORT]).
+     * 종전에는 셀렉터만 지점 목록을 주고 판정은 `DataScope`(본인 코드 1건) 이라, 상위 조직 계정이
+     * 셀렉터의 하위 지점을 고르면 0건이 되는 불일치가 있었다.
+     */
+    private fun resolveReportBranchScope(principal: WebUserPrincipal, branchCode: String?): EffectiveBranchResult =
+        branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT).toEffectiveBranchResult()
 
     /** variant 코드 → enum. 미지원 값 → 400. */
     private fun parseVariant(variant: String): ConvertedHeadcountReportVariant =

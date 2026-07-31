@@ -2,7 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -34,30 +35,31 @@ import org.springframework.web.bind.annotation.RestController
 @Validated
 class AdminSalesProgressRateMasterController(
     private val service: AdminSalesProgressRateMasterService,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
-     * 거래처목표등록마스터 화면 지점 셀렉터 옵션 — 거래처/여사원 일정과 동일하게
-     * [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다 (단일 출처).
+     * 거래처목표등록마스터 화면 지점 셀렉터 옵션 — 거래처 조회와 동일하게
+     * [BranchScopeGateway] + [BranchScopeProfile.ORG_WIDE] 로 권한별 지점 화이트리스트를 산출한다 (단일 출처).
      *
      * 가드는 사용처 도메인 권한(sales_progress_rate_master READ) — account READ 미보유 역할이
      * 거래처 도메인의 `/accounts/branches` 를 빌려쓸 때 발생하는 403 을 회피한다.
-     * 목록은 곧 해당 사용자가 조회 허용된 지점이며, [getList] 의 branchCode 필터는
-     * 가시 범위 predicate 와 AND 합성되어 권한 외 지점 요청 시 자연히 0건 반환된다 (IDOR 자연 차단).
+     * 이 목록이 곧 [getList] 의 지점 판정 화이트리스트다 — 셀렉터에 보이는 지점(상위 조직 계정이면
+     * 하위 지점들)은 그대로 조회되고, 밖의 지점을 요청하면 0건이다(IDOR 차단).
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "sales_progress_rate_master", operation = SfPermissionOperation.READ)
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = womenScheduleBranchResolver.resolveBranches(principal)
+        val result = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.ORG_WIDE)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @GetMapping
     @RequiresSfPermission(entity = "sales_progress_rate_master", operation = SfPermissionOperation.READ)
     fun getList(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) @Size(min = 1, max = 100) keyword: String?,
         @RequestParam(required = false) targetYear: String?,
@@ -66,7 +68,13 @@ class AdminSalesProgressRateMasterController(
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int,
     ): ResponseEntity<ApiResponse<SalesProgressRateMasterListResponse>> {
-        val response = service.getList(scope, keyword, targetYear, targetMonth, branchCode, page, size)
+        // 지점 축은 셀렉터([getBranches]) 와 같은 출처 — 판정 후 `BranchMapping` 확장까지 게이트웨이가 끝낸다.
+        val response = service.getList(
+            branchScopeGateway.applyDataScope(principal, scope),
+            keyword, targetYear, targetMonth,
+            branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.ORG_WIDE).queryCodesOrNull(),
+            page, size,
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

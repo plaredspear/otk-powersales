@@ -13,7 +13,8 @@ import com.otoki.powersales.domain.foundation.account.service.AccountCreateServi
 import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
 import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
 import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -45,22 +46,22 @@ class AdminAccountController(
     private val accountCreateService: AccountCreateService,
     private val accountUpdateService: AccountUpdateService,
     private val accountDeleteService: AccountDeleteService,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
-     * 거래처 화면 지점 셀렉터 옵션 — 여사원 일정/전문행사조와 동일하게
-     * [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다 (단일 출처).
+     * 거래처 화면 지점 셀렉터 옵션 — [BranchScopeGateway] + [BranchScopeProfile.ORG_WIDE]
+     * (전사 권한자는 조직 전건, 그 외는 본인 costCenterCode 의 조직 트리).
      *
-     * 목록은 곧 해당 사용자가 조회 허용된 지점이며, [getAccounts] 의 branchCode 필터는
-     * DataScope(sharing policy) 와 AND 합성되어 권한 외 지점 요청 시 자연히 0건 반환된다(IDOR 자연 차단).
+     * 이 목록이 곧 [getAccounts] 의 지점 판정 화이트리스트다 — 셀렉터에 보이는 지점은 그대로 조회되고,
+     * 밖의 지점을 요청하면 0건이다(IDOR 차단).
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = womenScheduleBranchResolver.resolveBranches(principal)
+        val result = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.ORG_WIDE)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -80,10 +81,14 @@ class AdminAccountController(
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
         val response = adminAccountService.getAccounts(
-            scope = scope,
+            // 지점 축은 셀렉터([getBranches]) 와 같은 출처로 넓힌다 — 비전사 사용자의 DataScope 지점 축은
+            // 본인 코드 1건이라, 셀렉터의 하위 지점을 골라도 sharing policy 에서 탈락해 0건이 됐다.
+            scope = branchScopeGateway.applyDataScope(principal, scope),
             keyword = keyword,
             abcType = abcType,
-            branchCode = branchCode,
+            branchCodes = branchScopeGateway
+                .resolveScope(principal, branchCode, BranchScopeProfile.ORG_WIDE)
+                .queryCodesOrNull(),
             accountStatusName = accountStatusName,
             page = page,
             size = size,
@@ -121,7 +126,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = accountStatusName,
             page = page,
             size = size,
@@ -171,7 +176,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = null,
             page = page,
             size = size,
@@ -200,7 +205,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = null,
             page = page,
             size = size
@@ -227,7 +232,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = null,
             page = page,
             size = size
@@ -254,7 +259,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = null,
             page = page,
             size = size,
@@ -287,7 +292,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCodes = null,
             accountStatusName = null,
             page = page,
             size = size,

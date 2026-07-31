@@ -14,9 +14,9 @@ const QUERY_KEY = ['admin', 'tools', 'branch-scope-mode'] as const;
 /**
  * 개발자 도구 > 대시보드 > 지점 스코프 방식.
  *
- * 투입현황 대시보드의 지점 판정/확장 방식을 통합 리졸버(UNIFIED)와 전환 이전 동작(LEGACY) 사이에서
- * 전환해 같은 조건의 수치를 비교하기 위한 **한시적** 스위치다. 검증이 끝나면 UNIFIED 로 고정하고
- * 본 화면과 LEGACY 경로를 함께 제거한다.
+ * 지점 셀렉터가 있는 **모든 조회 화면**의 지점 판정/확장 방식을 통합 리졸버(UNIFIED)와 전환 이전
+ * 동작(LEGACY) 사이에서 전환해 같은 조건의 수치를 비교하기 위한 **한시적** 스위치다.
+ * 검증이 끝나면 UNIFIED 로 고정하고 본 화면과 LEGACY 경로를 함께 제거한다.
  *
  * 상태는 Redis 에 지속 저장되어 재시작 후에도 유지되며, 전환은 **전체 사용자에게 즉시 적용**된다
  * (사용자별 설정이 아님). 시스템 관리자 전용 (백엔드 가드).
@@ -51,9 +51,10 @@ export default function BranchScopeModeSection() {
   return (
     <>
       <Paragraph type="secondary">
-        투입현황 대시보드가 지점 조회 범위를 정하는 방식을 전환합니다. 두 방식의 <Text strong>지점 셀렉터
-        목록은 동일</Text>하며, 선택한 지점의 <Text strong>판정과 코드 확장</Text>만 달라집니다.
-        같은 계정·같은 조건으로 켜고/끄며 수치를 비교하는 용도입니다.
+        지점 셀렉터가 있는 관리자 화면이 <Text strong>지점 조회 범위</Text>를 정하는 방식을 전환합니다.
+        통합 방식은 <Text strong>셀렉터 목록 = 판정 화이트리스트</Text>로 맞추고, 판정을 통과한 코드만
+        조직개편 매핑(BranchMapping)으로 확장해 조회합니다. 같은 계정·같은 조건으로 켜고/끄며 수치를
+        비교하는 용도입니다.
       </Paragraph>
 
       <Alert
@@ -93,12 +94,19 @@ export default function BranchScopeModeSection() {
               코드만 BranchMapping 으로 확장해 조회합니다. 지점 미선택 시 셀렉터 목록 전체로 조회합니다.
             </Descriptions.Item>
             <Descriptions.Item label="OFF — 전환 이전 방식 (LEGACY)">
-              판정 기준이 본인 소속 지점 코드(DataScope)입니다. 상위 조직(영업부·팀) 계정은 셀렉터에
-              하위 지점이 보여도 선택하면 0건이 되고, 미선택 시 본인 코드 + 롤업 매핑 범위만 조회됩니다.
+              화면마다 판정 기준이 달랐습니다. 대시보드·매출 계열은 본인 소속 지점 코드(DataScope),
+              마스터 목록·보고서 계열은 본인 지점 1건이라, 상위 조직(영업부·팀) 계정은 셀렉터에 하위
+              지점이 보여도 선택하면 0건이 됐습니다.
+            </Descriptions.Item>
+            <Descriptions.Item label="적용 화면">
+              투입현황 대시보드 / 진열스케줄마스터 · 행사마스터 / 기간별 클레임 · 물류클레임 · 여사원
+              배치점검 · 안전점검 현황 · 환산인원 · 행사 목표대비실적 / 전산실적 · POS매출 · 월매출 ·
+              월별 투입적합성 · 배치 적합성 / 거래처 조회 · 거래처목표등록마스터
             </Descriptions.Item>
             <Descriptions.Item label="차이가 나타나는 대상">
-              상위 조직 코드 소속 계정. 전사 권한자(34개 고정)와 단일 지점 계정은 두 방식의 결과가
-              동일합니다.
+              <Text strong>상위 조직 코드 소속 계정</Text> — 셀렉터의 하위 지점을 골라 조회할 수 있게
+              됩니다. 단일 지점 계정은 두 방식이 동일합니다. 전사 권한자는 보고서 계열에서만 차이가
+              있습니다(미선택 조회가 전건 → 셀렉터와 같은 34개 지점으로 제한).
             </Descriptions.Item>
           </Descriptions>
         </Space>

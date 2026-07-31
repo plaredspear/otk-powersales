@@ -1,9 +1,10 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
 import com.otoki.powersales.domain.sales.dto.response.SalesProgressRateMasterListResponse
 import com.otoki.powersales.domain.sales.service.AdminSalesProgressRateMasterService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -28,7 +29,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class AdminSalesProgressRateMasterControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var service: AdminSalesProgressRateMasterService
-    @MockkBean private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
+    @MockkBean private lateinit var branchScopeGateway: BranchScopeGateway
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     @MockkBean
@@ -43,6 +44,14 @@ class AdminSalesProgressRateMasterControllerTest : AdminControllerTestSupport() 
         every {
             currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any())
         } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        // 지점 스코프 게이트웨이 기본 stub — 선택값이 있으면 확장 코드 목록, 없으면 필터 미적용(전건).
+        every { branchScopeGateway.applyDataScope(any(), any()) } answers { secondArg() }
+        every { branchScopeGateway.resolveScope(any(), any<String>(), any()) } answers {
+            val requested = secondArg<String?>()
+            if (requested.isNullOrBlank()) BranchScopeResult.Unrestricted
+            else BranchScopeResult.Allowed(listOf(requested), listOf(requested))
+        }
     }
 
     @Nested
@@ -52,7 +61,7 @@ class AdminSalesProgressRateMasterControllerTest : AdminControllerTestSupport() 
         @Test
         @DisplayName("성공 - 권한별 지점 화이트리스트 반환")
         fun getBranches_success() {
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 BranchResponse(branchCode = "1100", branchName = "강남지점"),
                 BranchResponse(branchCode = "1200", branchName = "서초지점"),
             )
@@ -70,7 +79,7 @@ class AdminSalesProgressRateMasterControllerTest : AdminControllerTestSupport() 
         fun getBranches_literalPathTakesPriorityOverIdPathVariable() {
             // /branches 가 @GetMapping("/{id}") 로 잘못 라우팅되면 "branches" → Long 변환 실패로 400 이 된다.
             // 리터럴 경로 우선 매칭이 보장되어 200 + 지점 목록이 반환되는지 검증 (회귀 가드).
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns emptyList()
 
             mockMvc.perform(get("/api/v1/admin/sales-progress-rate-masters/branches"))
                 .andExpect(status().isOk)
@@ -105,7 +114,7 @@ class AdminSalesProgressRateMasterControllerTest : AdminControllerTestSupport() 
                 .andExpect(jsonPath("$.success").value(true))
 
             verify {
-                service.getList(any(), null, null, null, "1100", 0, 20)
+                service.getList(any(), null, null, null, listOf("1100"), 0, 20)
             }
         }
 

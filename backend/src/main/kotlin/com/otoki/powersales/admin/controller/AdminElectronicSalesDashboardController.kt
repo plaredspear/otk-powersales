@@ -2,9 +2,12 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesDashboardListRequest
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
@@ -22,6 +25,7 @@ import jakarta.validation.constraints.Size
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -44,12 +48,14 @@ import java.time.LocalDate
 class AdminElectronicSalesDashboardController(
     private val queryService: ElectronicSalesAdminQueryService,
     private val excelExporter: ElectronicSalesDashboardExcelExporter,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /** 거래처별 전산매출 명세 — 기간(일 단위) + 유통형태/거래처유형/제품/분류 필터 + 페이징 + 정렬. */
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
@@ -67,7 +73,7 @@ class AdminElectronicSalesDashboardController(
         @RequestParam(required = false) sort: String?,
     ): ResponseEntity<ApiResponse<ElectronicSalesDashboardListResponse>> {
         val request = ElectronicSalesDashboardListRequest(
-            startDate = startDate, endDate = endDate, costCenterCodes = costCenterCodes,
+            startDate = startDate, endDate = endDate, costCenterCodes = codesOf(principal, costCenterCodes),
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
             distributionChannels = distributionChannels ?: emptyList(),
@@ -76,7 +82,7 @@ class AdminElectronicSalesDashboardController(
             category2 = category2, category3 = category3,
             page = page, size = size, sort = sort,
         )
-        val response = queryService.getList(scope, request)
+        val response = queryService.getList(scopeOf(principal, scope), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -84,6 +90,7 @@ class AdminElectronicSalesDashboardController(
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
@@ -99,7 +106,7 @@ class AdminElectronicSalesDashboardController(
         @RequestParam(required = false) sort: String?,
     ): ResponseEntity<ByteArray> {
         val request = ElectronicSalesDashboardListRequest(
-            startDate = startDate, endDate = endDate, costCenterCodes = costCenterCodes,
+            startDate = startDate, endDate = endDate, costCenterCodes = codesOf(principal, costCenterCodes),
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
             distributionChannels = distributionChannels ?: emptyList(),
@@ -108,7 +115,7 @@ class AdminElectronicSalesDashboardController(
             category2 = category2, category3 = category3,
             page = 0, size = Int.MAX_VALUE, sort = sort,
         )
-        val items = queryService.getListForExport(scope, request)
+        val items = queryService.getListForExport(scopeOf(principal, scope), request)
         val excel = excelExporter.export(startDate, endDate, items)
         return ExcelResponseUtils.build(excel)
     }
@@ -117,6 +124,7 @@ class AdminElectronicSalesDashboardController(
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail/{customerId}")
     fun getDetail(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @PathVariable customerId: Long,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
@@ -126,7 +134,7 @@ class AdminElectronicSalesDashboardController(
         @RequestParam(required = false) category3: String?,
     ): ResponseEntity<ApiResponse<ElectronicSalesDashboardDetailResponse>> {
         val response = queryService.getDetail(
-            scope = scope,
+            scope = scopeOf(principal, scope),
             customerId = customerId,
             startDate = startDate,
             endDate = endDate,
@@ -201,4 +209,22 @@ class AdminElectronicSalesDashboardController(
     fun productLookupFilterOptions(): ResponseEntity<ApiResponse<ProductLookupFilterOptions>> {
         return ResponseEntity.ok(ApiResponse.success(queryService.getProductLookupFilterOptions()))
     }
+
+    /**
+     * 지점 축 보정 — 셀렉터([AdminSalesBranchController]) 와 같은 출처로 조회 범위를 맞춘다.
+     *
+     * `DataScope` 의 지점 축은 비전사 사용자에게 본인 costCenterCode 1건이라, 셀렉터가 보여준 조직 트리의
+     * 하위 지점을 골라도 교집합에서 탈락해 0건이 됐다. [BranchScopeGateway.applyDataScope] 가 그 축을
+     * 셀렉터와 같은 조직 트리로 넓힌다(넓히기만 하므로 보이던 행이 사라지지 않는다).
+     */
+    private fun scopeOf(principal: WebUserPrincipal, scope: DataScope): DataScope =
+        branchScopeGateway.applyDataScope(principal, scope)
+
+    /**
+     * 화면에서 고른 지점 코드 → 조회 코드 — 셀렉터 화이트리스트로 판정한 뒤 `BranchMapping` 으로 확장한다.
+     * 권한 밖 지점을 요청하면 매칭 0건. 신/구 방식은 개발자 도구 토글로 전환한다(비교 검증용 한시 조치).
+     */
+    private fun codesOf(principal: WebUserPrincipal, costCenterCodes: List<String>): List<String> =
+        branchScopeGateway.resolveQueryCodes(principal, costCenterCodes, BranchScopeProfile.SALES)
+
 }

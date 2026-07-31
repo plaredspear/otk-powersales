@@ -2,7 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.service.ReportBranchScopeService
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -52,7 +53,7 @@ import java.time.LocalDate
 class AdminSuggestionController(
     private val adminSuggestionService: AdminSuggestionService,
     private val logisticsClaimReportService: AdminLogisticsClaimReportService,
-    private val reportBranchScopeService: ReportBranchScopeService,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     @GetMapping
@@ -170,7 +171,7 @@ class AdminSuggestionController(
     fun getLogisticsClaimReportBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.REPORT)))
     }
 
     /**
@@ -188,7 +189,8 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<LogisticsClaimReportResponse>> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val response = logisticsClaimReportService.getReport(period, startDate, endDate, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -203,7 +205,8 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val result = logisticsClaimReportService.exportReport(period, startDate, endDate, branchScope)
         return ExcelResponseUtils.build(result)
     }

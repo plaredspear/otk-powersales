@@ -32604,13 +32604,6 @@
         "operationId" : "getSafetyCheckReport",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "date",
           "required" : false,
           "schema" : {
@@ -32643,13 +32636,6 @@
       "get" : {
         "operationId" : "getSafetyCheckReportRpa",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "date",
           "required" : false,
@@ -32684,13 +32670,6 @@
         "operationId" : "exportSafetyCheckReportRpa",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "date",
           "required" : false,
           "schema" : {
@@ -32724,13 +32703,6 @@
       "get" : {
         "operationId" : "exportSafetyCheckReport",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "date",
           "required" : false,

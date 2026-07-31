@@ -1,13 +1,12 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeSafetyCheckRpaService
 import com.otoki.powersales.user.entity.User
 import io.mockk.every
@@ -26,13 +25,12 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mockk()
 
-    // BranchMapping 캐시가 비어 있으면 expand 는 입력을 그대로 돌려주므로(pass-through),
-    // 지점 확장 자체는 여기서 검증하지 않고 기존 지점 필터 기대값을 그대로 유지한다.
-    private val branchCodeExpander = BranchCodeExpander(mockk())
-    private val service = AdminFemaleEmployeeSafetyCheckRpaService(repository, branchCodeExpander)
+    private val service = AdminFemaleEmployeeSafetyCheckRpaService(repository)
 
-    private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-    private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
+    // 지점 판정/확장은 컨트롤러(BranchScopeGateway) 책임으로 옮겨졌다 — 서비스는 산출된 결과만 소비한다.
+    private val allScope: EffectiveBranchResult = EffectiveBranchResult.All
+    private fun branchScope(vararg codes: String): EffectiveBranchResult =
+        EffectiveBranchResult.Filtered(codes.toList())
 
     private fun employee(): Employee =
         Employee(employeeCode = "20230016", name = "홍길동", orgName = "영업1팀")
@@ -76,7 +74,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         fun mapsRows() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
 
-            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(res.date).isEqualTo("2026-05-29")
             assertThat(res.items).hasSize(1)
@@ -94,7 +92,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         fun nullScheduleName() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule(withScheduleName = false))
 
-            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items[0].scheduleName).isNull()
         }
@@ -104,7 +102,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         fun checkTimeNoOffset() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
 
-            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items[0].checkTime).isEqualTo("2026-05-29T09:05")
         }
@@ -115,7 +113,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
             val dateSlot = slot<LocalDate>()
             every { repository.findSafetyCheckReportRpa(capture(dateSlot), any()) } returns emptyList()
 
-            val res = service.getReport(allScope, null, null)
+            val res = service.getReport(allScope, null)
 
             val expectedYesterday = LocalDate.now(TimeZones.SEOUL_ZONE).minusDays(1)
             assertThat(dateSlot.captured).isEqualTo(expectedYesterday)
@@ -127,73 +125,74 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         fun emptyResult() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns emptyList()
 
-            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items).isEmpty()
         }
     }
 
     @Nested
-    @DisplayName("지점 스코프 (costCenterCode)")
+    @DisplayName("지점 스코프 (컨트롤러 산출 결과 소비)")
     inner class Scope {
 
         @Test
-        @DisplayName("전사 권한자 + 선택 없음 → 빈 리스트(전건) 전달")
+        @DisplayName("All(전건) → 빈 리스트 전달")
         fun allBranchesNoSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReportRpa(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
+            service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).isEmpty()
         }
 
         @Test
-        @DisplayName("전사 권한자 + 지점 선택 → 그 지점으로 좁힘")
+        @DisplayName("Filtered(단일) → 그 지점으로 좁힘")
         fun allBranchesWithSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReportRpa(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(allScope, "B999", LocalDate.of(2026, 5, 29))
+            service.getReport(branchScope("B999"), LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).containsExactly("B999")
         }
 
         @Test
-        @DisplayName("지점 사용자 + 선택 없음 → 본인 지점 전체 전달")
+        @DisplayName("Filtered(다중) → 그대로 전달")
         fun branchScopedNoSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReportRpa(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(branchScope("A001", "A002"), null, LocalDate.of(2026, 5, 29))
+            service.getReport(branchScope("A001", "A002"), LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).containsExactlyInAnyOrder("A001", "A002")
         }
 
         @Test
-        @DisplayName("지점 사용자 + 본인 지점 선택 → 그 지점으로 좁힘")
+        @DisplayName("Filtered(선택 지점) → 그 지점으로 좁힘")
         fun branchScopedWithOwnSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReportRpa(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(branchScope("A001", "A002"), "A002", LocalDate.of(2026, 5, 29))
+            service.getReport(branchScope("A002"), LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).containsExactly("A002")
         }
 
         @Test
-        @DisplayName("지점 사용자 + 권한 밖 지점 선택 → IDOR 차단(빈 결과, repository 미호출)")
+        @DisplayName("차단(NoAccess) → 빈 결과, repository 미호출")
         fun branchScopedIdorBlocked() {
-            val res = service.getReport(branchScope("A001"), "Z999", LocalDate.of(2026, 5, 29))
+            // 권한 밖 지점 선택 판정은 컨트롤러(BranchScopeGateway)가 수행하고, 서비스는 그 결과만 소비한다.
+            val res = service.getReport(EffectiveBranchResult.NoAccess, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items).isEmpty()
             verify(exactly = 0) { repository.findSafetyCheckReportRpa(any(), any()) }
         }
 
         @Test
-        @DisplayName("권한 지점 없음(빈 scope) → NoAccess 빈 결과")
+        @DisplayName("권한 지점 없음 → NoAccess 빈 결과")
         fun noAccess() {
-            val res = service.getReport(branchScope(), null, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(EffectiveBranchResult.NoAccess, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items).isEmpty()
             verify(exactly = 0) { repository.findSafetyCheckReportRpa(any(), any()) }
@@ -209,7 +208,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         fun exportsXlsx() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
 
-            val result = service.exportReport(allScope, null, LocalDate.of(2026, 5, 29))
+            val result = service.exportReport(allScope, LocalDate.of(2026, 5, 29))
 
             assertThat(result.filename).isEqualTo("판매여사원안전점검RPA_2026-05-29.xlsx")
             assertThat(result.bytes).isNotEmpty()

@@ -1,12 +1,10 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
-import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
@@ -34,28 +32,22 @@ import java.time.LocalDate
 class AdminFemaleEmployeeSafetyCheckRpaService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     /** 지점 선택값 → `BranchMapping` 확장 코드 (레거시/별칭 조직코드로 적재된 일정 누락 방지). */
-    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
      * RPA용 일일 안전점검 현황 조회.
      *
      * date 미지정 시 어제(KST). traversalFlag='O' + yesChkCnt≠null (점검 완료) 필터.
-     * 지점 스코프: requestedBranchCode(화면 지점 선택값)를 [DataScope.effectiveBranchCodes] 로 해석 —
-     * 전사 권한자는 선택 지점으로 좁히거나(미선택 시 전건), 지점 사용자는 본인 지점으로 강제(선택값 밖이면 무시).
-     * 권한 지점이 아예 없으면([EffectiveBranchResult.NoAccess]) 빈 결과.
-     *
-     * 판정을 통과한 코드만 [BranchCodeExpander.expand] 로 넓혀 조회 필터에 쓴다 — 레거시/별칭 조직코드로
-     * 적재된 일정이 지점 선택 시 누락되지 않게 하려는 것으로, 근무형태별 여사원인원현황과 동일한 순서다.
-     * 판정 자체는 확장 전 원본 코드로 끝낸다([BranchCodeExpander] KDoc — 화이트리스트를 확장하면 롤업 행이
-     * 권한 범위를 넓힌다).
+     * 지점 스코프: 컨트롤러가 [com.otoki.powersales.admin.service.BranchScopeGateway] 로 산출한
+     * [branchScope] 를 그대로 쓴다 — 셀렉터 목록과 동일 출처로 판정하고, 통과한 코드만 `BranchMapping`
+     * 으로 확장한 결과다(확장은 게이트웨이가 이미 수행하므로 여기서 다시 확장하지 않는다 — 2-hop 방지).
+     * [EffectiveBranchResult.All] 은 전건, [EffectiveBranchResult.NoAccess] 는 빈 결과.
      */
-    fun getReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): FemaleEmployeeSafetyCheckRpaResponse {
+    fun getReport(branchScope: EffectiveBranchResult, date: LocalDate?): FemaleEmployeeSafetyCheckRpaResponse {
         val targetDate = date ?: LocalDate.now(TimeZones.SEOUL_ZONE).minusDays(1)
-        val schedules = when (val effective = scope.effectiveBranchCodes(requestedBranchCode)) {
+        val schedules = when (branchScope) {
             is EffectiveBranchResult.All -> teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate, emptyList())
-            is EffectiveBranchResult.Filtered ->
-                teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate, branchCodeExpander.expand(effective.codes).toList())
+            is EffectiveBranchResult.Filtered -> teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate, branchScope.codes)
             is EffectiveBranchResult.NoAccess -> emptyList()
         }
         val items = schedules.map { toItem(it) }
@@ -65,8 +57,8 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
     /**
      * RPA용 안전점검 현황 엑셀 export — 24컬럼 시트 (조회와 동일 필터/스코프).
      */
-    fun exportReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): ExcelResult {
-        val response = getReport(scope, requestedBranchCode, date)
+    fun exportReport(branchScope: EffectiveBranchResult, date: LocalDate?): ExcelResult {
+        val response = getReport(branchScope, date)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("판매여사원안전점검RPA")

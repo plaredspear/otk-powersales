@@ -71,7 +71,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @MockkBean
-    private lateinit var whitelistBranchScopeResolver: com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
+    private lateinit var branchScopeGateway: com.otoki.powersales.admin.service.BranchScopeGateway
 
     @BeforeEach
     fun stubArgumentResolver() {
@@ -80,8 +80,8 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
-        // 목록/엑셀 지점 스코프 산출 — 기본은 전사(All, 지점 필터 미적용). branchCode 미지정 케이스 정합.
-        every { whitelistBranchScopeResolver.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
+        // 목록/엑셀 지점 스코프 산출 — 기본은 전사(Unrestricted, 지점 필터 미적용). branchCode 미지정 케이스 정합.
+        every { branchScopeGateway.resolveScope(any(), any<String>(), any()) } returns com.otoki.powersales.admin.dto.BranchScopeResult.Unrestricted
     }
 
     @Nested
@@ -108,7 +108,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 전사 권한자: 지점 옵션 다건이 filters 에 조립되어 반환")
         fun getListMeta_allBranches() {
             every { adminDisplayWorkScheduleService.getScheduleListMetaStatic() } returns staticMeta()
-            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 com.otoki.powersales.platform.common.dto.response.BranchResponse("1101", "서울지점"),
                 com.otoki.powersales.platform.common.dto.response.BranchResponse("1102", "부산지점"),
             )
@@ -130,7 +130,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 지점 사용자: 본인 지점 1건만 조립")
         fun getListMeta_singleBranch() {
             every { adminDisplayWorkScheduleService.getScheduleListMetaStatic() } returns staticMeta()
-            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 com.otoki.powersales.platform.common.dto.response.BranchResponse("1101", "서울지점"),
             )
 
@@ -786,7 +786,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 권한별 지점 화이트리스트 반환 (정적 경로가 /{id} 보다 우선 매칭)")
         fun getBranches_success() {
-            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1101", branchName = "성수지점"),
                 com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1102", branchName = "강남지점"),
             )

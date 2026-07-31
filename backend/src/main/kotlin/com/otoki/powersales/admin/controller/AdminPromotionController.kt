@@ -16,8 +16,8 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTarg
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.service.ReportBranchScopeService
-import com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -42,35 +42,36 @@ import java.time.LocalDate
 class AdminPromotionController(
     private val adminPromotionService: AdminPromotionService,
     private val targetActualReportService: AdminPromotionTargetActualReportService,
-    private val reportBranchScopeService: ReportBranchScopeService,
-    private val whitelistBranchScopeResolver: WhitelistBranchScopeResolver,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
      * 행사사원 목표 대비 실적 보고서 화면 지점 셀렉터 옵션.
      *
-     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 화면 게이팅과 동일한 promotion READ 로 가드.
+     * 전사 권한자는 고정 화이트리스트 34개, 그 외는 본인 조직 트리
+     * ([BranchScopeGateway] + [BranchScopeProfile.REPORT]). 화면 게이팅과 동일한 promotion READ 로 가드.
      */
     @GetMapping("/target-actual-report/branches")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getTargetActualReportBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.REPORT)))
     }
 
     /**
      * 행사마스터 목록 화면 지점 셀렉터 옵션.
      *
      * 대시보드와 동일하게 전사 권한자는 고정 화이트리스트 34개([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES]),
-     * 그 외는 본인 지점 1건 ([WhitelistBranchScopeResolver]). 화면 게이팅과 동일한 promotion READ 로 가드.
+     * 그 외는 본인 조직 트리 ([BranchScopeGateway] + [BranchScopeProfile.MASTER_LIST]).
+     * 화면 게이팅과 동일한 promotion READ 로 가드.
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotionBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(whitelistBranchScopeResolver.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.MASTER_LIST)))
     }
 
     @GetMapping("/form-meta")
@@ -85,7 +86,7 @@ class AdminPromotionController(
      *
      * 기존 `/branches`(지점 셀렉터) + `/form-meta`(행사유형)로 분산됐던 목록 조건 로드를 단일 응답으로 통합.
      * 정적 조건(행사유형·제품유형·텍스트·날짜)과 기본값은 서비스가, 권한 의존 지점 옵션은
-     * [WhitelistBranchScopeResolver] 결과를 컨트롤러가 조립해 붙인다(셀렉터-조회 스코프 동일 출처).
+     * [BranchScopeGateway] 결과를 컨트롤러가 조립해 붙인다(셀렉터-조회 스코프 동일 출처).
      */
     @GetMapping("/meta")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -93,7 +94,7 @@ class AdminPromotionController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<PromotionListMetaResponse>> {
         val base = adminPromotionService.getPromotionListMetaStatic()
-        val branchOptions = whitelistBranchScopeResolver.getBranches(principal)
+        val branchOptions = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.MASTER_LIST)
             .map { PromotionFilterOption(value = it.branchCode, label = it.branchName) }
         val response = base.copy(
             filters = base.filters + PromotionFilterMeta(
@@ -118,7 +119,8 @@ class AdminPromotionController(
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<PromotionTargetActualReportResponse>> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val response = targetActualReportService.getReport(startDate, endDate, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -132,7 +134,8 @@ class AdminPromotionController(
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val result = targetActualReportService.exportReport(startDate, endDate, branchScope)
         return ExcelResponseUtils.build(result)
     }
@@ -309,17 +312,11 @@ class AdminPromotionController(
     /**
      * 목록/엑셀 지점 필터에 넘길 지점 코드 목록 산출.
      *
-     * [WhitelistBranchScopeResolver.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다.
-     * 대시보드와 동일하게 전사 권한자도 34개 화이트리스트로 제한되므로, 선택 없이 조회해도 34개 코드로 좁혀진다:
-     * - All (지점 사용자 위임 경로에서만 발생 가능) → null (지점 필터 미적용)
-     * - Filtered → 해당 지점 코드 (전사 권한자 선택 없음 = 34개 전체 / 선택 시 그 지점 / 지점 사용자 본인 지점)
-     * - NoAccess (선택값이 34개 밖 / 본인 지점 밖 / 권한 지점 없음) → emptyList (매칭 0건, IDOR 차단)
+     * [BranchScopeGateway.resolveScope] 결과를 목록 쿼리용 `List<String>?` 로 변환한다 — 셀렉터
+     * ([getPromotionBranches]) 와 동일 출처로 판정하고 통과한 코드만 `BranchMapping` 으로 확장한다.
+     * 대시보드와 동일하게 전사 권한자도 34개 화이트리스트로 제한되므로, 선택 없이 조회해도 34개 코드로 좁혀진다.
+     * 선택값이 화이트리스트 밖이면 빈 목록(= 매칭 0건, IDOR 차단).
      */
-    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? {
-        return when (val result = whitelistBranchScopeResolver.effectiveBranchCodes(principal, branchCode)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> emptyList()
-        }
-    }
+    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? =
+        branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.MASTER_LIST).queryCodesOrNull()
 }

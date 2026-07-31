@@ -16,7 +16,8 @@ import com.otoki.powersales.domain.foundation.account.service.AccountCreateServi
 import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
 import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
 import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
@@ -61,7 +62,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var accountCreateService: AccountCreateService
     @MockkBean private lateinit var accountUpdateService: AccountUpdateService
     @MockkBean private lateinit var accountDeleteService: AccountDeleteService
-    @MockkBean private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
+    @MockkBean private lateinit var branchScopeGateway: BranchScopeGateway
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     @MockkBean
@@ -74,6 +75,14 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        // 지점 스코프 게이트웨이 기본 stub — 선택값이 있으면 확장 코드 목록, 없으면 필터 미적용(전건).
+        every { branchScopeGateway.applyDataScope(any(), any()) } answers { secondArg() }
+        every { branchScopeGateway.resolveScope(any(), any<String>(), any()) } answers {
+            val requested = secondArg<String?>()
+            if (requested.isNullOrBlank()) BranchScopeResult.Unrestricted
+            else BranchScopeResult.Allowed(listOf(requested), listOf(requested))
+        }
     }
 
     @Nested
@@ -83,7 +92,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 권한별 지점 목록 반환")
         fun getBranches_success() {
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns listOf(
                 BranchResponse(branchCode = "1100", branchName = "강남지점"),
                 BranchResponse(branchCode = "1200", branchName = "서초지점"),
             )
@@ -101,7 +110,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         fun getBranches_literalPathTakesPriorityOverIdPathVariable() {
             // /branches 가 @GetMapping("/{id}") 로 잘못 라우팅되면 "branches" → Long 변환 실패로 400 이 된다.
             // 리터럴 경로 우선 매칭이 보장되어 200 + 지점 목록이 반환되는지 검증 (회귀 가드).
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
+            every { branchScopeGateway.resolveBranches(any(), any()) } returns emptyList()
 
             mockMvc.perform(get("/api/v1/admin/accounts/branches"))
                 .andExpect(status().isOk)
@@ -155,7 +164,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getAccounts_withFilters() {
             val response = AccountListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
-            every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10), eq(false)) } returns response
+            every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq(listOf("A001")), eq("활성"), eq(0), eq(10), eq(false)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/accounts")

@@ -42,6 +42,7 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
 
     @MockkBean private lateinit var queryService: ElectronicSalesAdminQueryService
     @MockkBean private lateinit var excelExporter: ElectronicSalesDashboardExcelExporter
+    @MockkBean private lateinit var branchScopeGateway: com.otoki.powersales.admin.service.BranchScopeGateway
 
     @MockkBean private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
@@ -53,6 +54,10 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        // 지점 스코프 게이트웨이 — 조회 코드는 선택값 그대로, DataScope 는 손대지 않는 pass-through stub.
+        every { branchScopeGateway.applyDataScope(any(), any()) } answers { secondArg() }
+        every { branchScopeGateway.resolveQueryCodes(any(), any(), any()) } answers { secondArg() }
     }
 
     @Test

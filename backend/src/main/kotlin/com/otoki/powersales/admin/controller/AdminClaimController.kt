@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.service.ReportBranchScopeService
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -33,7 +34,7 @@ class AdminClaimController(
     private val adminClaimCreateService: AdminClaimCreateService,
     private val adminClaimResendService: AdminClaimResendService,
     private val adminClaimPeriodReportService: AdminClaimPeriodReportService,
-    private val reportBranchScopeService: ReportBranchScopeService,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /**
@@ -46,7 +47,7 @@ class AdminClaimController(
     fun getPeriodReportBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.REPORT)))
     }
 
     @GetMapping
@@ -128,7 +129,8 @@ class AdminClaimController(
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ClaimPeriodReportResponse>> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val response = adminClaimPeriodReportService.getReport(startDate, endDate, type, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -143,7 +145,8 @@ class AdminClaimController(
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
         @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val branchScope = reportBranchScopeService.expandedEffectiveBranchCodes(principal, branchCode)
+        val branchScope = branchScopeGateway.resolveScope(principal, branchCode, BranchScopeProfile.REPORT)
+            .toEffectiveBranchResult()
         val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type, branchScope)
         return ExcelResponseUtils.build(result)
     }
