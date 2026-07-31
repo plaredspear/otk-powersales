@@ -89,7 +89,8 @@ class SuggestionService(
         private val PROPOSAL_NUMBER_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
         /** SF LogisticsResponsibility__c picklist default — 등록 시 항상 이 값 (해당/미해당/확인중 중 default). */
-        private const val LOGISTICS_RESPONSIBILITY_DEFAULT = "확인중"
+        /** SF `LogisticsResponsibility__c` picklist default — 등록 시 항상 '확인중' (admin 등록도 공유). */
+        internal const val LOGISTICS_RESPONSIBILITY_DEFAULT = "확인중"
 
         /**
          * SF Apex REST `IF_REST_MOBILE_ProposalRegist` endpoint suffix.

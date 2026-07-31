@@ -13,7 +13,9 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionCr
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionActionStatus
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionSfSendStatus
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
+import com.otoki.powersales.domain.activity.suggestion.event.SuggestionRegisteredEvent
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionIdException
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionPhotoIdException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionNotFoundException
@@ -29,6 +31,7 @@ import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchSe
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.activity.suggestion.entity.QSuggestion.Companion.suggestion
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -50,6 +53,9 @@ import java.time.LocalTime
  *   (`computeWerkCenters` / `generateProposalNumber` / `composeS3Url` / `formatFileSize`) 호출.
  * - **수정 시 자동 채움 미실행** — 레거시 SF Trigger 의 `beforeInsert` 동등 정합. admin 이 거래처/제품을 변경하면
  *   물류센터 등 종속 필드는 수동 입력.
+ * - **등록 시 SF 릴레이** — mobile 과 동일하게 sf_send_status=PENDING 저장 후 커밋 시점에
+ *   [SuggestionRegisteredEvent] → [SuggestionSfPushDispatcher] 로 SF `/ProposalRegist` 송신 (실패 건은
+ *   SEND_FAILED 로 재전송 배치 대상). 수정은 레거시 SF 에 update endpoint 가 없어 릴레이하지 않는다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -63,7 +69,8 @@ class AdminSuggestionService(
     private val fileStorageService: FileStorageService,
     private val validator: SuggestionValidator,
     private val suggestionService: SuggestionService,
-    private val policyEvaluator: SharingRulePolicyEvaluator
+    private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     companion object {
@@ -166,6 +173,9 @@ class AdminSuggestionService(
      * admin 등록 (Spec #830 P1-B §3.3).
      *
      * `request.employeeId` null 이면 admin 본인이 작성자. BR1~BR7 + 자동 채움 5종은 mobile 과 동일.
+     * 조치상태/물류책임 미입력 시 SF picklist default(미확인/확인중) 적용 — mobile 등록 정합.
+     * 저장 후 [SuggestionRegisteredEvent] 를 발행해 커밋 후 SF `/ProposalRegist` 릴레이
+     * ([SuggestionSfPushDispatcher]) — 실패 건은 SEND_FAILED 로 남아 재전송 배치 대상.
      */
     @Transactional
     fun create(
@@ -174,13 +184,15 @@ class AdminSuggestionService(
         photos: List<MultipartFile>?
     ): SuggestionCreateResponse {
         val category = request.category ?: throw IllegalArgumentException("category is required")
+        // SF ActionStatus__c picklist default — 미선택 시 '미확인' (mobile 등록은 항상 UNCONFIRMED 고정)
+        val actionStatus = request.actionStatus ?: SuggestionActionStatus.UNCONFIRMED
         validator.validate(
             category = category,
             claimType = request.claimType,
             claimDate = request.claimDate,
             carNumber = request.carNumber,
             duplicateProposalNum = request.duplicateProposalNum,
-            actionStatus = request.actionStatus
+            actionStatus = actionStatus
         )
 
         if ((photos?.size ?: 0) > MAX_PHOTO_COUNT) {
@@ -216,17 +228,22 @@ class AdminSuggestionService(
             category3 = product?.productCategory3,
             sapAccountCode = request.sapAccountCode,
             orgCostCenterCode = orgCostCenterCode,
+            // SF CostCenterCode__c — 등록 사원 소속 코스트센터코드 원본 (mobile 등록 정합)
+            costCenterCode = employee.costCenterCode,
             carNumber = request.carNumber,
             claimDate = request.claimDate,
             claimType = request.claimType,
             claimTypeMeasures = request.claimType,
-            logisticsResponsibility = request.logisticsResponsibility,
+            // SF LogisticsResponsibility__c picklist default — 미입력 시 '확인중'
+            logisticsResponsibility = request.logisticsResponsibility
+                ?: SuggestionService.LOGISTICS_RESPONSIBILITY_DEFAULT,
             receptionLogisticsCenter = receptionCenter,
             responsibleLogisticsCenter = responsibleCenter,
             status = SuggestionStatus.SUBMITTED,
-            actionStatus = request.actionStatus,
+            actionStatus = actionStatus,
             duplicateProposalNum = request.duplicateProposalNum,
             isDeleted = false,
+            sfSendStatus = SuggestionSfSendStatus.PENDING,
             account = account,
             employee = employee,
             product = product,
@@ -252,6 +269,9 @@ class AdminSuggestionService(
                 sortOrder = index
             )
         } ?: emptyList()
+
+        // 커밋 후 SF /ProposalRegist 릴레이 (AFTER_COMMIT + @Async — SuggestionSfPushDispatcher)
+        eventPublisher.publishEvent(SuggestionRegisteredEvent(saved.id))
 
         return SuggestionCreateResponse(
             id = saved.id,

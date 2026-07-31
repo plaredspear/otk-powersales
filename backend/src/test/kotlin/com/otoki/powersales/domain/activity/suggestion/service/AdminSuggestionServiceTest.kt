@@ -19,6 +19,8 @@ import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestion
 import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestionUpdateRequest
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionActionStatus
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionSfSendStatus
+import com.otoki.powersales.domain.activity.suggestion.event.SuggestionRegisteredEvent
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionIdException
@@ -62,6 +64,7 @@ class AdminSuggestionServiceTest {
     private val validator: SuggestionValidator = mockk(relaxUnitFun = true)
     private val suggestionService: SuggestionService = mockk()
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
+    private val eventPublisher: org.springframework.context.ApplicationEventPublisher = mockk(relaxUnitFun = true)
 
     private val service = AdminSuggestionService(
         suggestionRepository,
@@ -73,7 +76,8 @@ class AdminSuggestionServiceTest {
         fileStorageService,
         validator,
         suggestionService,
-        policyEvaluator
+        policyEvaluator,
+        eventPublisher
     )
 
     /** SF 가시 범위 평가 결과 — 테스트에서는 항상-true Predicate stub (필터/페이징 검증에 집중). */
@@ -393,6 +397,46 @@ class AdminSuggestionServiceTest {
             service.create(adminId, request, null)
 
             verify { employeeRepository.findById(adminId) }
+        }
+
+        @Test
+        @DisplayName("조치상태/물류책임 미입력 시 SF picklist default(미확인/확인중) + PENDING + 코스트센터 세팅")
+        fun appliesSfDefaultsAndPending() {
+            val employeeWithCc = Employee(id = adminId, employeeCode = "ADM01", name = "운영자", costCenterCode = "3233")
+            every { employeeRepository.findById(adminId) } returns Optional.of(employeeWithCc)
+            every { productRepository.findByProductCode(any()) } returns null
+            every { orgCostCenterMatchService.findMatchingCostCenterCode("3233") } returns Optional.empty()
+            val savedSlot = slot<Suggestion>()
+            every { suggestionRepository.save(capture(savedSlot)) } returns suggestionOf(employeeWithCc)
+
+            val request = AdminSuggestionCreateRequest(
+                category = SuggestionCategory.NEW_PRODUCT,
+                title = "제목", content = "본문"
+            )
+            service.create(adminId, request, null)
+
+            val saved = savedSlot.captured
+            assertThat(saved.actionStatus).isEqualTo(SuggestionActionStatus.UNCONFIRMED)
+            assertThat(saved.logisticsResponsibility).isEqualTo("확인중")
+            assertThat(saved.sfSendStatus).isEqualTo(SuggestionSfSendStatus.PENDING)
+            assertThat(saved.costCenterCode).isEqualTo("3233")
+        }
+
+        @Test
+        @DisplayName("등록 성공 시 SuggestionRegisteredEvent 발행 (커밋 후 SF 릴레이 트리거)")
+        fun publishesRegisteredEvent() {
+            every { employeeRepository.findById(adminId) } returns Optional.of(adminEmployee)
+            every { productRepository.findByProductCode(any()) } returns null
+            every { suggestionRepository.save(any<Suggestion>()) } returns suggestionOf(adminEmployee)
+
+            val request = AdminSuggestionCreateRequest(
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                title = "제목", content = "본문",
+                claimType = "배송시간 지연", claimDate = LocalDate.of(2026, 7, 1)
+            )
+            service.create(adminId, request, null)
+
+            verify { eventPublisher.publishEvent(any<SuggestionRegisteredEvent>()) }
         }
 
         @Test
