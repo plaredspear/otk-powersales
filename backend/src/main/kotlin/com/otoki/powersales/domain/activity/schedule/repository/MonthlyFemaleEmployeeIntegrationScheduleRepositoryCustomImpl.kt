@@ -89,7 +89,8 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
 
         return queryFactory
             .selectFrom(mfeis)
-            .leftJoin(mfeis.account, account).fetchJoin()
+            // SF Report Type 이 Account__c INNER JOIN — 거래처 링크 없는(SetNull 등) 통합일정은 레거시와 동일하게 제외
+            .join(mfeis.account, account).fetchJoin()
             .where(where)
             .orderBy(account.accountType.asc(), mfeis.workingCategory1.asc())
             .fetch()

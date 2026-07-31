@@ -103,7 +103,8 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
      * @param branchScopeCodes    지점 스코프 코스트센터 코드 목록 (mfeis.costCenterCode IN). 빈 목록 = 전사(미적용).
      *                            소속기준 variant 만 채워 넘긴다 (거래처기준 variant 는 빈 목록 = 전사 유지).
      *
-     * isDeleted 제외. account fetch join. 지점 스코프는 여사원 소속 지점(costCenterCode) 기준.
+     * isDeleted 제외. account INNER fetch join — 거래처 링크 없는 통합일정 제외
+     * (SF Report Type `...@MFEIS.Account__c` INNER JOIN 정합). 지점 스코프는 여사원 소속 지점(costCenterCode) 기준.
      */
     fun findConvertedHeadcountReport(
         year: String,
