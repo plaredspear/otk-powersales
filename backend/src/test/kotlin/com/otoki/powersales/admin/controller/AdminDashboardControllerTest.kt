@@ -14,8 +14,9 @@ import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.admin.service.UnifiedBranchScopeResolver
+import com.otoki.powersales.admin.service.DashboardBranchScopeGateway
 import com.otoki.powersales.admin.dto.BranchScopeResult
+import com.otoki.powersales.admin.tools.branchscope.BranchScopeMode
 import java.math.BigDecimal
 import java.time.LocalDate
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +42,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
     private lateinit var adminDashboardService: AdminDashboardService
 
     @MockkBean
-    private lateinit var unifiedBranchScopeResolver: UnifiedBranchScopeResolver
+    private lateinit var dashboardBranchScopeGateway: DashboardBranchScopeGateway
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -54,6 +55,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns
             DataScope(branchCodes = emptyList(), isAllBranches = true)
+        // 지점 스코프 방식(개발자 도구 토글) — 기본 UNIFIED. 응답 branchScopeMode 에 실린다.
+        every { dashboardBranchScopeGateway.currentMode() } returns BranchScopeMode.UNIFIED
     }
 
     private fun emptyChart() =
@@ -101,7 +104,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             // 토글과 무관하게 항상 전체 기준
             totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0, etcBreakdown = emptyList()),
             asOfDate = LocalDate.of(2026, 5, 19),
-        )
+        ),
+        branchScopeMode = "UNIFIED",
     )
 
     @Nested
@@ -111,10 +115,10 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
-            every { unifiedBranchScopeResolver.resolveBranches(any()) } returns emptyList()
-            every { unifiedBranchScopeResolver.resolveScope(any(), any()) } returns
+            every { dashboardBranchScopeGateway.resolveBranches(any()) } returns emptyList()
+            every { dashboardBranchScopeGateway.resolveScope(any(), any()) } returns
                 BranchScopeResult.Allowed(grantedCodes = emptyList(), queryCodes = emptyList())
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-03")
+            every { adminDashboardService.getDashboard(any(), any(), any(), any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -166,10 +170,10 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
-            every { unifiedBranchScopeResolver.resolveBranches(any()) } returns emptyList()
-            every { unifiedBranchScopeResolver.resolveScope(any(), any()) } returns
+            every { dashboardBranchScopeGateway.resolveBranches(any()) } returns emptyList()
+            every { dashboardBranchScopeGateway.resolveScope(any(), any()) } returns
                 BranchScopeResult.Allowed(grantedCodes = emptyList(), queryCodes = emptyList())
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { adminDashboardService.getDashboard(any(), any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -183,10 +187,10 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("지점 스코프 전달 - Allowed 의 grantedCodes(라벨)/queryCodes(필터)가 service 로 그대로 전달")
         fun getDashboard_forwardsGrantedAndQueryCodes() {
-            every { unifiedBranchScopeResolver.resolveBranches(any()) } returns emptyList()
-            every { unifiedBranchScopeResolver.resolveScope(any(), listOf("5824")) } returns
+            every { dashboardBranchScopeGateway.resolveBranches(any()) } returns emptyList()
+            every { dashboardBranchScopeGateway.resolveScope(any(), listOf("5824")) } returns
                 BranchScopeResult.Allowed(grantedCodes = listOf("5824"), queryCodes = listOf("5824", "5668"))
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { adminDashboardService.getDashboard(any(), any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -195,16 +199,16 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             ).andExpect(status().isOk)
 
             io.mockk.verify {
-                adminDashboardService.getDashboard(listOf("5824"), null, any(), listOf("5824", "5668"))
+                adminDashboardService.getDashboard(listOf("5824"), null, any(), listOf("5824", "5668"), any())
             }
         }
 
         @Test
         @DisplayName("지점 스코프 차단 - NoAccess 는 빈 문자열 sentinel 로 전달 (전건 조회로 새지 않음)")
         fun getDashboard_noAccessSentinel() {
-            every { unifiedBranchScopeResolver.resolveBranches(any()) } returns emptyList()
-            every { unifiedBranchScopeResolver.resolveScope(any(), any()) } returns BranchScopeResult.NoAccess
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { dashboardBranchScopeGateway.resolveBranches(any()) } returns emptyList()
+            every { dashboardBranchScopeGateway.resolveScope(any(), any()) } returns BranchScopeResult.NoAccess
+            every { adminDashboardService.getDashboard(any(), any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -213,7 +217,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             ).andExpect(status().isOk)
 
             io.mockk.verify {
-                adminDashboardService.getDashboard(listOf(""), null, any(), listOf(""))
+                adminDashboardService.getDashboard(listOf(""), null, any(), listOf(""), any())
             }
         }
 
@@ -253,7 +257,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 BranchResponse(branchCode = "1234", branchName = "서울지점"),
                 BranchResponse(branchCode = "5678", branchName = "부산지점")
             )
-            every { unifiedBranchScopeResolver.resolveBranches(any()) } returns branches
+            every { dashboardBranchScopeGateway.resolveBranches(any()) } returns branches
 
             mockMvc.perform(get("/api/v1/admin/dashboard/branches"))
                 .andExpect(status().isOk)

@@ -6,7 +6,15 @@ import java.time.LocalDate
 data class DashboardResponse(
     val salesSummary: SalesSummary,
     val staffDeployment: StaffDeployment,
-    val basicStats: BasicStats
+    val basicStats: BasicStats,
+    /**
+     * 이번 조회에 적용된 지점 스코프 방식 (`UNIFIED` | `LEGACY`) —
+     * 개발자 도구 > 대시보드 > 지점 스코프 방식 토글의 현재 값.
+     *
+     * 신/구 방식 수치를 비교하는 동안 화면이 "지금 보는 숫자가 어느 방식인지" 표시할 수 있도록
+     * 응답에 싣는다. 비교 종료 후 토글과 함께 제거한다.
+     */
+    val branchScopeMode: String
 )
 
 data class SalesSummary(

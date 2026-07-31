@@ -774,6 +774,17 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("T-MODE1 지점 스코프 방식 - 전달받은 모드를 응답에 그대로 싣는다 (미지정 시 UNIFIED)")
+    fun exposesBranchScopeMode() {
+        stubEmpty()
+
+        assertThat(service.getDashboard(emptyList(), "2026-05").branchScopeMode).isEqualTo("UNIFIED")
+        assertThat(
+            service.getDashboard(emptyList(), "2026-05", branchScopeMode = "LEGACY").branchScopeMode,
+        ).isEqualTo("LEGACY")
+    }
+
+    @Test
     @DisplayName("T-EXPAND3 전건 조회(빈 코드 목록) — queryCodes 기본값도 빈 목록이라 repository '빈 목록 = 전건' 유지")
     fun emptyCodesSkipExpansion() {
         stubEmpty()

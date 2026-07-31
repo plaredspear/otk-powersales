@@ -11,6 +11,7 @@ import {
 } from '@/api/admin/logLevel';
 import DailyScheduleStatusCard from './DailyScheduleStatusCard';
 import FeatureToggleSection from './FeatureToggleSection';
+import BranchScopeModeSection from './BranchScopeModeSection';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -150,7 +151,8 @@ function LogLevelSection() {
 }
 
 /**
- * 개발자 도구 - 대시보드. 일별 스케줄 실행현황과 로그 레벨 관리를 탭으로 구분한다.
+ * 개발자 도구 - 대시보드. 일별 스케줄 실행현황 / 기능 활성화 / 지점 스코프 방식 / 로그 레벨 관리를
+ * 탭으로 구분한다.
  */
 export default function ToolsDashboardPage() {
   return (
@@ -169,6 +171,11 @@ export default function ToolsDashboardPage() {
             key: 'feature-toggle',
             label: '기능 활성화',
             children: <FeatureToggleSection />,
+          },
+          {
+            key: 'branch-scope-mode',
+            label: '지점 스코프 방식',
+            children: <BranchScopeModeSection />,
           },
           {
             key: 'log-level',

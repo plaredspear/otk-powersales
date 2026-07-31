@@ -5014,6 +5014,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseBranchScopeModeResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BranchScopeModeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBulkConfirmResponse" : {
         "properties" : {
           "data" : {
@@ -10486,6 +10515,14 @@
         },
         "type" : "object"
       },
+      "BranchScopeModeResponse" : {
+        "properties" : {
+          "mode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "BulkConfirmResponse" : {
         "properties" : {
           "createdCount" : {
@@ -11107,6 +11144,9 @@
         "properties" : {
           "basicStats" : {
             "$ref" : "#/components/schemas/BasicStats"
+          },
+          "branchScopeMode" : {
+            "type" : "string"
           },
           "salesSummary" : {
             "$ref" : "#/components/schemas/SalesSummary"
@@ -19871,6 +19911,16 @@
         },
         "type" : "object"
       },
+      "UpdateBranchScopeModeRequest" : {
+        "properties" : {
+          "mode" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "mode" ],
+        "type" : "object"
+      },
       "UpdateFeatureToggleRequest" : {
         "properties" : {
           "code" : {
@@ -21743,7 +21793,7 @@
     },
     "/api/v1/admin/attendance-log/{id}" : {
       "get" : {
-        "operationId" : "get_2",
+        "operationId" : "get_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -22317,13 +22367,6 @@
       "get" : {
         "operationId" : "getDashboard",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "yearMonth",
           "required" : false,
@@ -26286,6 +26329,13 @@
         }, {
           "in" : "query",
           "name" : "search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -34529,6 +34579,50 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/branch-scope-mode" : {
+      "get" : {
+        "operationId" : "get_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBranchScopeModeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "branch-scope-mode-controller" ]
+      },
+      "post" : {
+        "operationId" : "update_6",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateBranchScopeModeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBranchScopeModeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "branch-scope-mode-controller" ]
       }
     },
     "/api/v1/admin/tools/feature-toggles" : {

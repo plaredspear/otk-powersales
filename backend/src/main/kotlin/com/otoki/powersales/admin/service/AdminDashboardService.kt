@@ -6,6 +6,7 @@ import com.otoki.powersales.admin.dto.response.BasicStats
 import com.otoki.powersales.admin.dto.response.BasicStatsByScope
 import com.otoki.powersales.admin.dto.response.ChannelStackRow
 import com.otoki.powersales.admin.dto.response.DashboardResponse
+import com.otoki.powersales.admin.tools.branchscope.BranchScopeMode
 import com.otoki.powersales.admin.dto.response.EtcBreakdownItem
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
@@ -94,6 +95,7 @@ class AdminDashboardService(
         yearMonth: String?,
         branchNamesByCode: Map<String, String> = emptyMap(),
         queryCodes: List<String> = effectiveCodes,
+        branchScopeMode: String = BranchScopeMode.DEFAULT.name,
     ): DashboardResponse {
         val ym = yearMonth?.let { YearMonth.parse(it, YEAR_MONTH_FORMATTER) } ?: YearMonth.now()
         val previousYm = ym.minusMonths(1)
@@ -112,6 +114,7 @@ class AdminDashboardService(
             salesSummary = buildSalesSummary(ym, branchName, rows),
             staffDeployment = buildStaffDeployment(ym, previousYm, branchName, queryCodes),
             basicStats = buildBasicStats(ym, branchName, queryCodes),
+            branchScopeMode = branchScopeMode,
         )
     }
 

@@ -790,6 +790,18 @@ export default function DashboardPage() {
         }
       />
 
+      {/* 지점 스코프 방식 비교 중 표식 — 개발자 도구에서 '전환 이전 방식(LEGACY)' 으로 둔 동안에만
+          노출한다. 어느 방식의 수치를 보고 있는지 헷갈리지 않게 하기 위한 한시 배너. */}
+      {data?.branchScopeMode === 'LEGACY' && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginTop: 16 }}
+          message="지점 스코프: 전환 이전 방식(LEGACY)으로 조회 중입니다"
+          description="개발자 도구 > 대시보드 > 지점 스코프 방식 에서 통합 리졸버로 되돌릴 수 있습니다."
+        />
+      )}
+
       {dashboardQuery.isError && (
         <Alert
           type="error"
