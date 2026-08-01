@@ -258,7 +258,7 @@ export const router = createBrowserRouter(
                 { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
                 { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
                 {
-                  element: <PermissionRoute entity="monthly_sales_history" operation="READ" />,
+                  element: <PermissionRoute entity="display_employee_adequacy" operation="READ" />,
                   children: [
                     { path: '/monthly-input-adequacy', element: <LazyWrapper><MonthlyInputAdequacyPage /></LazyWrapper> },
                   ],

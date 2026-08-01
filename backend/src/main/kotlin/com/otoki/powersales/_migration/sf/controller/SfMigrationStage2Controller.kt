@@ -224,9 +224,10 @@ class SfMigrationStage2Controller(
      *
      * 대상: ERP주문(`erp_order`) / 조직마스터(`organization`) / 근무 등록현황(`attendance_log`) /
      * 대체휴무(`alternative_holiday`) / HR 적재 근무기간(`attend_info`) / ORORA 일매출(`daily_sales_history`) /
-     * ORORA 월매출 + 투입적합성 + 배치 적합성(`monthly_sales_history` — 3화면 공유 키).
-     * 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다. 매출/실적 대시보드 3화면은
-     * `sales_dashboard` 자원이라 본 회수와 무관하다 (leader-sales-dashboard-grant 가 별도 부여).
+     * ORORA 월매출(`monthly_sales_history`).
+     * 공휴일/영업일 마스터는 조장 SoT 에 애초에 없어 회수 대상이 아니다. 매출/실적 대시보드 3화면
+     * (`sales_dashboard`) 과 진열사원 적합성 2화면(`display_employee_adequacy`) 은 별도 자원으로 분리되어
+     * 본 회수와 무관하다 (leader-sales-dashboard-grant 가 둘 다 부여).
      *
      * 실행 순서: `fk` → `fk-natural-key` 이후 (profile_flags.profile_id 가 채워진 뒤). 멱등.
      */
@@ -245,12 +246,16 @@ class SfMigrationStage2Controller(
     }
 
     /**
-     * 조장(`6.조장`) 에게 매출/실적 대시보드 권한(`sales_dashboard` READ) **부여** — `is_locally_modified`
-     * 무시 강제 적용.
+     * 조장(`6.조장`) 에게 화면 전용 가상 자원 권한 **부여** — `is_locally_modified` 무시 강제 적용.
      *
-     * 월 매출(물류배부/전산실적)·POS매출 3화면의 가드를 적재 테이블 entity `monthly_sales_history` 에서
-     * 화면 전용 가상 자원 `sales_dashboard` 로 분리하면서, 기존에 3화면을 보던 조장의 권한을 신규 자원으로
-     * 복구한다 (분리는 승계 마이그레이션 없이 배포 — 사용자 결정).
+     * 대상 2종 (둘 다 READ 단독, 조회 전용 화면):
+     * - `sales_dashboard` — 월 매출(물류배부/전산실적) · POS매출 3화면
+     * - `display_employee_adequacy` — 월별 진열사원 투입적합성 · 진열사원 배치 적합성 2화면
+     *   (각 화면 전용 지점 셀렉터 포함)
+     *
+     * 둘 다 적재 테이블 entity `monthly_sales_history` 가드에서 화면 전용 자원으로 분리한 것으로, 분리가
+     * 승계 마이그레이션 없이 배포되므로(사용자 결정) 기존에 그 화면들을 보던 조장의 권한을 본 endpoint 가
+     * 복구한다. 기준정보 > ORORA 월매출은 분리 대상이 아니라 계속 회수 상태다.
      *
      * `leader-profile-flags` 는 custom_permissions 전체를 SoT JSON 으로 덮어쓰므로 dirty row 를 skip 하지만,
      * 본 endpoint 는

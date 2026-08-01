@@ -347,12 +347,12 @@ export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsRespons
  * - `DKRetail__AlternativeHoliday__c` → `alternative_holiday` (대체휴무)
  * - `AttendInfo__c` → `attend_info` (기준정보 > HR 적재 근무기간)
  * - `DailySalesHistory__c` → `daily_sales_history` (기준정보 > ORORA 일매출)
- * - `MonthlySalesHistory__c` → `monthly_sales_history` (기준정보 > ORORA 월매출 + 월별 진열사원
- *   투입적합성 + 진열사원 배치 적합성 — 3화면이 이 키를 공유해 함께 닫힌다)
+ * - `MonthlySalesHistory__c` → `monthly_sales_history` (기준정보 > ORORA 월매출)
  *
  * 공휴일/영업일 마스터는 조장 권한이 애초에 없어 대상이 아니다. 매출/실적 대시보드 3화면(물류배부/
- * 전산실적/POS)은 `sales_dashboard` 가상 자원으로 분리되어 본 회수와 무관하며,
- * `runLeaderSalesDashboardGrant` 가 별도 부여한다. 멱등.
+ * 전산실적/POS)은 `sales_dashboard`, 진열사원 적합성 2화면(월별 투입적합성/배치 적합성)은
+ * `display_employee_adequacy` 가상 자원으로 분리되어 본 회수와 무관하며,
+ * `runLeaderSalesDashboardGrant` 가 둘 다 부여한다. 멱등.
  */
 export async function runLeaderErpOrgRevoke(): Promise<LeaderProfileFlagsResponse> {
   const res = await client.post<ApiResponse<LeaderProfileFlagsResponse>>(
@@ -367,11 +367,15 @@ export async function runLeaderErpOrgRevoke(): Promise<LeaderProfileFlagsRespons
 }
 
 /**
- * Stage 2 — 조장(6.조장) 에게 매출/실적 대시보드 권한(`sales_dashboard` READ) 부여.
+ * Stage 2 — 조장(6.조장) 에게 화면 전용 가상 자원 권한 부여 (둘 다 READ).
  *
- * 월 매출(물류배부) / 월 매출(전산실적) / POS매출 3화면의 가드를 적재 테이블 entity
- * `monthly_sales_history` 에서 화면 전용 가상 자원 `sales_dashboard` 로 분리하면서, 기존에 3화면을 보던
- * 조장의 권한을 신규 자원으로 복구한다 (분리 자체는 승계 마이그레이션 없이 배포).
+ * - `sales_dashboard` — 월 매출(물류배부) / 월 매출(전산실적) / POS매출 3화면
+ * - `display_employee_adequacy` — 월별 진열사원 투입적합성 / 진열사원 배치 적합성 2화면
+ *   (각 화면 전용 지점 셀렉터 포함)
+ *
+ * 둘 다 적재 테이블 entity `monthly_sales_history` 가드에서 화면 전용 자원으로 분리한 것으로, 기존에
+ * 그 화면들을 보던 조장의 권한을 신규 자원으로 복구한다 (분리 자체는 승계 마이그레이션 없이 배포).
+ * 기준정보 > ORORA 월매출은 분리 대상이 아니라 계속 회수 상태다.
  *
  * `runLeaderProfileFlags` 는 custom_permissions 전체를 SoT JSON 으로 덮어써서
  * `is_locally_modified=TRUE` 인 web admin 편집분을 skip 하지만, 본 endpoint 는 **대상 키만 병합**하므로

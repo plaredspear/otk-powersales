@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
@@ -21,15 +22,24 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 진열사원 배치 적합성 화면 (집계 / 중분류 / 상세 + 각 엑셀).
+ *
+ * 권한 가드는 월별 투입적합성([AdminMonthlyInputAdequacyController]) 과 동일한 진열사원 적합성 2화면
+ * 공용 가상 자원 [DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE] / READ — 적재 테이블 entity
+ * `monthly_sales_history` 를 쓰던 것을 화면 전용 자원으로 분리했다.
+ * 전용 지점 셀렉터([AdminSalesBranchController.getDeploymentBranches]) 도 같은 자원을 쓴다.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/schedules/sales-comparison")
+@PermissionResource(DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE)
 class AdminSalesComparisonController(
     private val adminSalesComparisonService: AdminSalesComparisonService,
     private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /** 거래처유형 picklist — `AccountCategoryMaster.useSearch=true` 항목 목록. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/categories")
     fun getSearchCategories(): ResponseEntity<ApiResponse<List<SearchAccountCategoryItem>>> {
         val response = adminSalesComparisonService.getSearchCategories()
@@ -37,7 +47,7 @@ class AdminSalesComparisonController(
     }
 
     /** 집계 모드 — 배치적합성 × 거래처카테고리 거래처 수 집계표. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/summary")
     fun getSummary(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -57,7 +67,7 @@ class AdminSalesComparisonController(
     }
 
     /** 중간집계 모드 — 거래처별 행 + 적합성별 소계 + 총계. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/middle")
     fun getMiddle(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -72,7 +82,7 @@ class AdminSalesComparisonController(
     }
 
     /** 상세 모드 — 사원별 행 + 총계. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail")
     fun getDetail(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -94,7 +104,7 @@ class AdminSalesComparisonController(
     }
 
     /** 집계표 엑셀 다운로드. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/summary/export")
     fun exportSummary(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -113,7 +123,7 @@ class AdminSalesComparisonController(
     )
 
     /** 중간집계 엑셀 다운로드. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/middle/export")
     fun exportMiddle(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -127,7 +137,7 @@ class AdminSalesComparisonController(
     )
 
     /** 상세 엑셀 다운로드. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/detail/export")
     fun exportDetail(
         @AuthenticationPrincipal principal: WebUserPrincipal,

@@ -20,8 +20,12 @@ import org.springframework.web.bind.annotation.RestController
  * 하기 위함. 그 분리가 실제로 쓰인 사례가 아래 가드 이원화다:
  *
  * - 대시보드 3화면(물류배부 / 전산실적 / POS매출): [SALES_DASHBOARD_RESOURCE] READ — 화면 게이팅과 동일.
- * - 월별 투입적합성 / 배치 적합성: `monthly_sales_history` READ 유지 — 두 화면은 이번 자원 분리 대상이
- *   아니라 메뉴 게이팅 entity 가 그대로다. 셀렉터만 옮기면 메뉴는 보이는데 지점 목록만 403 이 된다.
+ * - 월별 투입적합성 / 배치 적합성: [DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE] READ — 화면 게이팅과 동일.
+ *   두 화면도 `monthly_sales_history` 에서 화면 전용 자원으로 분리했다(대시보드 3화면 분리와 같은 패턴).
+ *   셀렉터를 옛 키에 남겨두면 메뉴는 보이는데 지점 목록만 403 이 되므로 화면 가드와 함께 옮긴다.
+ *
+ * 두 자원 모두 각 화면의 메뉴 게이팅 entity 와 일치한다 — 게이팅 ↔ API 가드 불일치는 "화면은 열리는데
+ * 특정 API 만 403" 으로 나타나는 이 프로젝트의 반복 함정이다.
  *
  * 여사원 일정관리의 `/team-schedule/branches` (`team_member_schedule` 가드) 를 빌려쓰면
  * `team_member_schedule` READ 없는 사용자가 지점 셀렉터에서 403 이 나므로 매출/실적 계열은
@@ -77,7 +81,7 @@ class AdminSalesBranchController(
      * (sharing policy) 기반이다.
      */
     @GetMapping("/input-adequacy/branches")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     fun getInputAdequacyBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
@@ -95,7 +99,7 @@ class AdminSalesBranchController(
      * policy) 기반이고 `AdminSalesComparisonService.applyScope` 가 교집합으로 재차 가드한다.
      */
     @GetMapping("/deployment/branches")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     fun getDeploymentBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =

@@ -55,12 +55,34 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     @DisplayName("ORORA 일매출/월매출 두 키를 모두 회수한다 (사용자 결정)")
     fun `both sales history keys revoked`() {
         // daily_sales_history   = 기준정보 > ORORA 일매출 (목록 + 전용 거래처 lookup) — 파급이 화면 하나.
-        // monthly_sales_history = 기준정보 > ORORA 월매출 + 월별 투입적합성 + 배치 적합성 — 3화면 공유 키라
-        //                         회수가 함께 파급된다 (각 화면 전용 지점/거래처 셀렉터 포함).
+        // monthly_sales_history = 기준정보 > ORORA 월매출 (목록 + 전용 거래처 lookup) — 원래 5화면 공유
+        //                         키였으나 sales_dashboard / display_employee_adequacy 두 차례 분리로
+        //                         나머지 4화면이 빠져나가 파급이 화면 하나로 좁혀졌다.
         for (key in listOf("DailySalesHistory__c", "MonthlySalesHistory__c")) {
             assertThat(leaderSeed.objectPermissionsJson).doesNotContain("\"$key\"")
             assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains(key)
         }
+    }
+
+    @Test
+    @DisplayName("조장은 진열사원 적합성 2화면(display_employee_adequacy) READ 를 보유한다 (사용자 결정)")
+    fun `leader has display employee adequacy read`() {
+        // 월별 진열사원 투입적합성 / 진열사원 배치 적합성을 monthly_sales_history 에서 화면 전용 가상
+        // 자원으로 분리했고, 조장은 분리 이후 2화면을 조회한다 — SoT 에서 빠지면 신규 환경의 조장이
+        // 화면을 잃는다 (각 화면 전용 지점 셀렉터도 같은 자원이라 함께 잃는다).
+        assertThat(leaderSeed.customPermissionsJson)
+            .withFailMessage("진열사원 적합성 권한(display_employee_adequacy READ)이 6.조장 SoT 에 없습니다")
+            .contains("\"display_employee_adequacy\"")
+
+        // 2화면 모두 조회 전용이라 READ 단독 — 나머지 비트는 대응 가드가 없는 죽은 키다.
+        assertThat(leaderSeed.customPermissionsJson)
+            .contains("\"display_employee_adequacy\": { \"allowRead\": true }")
+
+        // 자원 분리의 핵심 — MonthlySalesHistory__c 는 회수하면서 적합성 2화면은 남긴다.
+        // 분리 전이었다면 두 결과가 양립할 수 없었다 (한 키가 ORORA 월매출까지 함께 여닫았음).
+        assertThat(SfMigrationStage2Service.REVOKED_LEADER_OBJECT_KEYS).contains("MonthlySalesHistory__c")
+        assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS)
+            .contains("\"display_employee_adequacy\"")
     }
 
     @Test
@@ -85,10 +107,27 @@ class LeaderProfileFlagsSeedRevokedKeysTest {
     @DisplayName("부여 substep 의 JSON 과 6.조장 SoT 가 같은 자원을 가리킨다 (SoT ↔ 부여 축 정합)")
     fun `granted custom permissions match seed`() {
         // 신규 환경(clean row)은 leader-profile-flags 가 SoT 전체를, 기존 환경(dirty row)은
-        // leader-sales-dashboard-grant 가 이 키만 병합한다. 두 축이 어긋나면 환경별 권한이 달라진다.
-        assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).contains("\"sales_dashboard\"")
+        // leader-sales-dashboard-grant 가 이 키들만 병합한다. 두 축이 어긋나면 환경별 권한이 달라진다.
+        // 부여 대상 자원이 늘면 여기와 SoT 양쪽에 함께 추가해야 한다.
+        for (resource in listOf("sales_dashboard", "display_employee_adequacy")) {
+            assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS)
+                .withFailMessage("부여 대상 '%s' 가 GRANTED_LEADER_CUSTOM_PERMISSIONS 에 없습니다", resource)
+                .contains("\"$resource\"")
+            assertThat(leaderSeed.customPermissionsJson)
+                .withFailMessage("부여 대상 '%s' 가 6.조장 SoT 에 없습니다 — 신규 환경에서만 권한이 빠집니다", resource)
+                .contains("\"$resource\"")
+        }
         assertThat(SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).contains("\"allowRead\": true")
-        assertThat(leaderSeed.customPermissionsJson).contains("\"sales_dashboard\"")
+    }
+
+    @Test
+    @DisplayName("부여 substep JSON 은 파싱 가능한 단일 jsonb 객체다 (병합 SQL 전제)")
+    fun `granted custom permissions is valid json object`() {
+        // runLeaderSalesDashboardGrant 가 CAST(:grant AS jsonb) 로 통째 병합하므로 JSON 이 깨지면
+        // substep 이 런타임에 실패한다. 키를 더할 때 콤마/중괄호를 빠뜨리는 실수를 부팅 전에 잡는다.
+        val json = SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS
+        assertThat(json.trim()).startsWith("{").endsWith("}")
+        assertThat(json).doesNotContain(",}").doesNotContain(",,")
     }
 
     @Test

@@ -98,8 +98,12 @@ export const menuRoute: MenuRoute = {
         { path: '/schedule', name: '여사원 일정관리', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/monthly-integration', name: '월별여사원 통합일정', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/work-type-headcount', name: '근무형태별 여사원인원현황', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'monthly_sales_history', operation: 'READ' },
-        { path: '/deployment', name: '진열사원 배치 적합성', entity: 'monthly_sales_history', operation: 'READ' },
+        // 적합성 2화면은 적재 테이블 entity(monthly_sales_history) 가 아니라 화면 전용 가상 자원
+        // display_employee_adequacy 로 게이팅한다 — 기준정보 > ORORA 월매출과 분리.
+        // 각 화면 전용 지점 셀렉터(/sales/input-adequacy/branches, /sales/deployment/branches) 의
+        // API 가드도 같은 entity 다 — 어긋나면 메뉴는 보이는데 지점 목록만 403 이 된다.
+        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'display_employee_adequacy', operation: 'READ' },
+        { path: '/deployment', name: '진열사원 배치 적합성', entity: 'display_employee_adequacy', operation: 'READ' },
       ],
     },
     {

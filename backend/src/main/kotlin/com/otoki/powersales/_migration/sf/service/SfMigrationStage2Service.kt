@@ -59,8 +59,7 @@ class SfMigrationStage2Service(
          * - `DKRetail__AlternativeHoliday__c` → 가드 entity `alternative_holiday` (대체휴무)
          * - `AttendInfo__c` → 가드 entity `attend_info` (기준정보 > HR 적재 근무기간)
          * - `DailySalesHistory__c` → 가드 entity `daily_sales_history` (기준정보 > ORORA 일매출)
-         * - `MonthlySalesHistory__c` → 가드 entity `monthly_sales_history` (기준정보 > ORORA 월매출 +
-         *   월별 진열사원 투입적합성 + 진열사원 배치 적합성 — 3화면 공유 키)
+         * - `MonthlySalesHistory__c` → 가드 entity `monthly_sales_history` (기준정보 > ORORA 월매출)
          *
          * 대체휴무는 SoT 에 기재된 적이 없지만 운영 DB 의 web admin 편집분(dirty row)에 남아 있을 수 있어
          * 회수 대상에 포함한다 — 없으면 jsonb `-` 가 no-op 이라 무해하다.
@@ -73,11 +72,17 @@ class SfMigrationStage2Service(
          * `DailySalesHistory__c` 회수는 기준정보 > ORORA 일매출 화면**만** 닫는다 — 이 키를 쓰는
          * endpoint 가 그 화면의 목록/거래처 lookup 2건뿐이다.
          *
-         * `MonthlySalesHistory__c` 회수는 반대로 **3개 화면에 함께 파급된다** (사용자 결정) — 기준정보 >
-         * ORORA 월매출 / 월별 진열사원 투입적합성 / 진열사원 배치 적합성이 이 키 하나를 공유하기 때문이다
-         * (각 화면의 전용 지점·거래처 셀렉터 포함). 매출/실적 대시보드 3화면(물류배부/전산실적/POS)은
-         * `sales_dashboard` 가상 자원으로 분리되어 [GRANTED_LEADER_CUSTOM_PERMISSIONS] 로 별도 부여하므로
-         * 본 회수의 영향을 받지 않는다 — 자원 분리가 없었다면 이 회수가 그 3화면까지 닫았을 것이다.
+         * `MonthlySalesHistory__c` 회수 파급은 **기준정보 > ORORA 월매출 1화면**이다 (전용 거래처
+         * 셀렉터 `/accounts/lookup-for-monthly-sales` 포함). 이 키는 원래 5화면을 함께 여닫아 화면 단위
+         * 통제가 불가능했으나, 두 차례 자원 분리로 나머지 4화면이 빠져나갔고 모두
+         * [GRANTED_LEADER_CUSTOM_PERMISSIONS] 로 별도 부여되어 본 회수의 영향을 받지 않는다:
+         *
+         * - 매출/실적 대시보드 3화면(물류배부/전산실적/POS) → `sales_dashboard`
+         * - 월별 진열사원 투입적합성 / 진열사원 배치 적합성 → `display_employee_adequacy`
+         *   (각 화면 전용 지점 셀렉터 포함)
+         *
+         * 자원 분리가 없었다면 이 회수가 그 4화면까지 닫았을 것이다 — 조장에게 적합성 2화면을 열어주려면
+         * ORORA 월매출도 함께 열 수밖에 없었다.
          */
         val REVOKED_LEADER_OBJECT_KEYS = listOf(
             "ERP_Order__c",
@@ -101,6 +106,13 @@ class SfMigrationStage2Service(
          *   3화면이 적재 테이블 entity `monthly_sales_history` 를 공유하던 것을 화면 전용 가상 자원으로
          *   분리하면서, 기존에 `MonthlySalesHistory__c` READ 로 3화면을 보던 조장이 그대로 보려면 신규
          *   자원을 다시 부여해야 한다 (사용자 결정). 3화면 모두 조회 전용이라 READ 단독.
+         * - `display_employee_adequacy` → 월별 진열사원 투입적합성 / 진열사원 배치 적합성 2화면
+         *   (`com.otoki.powersales.admin.controller.DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE`, @PermissionResource).
+         *   같은 `monthly_sales_history` 에서 같은 이유로 분리했다 — 그 키를 조장에게 주면 기준정보 >
+         *   ORORA 월매출까지 함께 열려 화면 단위 통제가 불가능했다. 조장은 적합성 2화면만 조회하고
+         *   ORORA 월매출은 계속 닫는다 (사용자 결정). 각 화면 전용 지점 셀렉터
+         *   (`/sales/input-adequacy/branches` · `/sales/deployment/branches`) 도 같은 자원으로 가드되어
+         *   함께 열린다. 2화면 모두 조회 전용이라 READ 단독.
          *
          * SF object 가 아닌 가상 자원이라 `object_permissions` 가 아니라 `custom_permissions` 경로다.
          * 추가 부여가 필요하면 본 JSON 에 키를 더하면 된다 — jsonb `||` 가 top-level 키 단위로 병합하므로
@@ -110,7 +122,8 @@ class SfMigrationStage2Service(
          * 동일 키가 기재되어 있다 — 신규 환경(clean row)은 `leader-profile-flags` 가, 기존 환경(dirty row)은
          * 본 substep 이 담당해 양쪽 결과가 같아진다.
          */
-        const val GRANTED_LEADER_CUSTOM_PERMISSIONS = """{"sales_dashboard": {"allowRead": true}}"""
+        const val GRANTED_LEADER_CUSTOM_PERMISSIONS =
+            """{"sales_dashboard": {"allowRead": true}, "display_employee_adequacy": {"allowRead": true}}"""
 
         /**
          * `leader-password-reset` substep 의 profile 무관 초기화 대상 사번 (사용자 지정).
@@ -681,10 +694,18 @@ class SfMigrationStage2Service(
      * 가 키만 제거하기에 강제 적용이 안전한 것과 정확히 대칭이다.
      *
      * ## 배경
-     * 매출/실적 3화면(물류배부 / 전산실적 / POS매출)의 가드를 적재 테이블 entity `monthly_sales_history`
-     * 에서 화면 전용 가상 자원 `sales_dashboard` 로 분리했다. 분리 자체는 승계 마이그레이션 없이
-     * 배포되므로(사용자 결정), 기존에 3화면을 보던 조장은 본 substep 으로만 권한이 복구된다.
-     * 기준정보 > ORORA 월매출(`MonthlySalesHistory__c`) 은 분리 대상이 아니라 영향이 없다.
+     * 적재 테이블 entity `monthly_sales_history` 가드를 공유하던 화면들을 두 차례에 걸쳐 화면 전용
+     * 가상 자원으로 분리했고, 분리는 모두 승계 마이그레이션 없이 배포되므로(사용자 결정) 기존에 그
+     * 화면들을 보던 조장은 본 substep 으로만 권한이 복구된다:
+     *
+     * - 매출/실적 3화면(물류배부 / 전산실적 / POS매출) → `sales_dashboard`
+     * - 진열사원 적합성 2화면(월별 투입적합성 / 배치 적합성) → `display_employee_adequacy`
+     *
+     * 기준정보 > ORORA 월매출(`MonthlySalesHistory__c`) 은 분리 대상이 아니라 계속 회수 상태다 —
+     * 조장은 적합성 2화면은 조회하되 ORORA 월매출은 보지 않는다.
+     *
+     * 부여 대상 자원이 늘어도 본 메소드는 그대로다 — [GRANTED_LEADER_CUSTOM_PERMISSIONS] JSON 을
+     * 통째로 병합하므로 상수에 키를 더하면 된다 (substep 이름은 최초 도입 자원을 따라 유지).
      *
      * ## 실행 순서
      * `fk` → `fk-natural-key` **이후** (profile_flags.profile_id 가 채워진 뒤). 그 전에는 profile 조인이
@@ -721,7 +742,7 @@ class SfMigrationStage2Service(
                 .executeUpdate()
 
             results += SubstepResult(
-                label = "profile_flags['$profileName'] 매출/실적 대시보드 권한 부여 " +
+                label = "profile_flags['$profileName'] 매출/실적 대시보드 + 진열사원 적합성 권한 부여 " +
                     "(custom_permissions ← $GRANTED_LEADER_CUSTOM_PERMISSIONS)",
                 rowsAffected = updated,
             )

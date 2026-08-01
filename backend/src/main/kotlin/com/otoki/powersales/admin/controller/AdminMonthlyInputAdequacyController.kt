@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
@@ -18,15 +19,24 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 월별 진열사원 투입적합성 화면.
+ *
+ * 권한 가드는 진열사원 적합성 2화면 공용 가상 자원 [DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE] / READ —
+ * 적재 테이블 entity `monthly_sales_history` 를 쓰던 것을 화면 전용 자원으로 분리했다.
+ * 그 키는 「기준정보 > ORORA 월매출」까지 함께 여닫아 화면 단위 통제가 불가능했다.
+ * 전용 지점 셀렉터([AdminSalesBranchController.getInputAdequacyBranches]) 도 같은 자원을 쓴다.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/schedules/monthly-input-adequacy")
+@PermissionResource(DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE)
 class AdminMonthlyInputAdequacyController(
     private val adminMonthlyInputAdequacyService: AdminMonthlyInputAdequacyService,
     private val branchScopeGateway: BranchScopeGateway,
 ) {
 
     /** 1~12월 적합성 매트릭스 조회. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping
     fun getMatrix(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -40,7 +50,7 @@ class AdminMonthlyInputAdequacyController(
     }
 
     /** 매트릭스 엑셀 다운로드. */
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/export")
     fun exportMatrix(
         @AuthenticationPrincipal principal: WebUserPrincipal,

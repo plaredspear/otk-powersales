@@ -27,6 +27,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   employee_input_criteria_confirm: '진열사원 투입기준 확정',
   monthly_sales_history: '월매출',
   sales_dashboard: '매출/실적 대시보드',
+  display_employee_adequacy: '진열사원 적합성',
   notice_post: '공지사항',
   permission_set: '권한 세트',
   product: '제품',

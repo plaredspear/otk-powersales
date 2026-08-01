@@ -243,7 +243,7 @@ export default function DeploymentPage() {
   const [clickedAccountIds, setClickedAccountIds] = useState<number[]>([]);
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
 
-  // 배치 적합성(monthly_sales_history 게이팅) — 무가드 dashboard 지점 대신 동일 entity 로 가드된
+  // 배치 적합성(display_employee_adequacy 게이팅) — 무가드 dashboard 지점 대신 동일 entity 로 가드된
   // 배치 적합성 전용 지점 셀렉터 (권한 없이 지점 인벤토리가 노출되던 over-exposure 해소) — 조직 트리 스코프.
   const { data: branches = [] } = useDeploymentBranches();
 

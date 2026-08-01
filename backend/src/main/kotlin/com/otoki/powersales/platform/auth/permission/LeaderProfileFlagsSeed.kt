@@ -89,13 +89,13 @@ object LeaderProfileFlagsSeed {
 // - `DailySalesHistory__c` (기준정보 > ORORA 일매출, 가드 entity `daily_sales_history`) —
 //   AdminDailySalesHistoryController 목록 + 그 화면 전용 거래처 lookup(`/accounts/lookup-for-daily-sales`).
 //   이 두 endpoint 가 본 키의 유일한 사용처라 회수 파급이 그 화면에 한정된다.
-// - `MonthlySalesHistory__c` (가드 entity `monthly_sales_history`) — 일매출과 달리 **3개 화면이 이 키를
-//   공유**하므로 회수 파급이 함께 미친다 (사용자 결정):
-//     · 기준정보 > ORORA 월매출 (AdminMonthlySalesHistoryController + `/accounts/lookup-for-monthly-sales`)
-//     · 월별 진열사원 투입적합성 (AdminMonthlyInputAdequacyController + 전용 지점 셀렉터)
-//     · 진열사원 배치 적합성 (AdminSalesComparisonController + 전용 지점 셀렉터)
-//   매출/실적 대시보드 3화면(물류배부/전산실적/POS)은 `sales_dashboard` 가상 자원으로 분리되어 아래
-//   custom_permissions 로 별도 부여하므로, 본 키 회수가 그 3화면을 닫지 않는다.
+// - `MonthlySalesHistory__c` (가드 entity `monthly_sales_history`) — 회수 파급은 **기준정보 > ORORA
+//   월매출 1화면**이다 (AdminMonthlySalesHistoryController + `/accounts/lookup-for-monthly-sales`).
+//   과거에는 이 키 하나가 5화면을 함께 여닫았으나 두 차례 자원 분리로 아래 4화면이 빠져나갔고,
+//   둘 다 아래 custom_permissions 로 별도 부여하므로 본 키 회수가 그 4화면을 닫지 않는다:
+//     · 매출/실적 대시보드 3화면(물류배부/전산실적/POS) → `sales_dashboard`
+//     · 월별 진열사원 투입적합성 / 진열사원 배치 적합성 → `display_employee_adequacy`
+//       (각 화면 전용 지점 셀렉터 `/sales/input-adequacy/branches` · `/sales/deployment/branches` 포함)
 // 공휴일(`HolidayMaster__c`) / 영업일(`WorkingDayMaster__c`) / 대체휴무(`DKRetail__AlternativeHoliday__c`)
 // 은 애초에 기재된 적이 없어 조장 권한이 없다 — 같은 축의 자원이라 함께 명시해 둔다.
 private val LEADER_6_OBJECT_PERMISSIONS = """
@@ -170,20 +170,31 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
 // 적재 테이블 entity `monthly_sales_history` 를 공유하던 시절에는 「기준정보 > ORORA 월매출」·
 // 투입적합성·배치 적합성과 한 덩어리라 화면 단위 통제가 불가능해 자원을 분리했고, 조장은 분리 이후에도
 // 3화면을 계속 조회한다 (사용자 결정) — 그래서 여기 신규 자원으로 다시 부여한다.
-// 반대로 `MonthlySalesHistory__c` 는 object_permissions 에서 회수되어 ORORA 월매출 / 투입적합성 /
-// 배치 적합성은 닫힌다 — 자원 분리 덕분에 대시보드 3화면만 남길 수 있다.
+// 반대로 `MonthlySalesHistory__c` 는 object_permissions 에서 회수되어 ORORA 월매출은 닫힌다
+// — 자원 분리 덕분에 대시보드 3화면만 남길 수 있다.
 // 3화면 모두 조회 전용이라 가드가 실재하는 operation 은 READ 단독.
+//
+// `display_employee_adequacy` 는 월별 진열사원 투입적합성 / 진열사원 배치 적합성 2화면의 가드 자원이다
+// (@PermissionResource, com.otoki.powersales.admin.controller.DISPLAY_EMPLOYEE_ADEQUACY_RESOURCE).
+// `sales_dashboard` 와 같은 이유로 `monthly_sales_history` 에서 분리했다 — 그 키를 조장에게 주면
+// 「기준정보 > ORORA 월매출」까지 함께 열려 화면 단위 통제가 불가능했다. 조장은 적합성 2화면은 조회하되
+// ORORA 월매출은 보지 않는다 (사용자 결정). 각 화면 전용 지점 셀렉터
+// (`/sales/input-adequacy/branches` · `/sales/deployment/branches`) 도 같은 자원으로 가드된다 —
+// 셀렉터를 옛 키에 남기면 메뉴는 보이는데 지점 목록만 403 이 된다.
+// 2화면 모두 조회 전용이라 가드가 실재하는 operation 은 READ 단독.
 //
 // 본 SoT 는 `leader-profile-flags` substep 이 clean row 에만 적용한다. 운영 DB 의 dirty row
 // (is_locally_modified=TRUE) 까지 부여하려면 키 단위로 강제 병합하는 `leader-sales-dashboard-grant`
-// substep 을 실행한다 (SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS).
+// substep 을 실행한다 (SfMigrationStage2Service.GRANTED_LEADER_CUSTOM_PERMISSIONS —
+// `sales_dashboard` 와 `display_employee_adequacy` 를 함께 병합한다).
 private val LEADER_6_CUSTOM_PERMISSIONS = """
 {
   "female_employee": { "allowEdit": true, "allowRead": true },
   "education_post": { "allowRead": true },
   "employee_input_criteria_confirm": { "allowEdit": true },
   "work_history": { "allowRead": true },
-  "sales_dashboard": { "allowRead": true }
+  "sales_dashboard": { "allowRead": true },
+  "display_employee_adequacy": { "allowRead": true }
 }
 """.trimIndent()
 
