@@ -21,11 +21,25 @@
 4.  S3 업로드 s3://<bucket>/sf-migration/input/         ← 사용자 수동 (§1-2)
 5.  web /admin/tools/sf-migration-1  → 일괄 실행         ← Stage 1 적재 (§1-3)
 6.  web /admin/tools/sf-migration-2  → 카드 순서대로     ← Stage 2 변환 (§1-4)
-7.  이미지 (§1-5, §1-6)
-      ├ migrate-claim-images.sh       → 콘솔 업로드 → web Stage1(ClaimImageUploadFile) → Stage2
-      ├ migrate-notice-rta-images.sh  → 콘솔 업로드 → web Stage1(NoticeImageUploadFile) → Stage2
-      │    └ replace-notice-rta-urls.main.kts --apply  (본문 placeholder 치환)
-      └ aws s3 sync (레거시 이미지 버킷 → 신규 storage private/)
+7.  이미지 (§1-5, §1-6) — Stage 2 이후 실행 가능. 3종은 서로 독립
+      ├ 7-1. 클레임 이미지 (SF Files / ContentDocumentLink 출처)        (§1-5-1)
+      │    ① migrate-claim-images.sh  (query → download → build-csv)
+      │    ② AWS 콘솔 업로드  images/* → private/uploads/claim/migrated/
+      │                       claim_upload_files.csv → sf-migration/claim-images/
+      │    ③ web Stage1  target=ClaimImageUploadFile
+      │    ④ web Stage2  UploadFile Parent Resolve
+      ├ 7-2. 공지 본문 이미지 (rtaImage 서블릿 출처)                     (§1-5-2)
+      │    ① migrate-notice-rta-images.sh  (scan → download → build-csv)
+      │    ② AWS 콘솔 업로드  images/* → private/uploads/notice/migrated/
+      │                       notice_image_upload_files.csv → sf-migration/notice-images/
+      │    ③ web Stage1  target=NoticeImageUploadFile
+      │    ④ web Stage2  UploadFile Parent Resolve + 공지 본문 이미지 placeholder 치환
+      │    ⑤ replace-notice-rta-urls.main.kts --apply   (본문 URL 치환, 기본 dry-run)
+      └ 7-3. 이미지 저장소 S3 sync (SObject 필드 보유 S3 key — 매출/현장점검/제안/공지첨부) (§1-6)
+           ① dev  aws s3 sync --dryrun → 실제
+           ② prod aws s3 sync --dryrun → 실제 (dev 검증 후)
+           ③ 객체 수 대조 검증
+           ※ CSV/DB 적재 없음 — S3 객체 복사라 Stage 1·2 와 무관하게 독립 실행
 8.  검증 (리포트 + psql COUNT + SYSTEM_ADMIN 로그인)
 9.  Heroku 마이그레이션 (§2) — SF 완료 후
 ```
@@ -207,6 +221,8 @@ kotlinc -script replace-notice-rta-urls.main.kts -- \
 > 본문에 rtaImage 가 없고 첨부 위젯 이미지만 있는 공지는 이미 `upload_file` 에 적재되어 있어 **scan 에서 자동 제외**된다.
 
 ### 1-6. 이미지 저장소 S3 sync (레거시 이미지 버킷 → 신규 storage)
+
+> **1-5 의 두 스크립트와 별개다.** 1-5 는 **SF Files**(`ContentDocumentLink` → `ContentVersion`) / **rtaImage 서블릿**에 있어 신규 S3 에 존재하지 않는 이미지를 **다운로드 → 재업로드 → `upload_file` 적재**하는 절차다. 본 절은 **SObject 필드(`S3ImageUniqueKey__c` 등)에 S3 key 를 이미 직접 보유한 이미지**(매출 / 현장점검 / 제안 사진 + 공지 첨부)를 담은 **레거시 이미지 버킷을 신규 storage 버킷으로 통째 복사**한다. 이 경우 key 는 SObject 적재분에 이미 들어와 있어 **CSV/DB 적재가 불필요**하고, S3 객체 복사만 하면 되므로 **Stage 1·2 와 무관하게 독립 실행**한다.
 
 레거시 이미지 저장 버킷의 파일을 신규 시스템 storage 버킷의 `private/` 아래로 복사한다.
 
