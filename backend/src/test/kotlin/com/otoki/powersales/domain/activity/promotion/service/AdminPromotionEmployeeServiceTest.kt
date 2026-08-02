@@ -227,7 +227,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(match { it.toSet() == setOf("5691", "5692", "5693") }) } returns
                 listOf(woman(1L, "김여사", "20030117", "5692"), woman(2L, "이여사", "20030118", "5693"))
 
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "1234")
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5)
 
             assertThat(result.content).hasSize(2)
             assertThat(result.content.map { it.name }).containsExactly("김여사", "이여사")
@@ -242,7 +242,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(any()) } returns
                 listOf(woman(1L, "김여사", "20030117", "5691"), woman(2L, "박여사", "20030118", "5691"))
 
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = "박", size = 5, loginCostCenterCode = "1234")
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = "박", size = 5)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].name).isEqualTo("박여사")
@@ -256,7 +256,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(any()) } returns
                 (1L..10L).map { woman(it, "여사$it", "200301$it", "5691") }
 
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 3, loginCostCenterCode = "1234")
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 3)
 
             assertThat(result.content).hasSize(3)
         }
@@ -266,7 +266,7 @@ class AdminPromotionEmployeeServiceTest {
         fun lookup_noBranchCode_returnsEmpty() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch(branchCode = null))
 
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "1234")
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5)
 
             assertThat(result.content).isEmpty()
             verify(exactly = 0) { branchCodeExpander.expand(any()) }
@@ -278,7 +278,7 @@ class AdminPromotionEmployeeServiceTest {
         fun lookup_outOfScope() {
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             val restrictedScope = DataScope(branchCodes = listOf("ZZZ99"), isAllBranches = false)
-            assertThatThrownBy { service.lookupEmployeeCandidates(restrictedScope, 10L, null, 5, "1234") }
+            assertThatThrownBy { service.lookupEmployeeCandidates(restrictedScope, 10L, null, 5) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
 
@@ -286,38 +286,24 @@ class AdminPromotionEmployeeServiceTest {
         @DisplayName("행사 미존재 -> PromotionNotFoundException")
         fun lookup_promotionNotFound() {
             every { promotionRepository.findById(999L) } returns Optional.empty()
-            assertThatThrownBy { service.lookupEmployeeCandidates(allBranchesScope, 999L, null, 5, "1234") }
+            assertThatThrownBy { service.lookupEmployeeCandidates(allBranchesScope, 999L, null, 5) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
         @Test
-        @DisplayName("영업지원2팀(4889) 로그인 -> 거래처 지점 무관 전체 지점 여사원 조회 (확장/거래처지점 미사용)")
-        fun lookup_salesSupport2_returnsAllBranchWomen() {
+        @DisplayName("영업지원2팀(4889) 전사 예외 제거 - 로그인 조직 무관하게 항상 거래처 지점 스코프")
+        fun lookup_salesSupportTeam2_appliesAccountBranchScope() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
-            // costCenterCode 필터 없이 전사 조회 → repository 인자 null
-            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) } returns
-                listOf(woman(1L, "김여사", "20030117", "5692"), woman(2L, "타지점여사", "20030118", "9999"))
+            every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691")
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(listOf("5691")) } returns
+                listOf(woman(1L, "김여사", "20030117", "5691"))
 
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "4889")
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5)
 
-            assertThat(result.content.map { it.name }).containsExactly("김여사", "타지점여사")
-            // 거래처 지점 확장을 타지 않음
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
-            verify(exactly = 1) { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) }
-        }
-
-        @Test
-        @DisplayName("영업지원2팀(4889) 로그인 -> 거래처지점코드 없어도 전체 여사원 조회")
-        fun lookup_salesSupport2_noBranchCode_stillReturnsAllWomen() {
-            every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch(branchCode = null))
-            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) } returns
-                listOf(woman(1L, "김여사", "20030117", "5692"))
-
-            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "4889")
-
-            assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].name).isEqualTo("김여사")
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            assertThat(result.content.map { it.name }).containsExactly("김여사")
+            // 전사 조회(costCenterCode 필터 null) 로 새지 않는다
+            verify(exactly = 0) { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) }
+            verify(exactly = 1) { branchCodeExpander.expand(setOf("5691")) }
         }
     }
 

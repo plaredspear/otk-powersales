@@ -136,17 +136,12 @@ class AdminAccountService(
      * ([AdminTeamScheduleService.getAccounts]) 와 동일 계열. `AccountGroup__c IN (1000,1010)` 행사필터는
      * [getAccounts] 의 `applyPromotionFilter` 가 별도 적용.
      *
-     * 영업지원2팀 예외: 로그인 사용자가 [WomenScheduleBranchResolver.isAllBranchLookupUser] (영업지원2팀,
-     * costCenterCode=4889) 이면 지점 제한을 걸지 않고 전 지점 거래처를 반환한다(행사사원 후보 lookup 과
-     * 동일 정책, 2026-07-14 요구). 이 경우에도 `applyPromotionFilter`/폐업 제외 등 다른 필터는 그대로
-     * 적용되어 "행사 등록 가능한 전체 거래처"만 남는다.
+     * 영업지원2팀 예외는 2026-08-02 제거됐다 — 다른 지점과 동일하게 본인 지점 스코프만 조회한다
+     * ([com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]).
      *
      * 화이트리스트가 비면 매칭 0건 (지점 미보유 사용자).
      */
     private fun myBranchScopePredicate(principal: WebUserPrincipal): Predicate {
-        if (womenScheduleBranchResolver.isAllBranchLookupUser(principal)) {
-            return Expressions.asBoolean(true).isTrue
-        }
         val allowedBranchCodes = womenScheduleBranchResolver.resolveBranches(principal)
             .mapNotNull { it.branchCode }
             .toSet()

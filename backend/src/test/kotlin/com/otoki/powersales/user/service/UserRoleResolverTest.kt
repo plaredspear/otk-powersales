@@ -28,12 +28,21 @@ class UserRoleResolverTest {
     }
 
     @Test
-    @DisplayName("OrgNameLevel4 contains '영업지원' (영업지원2팀) → true")
-    fun level4ContainsSalesSupport2() {
-        stubOrg(costCenterCode = "5101", orgNameLevel4 = "영업지원2팀", orgNameLevel3 = "기타본부")
+    @DisplayName("영업지원2팀(조직코드 4889) → false — 전사 예외 제거, 본인 지점 스코프")
+    fun salesSupportTeam2ByOrgCode() {
+        stubOrg(costCenterCode = "4889", orgNameLevel4 = "영업지원2팀", orgNameLevel3 = "영업지원실")
+        val employee = createEmployee(costCenterCode = "4889")
+
+        assertThat(resolver.isSalesSupport(employee)).isFalse
+    }
+
+    @Test
+    @DisplayName("영업지원2팀 하위 조직(코드 4889 아님) → false — 조직명으로도 차단")
+    fun salesSupportTeam2ByOrgName() {
+        stubOrg(costCenterCode = "5101", orgNameLevel4 = "영업지원2팀", orgNameLevel3 = "영업지원실")
         val employee = createEmployee(costCenterCode = "5101")
 
-        assertThat(resolver.isSalesSupport(employee)).isTrue
+        assertThat(resolver.isSalesSupport(employee)).isFalse
     }
 
     @Test
@@ -73,11 +82,11 @@ class UserRoleResolverTest {
     }
 
     @Test
-    @DisplayName("helper — SF UserRole.Name contains '영업지원' → true")
+    @DisplayName("helper — SF UserRole.Name contains '영업지원' → true (영업지원2팀 제외)")
     fun helperSalesSupportContains() {
         assertThat(resolver.isSalesSupportFromUserRoleName("영업지원1팀")).isTrue
-        assertThat(resolver.isSalesSupportFromUserRoleName("영업지원2팀")).isTrue
         assertThat(resolver.isSalesSupportFromUserRoleName("영업지원실")).isTrue
+        assertThat(resolver.isSalesSupportFromUserRoleName("영업지원2팀")).isFalse
     }
 
     @Test

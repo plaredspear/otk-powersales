@@ -265,8 +265,6 @@ class AdminAccountServiceTest {
         @Test
         @DisplayName("지점 화이트리스트 → BranchCodeExpander 확장 → branch_code IN 매칭, buildPredicate 미호출")
         fun myBranchScopeUsesBranchCodeIn() {
-            // 영업지원2팀 예외 아님 → 지점 화이트리스트 경로
-            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns false
             // resolver 가 SF CurrentUserBranchNameList 정합으로 허용 지점 산출
             every { womenScheduleBranchResolver.resolveBranches(principal) } returns
                 listOf(BranchResponse(branchCode = "5832", branchName = "원주1지점"))
@@ -309,7 +307,6 @@ class AdminAccountServiceTest {
         @Test
         @DisplayName("허용 지점 없음 → 매칭 0건 (false predicate)")
         fun myBranchScopeNoBranchBlocksAll() {
-            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns false
             every { womenScheduleBranchResolver.resolveBranches(principal) } returns emptyList()
 
             val composedSlot = slot<Predicate>()
@@ -337,10 +334,12 @@ class AdminAccountServiceTest {
         }
 
         @Test
-        @DisplayName("영업지원2팀(4889) → 지점 제한 없이 전 지점 거래처, resolveBranches/expand 미호출")
-        fun allBranchLookupUserBypassesBranchScope() {
-            // 영업지원2팀 사용자 → 전사 조회
-            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns true
+        @DisplayName("영업지원2팀(4889) → 전사 예외 제거, 본인 지점(4889) 화이트리스트만 적용")
+        fun salesSupportTeam2UsesOwnBranchScope() {
+            // 영업지원2팀도 다른 지점과 동일 — resolveBranches 가 본인 지점만 반환 (2026-08-02)
+            every { womenScheduleBranchResolver.resolveBranches(principal) } returns
+                listOf(BranchResponse(branchCode = "4889", branchName = "영업지원2팀"))
+            every { branchCodeExpander.expand(setOf("4889")) } returns setOf("4889")
 
             val composedSlot = slot<Predicate>()
             every {
@@ -362,19 +361,20 @@ class AdminAccountServiceTest {
                 null, null, null, null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // 지점 제한 predicate 미포함 (전 지점) — branch_code IN / false predicate 아님
-            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
-            // 지점 화이트리스트 산출/확장 경로는 타지 않음
-            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
-            verify(exactly = 0) { branchCodeExpander.expand(any()) }
-            // sharing policy(owner/hierarchy) 경로도 아님
+            // 확장 결과가 1건이면 QueryDSL 이 IN 을 `=` 로 렌더링한다.
+            assertThat(composedSlot.captured.toString()).contains("account.branchCode = 4889")
+            verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(principal) }
+            verify(exactly = 1) { branchCodeExpander.expand(setOf("4889")) }
+            // sharing policy(owner/hierarchy) 경로는 타지 않음
             verify(exactly = 0) { policyEvaluator.buildPredicate(any(), any(), any()) }
         }
 
         @Test
-        @DisplayName("영업지원2팀 + branchCode request param → 요청 지점만 AND 합성 (전사 중 지점 필터)")
-        fun allBranchLookupUserWithBranchCodeParam() {
-            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns true
+        @DisplayName("지점 스코프 + branchCode request param → 화이트리스트 IN 과 AND 합성")
+        fun myBranchScopeWithBranchCodeParam() {
+            every { womenScheduleBranchResolver.resolveBranches(principal) } returns
+                listOf(BranchResponse(branchCode = "5832", branchName = "원주1지점"))
+            every { branchCodeExpander.expand(setOf("5832")) } returns setOf("5832")
 
             val composedSlot = slot<Predicate>()
             every {
@@ -396,10 +396,12 @@ class AdminAccountServiceTest {
                 null, null, listOf("A001"), null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // 전사 predicate(true) + branchCode request param AND 합성만 — 지점 화이트리스트 IN 아님.
-            // (확장 결과가 1건이면 QueryDSL 이 IN 을 `=` 로 렌더링한다.)
-            assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
-            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+            // 지점 화이트리스트 + branchCode request param 양쪽이 AND 로 합성된다.
+            // (각각 1건이면 QueryDSL 이 IN 을 `=` 로 렌더링한다.)
+            val predicateStr = composedSlot.captured.toString()
+            assertThat(predicateStr).contains("account.branchCode = 5832")
+            assertThat(predicateStr).contains("account.branchCode = A001")
+            verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(principal) }
         }
 
         @Test

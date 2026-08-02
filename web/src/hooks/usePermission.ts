@@ -32,8 +32,10 @@ export const SYSTEM_ADMIN_PROFILE_NAME = '시스템 관리자';
 
 /**
  * 영업지원2팀 조직코드 (costCenterCode = 4889, org_nm3="영업지원실" / org_nm4="영업지원2팀").
- * Backend `WomenScheduleBranchResolver.ALL_BRANCH_LOOKUP_COST_CENTER_CODE` 와 대칭 —
- * 백엔드에선 행사마스터 거래처 전사 조회 예외에, web 에선 진열스케줄마스터 메뉴/라우트 차단에 사용.
+ * Backend `SalesSupportTeam2Policy.ORG_CODE` 와 대칭 — web 에선 진열스케줄마스터 메뉴/라우트 차단에 사용.
+ *
+ * 백엔드의 전사(전 지점) 조회 예외는 2026-08-02 제거됐다 (영업지원2팀도 다른 지점과 동일하게
+ * 본인 지점 스코프만 조회). 본 상수는 메뉴/라우트 차단 용도로만 남는다.
  * 조직 개편으로 코드가 바뀌면 본 상수만 변경.
  */
 export const SALES_SUPPORT_TEAM2_COST_CENTER_CODE = '4889';

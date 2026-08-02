@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.org.organization.repository
 
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
 import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.org.organization.entity.Organization
@@ -55,8 +56,12 @@ class OrganizationRepositoryCustomImpl(
                     .or(organization.orgCodeLevel3.eq(hrCode))
                     .or(organization.orgCodeLevel2.eq(hrCode))
             )
+            // 영업지원2팀은 Level3 가 "영업지원실" 이라 사업부 화이트리스트에 걸리지 않는다. 전사 예외를
+            // 제거(2026-08-02)한 뒤 결과가 0건이 되지 않도록 자기 조직만 화이트리스트 예외로 통과시킨다
+            // — 본인 지점(영업지원2팀) 1개만 노출. [SalesSupportTeam2Policy] 참조.
             builder.and(
                 organization.orgNameLevel3.`in`(SALES_DIVISION_NAMES)
+                    .or(organization.orgCodeLevel4.eq(SalesSupportTeam2Policy.ORG_CODE))
             )
         }
 
@@ -214,7 +219,12 @@ class OrganizationRepositoryCustomImpl(
                     .or(organization.orgCodeLevel3.`in`(orgTreeCodes))
                     .or(organization.orgCodeLevel2.`in`(orgTreeCodes))
             )
-            builder.and(organization.orgNameLevel3.`in`(SALES_DIVISION_NAMES))
+            // findTeamScheduleBranches 와 동일 — 영업지원2팀(Level3="영업지원실")은 사업부 화이트리스트에
+            // 걸리지 않으므로 자기 조직만 예외로 통과시킨다 ([SalesSupportTeam2Policy]).
+            builder.and(
+                organization.orgNameLevel3.`in`(SALES_DIVISION_NAMES)
+                    .or(organization.orgCodeLevel4.eq(SalesSupportTeam2Policy.ORG_CODE))
+            )
         }
 
         return queryFactory

@@ -26,35 +26,16 @@ class WomenScheduleBranchResolver(
     /** SF "전 지점 가시" Profile.Name 집합 — 영업본부 / 사업부장 등. SF AppointmentTriggerHanlder.cls:344-365 정합. */
     private val allBranchesProfiles: Set<String> = setOf("1.본부장", "2.사업부장", "3.영업부장")
 
-    companion object {
-        /**
-         * 지점 스코프와 무관하게 전체 지점(전사) 조회를 허용하는 조직코드.
-         * 영업지원2팀(costCenterCode = 4889, org_nm3="영업지원실" / org_nm4="영업지원2팀") 소속 사용자는
-         * 시스템 관리자와 동일하게 전사 데이터를 조회한다(2026-07-14 요구, 행사사원 후보 lookup 과 동일 정책).
-         * 조직 개편으로 코드가 바뀌면 본 상수만 변경.
-         */
-        const val ALL_BRANCH_LOOKUP_COST_CENTER_CODE = "4889"
-    }
-
-    /**
-     * 로그인 사용자가 지점 스코프를 건너뛰고 전사 조회를 허용받는 대상인지 여부.
-     * SYSTEM_ADMIN 은 [resolveBranches] 에서 이미 전체 지점을 반환하므로, 본 판정은
-     * 그 외 프로필이라도 영업지원2팀([ALL_BRANCH_LOOKUP_COST_CENTER_CODE]) 이면 true.
-     * 대행 로그인 시에도 principal 의 costCenterCode(= 대행 대상 기준)로 판정한다.
-     */
-    fun isAllBranchLookupUser(principal: WebUserPrincipal): Boolean =
-        principal.costCenterCode == ALL_BRANCH_LOOKUP_COST_CENTER_CODE
-
     /**
      * 지점 보안 필터를 적용하지 않는 "전사 가시" 사용자인지 여부 — [resolveBranches] 의 전사 분기와 **동일 술어**.
      *
      * 목록/엑셀 조회 스코프를 셀렉터 옵션([resolveBranches]) 과 동일 출처로 맞추려는 호출부가
      * `DataScope.isAllBranches` 를 결정할 때 사용한다 (전사 판정 로직을 호출부에 복제하지 않도록 노출).
      *
-     * **주의**: [isAllBranchLookupUser] (영업지원2팀 4889) 는 여기에 포함하지 않는다 — [resolveBranches]
-     * 의 전사 분기에 없는 조건을 넣으면 셀렉터는 본인 조직 트리만 주는데 조회는 전사가 되어
-     * fail-open 방향으로 두 축이 갈라진다. 4889 를 여사원 현황에서도 전사로 취급해야 한다면
-     * [resolveBranches] 의 전사 분기와 **함께** 넓혀야 한다 (셀렉터 UX 까지 영향).
+     * **주의**: 전사 판정은 [resolveBranches] 의 전사 분기와 **반드시 동일 술어**여야 한다. 한쪽에만
+     * 조건을 더하면 셀렉터는 본인 조직 트리만 주는데 조회는 전사가 되어 fail-open 방향으로 두 축이
+     * 갈라진다 (영업지원2팀 전용 예외가 실제로 그렇게 갈라져 있었고, 2026-08-02 제거됐다 —
+     * [com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]).
      */
     fun isAllBranchesUser(principal: WebUserPrincipal): Boolean = isAllBranchesScope(principal)
 

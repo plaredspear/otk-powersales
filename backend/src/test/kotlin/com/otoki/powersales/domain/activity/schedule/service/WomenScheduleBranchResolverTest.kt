@@ -72,16 +72,16 @@ class WomenScheduleBranchResolverTest {
     }
 
     @Test
-    @DisplayName("isAllBranchLookupUser - 영업지원2팀(4889) 이면 true")
-    fun isAllBranchLookupUser_salesSupport2() {
-        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = "4889"))).isTrue()
-    }
+    @DisplayName("영업지원2팀(4889) - 전사 예외 제거 후 본인 costCenterCode 기준 분기")
+    fun resolveBranches_salesSupportTeam2() {
+        val branches = listOf(BranchResponse("4889", "영업지원2팀"))
+        every { organizationRepository.findTeamScheduleBranches("4889", false) } returns branches
 
-    @Test
-    @DisplayName("isAllBranchLookupUser - 그 외 costCenterCode / null 이면 false")
-    fun isAllBranchLookupUser_others() {
-        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = "5457"))).isFalse()
-        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = null))).isFalse()
+        val result = resolver.resolveBranches(principalOf(costCenterCode = "4889"))
+
+        assertThat(result).containsExactly(BranchResponse("4889", "영업지원2팀"))
+        verify { organizationRepository.findTeamScheduleBranches("4889", false) }
+        verify(exactly = 0) { organizationRepository.findTeamScheduleBranches(null, true) }
     }
 
     @Test
@@ -113,8 +113,7 @@ class WomenScheduleBranchResolverTest {
     fun isAllBranchesUser_scopedUsers() {
         assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "5457"))).isFalse()
         assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = null))).isFalse()
-        // 4889(영업지원2팀) 는 isAllBranchLookupUser 로만 전사 — resolveBranches 의 전사 분기에 없는
-        // 조건이므로 isAllBranchesUser 에 포함하면 셀렉터(조직 트리)↔조회(전사) 가 fail-open 으로 갈라진다.
+        // 4889(영업지원2팀) 전사 예외는 2026-08-02 제거 — 어떤 축으로도 전사가 되지 않는다.
         assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "4889"))).isFalse()
     }
 
@@ -135,7 +134,7 @@ class WomenScheduleBranchResolverTest {
             principalOf(costCenterCode = "3475", profileName = "2.사업부장"),
             principalOf(costCenterCode = "3475", profileName = "3.영업부장"),
             principalOf(costCenterCode = "5457"),
-            // 영업지원2팀 — isSalesSupport 캐시 컬럼이 아직 false 인 상태를 재현 (fail-open 회귀 방지 핵심 케이스)
+            // 영업지원2팀 — 전사 예외 제거 후 지점 스코프 (fail-open 회귀 방지 핵심 케이스)
             principalOf(costCenterCode = "4889"),
             principalOf(costCenterCode = null),
         )
