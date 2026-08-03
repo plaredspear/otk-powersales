@@ -24,8 +24,17 @@ export interface PosSalesAccountItem {
   distributionChannel: string | null;
   /** 거래처유형(ABC유형) 라벨 (예 "6111 이마트"). */
   accountType: string | null;
+  /** 거래처에 적재된 원본 지점 코드 — 상위 조직/별칭 코드일 수 있어 셀렉터 값과 다를 수 있다. */
   branchCode: string | null;
   branchName: string | null;
+  /**
+   * 지점 셀렉터에서 자동 선택할 코드 — 서버가 `BranchMapping` 으로 역산해 내려준다.
+   * `selectorBranchStatus !== 'RESOLVED'` 면 null (자동 선택 불가).
+   */
+  selectorBranchCode: string | null;
+  selectorBranchName: string | null;
+  /** RESOLVED = 자동 선택 가능 / AMBIGUOUS = 롤업 중복 / OUT_OF_SCOPE = 권한 밖. */
+  selectorBranchStatus: 'RESOLVED' | 'AMBIGUOUS' | 'OUT_OF_SCOPE';
 }
 
 export interface PosSalesAccountListResponse {
@@ -87,6 +96,7 @@ export interface PosSalesDetail {
 
 /** 1단 거래처 조회 필터 — 모두 메인 DB Account 해소, 외부 POS DB 미접촉. */
 export interface PosSalesAccountListRequest {
+  /** 지점 코드. 비우면 지점 필터 없이 권한 범위 전체에서 검색한다 (이때 customerKeyword 필수). */
   costCenterCodes: string[];
   customerKeyword?: string;
   /** 유통형태 — 거래처유형마스터 코드 (예 "06" = 슈퍼) */
@@ -135,7 +145,10 @@ export async function fetchPosSalesAccounts(
   try {
     const res = await client.get<ApiResponse<PosSalesAccountListResponse>>(`${BASE}/accounts`, {
       params: {
-        costCenterCodes: request.costCenterCodes.join(','),
+        // 지점 미선택은 파라미터 자체를 보내지 않는다 — 서버가 "지점 필터 없음" 으로 해석한다.
+        ...(request.costCenterCodes.length > 0
+          ? { costCenterCodes: request.costCenterCodes.join(',') }
+          : {}),
         ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
         ...(request.distributionChannels && request.distributionChannels.length > 0
           ? { distributionChannels: request.distributionChannels.join(',') }

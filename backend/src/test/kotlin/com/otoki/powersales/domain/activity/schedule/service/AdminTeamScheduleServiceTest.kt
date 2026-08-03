@@ -353,6 +353,79 @@ class AdminTeamScheduleServiceTest {
         }
     }
 
+    // ========== searchAccounts (거래처 전사 검색 — 지점 선행 강제 완화) ==========
+
+    @Nested
+    @DisplayName("searchAccounts - 지점 선택 전 거래처 전사 검색")
+    inner class SearchAccountsTests {
+
+        private val supporter =
+            createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
+        private val branches = listOf(
+            BranchResponse("5460", "강남유통지점"),
+            BranchResponse("5457", "강북유통지점"),
+        )
+
+        @Test
+        @DisplayName("셀렉터 전 지점을 대상으로 검색하고 거래처의 지점 정보를 함께 반환")
+        fun searchesAcrossAllSelectableBranches() {
+            val gangnam = createAccount(id = 1, name = "이마트 강남점", branchCode = "5460")
+            val gangbuk = createAccount(id = 2, name = "이마트 강북점", branchCode = "5457")
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
+            every {
+                accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5460", "5457"), listOf("1010", "1000"))
+            } returns listOf(gangbuk, gangnam)
+
+            val result = service.searchAccounts(principalOf(supporter, isSalesSupport = true), "이마트")
+
+            assertThat(result.map { it.accountId }).containsExactly(1L, 2L) // 이름 가나다순
+            assertThat(result.map { it.branchCode }).containsExactly("5460", "5457")
+        }
+
+        @Test
+        @DisplayName("거래처명 / 거래처코드 부분 일치 — 매칭 안 되는 건은 제외")
+        fun filtersByNameOrExternalKey() {
+            val emart = createAccount(id = 1, name = "이마트 강남점", externalKey = "A100", branchCode = "5460")
+            val homeplus = createAccount(id = 2, name = "홈플러스 강북점", externalKey = "B200", branchCode = "5457")
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) } returns
+                listOf(emart, homeplus)
+
+            val byName = service.searchAccounts(principalOf(supporter, isSalesSupport = true), "홈플러스")
+            val byCode = service.searchAccounts(principalOf(supporter, isSalesSupport = true), "A100")
+
+            assertThat(byName.map { it.accountId }).containsExactly(2L)
+            assertThat(byCode.map { it.accountId }).containsExactly(1L)
+        }
+
+        @Test
+        @DisplayName("삭제 거래처는 제외 — 지점별 목록(getAccounts)과 동일 조건")
+        fun excludesDeletedAccounts() {
+            val deleted = createAccount(id = 1, name = "이마트 폐점", branchCode = "5460", isDeleted = true)
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) } returns listOf(deleted)
+
+            assertThat(service.searchAccounts(principalOf(supporter, isSalesSupport = true), "이마트")).isEmpty()
+        }
+
+        @Test
+        @DisplayName("키워드가 비면 조회하지 않는다 (전건 반환 방지)")
+        fun blankKeywordReturnsEmpty() {
+            assertThat(service.searchAccounts(principalOf(supporter, isSalesSupport = true), "  ")).isEmpty()
+            assertThat(service.searchAccounts(principalOf(supporter, isSalesSupport = true), null)).isEmpty()
+            verify(exactly = 0) { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("권한 지점이 없으면 빈 목록 (권한 범위를 넓히지 않는다)")
+        fun noBranchesReturnsEmpty() {
+            every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
+
+            assertThat(service.searchAccounts(principalOf(supporter, isSalesSupport = true), "이마트")).isEmpty()
+            verify(exactly = 0) { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) }
+        }
+    }
+
     // ========== getForm ==========
 
     @Nested

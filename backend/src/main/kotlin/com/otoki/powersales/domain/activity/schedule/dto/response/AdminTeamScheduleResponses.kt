@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.dto.response
 
+import com.otoki.powersales.admin.dto.SelectorBranchResult
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -29,17 +30,45 @@ data class TeamMemberDto(
     }
 }
 
+/**
+ * 여사원 일정관리 "거래처" 목록 1행.
+ *
+ * 지점 필드는 **거래처를 먼저 고르는 경로**(전사 거래처 검색 → 지점 자동 전환) 를 위해 싣는다.
+ * 일정 row([TeamScheduleDto.accountBranchName]) 에는 이미 지점명이 있었는데 거래처 목록에만
+ * 없어 화면이 "이 거래처가 어느 지점인지" 를 알 수 없던 비대칭을 해소한다.
+ *
+ * @property branchCode 거래처에 적재된 원본 지점 코드 — 상위 조직/별칭 코드일 수 있다.
+ * @property selectorBranchCode 지점 셀렉터에서 선택해야 하는 코드 (서버가 `BranchMapping` 으로 역산).
+ *   역산 불가면 null.
+ * @property selectorBranchStatus RESOLVED / AMBIGUOUS / OUT_OF_SCOPE
+ *   ([com.otoki.powersales.admin.dto.SelectorBranchResult]).
+ */
 data class TeamScheduleAccountDto(
     val accountId: Long,
     val externalKey: String,
-    val name: String
+    val name: String,
+    val branchCode: String? = null,
+    val branchName: String? = null,
+    val selectorBranchCode: String? = null,
+    val selectorBranchName: String? = null,
+    val selectorBranchStatus: String = SelectorBranchResult.STATUS_OUT_OF_SCOPE,
 ) {
     companion object {
         fun from(account: Account): TeamScheduleAccountDto = TeamScheduleAccountDto(
             accountId = account.id,
             externalKey = account.externalKey ?: "",
-            name = account.name ?: ""
+            name = account.name ?: "",
+            branchCode = account.branchCode,
+            branchName = account.branchName,
         )
+
+        /** 지점 역산 결과를 얹은 변환 — 전사 거래처 검색(`/accounts/lookup-for-team-schedule`) 용. */
+        fun from(account: Account, selectorBranch: SelectorBranchResult): TeamScheduleAccountDto =
+            from(account).copy(
+                selectorBranchCode = selectorBranch.branchCode,
+                selectorBranchName = selectorBranch.branchName,
+                selectorBranchStatus = selectorBranch.status,
+            )
     }
 }
 

@@ -173,10 +173,45 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getAccounts — 지점(costCenterCodes) 미지정 시 400")
-    fun accountsRejectsEmptyBranches() {
+    @DisplayName("getAccounts — 지점·거래처명 모두 미지정 시 400 (전건 스캔 방지)")
+    fun accountsRejectsEmptyBranchesAndKeyword() {
         assertThatThrownBy { service.getAccounts(allBranchesScope, accountRequest(costCenterCodes = emptyList())) }
             .isInstanceOf(BusinessException::class.java)
+            .hasMessageContaining("지점 또는 거래처명")
+    }
+
+    @Test
+    @DisplayName("getAccounts — 지점 미지정 + 거래처명 지정이면 키워드로 조회 (지점 선행 강제 완화)")
+    fun accountsSearchesByKeywordWithoutBranch() {
+        every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns listOf(
+            account(1, "S001", branchCode = "B001"),
+            account(2, "S002", branchCode = "B002"),
+        )
+
+        val result = service.getAccounts(
+            allBranchesScope,
+            accountRequest(costCenterCodes = emptyList(), customerKeyword = "이마트"),
+        )
+
+        assertThat(result.items.map { it.accountId }).containsExactly(1L, 2L)
+        verify(exactly = 0) { accountRepository.findByBranchCodeIn(any()) }
+    }
+
+    @Test
+    @DisplayName("getAccounts — 지점 미지정 검색도 권한 범위 밖 거래처는 제외 (DataScope 가드 유지)")
+    fun accountsKeywordSearchStillGuardedByScope() {
+        val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
+        every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns listOf(
+            account(1, "S001", branchCode = "B001"),
+            account(2, "S002", branchCode = "B999"),
+        )
+
+        val result = service.getAccounts(
+            scope,
+            accountRequest(costCenterCodes = emptyList(), customerKeyword = "이마트"),
+        )
+
+        assertThat(result.items.map { it.accountId }).containsExactly(1L)
     }
 
     @Test

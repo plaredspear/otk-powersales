@@ -205,7 +205,12 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
             loading={accountLoading}
             options={accountOptions.map((acc) => ({
               value: acc.id,
-              label: `${acc.name ?? ''} (${acc.externalKey ?? ''})`,
+              // 거래처 검색은 지점 무관 전사 검색이라 동명 거래처 구분을 위해 지점명을 함께 노출한다.
+              // preset(수정/복제) 항목은 목록 응답에 거래처 지점이 없어(행의 branchCode 는 사원 지점 축)
+              // 지점명을 붙이지 않는다 — 잘못된 지점을 표시하지 않기 위함.
+              label:
+                `${acc.name ?? ''} (${acc.externalKey ?? ''})` +
+                (acc.branchName ? ` · ${acc.branchName}` : ''),
             }))}
           />
         </Form.Item>

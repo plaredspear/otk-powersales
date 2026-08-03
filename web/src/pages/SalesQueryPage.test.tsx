@@ -55,8 +55,8 @@ function renderPage() {
 const accountsResponse: posApi.PosSalesAccountListResponse = {
   totalElements: 2,
   items: [
-    { accountId: 1, accountName: '이마트 원주점', sapAccountCode: 'S001', distributionChannel: '01 대형마트(3대)', accountType: '6111 이마트', branchCode: 'B001', branchName: '원주1지점' },
-    { accountId: 2, accountName: '홈플러스 원주점', sapAccountCode: 'S002', distributionChannel: '01 대형마트(3대)', accountType: '6112 홈플러스', branchCode: 'B001', branchName: '원주1지점' },
+    { accountId: 1, accountName: '이마트 원주점', sapAccountCode: 'S001', distributionChannel: '01 대형마트(3대)', accountType: '6111 이마트', branchCode: 'B001', branchName: '원주1지점', selectorBranchCode: 'B001', selectorBranchName: '원주1지점', selectorBranchStatus: 'RESOLVED' },
+    { accountId: 2, accountName: '홈플러스 원주점', sapAccountCode: 'S002', distributionChannel: '01 대형마트(3대)', accountType: '6112 홈플러스', branchCode: 'B001', branchName: '원주1지점', selectorBranchCode: 'B001', selectorBranchName: '원주1지점', selectorBranchStatus: 'RESOLVED' },
   ],
 };
 

@@ -383,6 +383,7 @@ export default function NoticeFormPage() {
     // 참조하므로 재구독 불필요.
     // clipboard matcher(addMatcher) 와 drop 리스너는 에디터 mount 시 1회만 등록해야 한다
     // (재실행 시 matcher 누적 / 리스너 중복). 정체성 안정화가 로직상 필수라 deps 를 비운다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const quillModules = useMemo(

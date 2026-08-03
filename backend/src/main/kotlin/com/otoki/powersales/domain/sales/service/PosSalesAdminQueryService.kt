@@ -82,19 +82,29 @@ class PosSalesAdminQueryService(
      * POS 집계는 수행하지 않아 즉시 응답한다. 운영자는 이 목록에서 거래처를 선택해 [getList] 로
      * 2단 POS 조회를 실행한다. [MAX_ACCOUNT_COUNT] 초과 시 400 (조건 좁힘 안내).
      *
+     * ## 지점 선행 강제 완화
+     * 종전에는 `costCenterCodes` 가 필수라 다중지점 사용자는 지점을 먼저 골라야만 거래처를 볼 수 있었다.
+     * 운영자가 실제로 아는 것은 거래처명이므로, **거래처명 키워드가 있으면 지점 미선택을 허용**한다
+     * (둘 다 비면 400 — 전건 스캔 방지). 미선택 시에도 조회 범위는 [DataScope] 가 그대로 강제하고,
+     * 결과 건수는 [MAX_ACCOUNT_COUNT] 가드가 상한을 잡는다. 화면은 응답의 `selectorBranchCode`
+     * (컨트롤러가 역산해 채움) 로 지점 체크박스를 역으로 채운다.
+     *
      * @throws AdminForbiddenException 권한 범위와 입력 costCenterCodes 의 교집합이 비어있을 때
-     * @throws BusinessException costCenterCodes 미지정(400) 또는 거래처 수가 [MAX_ACCOUNT_COUNT] 초과(400)일 때
+     * @throws BusinessException 지점·거래처명 모두 미지정(400) 또는 거래처 수가 [MAX_ACCOUNT_COUNT] 초과(400)일 때
      */
     fun getAccounts(scope: DataScope, request: PosSalesAccountListRequest): PosSalesAccountListResponse {
-        if (request.costCenterCodes.isEmpty()) {
+        if (request.costCenterCodes.isEmpty() && request.customerKeyword.isNullOrBlank()) {
             throw BusinessException(
                 errorCode = "INVALID_PARAMETER",
-                message = "cost_center_codes는 필수입니다",
+                message = "지점 또는 거래처명 중 하나는 필수입니다",
                 httpStatus = HttpStatus.BAD_REQUEST,
             )
         }
-        val effectiveCodes = applyScope(scope, request.costCenterCodes)
+        // 미선택(빈 목록)은 "지점 필터 없음" — 권한 가드는 아래 findAccounts 의 DataScope 검사가 담당한다.
+        val effectiveCodes =
+            if (request.costCenterCodes.isEmpty()) emptyList() else applyScope(scope, request.costCenterCodes)
         val accounts = findAccounts(
+            scope,
             effectiveCodes,
             customerKeyword = request.customerKeyword,
             distributionChannels = request.distributionChannels,
@@ -376,17 +386,32 @@ class PosSalesAdminQueryService(
         return if (desc) items.sortedWith(comparator.reversed()) else items.sortedWith(comparator)
     }
 
+    /**
+     * 1단 거래처 후보 산출.
+     *
+     * 지점을 골랐으면 지점 IN 으로 후보를 잡고, 미선택이면 **거래처명 키워드로 DB 에서 좁힌 뒤**
+     * [DataScope] 로 가드한다 (지점 필터 없이 Account 전건을 메모리에 올리지 않기 위함 — 미선택은
+     * 키워드가 있을 때만 도달한다). 나머지 유통형태/거래처유형 필터는 두 경로 공통.
+     */
     private fun findAccounts(
+        scope: DataScope,
         effectiveCodes: List<String>,
         customerKeyword: String?,
         distributionChannels: List<String>,
         accountTypes: List<String>,
     ): List<Account> {
-        return accountRepository.findByBranchCodeIn(effectiveCodes)
-            .filter { acc ->
-                customerKeyword.isNullOrBlank() ||
-                    acc.name?.contains(customerKeyword, ignoreCase = true) == true
-            }
+        val candidates = if (effectiveCodes.isNotEmpty()) {
+            accountRepository.findByBranchCodeIn(effectiveCodes)
+                .filter { acc ->
+                    customerKeyword.isNullOrBlank() ||
+                        acc.name?.contains(customerKeyword, ignoreCase = true) == true
+                }
+        } else {
+            // 키워드 매칭은 DB 가 이미 수행 — 여기서는 권한 지점 가드만 얹는다.
+            accountRepository.findByNameContainingIgnoreCase(customerKeyword.orEmpty())
+                .filter { scope.validateAccess(it.branchCode) }
+        }
+        return candidates
             // 유통형태(거래처유형마스터 코드) / 거래처유형(ABC유형) 필터 — 메인 DB 해소분.
             // 유통형태는 선택 코드를 마스터 이름으로 되돌려 `accountType` 직접 매칭 (전산실적과 동일 규칙).
             .let { filtered ->

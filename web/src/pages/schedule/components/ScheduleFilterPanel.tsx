@@ -2,6 +2,7 @@ import { Button, Segmented, Select, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { MemberFilterTab } from './MemberFilterTab';
 import { AccountFilterTab } from './AccountFilterTab';
+import { AccountBranchSearchSelect } from './AccountBranchSearchSelect';
 import type { Branch, TeamMember, TeamScheduleAccount } from '@/api/team-schedule';
 
 type FilterTab = 'member' | 'account';
@@ -20,6 +21,8 @@ interface ScheduleFilterPanelProps {
   onSelectedAccountIdsChange: (ids: number[]) => void;
   selectedBranchCode: string;
   onSelectedBranchCodeChange: (code: string) => void;
+  /** 거래처 먼저 찾기 — 검색 결과에서 거래처를 고른 순간 (지점 전환/차단은 호출부가 판단). */
+  onAccountPicked: (account: TeamScheduleAccount) => void;
   selectedPromotionTeams: string[];
   onSelectedPromotionTeamsChange: (teams: string[]) => void;
   onApply: () => void;
@@ -46,6 +49,7 @@ export function ScheduleFilterPanel({
   onSelectedAccountIdsChange,
   selectedBranchCode,
   onSelectedBranchCodeChange,
+  onAccountPicked,
   selectedPromotionTeams,
   onSelectedPromotionTeamsChange,
   onApply,
@@ -80,6 +84,20 @@ export function ScheduleFilterPanel({
           allowClear
           showSearch
           optionFilterProp="label"
+        />
+      )}
+
+      {/*
+        거래처 먼저 찾기 — 지점 선택이 선행 조건이 되지 않도록, 거래처명으로 전 지점을 검색한다.
+        고른 거래처의 지점으로 위 셀렉터가 전환된다 (다중지점 사용자만 의미가 있어 단일지점은 숨김).
+      */}
+      {!isSingleBranch && (
+        <AccountBranchSearchSelect
+          effectiveBranchCode={selectedBranchCode}
+          effectiveBranchName={
+            branches.find((b) => b.branchCode === selectedBranchCode)?.branchName
+          }
+          onPick={onAccountPicked}
         />
       )}
 

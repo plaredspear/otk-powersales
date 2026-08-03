@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.SelectorBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
@@ -52,6 +53,12 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
         // 지점 스코프 게이트웨이 — 조회 코드는 선택값 그대로, DataScope 는 손대지 않는 pass-through stub.
         every { branchScopeGateway.applyDataScope(any(), any()) } answers { secondArg() }
         every { branchScopeGateway.resolveQueryCodes(any(), any(), any()) } answers { secondArg() }
+        // 거래처 → 지점 역산 — 입력 코드가 곧 셀렉터 코드인 단순 stub.
+        every { branchScopeGateway.resolveSelectorBranches(any(), any(), any()) } answers {
+            thirdArg<Collection<String?>>()
+                .filterNotNull()
+                .associateWith { SelectorBranchResult.Resolved(it, "지점$it") }
+        }
     }
 
     @Test
@@ -84,6 +91,9 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.items[0].sapAccountCode").value("SAP1"))
             .andExpect(jsonPath("$.data.items[0].distributionChannel").value("01 대형마트(3대)"))
             .andExpect(jsonPath("$.data.items[0].accountType").value("6111 이마트"))
+            // 지점 역산 결과 — 화면이 지점 체크박스를 자동으로 채우는 근거
+            .andExpect(jsonPath("$.data.items[0].selectorBranchCode").value("1000"))
+            .andExpect(jsonPath("$.data.items[0].selectorBranchStatus").value("RESOLVED"))
 
         verify {
             queryService.getAccounts(
@@ -96,6 +106,22 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
                 },
             )
         }
+    }
+
+    @Test
+    @DisplayName("GET /accounts - 지점 미선택 + 거래처명만으로 검색 가능 (지점 선행 강제 완화)")
+    fun accountsWithoutBranchSelection() {
+        every { queryService.getAccounts(any(), any()) } returns PosSalesAccountListResponse(0, emptyList())
+
+        mockMvc.perform(
+            get("/api/v1/admin/sales/pos/accounts")
+                .param("customerKeyword", "이마트"),
+        )
+            .andExpect(status().isOk)
+
+        // 지점 미선택은 빈 목록 그대로 전달 — resolveQueryCodes 로 화이트리스트를 채워 넣지 않는다.
+        verify { queryService.getAccounts(any(), match { it.costCenterCodes.isEmpty() }) }
+        verify(exactly = 0) { branchScopeGateway.resolveQueryCodes(any(), any(), any()) }
     }
 
     @Test

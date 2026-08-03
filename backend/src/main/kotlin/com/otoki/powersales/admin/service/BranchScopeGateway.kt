@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.admin.dto.SelectorBranchResult
 import com.otoki.powersales.admin.tools.branchscope.BranchScopeMode
 import com.otoki.powersales.admin.tools.branchscope.service.BranchScopeModeStore
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
@@ -115,6 +116,66 @@ class BranchScopeGateway(
         is BranchScopeResult.Unrestricted -> requestedBranchCodes
         is BranchScopeResult.NoAccess -> NO_MATCH_CODES
     }
+
+    /**
+     * 거래처 → 지점 셀렉터 역산 (다건).
+     *
+     * "지점 먼저 선택" 선행 강제를 뒤집기 위한 조회 — 거래처가 가진 `Account.branchCode` 를
+     * [resolveBranches] 옵션 코드로 되돌려, 화면이 지점을 자동 선택(다중 UI)하거나 타 지점 혼입을
+     * 차단(단일 UI)할 수 있게 한다. 거래처 목록 1회 조립당 1번만 호출하도록 다건 API 로 둔다
+     * (셀렉터 조회 + 확장 계산이 거래처 수만큼 반복되지 않게).
+     *
+     * 판정 순서:
+     * 1. **정확 일치** — 셀렉터 옵션에 같은 코드가 있으면 그것 (대다수 케이스).
+     * 2. **확장 포함** — 옵션별 [BranchCodeExpander.expand] 집합에 거래처 코드가 들어 있는 옵션을
+     *    후보로 모아, 1개면 채택. 상위 조직 코드(4/3레벨)로 적재된 거래처를 구제한다.
+     * 3. 후보 2개 이상 → [SelectorBranchResult.Ambiguous]. 확장에는 롤업(예: `5829` → `5826,5827,5828`)
+     *    이 섞여 있어 자동 선택이 엉뚱한 지점을 고를 수 있으므로 화면에 판단을 넘긴다.
+     * 4. 후보 0개 → [SelectorBranchResult.OutOfScope] (권한 범위 밖).
+     *
+     * `expand` 를 화이트리스트 판정에 쓰지 말라는 [BranchCodeExpander] 의 원칙과 충돌하지 않는다 —
+     * 여기서는 **권한 판정이 아니라** 이미 권한 필터를 통과한 거래처의 표기용 지점 귀속을 구할 뿐이고,
+     * 3·4번이 fail-safe 를 담당한다. 조회 스코프는 여전히 [resolveScope] / [DataScope] 가 강제한다.
+     *
+     * @return 입력 코드 → 역산 결과. 입력이 null/blank 인 항목은 결과 map 에 포함하지 않는다.
+     */
+    fun resolveSelectorBranches(
+        principal: WebUserPrincipal,
+        profile: BranchScopeProfile,
+        accountBranchCodes: Collection<String?>,
+    ): Map<String, SelectorBranchResult> {
+        val targets = accountBranchCodes.filterNotNull().filter { it.isNotBlank() }.toSet()
+        if (targets.isEmpty()) return emptyMap()
+
+        val options = resolveBranches(principal, profile)
+        if (options.isEmpty()) return targets.associateWith { SelectorBranchResult.OutOfScope }
+
+        val exactByCode = options.associateBy { it.branchCode }
+        val expandedByCode = options.associate { it.branchCode to branchCodeExpander.expand(setOf(it.branchCode)) }
+
+        return targets.associateWith { code ->
+            val exact = exactByCode[code]
+            if (exact != null) {
+                SelectorBranchResult.Resolved(exact.branchCode, exact.branchName)
+            } else {
+                val candidates = options.filter { code in expandedByCode.getValue(it.branchCode) }
+                when (candidates.size) {
+                    0 -> SelectorBranchResult.OutOfScope
+                    1 -> SelectorBranchResult.Resolved(candidates[0].branchCode, candidates[0].branchName)
+                    else -> SelectorBranchResult.Ambiguous
+                }
+            }
+        }
+    }
+
+    /** 단건 편의 오버로드 — 거래처 1건만 역산할 때. @see resolveSelectorBranches */
+    fun resolveSelectorBranch(
+        principal: WebUserPrincipal,
+        profile: BranchScopeProfile,
+        accountBranchCode: String?,
+    ): SelectorBranchResult =
+        resolveSelectorBranches(principal, profile, listOf(accountBranchCode))[accountBranchCode]
+            ?: SelectorBranchResult.OutOfScope
 
     /**
      * 전환 이전 동작 재현.

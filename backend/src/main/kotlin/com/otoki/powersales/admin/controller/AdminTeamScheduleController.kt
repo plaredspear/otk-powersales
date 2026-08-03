@@ -1,6 +1,10 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.SelectorBranchResult
+import com.otoki.powersales.admin.service.BranchScopeGateway
+import com.otoki.powersales.admin.service.BranchScopeProfile
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyScheduleWithSummaryDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleAccountDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleFormDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleMassDeleteResponse
@@ -24,7 +28,41 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/admin/team-schedule")
 class AdminTeamScheduleController(
     private val adminTeamScheduleService: AdminTeamScheduleService,
+    private val branchScopeGateway: BranchScopeGateway,
 ) {
+
+    /**
+     * 거래처 전사 검색 — 지점을 고르기 전에 거래처명/코드로 먼저 찾는 경로.
+     *
+     * 이 화면의 지점 셀렉터는 **단일 선택**이라, 화면은 검색 결과에서 고른 거래처의
+     * `selectorBranchCode` 로 지점을 전환한 뒤 `/form` 을 다시 받는다. 이미 다른 지점의 거래처를
+     * 고른 상태라면 화면이 선택을 차단한다(여러 지점의 거래처가 섞이지 않게).
+     *
+     * 응답의 지점 역산은 셀렉터(`/branches`) 와 같은 출처([BranchScopeProfile.DASHBOARD] — 전사 34개 /
+     * 비전사 조직 트리) 로 계산해, 내려준 코드를 그대로 셀렉터에 넣을 수 있게 한다.
+     */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/accounts/search")
+    fun searchAccounts(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(required = false) keyword: String?,
+    ): ResponseEntity<ApiResponse<List<TeamScheduleAccountDto>>> {
+        val accounts = adminTeamScheduleService.searchAccounts(principal, keyword)
+        val resolved = branchScopeGateway.resolveSelectorBranches(
+            principal,
+            BranchScopeProfile.DASHBOARD,
+            accounts.map { it.branchCode },
+        )
+        val result = accounts.map { account ->
+            val selectorBranch = resolved[account.branchCode] ?: SelectorBranchResult.OutOfScope
+            account.copy(
+                selectorBranchCode = selectorBranch.branchCode,
+                selectorBranchName = selectorBranch.branchName,
+                selectorBranchStatus = selectorBranch.status,
+            )
+        }
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/branches")

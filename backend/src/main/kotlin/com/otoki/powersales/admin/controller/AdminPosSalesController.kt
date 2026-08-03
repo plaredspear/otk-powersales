@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.SelectorBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.BranchScopeGateway
 import com.otoki.powersales.admin.service.BranchScopeProfile
@@ -48,25 +49,33 @@ class AdminPosSalesController(
     private val branchScopeGateway: BranchScopeGateway,
 ) {
 
-    /** 1단 — 조건에 맞는 거래처 목록 조회 (외부 POS DB 미접촉). 지점/거래처명/유통형태/거래처유형 필터. */
+    /**
+     * 1단 — 조건에 맞는 거래처 목록 조회 (외부 POS DB 미접촉). 지점/거래처명/유통형태/거래처유형 필터.
+     *
+     * `costCenterCodes` 는 **선택**이다 — 거래처명만으로도 검색할 수 있게 해 "지점을 먼저 골라야
+     * 거래처를 고를 수 있다" 는 선행 강제를 없앤다. 대신 응답 각 행에 지점 셀렉터 역산 결과를 실어,
+     * 화면이 고른 거래처들의 지점을 체크박스에 자동 반영한다.
+     */
     @RequiresSfPermission(entity = SALES_DASHBOARD_RESOURCE, operation = SfPermissionOperation.READ)
     @GetMapping("/accounts")
     fun getAccounts(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
-        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) costCenterCodes: List<String>?,
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false) distributionChannels: List<String>?,
         @RequestParam(required = false) accountTypes: List<String>?,
     ): ResponseEntity<ApiResponse<PosSalesAccountListResponse>> {
+        val selectedCodes = costCenterCodes?.filter { it.isNotBlank() } ?: emptyList()
         val request = PosSalesAccountListRequest(
-            costCenterCodes = codesOf(principal, costCenterCodes),
+            // 미선택은 빈 목록 그대로 전달 — 서비스가 "지점 필터 없음" 으로 해석한다 (권한은 DataScope 가 가드).
+            costCenterCodes = if (selectedCodes.isEmpty()) emptyList() else codesOf(principal, selectedCodes),
             customerKeyword = customerKeyword,
             distributionChannels = distributionChannels ?: emptyList(),
             accountTypes = accountTypes ?: emptyList(),
         )
         val response = queryService.getAccounts(scopeOf(principal, scope), request)
-        return ResponseEntity.ok(ApiResponse.success(response))
+        return ResponseEntity.ok(ApiResponse.success(withSelectorBranch(principal, response)))
     }
 
     /** 2단 — 선택 거래처별 POS매출 명세. 기간(일 단위, 최대 31일) + 제품/분류 필터 + 페이징 + 정렬. */
@@ -162,4 +171,32 @@ class AdminPosSalesController(
     private fun codesOf(principal: WebUserPrincipal, costCenterCodes: List<String>): List<String> =
         branchScopeGateway.resolveQueryCodes(principal, costCenterCodes, BranchScopeProfile.SALES)
 
+    /**
+     * 거래처 → 지점 셀렉터 역산 결과를 1단 응답에 부착 (목록 1회당 gateway 1회 호출).
+     *
+     * 거래처의 `branchCode` 는 상위 조직/별칭 코드로 적재돼 있을 수 있어 셀렉터 옵션값과 그대로
+     * 일치하지 않는다. 매핑은 `BranchMapping` 캐시를 가진 서버만 풀 수 있으므로 여기서 해소해
+     * 화면에는 바로 쓸 수 있는 코드로 내려준다. 후보가 둘 이상이거나(롤업) 권한 밖이면 코드 없이
+     * 상태만 내려 화면이 자동 선택 대신 안내하도록 한다.
+     */
+    private fun withSelectorBranch(
+        principal: WebUserPrincipal,
+        response: PosSalesAccountListResponse,
+    ): PosSalesAccountListResponse {
+        val resolved = branchScopeGateway.resolveSelectorBranches(
+            principal,
+            BranchScopeProfile.SALES,
+            response.items.map { it.branchCode },
+        )
+        return response.copy(
+            items = response.items.map { item ->
+                val result = resolved[item.branchCode] ?: SelectorBranchResult.OutOfScope
+                item.copy(
+                    selectorBranchCode = result.branchCode,
+                    selectorBranchName = result.branchName,
+                    selectorBranchStatus = result.status,
+                )
+            },
+        )
+    }
 }

@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.SelectorBranchResult
+import com.otoki.powersales.admin.service.BranchScopeGateway
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory2
 import com.otoki.powersales.platform.common.enums.WorkingType
@@ -52,10 +54,54 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminTeamScheduleService: AdminTeamScheduleService
+    @MockkBean private lateinit var branchScopeGateway: BranchScopeGateway
 
     @BeforeEach
     fun setUpLeaderPrincipal() {
         authenticateAsAdmin(role = AppAuthority.LEADER, costCenterCode = "1234")
+        // 거래처 → 지점 역산 — 입력 코드가 곧 셀렉터 코드인 단순 stub.
+        every { branchScopeGateway.resolveSelectorBranches(any(), any(), any()) } answers {
+            thirdArg<Collection<String?>>()
+                .filterNotNull()
+                .associateWith { SelectorBranchResult.Resolved(it, "지점$it") }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/team-schedule/accounts/search - 거래처 전사 검색")
+    inner class SearchAccounts {
+
+        @Test
+        @DisplayName("성공 - 거래처와 함께 전환 대상 지점 코드를 반환")
+        fun searchAccounts_success() {
+            every { adminTeamScheduleService.searchAccounts(any(), "이마트") } returns listOf(
+                TeamScheduleAccountDto(
+                    accountId = 1L,
+                    externalKey = "A100",
+                    name = "이마트 강남점",
+                    branchCode = "5460",
+                    branchName = "강남유통지점",
+                ),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/team-schedule/accounts/search").param("keyword", "이마트"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data[0].accountId").value(1))
+                .andExpect(jsonPath("$.data[0].branchCode").value("5460"))
+                // 화면이 지점 셀렉터를 이 코드로 전환한다.
+                .andExpect(jsonPath("$.data[0].selectorBranchCode").value("5460"))
+                .andExpect(jsonPath("$.data[0].selectorBranchStatus").value("RESOLVED"))
+        }
+
+        @Test
+        @DisplayName("키워드 미지정 - 빈 목록 (전건 반환 방지)")
+        fun searchAccounts_noKeyword() {
+            every { adminTeamScheduleService.searchAccounts(any(), null) } returns emptyList()
+
+            mockMvc.perform(get("/api/v1/admin/team-schedule/accounts/search"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data").isEmpty)
+        }
     }
 
     @Nested

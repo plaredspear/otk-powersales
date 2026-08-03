@@ -3,7 +3,7 @@ import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
-import type { TeamSchedule } from '@/api/team-schedule';
+import type { TeamSchedule, TeamScheduleAccount } from '@/api/team-schedule';
 import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
 import { ScheduleCalendar, type CalendarView } from './components/ScheduleCalendar';
 import { DayScheduleListModal } from './components/DayScheduleListModal';
@@ -53,12 +53,17 @@ export default function SchedulePage() {
     setSelectedPromotionTeams(teams);
   }, [markUserTouched]);
 
+  // 거래처를 먼저 골라 지점을 전환한 경우, 새 지점의 거래처 목록이 도착하면 자동 체크할 대상.
+  const [pendingAccountId, setPendingAccountId] = useState<number | null>(null);
+
   const handleBranchCodeChange = useCallback((code: string) => {
     setSelectedBranchCode(code);
     // 지점이 바뀌면 거래처 목록 자체가 달라지므로 staging + applied 선택 모두 초기화.
     // applied 를 비우지 않으면 이전 지점의 accountId 로 schedules fetch 가 트리거됨.
     setSelectedAccountIds([]);
     setAppliedAccountIds([]);
+    // 사용자가 지점을 직접 바꿨다면 거래처 검색으로 예약된 자동 체크는 무효.
+    setPendingAccountId(null);
   }, []);
 
   const handleFilterTabChange = useCallback((tab: FilterTab) => {
@@ -106,10 +111,63 @@ export default function SchedulePage() {
   // 해당 지점 거래처 + dailySummary 가 즉시 갱신된다. 단일지점 사용자는 selectedBranchCode 가
   // 빈 문자열이라 backend 가 본인 지점을 자동 사용.
   const { data: form, isLoading: isFormLoading } = useTeamScheduleForm(selectedBranchCode || undefined);
-  const branches = form?.branches ?? [];
+  // branches / accounts 는 아래 콜백·effect 의 deps 에 들어가므로 identity 를 고정한다
+  // (`?? []` 를 그대로 쓰면 매 렌더 새 배열이라 거래처 자동 체크 effect 가 무한 재실행된다).
+  const branches = useMemo(() => form?.branches ?? [], [form]);
   const members = form?.members ?? [];
   const promotionTeams = form?.professionalPromotionTeams ?? [];
-  const accounts = form?.accounts ?? [];
+  const accounts = useMemo(() => form?.accounts ?? [], [form]);
+
+  /**
+   * 거래처 먼저 찾기 — 검색 결과에서 고른 거래처의 지점으로 셀렉터를 전환한다.
+   *
+   * 이 화면의 지점 셀렉터는 **단일 선택**이라 여러 지점의 거래처가 섞일 수 없다. 따라서 이미 다른
+   * 지점이 적용된 상태면 전환하지 않고 차단 안내만 한다 (지점을 바꾸려면 사용자가 셀렉터를 직접
+   * 바꿔 기존 선택을 비우는 흐름 — [handleBranchCodeChange]). 같은 지점이면 그 자리에서 체크만 추가.
+   */
+  const handleAccountPicked = useCallback(
+    (account: TeamScheduleAccount) => {
+      const targetCode = account.selectorBranchCode;
+      if (account.selectorBranchStatus !== 'RESOLVED' || !targetCode) {
+        message.warning(
+          account.selectorBranchStatus === 'AMBIGUOUS'
+            ? `${account.name}의 지점을 자동으로 특정할 수 없습니다. 지점을 직접 선택해주세요.`
+            : `${account.name}의 지점이 조회 권한 범위 밖입니다.`,
+        );
+        return;
+      }
+      if (!selectedBranchCode) {
+        // 지점 미선택 → 이 거래처의 지점으로 전환하고, 목록이 도착하면 자동 체크한다.
+        setSelectedBranchCode(targetCode);
+        setPendingAccountId(account.accountId);
+        return;
+      }
+      if (selectedBranchCode !== targetCode) {
+        const currentName =
+          branches.find((b) => b.branchCode === selectedBranchCode)?.branchName ?? '선택된';
+        message.warning(
+          `현재 ${currentName} 거래처만 선택할 수 있습니다. 다른 지점의 거래처를 고르려면 지점 선택을 먼저 바꿔주세요.`,
+        );
+        return;
+      }
+      markUserTouched();
+      setSelectedAccountIds((prev) =>
+        prev.includes(account.accountId) ? prev : [...prev, account.accountId],
+      );
+    },
+    [selectedBranchCode, branches, markUserTouched],
+  );
+
+  // 지점 전환으로 새 거래처 목록이 도착하면, 검색으로 고른 거래처를 체크한 뒤 예약을 해제한다.
+  useEffect(() => {
+    if (pendingAccountId == null) return;
+    if (!accounts.some((a) => a.accountId === pendingAccountId)) return;
+    markUserTouched();
+    setSelectedAccountIds((prev) =>
+      prev.includes(pendingAccountId) ? prev : [...prev, pendingAccountId],
+    );
+    setPendingAccountId(null);
+  }, [pendingAccountId, accounts, markUserTouched]);
 
   // 캘린더 요약은 월/지점 단위 조회 결과 (data.dailySummary) 를 우선 사용.
   // 첫 응답 도착 전(data 없음)에는 form 의 현재 월 요약을 fallback 으로 표시.
@@ -208,6 +266,7 @@ export default function SchedulePage() {
           onSelectedAccountIdsChange={handleAccountIdsChange}
           selectedBranchCode={selectedBranchCode}
           onSelectedBranchCodeChange={handleBranchCodeChange}
+          onAccountPicked={handleAccountPicked}
           selectedPromotionTeams={selectedPromotionTeams}
           onSelectedPromotionTeamsChange={handlePromotionTeamsChange}
           onApply={handleApplyFilter}

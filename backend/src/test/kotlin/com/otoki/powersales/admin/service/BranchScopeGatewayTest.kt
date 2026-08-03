@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
+import com.otoki.powersales.admin.dto.SelectorBranchResult
 import com.otoki.powersales.admin.tools.branchscope.BranchScopeMode
 import com.otoki.powersales.admin.tools.branchscope.service.BranchScopeModeStore
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
@@ -275,6 +276,87 @@ class BranchScopeGatewayTest {
 
             mode(BranchScopeMode.UNIFIED)
             assertThat(gateway.applyDataScope(admin, scope)).isEqualTo(scope)
+        }
+    }
+
+    /**
+     * 거래처 → 지점 셀렉터 역산 — "지점 먼저 선택" 선행 강제를 뒤집는 경로.
+     *
+     * 확장([BranchCodeExpander]) 에는 별칭뿐 아니라 롤업이 섞여 있어 후보가 둘 이상 나올 수 있다.
+     * 그 경우 자동 선택하지 않고 화면에 판단을 넘기는 fail-safe 를 고정한다.
+     */
+    @Nested
+    @DisplayName("거래처 → 지점 셀렉터 역산")
+    inner class SelectorBranchReverseLookup {
+
+        @Test
+        @DisplayName("정확 일치 - 셀렉터 옵션과 같은 코드면 그대로 확정")
+        fun exactMatch() {
+            mode(BranchScopeMode.UNIFIED)
+
+            val result = gateway.resolveSelectorBranch(principal, BranchScopeProfile.DASHBOARD, "5827")
+
+            assertThat(result).isEqualTo(SelectorBranchResult.Resolved("5827", "인천2지점"))
+        }
+
+        @Test
+        @DisplayName("확장 포함 1후보 - 상위/별칭 코드로 적재된 거래처도 지점이 확정된다")
+        fun singleCandidateViaExpansion() {
+            mode(BranchScopeMode.UNIFIED)
+            every { branchCodeExpander.expand(setOf("5827")) } returns setOf("5827", "E5827")
+
+            val result = gateway.resolveSelectorBranch(principal, BranchScopeProfile.DASHBOARD, "E5827")
+
+            assertThat(result).isEqualTo(SelectorBranchResult.Resolved("5827", "인천2지점"))
+        }
+
+        @Test
+        @DisplayName("롤업으로 후보 2건 - 자동 선택하지 않고 Ambiguous (엉뚱한 지점 선택 방지)")
+        fun ambiguousWhenRollupOverlaps() {
+            mode(BranchScopeMode.UNIFIED)
+            every { branchCodeExpander.expand(setOf("5826")) } returns setOf("5826", "5452")
+            every { branchCodeExpander.expand(setOf("5827")) } returns setOf("5827", "5452")
+
+            val result = gateway.resolveSelectorBranch(principal, BranchScopeProfile.DASHBOARD, "5452")
+
+            assertThat(result).isEqualTo(SelectorBranchResult.Ambiguous)
+        }
+
+        @Test
+        @DisplayName("셀렉터 어디에도 없는 코드 - OutOfScope (권한 범위 밖 거래처)")
+        fun outOfScope() {
+            mode(BranchScopeMode.UNIFIED)
+
+            assertThat(gateway.resolveSelectorBranch(principal, BranchScopeProfile.DASHBOARD, "9999"))
+                .isEqualTo(SelectorBranchResult.OutOfScope)
+        }
+
+        @Test
+        @DisplayName("null / blank - 역산 대상이 아니므로 OutOfScope, 다건 조회 결과에도 미포함")
+        fun blankCodesExcluded() {
+            mode(BranchScopeMode.UNIFIED)
+
+            assertThat(gateway.resolveSelectorBranch(principal, BranchScopeProfile.DASHBOARD, null))
+                .isEqualTo(SelectorBranchResult.OutOfScope)
+            assertThat(gateway.resolveSelectorBranches(principal, BranchScopeProfile.DASHBOARD, listOf(null, "")))
+                .isEmpty()
+        }
+
+        @Test
+        @DisplayName("다건 - 거래처 코드별 결과를 한 번에 반환 (셀렉터 조회 1회)")
+        fun batchLookup() {
+            mode(BranchScopeMode.UNIFIED)
+
+            val result = gateway.resolveSelectorBranches(
+                principal,
+                BranchScopeProfile.DASHBOARD,
+                listOf("5826", "5828", "9999", "5826"),
+            )
+
+            assertThat(result).containsOnlyKeys("5826", "5828", "9999")
+            assertThat(result["5826"]).isEqualTo(SelectorBranchResult.Resolved("5826", "인천1지점"))
+            assertThat(result["5828"]).isEqualTo(SelectorBranchResult.Resolved("5828", "인천3지점"))
+            assertThat(result["9999"]).isEqualTo(SelectorBranchResult.OutOfScope)
         }
     }
 

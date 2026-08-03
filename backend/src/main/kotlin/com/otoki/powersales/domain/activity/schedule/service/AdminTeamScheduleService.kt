@@ -100,10 +100,49 @@ class AdminTeamScheduleService(
         }
         val expandedBranchCodes = branchCodeExpander.expand(setOf(effectiveBranchCode))
         return accountRepository.findByBranchCodeInAndAccountGroupIn(
-            expandedBranchCodes, listOf("1010", "1000")
+            expandedBranchCodes, ACCOUNT_GROUPS
         )
             .filter { it.isDeleted != true }
             .sortedWith(compareBy(nullsLast()) { it.name })
+            .map { TeamScheduleAccountDto.from(it) }
+    }
+
+    /**
+     * 여사원 일정관리 거래처 **전사 검색** — 지점을 고르기 전에 거래처명/코드로 먼저 찾는 경로.
+     *
+     * 이 화면의 거래처 목록([getAccounts])은 지점 1건에 종속이라, 다중지점 사용자는 지점을 먼저
+     * 고르지 않으면 거래처가 0건이었다. 운영자가 실제로 아는 것은 거래처명이므로, 셀렉터에 노출되는
+     * **모든 지점**을 대상으로 검색해 거래처를 먼저 고를 수 있게 한다. 화면은 고른 거래처의 지점으로
+     * 셀렉터를 전환한 뒤 [getForm] 을 다시 받아 그 거래처를 체크한다.
+     *
+     * 조회 조건은 [getAccounts] 와 **동일**하게 유지한다 (`accountGroup ∈ {1010,1000}` + 미삭제).
+     * 조건이 어긋나면 검색으로는 잡히는데 지점 전환 후 목록에는 없는 거래처가 생긴다.
+     * 대상 지점 집합도 셀렉터([getBranches]) 와 같은 출처라 권한 범위를 넓히지 않는다
+     * (지점별 [getAccounts] 결과의 합집합과 동일 — `expand` 는 합집합에 분배된다).
+     *
+     * @param keyword 거래처명 또는 거래처코드(externalKey) 부분 일치. 공백이면 빈 목록.
+     * @param limit 응답 상한 — 셀렉터 드롭다운용이라 전건을 내리지 않는다.
+     */
+    fun searchAccounts(
+        principal: WebUserPrincipal,
+        keyword: String?,
+        limit: Int = ACCOUNT_SEARCH_LIMIT,
+    ): List<TeamScheduleAccountDto> {
+        val trimmed = keyword?.trim().orEmpty()
+        if (trimmed.isBlank()) return emptyList()
+        val branchCodes = getBranches(principal).map { it.branchCode }
+        if (branchCodes.isEmpty()) return emptyList()
+
+        return accountRepository.findByBranchCodeInAndAccountGroupIn(
+            branchCodeExpander.expand(branchCodes), ACCOUNT_GROUPS
+        )
+            .filter { it.isDeleted != true }
+            .filter { account ->
+                account.name?.contains(trimmed, ignoreCase = true) == true ||
+                    account.externalKey?.contains(trimmed, ignoreCase = true) == true
+            }
+            .sortedWith(compareBy(nullsLast()) { it.name })
+            .take(limit)
             .map { TeamScheduleAccountDto.from(it) }
     }
 
@@ -501,5 +540,14 @@ class AdminTeamScheduleService(
 
         /** Spec #691 P1-B — mass-delete endpoint 의 row 상한 (legacy VF page client-side 100건 차단 동등 server-side) */
         const val MAX_MASS_DELETE_ROWS = 100
+
+        /**
+         * 본 화면이 다루는 거래처 그룹 (SF 정합) — 지점별 목록([getAccounts])과 전사 검색
+         * ([searchAccounts]) 이 **같은 값을 써야** 검색 결과와 목록이 어긋나지 않는다.
+         */
+        private val ACCOUNT_GROUPS = listOf("1010", "1000")
+
+        /** 거래처 전사 검색 응답 상한 — 드롭다운 후보용이라 전건을 내리지 않는다. */
+        private const val ACCOUNT_SEARCH_LIMIT = 50
     }
 }

@@ -8363,6 +8363,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListTeamScheduleAccountDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamScheduleAccountDto"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListThemeResponse" : {
         "properties" : {
           "data" : {
@@ -22136,6 +22164,15 @@
           },
           "sapAccountCode" : {
             "type" : [ "string", "null" ]
+          },
+          "selectorBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "selectorBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "selectorBranchStatus" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -27165,10 +27202,25 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
           "externalKey" : {
             "type" : "string"
           },
           "name" : {
+            "type" : "string"
+          },
+          "selectorBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "selectorBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "selectorBranchStatus" : {
             "type" : "string"
           }
         },
@@ -38427,7 +38479,7 @@
         }, {
           "in" : "query",
           "name" : "costCenterCodes",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "items" : {
               "type" : "string"
@@ -42107,6 +42159,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseTeamScheduleCreateResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/team-schedule/accounts/search" : {
+      "get" : {
+        "operationId" : "searchAccounts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
                 }
               }
             },
