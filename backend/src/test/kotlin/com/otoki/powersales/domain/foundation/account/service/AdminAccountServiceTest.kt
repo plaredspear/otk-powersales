@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
@@ -19,6 +20,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -262,6 +264,12 @@ class AdminAccountServiceTest {
 
         private val principal: WebUserPrincipal = mockk()
 
+        @BeforeEach
+        fun stubNonTeam2Principal() {
+            // 기본은 일반 지점 사용자 — 영업지원2팀(4889) 전 지점 예외에 걸리지 않는다.
+            every { principal.costCenterCode } returns "5832"
+        }
+
         @Test
         @DisplayName("지점 화이트리스트 → BranchCodeExpander 확장 → branch_code IN 매칭, buildPredicate 미호출")
         fun myBranchScopeUsesBranchCodeIn() {
@@ -334,12 +342,10 @@ class AdminAccountServiceTest {
         }
 
         @Test
-        @DisplayName("영업지원2팀(4889) → 전사 예외 제거, 본인 지점(4889) 화이트리스트만 적용")
-        fun salesSupportTeam2UsesOwnBranchScope() {
-            // 영업지원2팀도 다른 지점과 동일 — resolveBranches 가 본인 지점만 반환 (2026-08-02)
-            every { womenScheduleBranchResolver.resolveBranches(principal) } returns
-                listOf(BranchResponse(branchCode = "4889", branchName = "영업지원2팀"))
-            every { branchCodeExpander.expand(setOf("4889")) } returns setOf("4889")
+        @DisplayName("영업지원2팀(4889) → 지점 제한 없이 전 지점 거래처, resolveBranches/expand 미호출")
+        fun salesSupportTeam2LooksUpAllBranches() {
+            // 전 지점 행사를 대행 등록하므로 거래처 lookup 만 전 지점으로 연다 (2026-08-03).
+            every { principal.costCenterCode } returns SalesSupportTeam2Policy.ORG_CODE
 
             val composedSlot = slot<Predicate>()
             every {
@@ -361,12 +367,43 @@ class AdminAccountServiceTest {
                 null, null, null, null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // 확장 결과가 1건이면 QueryDSL 이 IN 을 `=` 로 렌더링한다.
-            assertThat(composedSlot.captured.toString()).contains("account.branchCode = 4889")
-            verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(principal) }
-            verify(exactly = 1) { branchCodeExpander.expand(setOf("4889")) }
-            // sharing policy(owner/hierarchy) 경로는 타지 않음
+            // 지점 제한 predicate 미포함 (전 지점) — branch_code IN / false predicate 아님
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode")
+            // 지점 화이트리스트 산출/확장 경로는 타지 않음
+            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            // sharing policy(owner/hierarchy) 경로도 아님
             verify(exactly = 0) { policyEvaluator.buildPredicate(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("영업지원2팀 전 지점 예외 + branchCode request param → 선택 지점으로는 좁혀진다")
+        fun salesSupportTeam2StillHonorsRequestedBranch() {
+            every { principal.costCenterCode } returns SalesSupportTeam2Policy.ORG_CODE
+
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                DataScope(branchCodes = emptyList(), isAllBranches = false),
+                null, null, listOf("A001"), null, 0, 20, myBranchScopePrincipal = principal
+            )
+
+            // 가시성은 전 지점이지만, 화면이 지점을 고르면 그 필터는 그대로 AND 합성된다.
+            assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
+            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
         }
 
         @Test

@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
@@ -136,12 +137,19 @@ class AdminAccountService(
      * ([AdminTeamScheduleService.getAccounts]) 와 동일 계열. `AccountGroup__c IN (1000,1010)` 행사필터는
      * [getAccounts] 의 `applyPromotionFilter` 가 별도 적용.
      *
-     * 영업지원2팀 예외는 2026-08-02 제거됐다 — 다른 지점과 동일하게 본인 지점 스코프만 조회한다
-     * ([com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]).
+     * 영업지원2팀 예외: 로그인 사용자가 [SalesSupportTeam2Policy.isAllBranchAccountLookup] 대상이면
+     * 지점 제한을 걸지 않고 전 지점 거래처를 반환한다 (2026-08-03 요구 — 전 지점 행사를 대행 등록하므로
+     * 본인 지점 거래처만으로는 업무가 성립하지 않는다). 이 경우에도 `applyPromotionFilter` / 폐업 제외 등
+     * 다른 필터는 그대로 적용되어 "행사 등록 가능한 전체 거래처" 만 남는다. 예외는 **본 거래처 lookup 한정**
+     * — 거래처 관리 목록·상세, 행사사원 후보 등 다른 화면은 종전대로 본인 지점 스코프다
+     * ([SalesSupportTeam2Policy] 의 스코프 요약 표 참조).
      *
      * 화이트리스트가 비면 매칭 0건 (지점 미보유 사용자).
      */
     private fun myBranchScopePredicate(principal: WebUserPrincipal): Predicate {
+        if (SalesSupportTeam2Policy.isAllBranchAccountLookup(principal.costCenterCode)) {
+            return Expressions.asBoolean(true).isTrue
+        }
         val allowedBranchCodes = womenScheduleBranchResolver.resolveBranches(principal)
             .mapNotNull { it.branchCode }
             .toSet()
