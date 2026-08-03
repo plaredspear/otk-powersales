@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountUpdateRequest
@@ -50,18 +51,49 @@ class AdminAccountController(
 ) {
 
     /**
+     * 영업지원2팀 거래처 조회 예외 — 지점 축만 전사로 바꾼 principal 사본
+     * ([SalesSupportTeam2Policy.isAllBranchAccountLookup], 2026-08-03 요구).
+     *
+     * 영업지원2팀은 전 지점 거래처를 다루지만 `isSalesSupport = false`(2026-08-02) 라 지점 리졸버가
+     * 본인 조직(4889) 1건만 산출한다. 거래처 화면 **진입점에서만** 전사 플래그를 세운 사본을 만들어
+     * 기존 전사 경로(셀렉터 = 조직 전건, 판정 = 전건)를 그대로 재사용한다. 사본은 이 요청 처리 안에서만
+     * 쓰이고 저장/전파되지 않으므로 다른 화면(대시보드·여사원 현황·행사사원 후보 등) 의 스코프는 그대로다.
+     */
+    private fun accountScopePrincipal(principal: WebUserPrincipal): WebUserPrincipal =
+        if (SalesSupportTeam2Policy.isAllBranchAccountLookup(principal.costCenterCode)) {
+            principal.copy(isSalesSupport = true)
+        } else {
+            principal
+        }
+
+    /**
+     * 영업지원2팀 거래처 조회 예외의 가시성 축 — sharing policy 가 보는 [DataScope] 를 전 지점으로 교체.
+     *
+     * 지점 셀렉터/필터([accountScopePrincipal])와 별개 축이다. SF Sharing Rule evaluator 는
+     * `isAllBranches = true` 를 "지점 제한 없음" 으로 해석해 우선순위 5(legacy branchCodes) 를 통과시킨다
+     * — Account 는 OWD Private 이라 이 축을 열지 않으면 owner 불일치로 전부 누락된다.
+     * RecordType 가시성(우선순위 7) 은 그대로 AND 로 남는다.
+     */
+    private fun accountDataScope(principal: WebUserPrincipal, scope: DataScope): DataScope =
+        if (SalesSupportTeam2Policy.isAllBranchAccountLookup(principal.costCenterCode)) {
+            scope.copy(branchCodes = emptyList(), isAllBranches = true)
+        } else {
+            scope
+        }
+
+    /**
      * 거래처 화면 지점 셀렉터 옵션 — [BranchScopeGateway] + [BranchScopeProfile.ORG_WIDE]
      * (전사 권한자는 조직 전건, 그 외는 본인 costCenterCode 의 조직 트리).
      *
      * 이 목록이 곧 [getAccounts] 의 지점 판정 화이트리스트다 — 셀렉터에 보이는 지점은 그대로 조회되고,
-     * 밖의 지점을 요청하면 0건이다(IDOR 차단).
+     * 밖의 지점을 요청하면 0건이다(IDOR 차단). 영업지원2팀은 [accountScopePrincipal] 로 전사 목록을 본다.
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = branchScopeGateway.resolveBranches(principal, BranchScopeProfile.ORG_WIDE)
+        val result = branchScopeGateway.resolveBranches(accountScopePrincipal(principal), BranchScopeProfile.ORG_WIDE)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -80,14 +112,16 @@ class AdminAccountController(
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val scopePrincipal = accountScopePrincipal(principal)
         val response = adminAccountService.getAccounts(
             // 지점 축은 셀렉터([getBranches]) 와 같은 출처로 넓힌다 — 비전사 사용자의 DataScope 지점 축은
             // 본인 코드 1건이라, 셀렉터의 하위 지점을 골라도 sharing policy 에서 탈락해 0건이 됐다.
-            scope = branchScopeGateway.applyDataScope(principal, scope),
+            // 영업지원2팀은 [accountDataScope] 가 이미 전 지점으로 바꿔 두므로 widen 은 no-op 이다.
+            scope = branchScopeGateway.applyDataScope(scopePrincipal, accountDataScope(principal, scope)),
             keyword = keyword,
             abcType = abcType,
             branchCodes = branchScopeGateway
-                .resolveScope(principal, branchCode, BranchScopeProfile.ORG_WIDE)
+                .resolveScope(scopePrincipal, branchCode, BranchScopeProfile.ORG_WIDE)
                 .queryCodesOrNull(),
             accountStatusName = accountStatusName,
             page = page,
@@ -308,6 +342,9 @@ class AdminAccountController(
      *
      * 목록(`getAccounts`)과 동일한 `account.READ` + SF Sharing Rule 정책 적용. 가시 범위 밖 거래처는
      * 404 (SF sharing rule 동등). lookup 경로(`/lookup*`)와 path 충돌 없음 (`{id}` 는 Int).
+     *
+     * 가시 범위는 목록과 같은 축([accountDataScope])을 쓴다 — 목록에 보이는 행을 클릭했는데 상세가
+     * 404 가 되는 불일치를 막는다 (영업지원2팀 전 지점 예외 포함).
      */
     @GetMapping("/{id}")
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
@@ -316,7 +353,7 @@ class AdminAccountController(
         @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<AccountDetailResponse>> {
-        val response = adminAccountService.getAccountDetail(scope, id)
+        val response = adminAccountService.getAccountDetail(accountDataScope(principal, scope), id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

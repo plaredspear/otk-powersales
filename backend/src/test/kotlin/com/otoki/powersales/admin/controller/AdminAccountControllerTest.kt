@@ -21,8 +21,12 @@ import com.otoki.powersales.admin.dto.BranchScopeResult
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
+import org.assertj.core.api.Assertions.assertThat
 import tools.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -35,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.slot
 import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
@@ -178,6 +183,91 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("영업지원2팀(4889) 거래처 조회 전 지점 예외")
+    inner class SalesSupportTeam2AccountScope {
+
+        /** 영업지원2팀 소속으로 로그인 — 지점 코드만 다르고 나머지는 기본 stub 과 동일. */
+        private fun authenticateAsTeam2() = authenticateAsAdmin(
+            role = AppAuthority.BRANCH_MANAGER,
+            costCenterCode = SalesSupportTeam2Policy.ORG_CODE,
+        )
+
+        /** 비전사 사용자의 DataScope — 본인 지점 1건 (전 지점 전환 여부를 관찰하기 위한 출발점). */
+        private fun stubOwnBranchDataScope(branchCode: String = SalesSupportTeam2Policy.ORG_CODE) {
+            every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns
+                DataScope(branchCodes = listOf(branchCode), isAllBranches = false)
+        }
+
+        private fun emptyListResponse() =
+            AccountListResponse(content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0)
+
+        @Test
+        @DisplayName("지점 셀렉터 - 전사 principal 사본으로 게이트웨이를 호출한다 (조직 전건 목록)")
+        fun branches_useAllBranchPrincipal() {
+            authenticateAsTeam2()
+            val principalSlot = slot<WebUserPrincipal>()
+            every { branchScopeGateway.resolveBranches(capture(principalSlot), any()) } returns emptyList()
+
+            mockMvc.perform(get("/api/v1/admin/accounts/branches")).andExpect(status().isOk)
+
+            assertThat(principalSlot.captured.isSalesSupport).isTrue()
+            // 원본 principal 은 그대로 — 사본만 전사로 바뀐다 (다른 화면 스코프 무영향).
+            assertThat(principalSlot.captured.costCenterCode).isEqualTo(SalesSupportTeam2Policy.ORG_CODE)
+        }
+
+        @Test
+        @DisplayName("목록 - DataScope 를 전 지점(isAllBranches=true)으로 바꿔 서비스에 넘긴다")
+        fun list_widensDataScopeToAllBranches() {
+            authenticateAsTeam2()
+            stubOwnBranchDataScope()
+            val scopeSlot = slot<DataScope>()
+            every {
+                adminAccountService.getAccounts(capture(scopeSlot), any(), any(), any(), any(), any(), any(), any())
+            } returns emptyListResponse()
+
+            mockMvc.perform(get("/api/v1/admin/accounts")).andExpect(status().isOk)
+
+            // Account 는 OWD Private 이라 이 축을 열지 않으면 owner 불일치로 전부 누락된다.
+            assertThat(scopeSlot.captured.isAllBranches).isTrue()
+            assertThat(scopeSlot.captured.branchCodes).isEmpty()
+        }
+
+        @Test
+        @DisplayName("상세 - 목록과 동일한 전 지점 스코프로 조회한다 (목록엔 보이는데 상세 404 방지)")
+        fun detail_usesSameAllBranchScope() {
+            authenticateAsTeam2()
+            stubOwnBranchDataScope()
+            val scopeSlot = slot<DataScope>()
+            every { adminAccountService.getAccountDetail(capture(scopeSlot), eq(7L)) } returns
+                AccountDetailResponse.from(Account(id = 7, name = "GS25 역삼점"))
+
+            mockMvc.perform(get("/api/v1/admin/accounts/7")).andExpect(status().isOk)
+
+            assertThat(scopeSlot.captured.isAllBranches).isTrue()
+        }
+
+        @Test
+        @DisplayName("일반 지점 사용자 - principal / DataScope 를 손대지 않는다 (회귀 가드)")
+        fun otherBranchUserUnaffected() {
+            authenticateAsAdmin(role = AppAuthority.BRANCH_MANAGER, costCenterCode = "5832")
+            stubOwnBranchDataScope(branchCode = "5832")
+            val principalSlot = slot<WebUserPrincipal>()
+            val scopeSlot = slot<DataScope>()
+            every { branchScopeGateway.resolveScope(capture(principalSlot), any<String>(), any()) } returns
+                BranchScopeResult.Unrestricted
+            every {
+                adminAccountService.getAccounts(capture(scopeSlot), any(), any(), any(), any(), any(), any(), any())
+            } returns emptyListResponse()
+
+            mockMvc.perform(get("/api/v1/admin/accounts")).andExpect(status().isOk)
+
+            assertThat(principalSlot.captured.isSalesSupport).isFalse()
+            assertThat(scopeSlot.captured.isAllBranches).isFalse()
+            assertThat(scopeSlot.captured.branchCodes).containsExactly("5832")
         }
     }
 

@@ -11,15 +11,20 @@ package com.otoki.powersales.platform.auth.permission
  *  2. `costCenterCode == "4889"` 정확일치 전용 예외 (행사마스터 거래처 lookup / 행사사원 후보 lookup).
  *
  * 2026-08-02 에 두 경로를 모두 닫아 일반 지점 사용자와 동일한 스코프로 되돌렸고, 2026-08-03 요구로
- * **행사마스터 거래처 lookup 만** 다시 전 지점으로 연다 ([isAllBranchAccountLookup]). 영업지원1팀 /
- * 영업본부는 종전대로 전사 (SF `CurrentUserBranchNameList.cls` 의 `UserRole.Name LIKE '%영업지원%'` 정합 유지).
+ * **거래처 조회만** 다시 전 지점으로 연다 ([isAllBranchAccountLookup]). 영업지원1팀 / 영업본부는
+ * 종전대로 전사 (SF `CurrentUserBranchNameList.cls` 의 `UserRole.Name LIKE '%영업지원%'` 정합 유지).
  *
  * ## 현재 스코프 요약
  * | 대상 | 스코프 |
  * |---|---|
+ * | 거래처 관리 목록·상세·지점 셀렉터 (`GET /admin/accounts`, `/{id}`, `/branches`) | **전 지점** |
  * | 행사마스터 거래처 lookup (`GET /admin/accounts/lookup` + `/lookup-filter-options`) | **전 지점** |
- * | 그 외 전 화면 (거래처 관리 목록·상세 / 대시보드 / 여사원 현황 / 행사사원 후보 / 진열 등) | 본인 지점(4889) |
+ * | 그 외 전 화면 (대시보드 / 여사원 현황 / 행사사원 후보 / 진열 / 매출 등) | 본인 지점(4889) |
  * | 거래처 등록·수정·삭제 | 종전 권한 정책 그대로 (본 예외는 조회 전용) |
+ *
+ * 거래처 조회는 가시성 축이 둘이라 (지점 셀렉터/필터 = principal, sharing policy = [DataScope]) 진입점에서
+ * 양쪽을 함께 열어야 한다 — 한쪽만 열면 셀렉터에는 지점이 보이는데 결과가 0건이 된다. 구현은
+ * `AdminAccountController.accountScopePrincipal` / `accountDataScope` 참조.
  *
  * ## 지점 스코프 조회 시 자기 조직 노출
  * 지점 스코프 조회([com.otoki.powersales.domain.org.organization.repository.OrganizationRepositoryCustom.findTeamScheduleBranches]
@@ -42,14 +47,14 @@ object SalesSupportTeam2Policy {
     fun isTeam2(costCenterCode: String?): Boolean = costCenterCode == ORG_CODE
 
     /**
-     * 행사마스터 거래처 lookup 에서 지점 제한 없이 전 지점 거래처를 조회할 수 있는 사용자인지
+     * 거래처 조회에서 지점 제한 없이 전 지점 거래처를 볼 수 있는 사용자인지
      * (2026-08-03 요구 — 영업지원2팀 한정 예외).
      *
      * 영업지원2팀은 전 지점의 행사를 대행 등록하므로, 본인 지점(4889) 소속 거래처만으로는 업무가
-     * 성립하지 않는다. **거래처 lookup 가시성만** 여는 예외이며 등록/수정/삭제 권한과 다른 화면의
-     * 지점 스코프는 종전대로 본인 지점이다.
+     * 성립하지 않는다. **거래처 조회 가시성만** 여는 예외이며(목록·상세·지점 셀렉터·행사마스터 lookup),
+     * 등록/수정/삭제 권한과 다른 화면의 지점 스코프는 종전대로 본인 지점이다 (위 스코프 요약 표 참조).
      *
-     * 판정 축을 [isTeam2] 와 분리해 둔 이유: "영업지원2팀인가" 라는 사실 판정과 "거래처 lookup 을
+     * 판정 축을 [isTeam2] 와 분리해 둔 이유: "영업지원2팀인가" 라는 사실 판정과 "거래처 조회를
      * 열어줄 대상인가" 라는 정책 판정을 호출부에서 구분해 읽을 수 있게 하기 위함이다. 향후 대상이
      * 늘어나면 본 함수만 확장한다.
      */
