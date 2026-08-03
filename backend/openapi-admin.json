@@ -4840,6 +4840,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseAppUninstalledFemaleStaffSummary" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AppUninstalledFemaleStaffSummary"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAssignmentBatchResult" : {
         "properties" : {
           "data" : {
@@ -10036,6 +10065,19 @@
         "properties" : {
           "releaseNote" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "AppUninstalledFemaleStaffSummary" : {
+        "properties" : {
+          "targetCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "uninstalledCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -34621,6 +34663,43 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/app-install/uninstalled-female-staff" : {
+      "get" : {
+        "operationId" : "getUninstalledFemaleStaffSummary",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAppUninstalledFemaleStaffSummary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "app-install-status-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/app-install/uninstalled-female-staff/export" : {
+      "get" : {
+        "operationId" : "exportUninstalledFemaleStaff",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "app-install-status-controller" ]
       }
     },
     "/api/v1/admin/tools/branch-scope-mode" : {

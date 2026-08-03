@@ -12,6 +12,7 @@ import {
 import DailyScheduleStatusCard from './DailyScheduleStatusCard';
 import FeatureToggleSection from './FeatureToggleSection';
 import BranchScopeModeSection from './BranchScopeModeSection';
+import AppInstallStatusCard from './AppInstallStatusCard';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -170,7 +171,12 @@ export default function ToolsDashboardPage() {
           {
             key: 'feature-toggle',
             label: '기능 활성화',
-            children: <FeatureToggleSection />,
+            children: (
+              <>
+                <FeatureToggleSection />
+                <AppInstallStatusCard />
+              </>
+            ),
           },
           {
             key: 'branch-scope-mode',

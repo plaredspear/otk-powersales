@@ -326,6 +326,47 @@ class EmployeeRepositoryCustomImpl(
             .execute()
     }
 
+    override fun findAppUninstalledFemaleStaff(): List<Employee> {
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(
+                appLoginTargetFemaleStaffPredicate()
+                    // 앱 사용 흔적 0 — 마지막 앱 실행 스냅샷도, 살아있는 FCM 토큰도 없는 사원.
+                    // employee_info row 자체가 없는 사원(비밀번호 미설정)은 left join 으로 양쪽이 NULL 이라 함께 잡힌다.
+                    .and(employeeInfo.appVersionSeenAt.isNull)
+                    .and(employeeInfo.fcmToken.isNull)
+            )
+            .orderBy(employee.orgName.asc(), employee.employeeCode.asc())
+            .fetch()
+    }
+
+    override fun countAppLoginTargetFemaleStaff(): Long {
+        return queryFactory
+            .select(employee.count())
+            .from(employee)
+            .where(appLoginTargetFemaleStaffPredicate())
+            .fetchOne() ?: 0L
+    }
+
+    /**
+     * 앱 설치 안내 대상 모수 술어 — 여사원 현황 인원 모수 + 앱 로그인 가능 조건.
+     *
+     * 여사원 현황([findEmployees] 의 `femaleStaffHeadcountScope=true` + `roles` + 재직) 과 같은 축이라
+     * 두 화면의 총원이 어긋나지 않는다. 추가 조건 2개는 "안내해도 로그인할 수 없는 사원" 을 걷어내는 용도 —
+     * `app_login_active=false` 는 로그인 자체가 차단되고([com.otoki.powersales.platform.auth.service.AuthService]
+     * 의 `validateLoginAuthority`), 사번 없는 위탁 진열사원은 로그인 수단이 없다.
+     */
+    private fun appLoginTargetFemaleStaffPredicate(): BooleanBuilder =
+        BooleanBuilder()
+            .and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
+            .and(employmentStatusPredicate(EmploymentStatus.ACTIVE.code))
+            .and(employee.role.`in`(FemaleStaffHeadcountFilter.ROLES))
+            .and(employee.jobCode.`in`(FemaleStaffJobCode.ALL_CODES))
+            .and(excludeTestAccountNames())
+            .and(employee.appLoginActive.isTrue)
+            .and(employee.employeeCode.isNotNull)
+
     override fun findByCostCenterCodeInAndEmployeeCodeIn(
         costCenterCodes: Collection<String>,
         employeeCodes: Collection<String>

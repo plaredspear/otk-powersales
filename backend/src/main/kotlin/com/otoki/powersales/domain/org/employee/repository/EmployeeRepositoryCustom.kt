@@ -139,6 +139,36 @@ interface EmployeeRepositoryCustom {
     fun resetAgreementFlagForActiveConsents(): Long
 
     /**
+     * 앱 미설치 추정 여사원 조회 — 설치 안내 대상 목록 (개발자 도구 > 대시보드 > 기능 활성화).
+     *
+     * 모수는 여사원 현황 화면과 동일하다 (재직 + 권한 여사원/조장 + 직무 판촉직/OSC직 +
+     * 테스트·시스템 계정 제외, [com.otoki.powersales.domain.org.employee.enums.FemaleStaffHeadcountFilter]).
+     * 여기에 **앱 로그인 활성 + 사번 보유** 를 더해 애초에 로그인이 불가한 사원을 제외한다.
+     *
+     * 미설치 판정은 두 조건의 AND —
+     * ① `employee_info.app_version_seen_at IS NULL` (로그인/토큰 리프레시마다 갱신되는 "마지막 앱 실행"
+     *    스냅샷. 백엔드 전용 컬럼이라 레거시 유입분 오염이 없다)
+     * ② `employee_info.fcm_token IS NULL` (로그아웃 / 앱 삭제·토큰 만료 정리로 비워짐)
+     *
+     * `login_history` 를 쓰지 않는 이유: 명시적 사번+비밀번호 로그인만 적재되고 자동로그인 / refresh
+     * 토큰 복원은 남지 않아, 매일 앱을 쓰는 사원도 최근 행이 없을 수 있다. 게다가 레거시 Heroku
+     * `employee_his` 마이그레이션분이 섞여 있어 "최근 로그인" 축으로 쓰면 활성 사용자를 오판한다.
+     *
+     * 한계: `app_version_seen_at` 수집은 2026-06-12 부터라, 그 이전에만 앱을 쓴 사원은 ① 을 만족한다.
+     * ② 를 AND 로 걸어 "토큰도 없는" 사원만 남기는 것이 이 오탐을 줄이는 장치다.
+     *
+     * 정렬: 지점명(org_name) → 사번 오름차순 (엑셀 배포 시 지점별로 묶여 읽히도록).
+     */
+    fun findAppUninstalledFemaleStaff(): List<Employee>
+
+    /**
+     * 앱 설치 안내 대상 모수 건수 — [findAppUninstalledFemaleStaff] 의 분모.
+     *
+     * 미설치 판정(앱 사용 흔적) 조건만 뺀 동일 술어라, 화면에서 "N명 / 총 M명" 비율로 읽을 수 있다.
+     */
+    fun countAppLoginTargetFemaleStaff(): Long
+
+    /**
      * SF `UplExcelBtnSchduleMasterController.checkResult` (L181) 정합 —
      * `Employee WHERE CostCenterCode__c IN :newOrgValues AND DKRetail__EmpCode__c IN :empCodes`.
      * BranchCodeExpander 확장 결과로 조장 지점 (BranchMapping 확장 합집합) 필터 + 사번 필터 동시 적용.
