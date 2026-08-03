@@ -2136,4 +2136,14 @@ object Stage1Targets {
 
     /** BranchMapping 적재가 BranchCodeExpander 의 in-memory 캐시에 영향을 주는지. */
     fun affectsBranchCodeCache(targetName: String): Boolean = targetName == "BranchMapping"
+
+    /**
+     * Organization 적재가 Redis 조직 캐시([com.otoki.powersales.platform.common.config.CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES]
+     * / [com.otoki.powersales.platform.common.config.CacheConfig.CACHE_ORGANIZATION_CASCADE]) 에 영향을 주는지.
+     *
+     * 두 캐시의 `@CacheEvict` 는 SAP daily sync 경로
+     * ([com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService.replaceAll]) 에만 걸려 있고,
+     * Stage1 은 그 서비스를 경유하지 않고 `TRUNCATE` + `COPY` 로 직접 적재하므로 호출부가 명시 무효화해야 한다.
+     */
+    fun affectsOrganizationCache(targetName: String): Boolean = targetName == "Organization"
 }

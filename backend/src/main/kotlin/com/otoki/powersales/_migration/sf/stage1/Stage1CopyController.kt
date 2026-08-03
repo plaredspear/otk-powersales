@@ -2,9 +2,11 @@ package com.otoki.powersales._migration.sf.stage1
 
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.common.config.CacheConfig
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -43,6 +45,7 @@ class Stage1CopyController(
     private val adminPermissionCache: AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
     private val branchCodeExpander: com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander,
+    private val cacheManager: CacheManager,
     // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.
     @Value("\${app.aws.s3.bucket:}") private val configuredS3Bucket: String,
 ) {
@@ -80,6 +83,10 @@ class Stage1CopyController(
                 if (Stage1Targets.affectsBranchCodeCache(req.targetName)) {
                     branchCodeExpander.reload()
                 }
+                // Organization 적재 시 Redis 조직 캐시 무효화.
+                if (Stage1Targets.affectsOrganizationCache(req.targetName)) {
+                    evictOrganizationCaches()
+                }
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
             }
@@ -105,6 +112,8 @@ class Stage1CopyController(
                 adminDataScopeCache.invalidateAll()
                 // 일괄 적재는 BranchMapping 도 항상 포함 → BranchCodeExpander 캐시 재빌드 (stale 방지).
                 branchCodeExpander.reload()
+                // 일괄 적재는 Organization 도 항상 포함 → Redis 조직 캐시 무효화.
+                evictOrganizationCaches()
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }
@@ -152,6 +161,31 @@ class Stage1CopyController(
         return ResponseEntity.ok(
             ApiResponse.success(Stage1Defaults(s3Bucket = configuredS3Bucket, s3KeyPrefix = DEFAULT_S3_KEY_PREFIX)),
         )
+    }
+
+    /**
+     * Organization 적재 후 Redis 조직 캐시 무효화 (TTL 24h stale 방지).
+     *
+     * 두 캐시의 `@CacheEvict` 는 SAP daily sync 경로
+     * ([com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService.replaceAll]) 에만 걸려 있는데,
+     * Stage1 은 그 서비스를 경유하지 않고 `TRUNCATE organization` + `COPY` 로 직접 적재한다. 그래서 적재 중
+     * (테이블이 빈 창) 조회가 한 번이라도 들어오면 **빈 결과가 24h 캐시**되어, 적재가 끝나도 조직 스코프가
+     * 계속 0건이 된다. 2026-08-03 운영 마이그레이션에서 실제로 발생 — 지점 사용자의 지점 셀렉터가 0건이 되어
+     * 행사마스터/여사원일정 등이 통째로 빈 목록이었다 (전사 권한자는 하드코딩 34개 상수를 써서 정상이라
+     * 원인 파악이 늦어졌다).
+     *
+     * best-effort — evict 실패가 적재 성공을 되돌리지 않도록 예외를 삼키고 로그만 남긴다.
+     */
+    private fun evictOrganizationCaches() {
+        listOf(CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES, CacheConfig.CACHE_ORGANIZATION_CASCADE)
+            .forEach { name ->
+                try {
+                    cacheManager.getCache(name)?.clear()
+                    log.info("[stage1-copy] organization 캐시 무효화: {}", name)
+                } catch (e: Exception) {
+                    log.error("[stage1-copy] organization 캐시 무효화 실패: {}", name, e)
+                }
+            }
     }
 
     companion object {

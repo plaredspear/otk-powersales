@@ -66,6 +66,27 @@ class Stage1TargetsTest {
     }
 
     @Nested
+    @DisplayName("적재 후 캐시 무효화 대상 판정")
+    inner class CacheInvalidationTargets {
+
+        @Test
+        @DisplayName("Organization 적재는 Redis 조직 캐시(지점 셀렉터/조직 cascade) 무효화 대상")
+        fun organizationAffectsOrganizationCache() {
+            // TRUNCATE~COPY 창에 조회가 들어오면 빈 결과가 24h 캐시돼 지점 스코프가 통째로 0건이 된다
+            // (2026-08-03 운영 발생). Stage1 은 OrganizationReplaceService 의 @CacheEvict 를 안 타므로
+            // 호출부가 명시 무효화해야 한다 — 그 판정이 이 함수다.
+            assertThat(Stage1Targets.affectsOrganizationCache("Organization")).isTrue()
+        }
+
+        @Test
+        @DisplayName("다른 target 은 조직 캐시 무효화 대상 아님")
+        fun otherTargetsDoNotAffectOrganizationCache() {
+            assertThat(Stage1Targets.affectsOrganizationCache("BranchMapping")).isFalse()
+            assertThat(Stage1Targets.affectsOrganizationCache("Profile")).isFalse()
+        }
+    }
+
+    @Nested
     @DisplayName("FieldMapping sfFieldName ↔ CSV 헤더 정합")
     inner class FieldMappingHeaders {
 
