@@ -41173,6 +41173,24 @@
         "tags" : [ "admin-sales-comparison-controller" ]
       }
     },
+    "/api/v1/admin/sf-migration/stage2/branch-mapping-supplement" : {
+      "post" : {
+        "operationId" : "runBranchMappingSupplement",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/sf-migration/stage2/fk" : {
       "post" : {
         "operationId" : "runFkResolve",
