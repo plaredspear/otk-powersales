@@ -545,24 +545,58 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     @Test
     @Transactional
-    @DisplayName("branch-mapping-supplement — 재실행 시 0 row (멱등) + 기존 값 보존")
-    fun runBranchMappingSupplement_isIdempotent() {
-        // 운영자가 값을 손봐 둔 상태를 가정 — 재실행이 덮어쓰지 않아야 한다.
+    @DisplayName("branch-mapping-supplement — 기존 행의 값이 SoT 와 다르면 SoT 값으로 갱신")
+    fun runBranchMappingSupplement_updatesStaleValue() {
+        // 옛 값으로 적재돼 있던 상태 (SoT 값을 고친 뒤 재실행하는 시나리오).
         val target = BranchMappingSupplement.ROWS.first()
         em.createNativeQuery(
             "INSERT INTO powersales.branch_mapping (branch_code, included_branch_codes, label) " +
-                "VALUES ('${target.branchCode}', '9999', 'manual')"
+                "VALUES ('${target.branchCode}', '5691,5692,5693,5694', 'cvs전략')"
         ).executeUpdate()
 
         val response = service.runBranchMappingSupplement()
 
-        assertThat(response.totalRowsAffected).isEqualTo(BranchMappingSupplement.ROWS.size - 1)
+        assertThat(response.totalRowsAffected).isEqualTo(1)
         assertThat(
             strOf(
                 "SELECT included_branch_codes FROM powersales.branch_mapping " +
                     "WHERE branch_code = '${target.branchCode}'"
             )
-        ).isEqualTo("9999")
+        ).isEqualTo(target.includedBranchCodes)
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("branch-mapping-supplement — 값이 SoT 와 같으면 재실행 시 0 row (멱등)")
+    fun runBranchMappingSupplement_isIdempotent() {
+        service.runBranchMappingSupplement()
+
+        val second = service.runBranchMappingSupplement()
+
+        assertThat(second.totalRowsAffected).isZero()
+        BranchMappingSupplement.ROWS.forEach { row ->
+            assertThat(
+                strOf(
+                    "SELECT included_branch_codes FROM powersales.branch_mapping " +
+                        "WHERE branch_code = '${row.branchCode}'"
+                )
+            ).isEqualTo(row.includedBranchCodes)
+        }
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("branch-mapping-supplement — 보정 확장 집합이 운영 CVS 거래처 지점코드(E5692/E5693)를 포함한다")
+    fun runBranchMappingSupplement_coversOperationalCvsBranchCodes() {
+        // 운영 실측: CVS 거래처는 전량 E 코드로 적재돼 있다 (평문 5691~5694 는 0건).
+        // 확장 집합이 이 코드를 놓치면 CVS전략팀 조장 조회가 다시 0건이 된다.
+        val codes = BranchMappingSupplement.ROWS
+            .single { it.branchCode == "E5694" }
+            .includedBranchCodes
+            .split(",")
+            .map { it.trim() }
+
+        assertThat(codes).contains("E5692", "E5693")
     }
 
     // ------------------------------------------------------------------

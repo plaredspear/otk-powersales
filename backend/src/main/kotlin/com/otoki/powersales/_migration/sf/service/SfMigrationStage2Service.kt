@@ -765,8 +765,11 @@ class SfMigrationStage2Service(
      * ## 실행 순서 / 멱등
      * Stage1 `BranchMapping` 적재와 순서 무관. Stage1 이 같은 테이블을 PK 충돌 `DO NOTHING` 으로
      * 멱등 적재하므로([com.otoki.powersales._migration.sf.stage1.Stage1Targets] BRANCH_MAPPING),
-     * 본 substep 이 먼저 돌아도 Stage1 재적재가 보정 행을 덮거나 지우지 않는다. 반대로 본 substep 도
-     * 이미 있는 행은 건드리지 않는다 — 운영자가 값을 손봤다면 그 값이 보존된다.
+     * 본 substep 이 먼저 돌아도 Stage1 재적재가 보정 행을 덮거나 지우지 않는다.
+     *
+     * 행이 없으면 INSERT, 있으면 **SoT 값과 다를 때만 UPDATE** 한다. SoT 가 이 행의 권위 출처이므로
+     * (SF 원본에 없는 행이다) 값을 고친 뒤 재실행하면 그대로 반영된다. 값이 같으면 0 row — 멱등.
+     * 반대로 말하면 DB 에서 이 행을 수기로 고쳐도 재실행 시 SoT 값으로 되돌아간다.
      *
      * ## 캐시
      * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 는 부팅 1회
@@ -776,9 +779,9 @@ class SfMigrationStage2Service(
     @Transactional
     fun runBranchMappingSupplement(): SfMigrationStage2Response {
         val results = BranchMappingSupplement.ROWS.map { row ->
-            // 효과는 Stage1 BRANCH_MAPPING 적재의 `ON CONFLICT (branch_code) DO NOTHING` 과 동일하나,
-            // native query 는 dialect 문법을 그대로 넘기므로 (H2 는 ON CONFLICT 미지원) 존재 확인 +
-            // INSERT 로 표현한다. 1회성 운영 도구 + 행 수 한 자릿수라 2 statement 비용은 무의미하다.
+            // upsert 를 dialect upsert 문법(ON CONFLICT / MERGE) 없이 표현한다 — native query 는 문법을
+            // 그대로 넘기므로 운영(Postgres)과 테스트(H2, ON CONFLICT 미지원) 양쪽에서 동작해야 한다.
+            // 1회성 운영 도구 + 행 수 한 자릿수라 2 statement 비용은 무의미하다.
             val existing = (
                 em.createNativeQuery(
                     "SELECT COUNT(*) FROM powersales.branch_mapping WHERE branch_code = :branchCode"
@@ -787,8 +790,23 @@ class SfMigrationStage2Service(
                     .singleResult as Number
                 ).toLong()
 
-            val inserted = if (existing > 0L) {
-                0
+            val affected = if (existing > 0L) {
+                // 값이 이미 SoT 와 같으면 0 row (멱등). 다르면 SoT 로 덮는다 — SF 원본이 아니라 본
+                // SoT 가 이 행의 권위 출처라, 값을 고친 뒤 재실행하면 반영돼야 한다.
+                em.createNativeQuery(
+                    """
+                    UPDATE powersales.branch_mapping
+                    SET included_branch_codes = :includedBranchCodes,
+                        label = :label,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE branch_code = :branchCode
+                      AND (included_branch_codes <> :includedBranchCodes OR label IS DISTINCT FROM :label)
+                    """.trimIndent()
+                )
+                    .setParameter("branchCode", row.branchCode)
+                    .setParameter("includedBranchCodes", row.includedBranchCodes)
+                    .setParameter("label", row.label)
+                    .executeUpdate()
             } else {
                 em.createNativeQuery(
                     """
@@ -804,7 +822,7 @@ class SfMigrationStage2Service(
 
             SubstepResult(
                 label = "branch_mapping['${row.branchCode}'] ← ${row.includedBranchCodes} (${row.label})",
-                rowsAffected = inserted,
+                rowsAffected = affected,
             )
         }
 

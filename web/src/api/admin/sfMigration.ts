@@ -414,11 +414,15 @@ export interface BranchMappingSupplementResponse {
  * 조직 트리가 산출하는 실제 조직코드는 `E5694` 라서, 지점 코드 확장이 일어나지 않아 CVS전략팀
  * 조장의 거래처/일정 조회가 0건이 된다 (CVS1/CVS2 는 키가 `E5692`/`E5693` 라 정상).
  *
- * 기존 `5694` 행은 그대로 둔다 — 전사 권한자용 34개 고정 지점 목록이 CVS전략팀을 `5694` 로
- * 넘기므로, 두 코드가 같은 집합으로 확장되도록 행을 **추가**하는 방식이다.
+ * 확장값은 `5691,5692,5693,5694,E5692,E5693,E5694` — 운영 거래처가 전량 E 코드로 적재돼 있어
+ * (`E5692` 706건 / `E5693` 440건, 평문 0건) SF 원본 3행의 평문 값만으로는 여전히 0건이다.
+ * 이 집합은 SF 가 같은 조직에 걸어 둔 sharing rule(`CVS` / `cvsjr`)의 `BranchCode__c` 값과 같다.
  *
- * Stage1 `BranchMapping` 적재와 순서 무관하고, 이미 있는 행은 건드리지 않는다 (멱등).
- * 적재 성공 시 backend 가 지점 코드 확장 캐시를 재빌드하므로 재기동이 필요 없다.
+ * 기존 `5694` 행은 그대로 둔다 — 전사 권한자용 34개 고정 지점 목록이 CVS전략팀을 `5694` 로
+ * 넘기므로, 두 코드가 모두 살아 있도록 행을 **추가**하는 방식이다.
+ *
+ * Stage1 `BranchMapping` 적재와 순서 무관. 행이 없으면 INSERT, 있으면 backend SoT 값과 다를 때만
+ * UPDATE 한다 (값이 같으면 0 row — 멱등). 적용 성공 시 backend 가 지점 코드 확장 캐시를 재빌드한다.
  */
 export async function runBranchMappingSupplement(): Promise<BranchMappingSupplementResponse> {
   const res = await client.post<ApiResponse<BranchMappingSupplementResponse>>(

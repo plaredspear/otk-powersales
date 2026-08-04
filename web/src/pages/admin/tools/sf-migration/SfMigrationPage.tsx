@@ -991,7 +991,7 @@ export default function SfMigrationPage() {
         <ul style={{ margin: '0 0 16px', paddingLeft: 20, color: 'rgba(0,0,0,0.45)' }}>
           <li>
             CVS1팀 <Text code>E5692</Text> · CVS2팀 <Text code>E5693</Text> 는 조직코드와 매핑 키가
-            일치해 <Text code>5691,5692,5693,5694</Text> 로 정상 확장된다.
+            일치해 자기 코드가 확장 결과에 포함된다 → 자기 팀 거래처가 보인다.
           </li>
           <li>
             CVS전략팀만 SF 매핑 키가 평문 <Text code>5694</Text> 인데 조직 트리가 산출하는 실제
@@ -1002,18 +1002,29 @@ export default function SfMigrationPage() {
           <li>
             기존 <Text code>5694</Text> 행은 <Text strong>지우지 않는다</Text> — 전사 권한자용 34개 고정
             지점 목록이 CVS전략팀을 <Text code>5694</Text> 로 넘기므로, 키를 바꾸면 그쪽이 반대로
-            깨진다. 두 코드가 같은 집합으로 확장되도록 <Text strong>행을 추가</Text>하는 방식이다.
+            깨진다. 두 코드가 모두 살아 있도록 <Text strong>행을 추가</Text>하는 방식이다.
+          </li>
+          <li>
+            확장값은 SF 원본 3행의 <Text code>5691,5692,5693,5694</Text> 가 아니라{' '}
+            <Text code>5691,5692,5693,5694,E5692,E5693,E5694</Text> 다 — 운영 거래처는 전량 E 코드로
+            적재돼 있어(<Text code>E5692</Text> 706건 · <Text code>E5693</Text> 440건, 평문 코드 0건)
+            평문만 넣으면 실재하지 않는 코드만 가리킨다. 이 집합은 SF 가 같은 조직에 직접 걸어 둔 sharing
+            rule(<Text code>CVS</Text> / <Text code>cvsjr</Text>)의 <Text code>BranchCode__c</Text> 값과
+            동일하다.
           </li>
         </ul>
         <Paragraph type="secondary">
-          Stage 1 <Text code>BranchMapping</Text> 적재와 <Text strong>순서 무관</Text>하다 — 양쪽 다 PK
-          충돌 시 건너뛰므로 Stage 1 재적재가 보정 행을 덮거나 지우지 않고, 본 카드도 이미 있는 행은
-          건드리지 않는다 (운영자가 값을 손봤다면 그 값이 보존된다). 재실행 시 적용 row 0 —{' '}
-          <Text strong>멱등</Text>.
+          Stage 1 <Text code>BranchMapping</Text> 적재와 <Text strong>순서 무관</Text>하다 — Stage 1 은 PK
+          충돌 시 건너뛰므로 재적재가 보정 행을 덮거나 지우지 않는다. 본 카드는 행이 없으면 INSERT,
+          있으면 <Text strong>backend SoT 값과 다를 때만 UPDATE</Text> 한다 (SF 원본에 없는 행이라 SoT 가
+          권위 출처 — 값을 고쳐 배포한 뒤 재실행하면 반영된다). 값이 같으면 적용 row 0 —{' '}
+          <Text strong>멱등</Text>. 반대로 DB 에서 이 행을 수기로 고쳤다면 재실행 시 SoT 값으로 되돌아간다.
           <br />
-          적재 성공 시 backend 가 지점 코드 확장 캐시(부팅 1회 메모리 캐시)를 재빌드하므로{' '}
-          <Text strong>재기동이 필요 없다</Text>. 결과는 <Text strong>시스템 &gt; 지점 코드 맵핑</Text>{' '}
-          화면에서 <Text code>E5694</Text> 를 검색해 확장 수가 5인지로 확인한다.
+          적용 성공 시 backend 가 지점 코드 확장 캐시(부팅 1회 메모리 캐시)를 재빌드하므로{' '}
+          <Text strong>재기동이 필요 없다</Text> — 단 멀티 인스턴스면 요청을 받은 1대만 갱신되므로 롤링
+          재기동이 필요하다. 결과는 <Text strong>시스템 &gt; 지점 코드 맵핑</Text> 화면에서{' '}
+          <Text code>E5694</Text> 를 검색해 확장 결과에 <Text code>E5692</Text> ·{' '}
+          <Text code>E5693</Text> 이 있는지로 확인한다.
         </Paragraph>
 
         <Space>
@@ -1049,7 +1060,7 @@ export default function SfMigrationPage() {
               <Descriptions.Item label="substep">
                 <Text code>{branchMappingSupplementResult.substep}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="적재 row">
+              <Descriptions.Item label="적용 row">
                 {branchMappingSupplementResult.totalRowsAffected.toLocaleString()}
               </Descriptions.Item>
             </Descriptions>
@@ -1058,8 +1069,8 @@ export default function SfMigrationPage() {
                 type="info"
                 showIcon
                 style={{ marginTop: 12 }}
-                message="적재된 row 가 없습니다"
-                description="이미 보정 행이 존재합니다 (멱등). 기존 값은 보존되므로, 값을 바꾸려면 지점 코드 맵핑 화면에서 현재 값을 먼저 확인하세요."
+                message="적용된 row 가 없습니다"
+                description="보정 행이 이미 SoT 와 같은 값으로 존재합니다 (멱등). 값을 바꾸려면 backend SoT(BranchMappingSupplement) 를 고쳐 배포한 뒤 다시 실행하세요."
               />
             )}
             <ResizableTable<BranchMappingSupplementSubstepResult>
@@ -1070,7 +1081,7 @@ export default function SfMigrationPage() {
               columns={[
                 { title: '대상', dataIndex: 'label', key: 'label' },
                 {
-                  title: '적재 row',
+                  title: '적용 row',
                   dataIndex: 'rowsAffected',
                   key: 'rowsAffected',
                   width: 160,

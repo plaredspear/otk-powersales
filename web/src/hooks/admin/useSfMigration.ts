@@ -183,8 +183,9 @@ export function useRunLeaderSalesDashboardGrant() {
 /**
  * `branch_mapping` 누락 행 보정 적재 Mutation 훅.
  *
- * SF 원본에 없는 매핑 행(현재 `E5694` CVS전략팀)을 채운다. 이미 있는 행은 건드리지 않아 멱등이며,
- * backend 가 적재 직후 지점 코드 확장 캐시를 재빌드한다 (재기동 불요).
+ * SF 원본에 없는 매핑 행(현재 `E5694` CVS전략팀)을 backend SoT 값으로 정합시킨다 —
+ * 없으면 INSERT, 있으면 값이 다를 때만 UPDATE (같으면 0 row, 멱등).
+ * 적용 직후 backend 가 지점 코드 확장 캐시를 재빌드한다 (재기동 불요).
  */
 export function useRunBranchMappingSupplement() {
   return useMutation<BranchMappingSupplementResponse>({
