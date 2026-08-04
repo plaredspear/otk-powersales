@@ -26,6 +26,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import io.mockk.every
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.order.dto.response.OrderItemCountSummaryResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderProcessingStatusResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderedItemResponse
@@ -178,6 +179,13 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                     ),
                 ),
                 rejectedItems = null,
+                itemCountSummary = OrderItemCountSummaryResponse(
+                    orderedCount = 1,
+                    confirmedCount = 1,
+                    cancelledCount = 0,
+                    outOfStockCount = 0,
+                    rejectedCount = 0,
+                ),
             )
             every { orderRequestService.getOrderRequestDetail(any(), any()) } returns response
 

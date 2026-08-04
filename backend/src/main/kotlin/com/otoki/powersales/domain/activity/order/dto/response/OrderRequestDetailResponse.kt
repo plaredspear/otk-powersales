@@ -54,6 +54,9 @@ data class OrderRequestDetailResponse(
     // 이 주문요청의 SAP 주문번호(들)를 ref_sap_order_number 로 역참조하는 후속 주문(취소/변경 등) 요약.
     // 거래처별 상세와 동일한 요약 형태(번호·유형·일자·금액·주문자). 없으면 빈 배열.
     val relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
+    // 품목 수 집계 — 헤더 "승인된 품목 수"(= confirmedCount) + info 팝업 내역(주문/취소/미납/반려).
+    // orderedItemCount(반려·미납 제외 목록 카운트)와 달리 orderedCount 는 주문 라인 전량이다.
+    val itemCountSummary: OrderItemCountSummaryResponse,
 ) {
     companion object {
         fun of(
@@ -68,6 +71,7 @@ data class OrderRequestDetailResponse(
             rejectedItems: List<RejectedItemResponse>?,
             outOfStockItems: List<OutOfStockItemResponse>? = null,
             relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
+            itemCountSummary: OrderItemCountSummaryResponse,
         ): OrderRequestDetailResponse =
             OrderRequestDetailResponse(
                 id = orderRequest.id,
@@ -92,6 +96,7 @@ data class OrderRequestDetailResponse(
                 rejectedItems = rejectedItems,
                 outOfStockItems = outOfStockItems,
                 relatedOrders = relatedOrders,
+                itemCountSummary = itemCountSummary,
             )
     }
 }

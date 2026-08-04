@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryGroupResponse
+import com.otoki.powersales.domain.activity.order.dto.response.OrderItemCountSummaryResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestSummaryResponse
@@ -12,6 +13,7 @@ import com.otoki.powersales.domain.activity.order.exception.InvalidDateRangeExce
 import com.otoki.powersales.domain.activity.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.domain.activity.order.exception.OrderDateRangeTooWideException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
+import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
@@ -297,6 +299,16 @@ class OrderRequestService(
             !orderRequestDetailMapper.isFullyDelivered(sapLines) &&
             (sapLines == null || hasCancelableRemaining)
 
+        // 헤더 "승인된 품목 수" + info 팝업 집계 (2026-08-04 사용자 요청). 주문 라인 전량을
+        // 반려/미납/취소/출고확정 4분류로 배정하며, SAP 응답에 아직 안 나온 라인은 어디에도 안 들어간다.
+        val itemCountSummary = buildItemCountSummary(
+            crmProducts = crmProducts,
+            rejectedProductCodes = rejectedProductCodes,
+            outOfStockProductCodes = outOfStockReasons.keys,
+            cancelledProductCodes = cancelledReasons.keys,
+            confirmedProductCodes = mapped?.confirmedProductCodes.orEmpty(),
+        )
+
         return OrderRequestDetailResponse.of(
             orderRequest = orderRequest,
             isClosed = isClosed,
@@ -310,6 +322,49 @@ class OrderRequestService(
             rejectedItems = rejectedItems,
             outOfStockItems = outOfStockItems,
             relatedOrders = relatedOrders,
+            itemCountSummary = itemCountSummary,
+        )
+    }
+
+    /**
+     * 주문 품목 수 집계 — CRM 주문 라인 1건 = 1개.
+     *
+     * 각 라인의 `productCode` 를 SAP 상세 분류 결과에 대조해 **반려 > 미납 > 취소 > 출고확정** 우선순위로
+     * 단일 분류에 배정한다(동일 제품코드가 복수 라인/복수 분류에 걸릴 때의 이중 계수 방지). 어느 분류에도
+     * 안 걸리는 라인(SAP 응답에 아직 없는 = 납품문서 미생성)은 어떤 카운트에도 포함되지 않는다.
+     *
+     * 취소는 SAP `DefaultReason` 취소셋뿐 아니라 마이그레이션 로컬 취소(`line_change_type='X'`)도 포함한다
+     * — "주문한 품목" 목록이 이 라인을 취소로 표시하기 때문(표시와 카운트 정합).
+     * SAP 호출 실패/빈 응답이면 분류 집합이 모두 비어 `orderedCount` 만 채워진다.
+     */
+    private fun buildItemCountSummary(
+        crmProducts: List<OrderRequestProduct>,
+        rejectedProductCodes: Set<String>,
+        outOfStockProductCodes: Set<String>,
+        cancelledProductCodes: Set<String>,
+        confirmedProductCodes: Set<String>,
+    ): OrderItemCountSummaryResponse {
+        var confirmed = 0
+        var cancelled = 0
+        var outOfStock = 0
+        var rejected = 0
+
+        for (line in crmProducts) {
+            val code = line.productCode
+            when {
+                code != null && code in rejectedProductCodes -> rejected++
+                code != null && code in outOfStockProductCodes -> outOfStock++
+                (code != null && code in cancelledProductCodes) || line.isCancelled() -> cancelled++
+                code != null && code in confirmedProductCodes -> confirmed++
+            }
+        }
+
+        return OrderItemCountSummaryResponse(
+            orderedCount = crmProducts.size,
+            confirmedCount = confirmed,
+            cancelledCount = cancelled,
+            outOfStockCount = outOfStock,
+            rejectedCount = rejected,
         )
     }
 

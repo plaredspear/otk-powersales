@@ -572,6 +572,89 @@ class OutOfStockItem {
   }
 }
 
+/// 품목 수 집계 엔티티 (2026-08-04 사용자 요청)
+///
+/// 주문 상세 헤더 "승인된 품목 수"(= [confirmedCount])와 info 아이콘 팝업 내역을 채운다.
+/// 집계 단위는 **주문 라인 1건 = 1개**이며, 서버가 SAP 상세 응답 분류로 아래 4분류에 배정한다
+/// (우선순위 반려 > 미납 > 취소 > 출고확정).
+///
+/// [orderedCount] 는 반려·미납을 포함한 **주문 라인 전량**이라 헤더의 `orderedItemCount`
+/// (반려·미납 제외 목록 카운트)보다 클 수 있다. 네 분류의 합이 [orderedCount] 보다 작을 수 있는데,
+/// 이는 아직 SAP 응답에 나오지 않은(납품문서 미생성) 라인 때문이다 — 팝업 각주가 이를 설명한다.
+class OrderItemCountSummary {
+  /// 주문 라인 총수 (반려·미납·취소 포함)
+  final int orderedCount;
+
+  /// 출고 확정 품목 수 — 헤더 "승인된 품목 수" 값
+  final int confirmedCount;
+
+  /// 취소 품목 수 (SAP DefaultReason 취소셋 + 마이그레이션 로컬 취소)
+  final int cancelledCount;
+
+  /// 미납 품목 수 (SAP DefaultReason 결품셋)
+  final int outOfStockCount;
+
+  /// 반려 품목 수
+  final int rejectedCount;
+
+  const OrderItemCountSummary({
+    required this.orderedCount,
+    required this.confirmedCount,
+    required this.cancelledCount,
+    required this.outOfStockCount,
+    required this.rejectedCount,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'orderedCount': orderedCount,
+      'confirmedCount': confirmedCount,
+      'cancelledCount': cancelledCount,
+      'outOfStockCount': outOfStockCount,
+      'rejectedCount': rejectedCount,
+    };
+  }
+
+  factory OrderItemCountSummary.fromJson(Map<String, dynamic> json) {
+    return OrderItemCountSummary(
+      orderedCount: (json['orderedCount'] as num?)?.toInt() ?? 0,
+      confirmedCount: (json['confirmedCount'] as num?)?.toInt() ?? 0,
+      cancelledCount: (json['cancelledCount'] as num?)?.toInt() ?? 0,
+      outOfStockCount: (json['outOfStockCount'] as num?)?.toInt() ?? 0,
+      rejectedCount: (json['rejectedCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is OrderItemCountSummary &&
+        other.orderedCount == orderedCount &&
+        other.confirmedCount == confirmedCount &&
+        other.cancelledCount == cancelledCount &&
+        other.outOfStockCount == outOfStockCount &&
+        other.rejectedCount == rejectedCount;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      orderedCount,
+      confirmedCount,
+      cancelledCount,
+      outOfStockCount,
+      rejectedCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'OrderItemCountSummary(orderedCount: $orderedCount, '
+        'confirmedCount: $confirmedCount, cancelledCount: $cancelledCount, '
+        'outOfStockCount: $outOfStockCount, rejectedCount: $rejectedCount)';
+  }
+}
+
 /// 주문 상세 엔티티
 ///
 /// 주문 상세 화면에 표시되는 전체 정보를 담는 도메인 엔티티입니다.
@@ -657,6 +740,9 @@ class OrderDetail {
   /// 거래처별 주문 상세와 동일한 요약 형태 — 제품 목록 없이 헤더 정보만.
   final List<RelatedClientOrder> relatedOrders;
 
+  /// 품목 수 집계 — 헤더 "승인된 품목 수" + info 팝업용. 구버전 서버 응답 호환으로 nullable.
+  final OrderItemCountSummary? itemCountSummary;
+
   const OrderDetail({
     required this.id,
     required this.orderRequestNumber,
@@ -680,6 +766,7 @@ class OrderDetail {
     this.rejectedItems,
     this.outOfStockItems,
     this.relatedOrders = const [],
+    this.itemCountSummary,
   });
 
   /// SAP 주문번호가 하나라도 있는지 여부
@@ -722,6 +809,7 @@ class OrderDetail {
     List<RejectedItem>? rejectedItems,
     List<OutOfStockItem>? outOfStockItems,
     List<RelatedClientOrder>? relatedOrders,
+    OrderItemCountSummary? itemCountSummary,
   }) {
     return OrderDetail(
       id: id ?? this.id,
@@ -747,6 +835,7 @@ class OrderDetail {
       rejectedItems: rejectedItems ?? this.rejectedItems,
       outOfStockItems: outOfStockItems ?? this.outOfStockItems,
       relatedOrders: relatedOrders ?? this.relatedOrders,
+      itemCountSummary: itemCountSummary ?? this.itemCountSummary,
     );
   }
 
@@ -774,6 +863,7 @@ class OrderDetail {
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
+      'itemCountSummary': itemCountSummary?.toJson(),
     };
   }
 
@@ -820,6 +910,10 @@ class OrderDetail {
       relatedOrders: (json['relatedOrders'] as List<dynamic>? ?? [])
           .map((e) => RelatedClientOrder.fromJson(e as Map<String, dynamic>))
           .toList(),
+      itemCountSummary: json['itemCountSummary'] != null
+          ? OrderItemCountSummary.fromJson(
+              json['itemCountSummary'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -878,6 +972,7 @@ class OrderDetail {
     for (var i = 0; i < relatedOrders.length; i++) {
       if (other.relatedOrders[i] != relatedOrders[i]) return false;
     }
+    if (other.itemCountSummary != itemCountSummary) return false;
     return true;
   }
 
@@ -905,7 +1000,8 @@ class OrderDetail {
           : null,
       rejectedItems != null ? Object.hashAll(rejectedItems!) : null,
       outOfStockItems != null ? Object.hashAll(outOfStockItems!) : null,
-      Object.hashAll(relatedOrders),
+      // Object.hash 는 위치 인자 20개가 상한 — 마지막 두 값은 중첩 해시로 묶는다.
+      Object.hash(Object.hashAll(relatedOrders), itemCountSummary),
     );
   }
 

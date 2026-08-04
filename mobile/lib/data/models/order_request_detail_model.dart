@@ -277,6 +277,56 @@ class OutOfStockItemModel {
   }
 }
 
+/// 품목 수 집계 API 모델 (2026-08-04 — 헤더 "승인된 품목 수" + info 팝업)
+///
+/// 서버가 주문 라인 전량을 출고확정/취소/미납/반려로 분류한 결과. 구버전 서버 응답에는 키가 없어
+/// 상위 모델이 `null` 로 둔다. 개별 필드도 방어적으로 0 폴백한다.
+class OrderItemCountSummaryModel {
+  final int orderedCount;
+  final int confirmedCount;
+  final int cancelledCount;
+  final int outOfStockCount;
+  final int rejectedCount;
+
+  const OrderItemCountSummaryModel({
+    required this.orderedCount,
+    required this.confirmedCount,
+    required this.cancelledCount,
+    required this.outOfStockCount,
+    required this.rejectedCount,
+  });
+
+  factory OrderItemCountSummaryModel.fromJson(Map<String, dynamic> json) {
+    return OrderItemCountSummaryModel(
+      orderedCount: (json['orderedCount'] as num?)?.toInt() ?? 0,
+      confirmedCount: (json['confirmedCount'] as num?)?.toInt() ?? 0,
+      cancelledCount: (json['cancelledCount'] as num?)?.toInt() ?? 0,
+      outOfStockCount: (json['outOfStockCount'] as num?)?.toInt() ?? 0,
+      rejectedCount: (json['rejectedCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'orderedCount': orderedCount,
+      'confirmedCount': confirmedCount,
+      'cancelledCount': cancelledCount,
+      'outOfStockCount': outOfStockCount,
+      'rejectedCount': rejectedCount,
+    };
+  }
+
+  OrderItemCountSummary toEntity() {
+    return OrderItemCountSummary(
+      orderedCount: orderedCount,
+      confirmedCount: confirmedCount,
+      cancelledCount: cancelledCount,
+      outOfStockCount: outOfStockCount,
+      rejectedCount: rejectedCount,
+    );
+  }
+}
+
 /// 주문 상세 API 모델 (DTO)
 ///
 /// Backend API의 snake_case JSON을 파싱하여 OrderDetail 엔티티로 변환합니다.
@@ -317,6 +367,9 @@ class OrderRequestDetailModel {
   /// 역참조 후속 주문(취소/변경 등) 요약. 없으면 빈 배열.
   final List<RelatedClientOrderModel> relatedOrders;
 
+  /// 품목 수 집계 (헤더 "승인된 품목 수" + info 팝업). 구버전 서버 응답 호환으로 nullable.
+  final OrderItemCountSummaryModel? itemCountSummary;
+
   const OrderRequestDetailModel({
     required this.id,
     required this.orderRequestNumber,
@@ -340,6 +393,7 @@ class OrderRequestDetailModel {
     this.rejectedItems,
     this.outOfStockItems,
     this.relatedOrders = const [],
+    this.itemCountSummary,
   });
 
   /// snake_case JSON에서 파싱
@@ -355,6 +409,8 @@ class OrderRequestDetailModel {
         data['orderProcessingStatusList'] as List<dynamic>?;
     final sapOrderNumbersJson = data['sapOrderNumbers'] as List<dynamic>?;
     final relatedOrdersJson = data['relatedOrders'] as List<dynamic>?;
+    final itemCountSummaryJson =
+        data['itemCountSummary'] as Map<String, dynamic>?;
 
     return OrderRequestDetailModel(
       id: data['id'] as int,
@@ -401,6 +457,9 @@ class OrderRequestDetailModel {
                   RelatedClientOrderModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      itemCountSummary: itemCountSummaryJson != null
+          ? OrderItemCountSummaryModel.fromJson(itemCountSummaryJson)
+          : null,
     );
   }
 
@@ -430,6 +489,7 @@ class OrderRequestDetailModel {
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
+      'itemCountSummary': itemCountSummary?.toJson(),
     };
   }
 
@@ -459,6 +519,7 @@ class OrderRequestDetailModel {
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
       outOfStockItems: outOfStockItems?.map((e) => e.toEntity()).toList(),
       relatedOrders: relatedOrders.map((e) => e.toEntity()).toList(),
+      itemCountSummary: itemCountSummary?.toEntity(),
     );
   }
 

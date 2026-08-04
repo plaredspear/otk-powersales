@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_detail.dart';
 import './approval_status_badge.dart';
+import './order_item_count_info_sheet.dart';
 import './order_status_info_sheet.dart';
 
 class OrderInfoHeader extends StatelessWidget {
@@ -28,6 +29,9 @@ class OrderInfoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 로컬 변수로 승격 — nullable 필드는 클로저 안에서 스마트캐스트가 유지되지 않는다.
+    final summary = orderDetail.itemCountSummary;
+
     return Container(
       padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -98,6 +102,18 @@ class OrderInfoHeader extends StatelessWidget {
               '주문한 품목 수',
               '${orderDetail.orderedItemCount}개',
             ),
+            // 승인된 품목 수(출고 확정) — SAP 응답이 없으면 0개로 노출하고 내역은 info 팝업으로 안내
+            // (2026-08-04 사용자 결정: 기존 "주문한 품목 수" 행은 유지한 채 아래에 추가).
+            // 구버전 서버 응답(집계 없음)에서는 행 자체를 그리지 않는다.
+            if (summary != null) ...[
+              SizedBox(height: AppSpacing.sm),
+              _buildInfoRow(
+                '승인된 품목 수',
+                '${summary.confirmedCount}개',
+                onInfoTap: () =>
+                    OrderItemCountInfoSheet.show(context, summary),
+              ),
+            ],
           ],
         ],
       ),

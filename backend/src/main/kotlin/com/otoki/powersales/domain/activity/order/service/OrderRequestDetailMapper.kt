@@ -79,6 +79,9 @@ class OrderRequestDetailMapper {
         // 취소(DefaultReason 코드 채워짐 && ∉ 결품셋) productCode → `"{코드} {설명}"` (Spec #845 P1-B).
         // SAP 가 실제 취소 처리한 라인. orderedItems 의 "SAP취소됨" 배지/사유 주입용.
         val cancelledReasons = LinkedHashMap<String, String>()
+        // 출고 확정 productCode — SAPOrderNumber 채워짐 && DefaultReason 없음(취소/미납 아님) && 반려 아님.
+        // "납품문서가 생성된 품목" 집계(주문 상세 헤더 '승인된 품목 수')용.
+        val confirmedProductCodes = LinkedHashSet<String>()
         // LinkedHashMap → SAP 응답 자연 순서 유지 (Q7).
         val groups = LinkedHashMap<String, MutableList<ProcessingItemResponse>>()
         var emptyKeyCount = 0
@@ -142,7 +145,12 @@ class OrderRequestDetailMapper {
             val deliveryStatus = when (classification) {
                 DefaultReasonClassification.OUT_OF_STOCK -> DeliveryStatus.OUT_OF_STOCK
                 DefaultReasonClassification.CANCELLED -> DeliveryStatus.CANCELLED
-                null -> computeDeliveryStatus(sapLine)
+                null -> {
+                    // DefaultReason 없는 정상 라인 + SAPOrderNumber 존재(여기 도달 = groupKey 비어있지 않음)
+                    // → 출고 확정. 배송 차원(대기/배송중/배송완료)과 무관하게 납품문서가 생성된 품목으로 센다.
+                    if (productCode.isNotEmpty()) confirmedProductCodes += productCode
+                    computeDeliveryStatus(sapLine)
+                }
             }
             // 납품수량: 인바운드 총납품수량(ConfirmQuantity_Box)이 있으면 그 값으로 표시(거래처별과 동일 수치),
             // 없으면 라이브 SAP 출하수량/주문수량 폴백. groupKey 는 여기서 비어있지 않음(위에서 continue).
@@ -202,6 +210,7 @@ class OrderRequestDetailMapper {
             outOfStockReasons = outOfStockReasons.toMap(),
             outOfStockItems = outOfStockItems.toList(),
             cancelledReasons = cancelledReasons.toMap(),
+            confirmedProductCodes = confirmedProductCodes.toSet(),
         )
     }
 
@@ -357,6 +366,11 @@ class OrderRequestDetailMapper {
         val outOfStockItems: List<OutOfStockItemResponse> = emptyList(),
         /** 취소 productCode → `"{코드} {설명}"`. orderedItems "SAP취소됨" 배지/사유 주입용 (Spec #845 P1-B). */
         val cancelledReasons: Map<String, String> = emptyMap(),
+        /**
+         * 출고 확정 productCode — SAPOrderNumber 채워짐 + `DefaultReason` 없음(취소/미납 아님) + 반려 아님.
+         * 주문 상세 헤더 "승인된 품목 수"(납품문서 생성 품목) 집계용.
+         */
+        val confirmedProductCodes: Set<String> = emptySet(),
     )
 
     companion object {

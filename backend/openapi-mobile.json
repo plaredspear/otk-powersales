@@ -5386,6 +5386,31 @@
         },
         "type" : "object"
       },
+      "OrderItemCountSummaryResponse" : {
+        "properties" : {
+          "cancelledCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "confirmedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "orderedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "outOfStockCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rejectedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "OrderProcessingStatusResponse" : {
         "properties" : {
           "items" : {
@@ -5554,6 +5579,9 @@
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "itemCountSummary" : {
+            "$ref" : "#/components/schemas/OrderItemCountSummaryResponse"
           },
           "orderDate" : {
             "format" : "date-time",

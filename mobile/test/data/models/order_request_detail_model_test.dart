@@ -386,4 +386,64 @@ void main() {
       expect(entity.relatedOrders, isEmpty);
     });
   });
+
+  group('itemCountSummary — 승인된 품목 수 집계 (2026-08-04)', () {
+    Map<String, dynamic> detailData({Map<String, dynamic>? itemCountSummary}) {
+      return {
+        'data': {
+          'id': 1,
+          'orderRequestNumber': 'OR-0001234',
+          'clientId': 1,
+          'clientName': '홍길동상회',
+          'orderDate': '2026-07-21T10:00:00',
+          'deliveryDate': '2026-07-30',
+          'totalAmount': 114600,
+          'orderRequestStatus': 'APPROVED',
+          'orderRequestStatusName': '승인완료',
+          'isClosed': true,
+          'orderedItemCount': 36,
+          'orderedItems': <dynamic>[],
+          'rejectedItems': null,
+          if (itemCountSummary != null) 'itemCountSummary': itemCountSummary,
+        },
+      };
+    }
+
+    test('집계 파싱 — 주문/출고확정/취소/미납/반려', () {
+      final entity = OrderRequestDetailModel.fromJson(detailData(
+        itemCountSummary: {
+          'orderedCount': 41,
+          'confirmedCount': 36,
+          'cancelledCount': 2,
+          'outOfStockCount': 3,
+          'rejectedCount': 0,
+        },
+      )).toEntity();
+
+      final summary = entity.itemCountSummary!;
+      expect(summary.orderedCount, 41);
+      expect(summary.confirmedCount, 36);
+      expect(summary.cancelledCount, 2);
+      expect(summary.outOfStockCount, 3);
+      expect(summary.rejectedCount, 0);
+    });
+
+    test('itemCountSummary 부재 → null (구버전 서버 하위호환, 크래시 없음)', () {
+      final entity = OrderRequestDetailModel.fromJson(detailData()).toEntity();
+      expect(entity.itemCountSummary, isNull);
+    });
+
+    test('개별 키 누락 → 0 폴백', () {
+      final entity = OrderRequestDetailModel.fromJson(detailData(
+        itemCountSummary: {'orderedCount': 5},
+      )).toEntity();
+
+      final summary = entity.itemCountSummary!;
+      expect(summary.orderedCount, 5);
+      expect(summary.confirmedCount, 0);
+      expect(summary.cancelledCount, 0);
+      expect(summary.outOfStockCount, 0);
+      expect(summary.rejectedCount, 0);
+    });
+  });
 }

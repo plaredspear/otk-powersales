@@ -697,6 +697,66 @@ class OrderRequestServiceTest {
 
             assertThat(response.cancelable).isTrue()
         }
+
+        @Test
+        @DisplayName("성공 — itemCountSummary: 주문 라인 전량을 출고확정/취소/미납/반려로 분류 (2026-08-04)")
+        fun itemCountSummaryClassifiesAllLines() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(
+                    buildCrmProduct("1000023", "진라면", 30, orderRequest), // 출고 확정
+                    buildCrmProduct("2000045", "참기름", 30, orderRequest), // 취소(S2)
+                    buildCrmProduct("3000067", "케찹", 30, orderRequest), // 미납(L1)
+                    buildCrmProduct("4000089", "마요네즈", 30, orderRequest), // 반려
+                    buildCrmProduct("5000012", "카레", 30, orderRequest), // SAP 응답 없음 → 어디에도 미집계
+                )
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns listOf(
+                buildSapLine("1000023", "0300004993", "143000"),
+                buildSapLineWithDefaultReason("2000045", "S2"),
+                buildSapLineWithDefaultReason("3000067", "L1"),
+                buildSapLine("4000089", "", "000000").copy(lineItemStatus = "납품일자가 업무일이 아닙니다."),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            val summary = response.itemCountSummary
+            // 주문 라인 전량(반려·미납 포함) — orderedItemCount(=목록 카운트)와 달리 5.
+            assertThat(summary.orderedCount).isEqualTo(5)
+            assertThat(summary.confirmedCount).isEqualTo(1)
+            assertThat(summary.cancelledCount).isEqualTo(1)
+            assertThat(summary.outOfStockCount).isEqualTo(1)
+            assertThat(summary.rejectedCount).isEqualTo(1)
+            // 납품문서 미생성(SAP 응답에 없는) 라인은 어떤 분류에도 안 들어간다 → 합이 orderedCount 미만.
+            assertThat(
+                summary.confirmedCount + summary.cancelledCount +
+                    summary.outOfStockCount + summary.rejectedCount,
+            ).isEqualTo(4)
+            // 목록 카운트는 기존대로 반려·미납 제외 (취소는 배지로 유지).
+            assertThat(response.orderedItemCount).isEqualTo(3)
+        }
+
+        @Test
+        @DisplayName("성공 — SAP 호출 실패 시 itemCountSummary 는 orderedCount 만 채우고 나머지 0")
+        fun itemCountSummaryWhenSapUnavailable() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(
+                    buildCrmProduct("1000023", "진라면", 30, orderRequest),
+                    buildCrmProduct("2000045", "참기름", 30, orderRequest),
+                )
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns null
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            val summary = response.itemCountSummary
+            assertThat(summary.orderedCount).isEqualTo(2)
+            assertThat(summary.confirmedCount).isZero()
+            assertThat(summary.cancelledCount).isZero()
+            assertThat(summary.outOfStockCount).isZero()
+            assertThat(summary.rejectedCount).isZero()
+        }
     }
 
     private fun createOrderRequest(
