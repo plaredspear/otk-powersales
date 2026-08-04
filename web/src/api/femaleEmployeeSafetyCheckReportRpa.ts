@@ -11,6 +11,7 @@ export interface FemaleEmployeeSafetyCheckRpaItem {
   accountSapCode: string | null;
   accountName: string | null;
   workingCategory1: string | null;
+  /** 점검시간 — 서버 포맷 한국어 일시 표기 (`2026. 8. 1. 오후 1:36`). ISO 문자열 아님. */
   checkTime: string | null;
   isWorkReport: string | null;
   hrCode: string | null;

@@ -65,7 +65,8 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
       { title: '거래처코드', dataIndex: 'accountSapCode', width: 110, render: (v) => v ?? '-' },
       { title: '거래처명', dataIndex: 'accountName', width: 160, render: (v) => v ?? '-' },
       { title: '근무구분1', dataIndex: 'workingCategory1', width: 90, render: (v) => v ?? '-' },
-      { title: '점검시간', dataIndex: 'checkTime', width: 150, render: (v) => v ?? '-' },
+      // 서버가 `2026. 8. 1. 오후 1:36` 한국어 표기로 내려준다 (엑셀은 동일 표기의 날짜 셀 서식)
+      { title: '점검시간', dataIndex: 'checkTime', width: 170, render: (v) => v ?? '-' },
       { title: '근무보고여부', dataIndex: 'isWorkReport', width: 110, render: (v) => v || '-' },
       { title: 'HR코드', dataIndex: 'hrCode', width: 90, render: (v) => v ?? '-' },
       { title: '점검1', dataIndex: 'equipment1', width: 70, align: 'center', render: (v) => v ?? '-' },

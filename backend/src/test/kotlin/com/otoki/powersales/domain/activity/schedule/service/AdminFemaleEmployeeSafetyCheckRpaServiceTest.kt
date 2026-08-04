@@ -16,7 +16,10 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
+import org.apache.poi.ss.usermodel.CellType
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -98,13 +101,14 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         }
 
         @Test
-        @DisplayName("checkTime 은 startTime 을 보정 없이 그대로 반환한다")
+        @DisplayName("checkTime 은 startTime 을 보정 없이 한국어 일시 표기로 반환한다")
         fun checkTimeNoOffset() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
 
             val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
 
-            assertThat(res.items[0].checkTime).isEqualTo("2026-05-29T09:05")
+            assertThat(res.items[0].checkTime).isEqualTo("2026. 5. 29. 오전 9:05")
+            assertThat(res.items[0].checkTimeAt).isEqualTo(LocalDateTime.of(2026, 5, 29, 9, 5))
         }
 
         @Test
@@ -212,6 +216,38 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
 
             assertThat(result.filename).isEqualTo("판매여사원안전점검RPA_2026-05-29.xlsx")
             assertThat(result.bytes).isNotEmpty()
+        }
+
+        @Test
+        @DisplayName("점검시간은 한국어 일시 서식의 날짜 셀로 기록한다")
+        fun checkTimeIsFormattedDateCell() {
+            every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
+
+            val result = service.exportReport(allScope, LocalDate.of(2026, 5, 29))
+
+            XSSFWorkbook(ByteArrayInputStream(result.bytes)).use { wb ->
+                val cell = wb.getSheetAt(0).getRow(1).getCell(7)
+                assertThat(cell.localDateTimeCellValue).isEqualTo(LocalDateTime.of(2026, 5, 29, 9, 5))
+                assertThat(cell.cellStyle.dataFormatString).isEqualTo("[\$-412]yyyy. m. d. AM/PM h:mm")
+            }
+        }
+
+        @Test
+        @DisplayName("예방사항 총 체크는 데이터/합계 모두 정수 서식 숫자 셀로 기록한다")
+        fun precautionChkIsIntegerNumericCell() {
+            every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
+
+            val result = service.exportReport(allScope, LocalDate.of(2026, 5, 29))
+
+            XSSFWorkbook(ByteArrayInputStream(result.bytes)).use { wb ->
+                val sheet = wb.getSheetAt(0)
+                val dataCell = sheet.getRow(1).getCell(20)
+                assertThat(dataCell.cellType).isEqualTo(CellType.NUMERIC)
+                assertThat(dataCell.cellStyle.dataFormatString).isEqualTo("0")
+                val totalCell = sheet.getRow(2).getCell(20)
+                assertThat(totalCell.cellType).isEqualTo(CellType.NUMERIC)
+                assertThat(totalCell.cellStyle.dataFormatString).isEqualTo("0")
+            }
         }
     }
 }

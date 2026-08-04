@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployee
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.platform.common.util.DateTimeDisplay
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
@@ -26,6 +27,8 @@ import java.time.LocalDate
  *   (b) 지점 필터 지원 — 레거시 RPA 는 SF scope=organization 전사였으나, 일별 안전점검과 동일하게
  *       DataScope(costCenterCode) 지점 스코프를 신규 적용 (전사 권한자 미선택 시 전건).
  * checkTime 은 startTime 직접 (#841 동일 — 레거시 `StartTime - 9/24` KST 보정 신규 미적용).
+ * 표기는 한국어 일시 `2026. 8. 1. 오후 1:36` ([com.otoki.powersales.platform.common.util.DateTimeDisplay]) —
+ * 화면은 문자열, 엑셀은 동일 표기의 날짜 셀 서식.
  */
 @Service
 @Transactional(readOnly = true)
@@ -63,6 +66,14 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("판매여사원안전점검RPA")
         val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
+        // 점검시간은 문자열이 아닌 날짜 셀 + 표시 서식 (화면과 동일 표기 + 엑셀 정렬/필터가 날짜로 동작)
+        val checkTimeStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat(DateTimeDisplay.KOREAN_DATE_TIME_EXCEL_FORMAT)
+        }
+        // 예방사항 총 체크는 정수 (레거시 precaution_chk__c = Number(10,0)) — 숫자 셀 + 정수 서식으로 `12.0` 표기 제거
+        val integerStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("0")
+        }
 
         val headers = listOf(
             "사번", "사원명", "사원 조직명", "거래처유형", "거래처코드", "거래처명", "근무유형1",
@@ -96,7 +107,15 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             row.createCell(4).setCellValue(item.accountSapCode ?: "")
             row.createCell(5).setCellValue(item.accountName ?: "")
             row.createCell(6).setCellValue(item.workingCategory1 ?: "")
-            row.createCell(7).setCellValue(item.checkTime ?: "")
+            row.createCell(7).apply {
+                val at = item.checkTimeAt
+                if (at != null) {
+                    setCellValue(at)
+                    cellStyle = checkTimeStyle
+                } else {
+                    setCellValue("")
+                }
+            }
             row.createCell(8).setCellValue(item.isWorkReport ?: "")
             row.createCell(9).setCellValue(item.hrCode ?: "")
             row.createCell(10).setCellValue(item.equipment1 ?: "")
@@ -109,7 +128,15 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             row.createCell(17).setCellValue(item.equipment8 ?: "")
             row.createCell(18).setCellValue(item.equipment9 ?: "")
             row.createCell(19).setCellValue(item.precaution ?: "")
-            row.createCell(20).setCellValue(item.precautionChk?.toString() ?: "")
+            row.createCell(20).apply {
+                val chk = item.precautionChk
+                if (chk != null) {
+                    setCellValue(chk)
+                    cellStyle = integerStyle
+                } else {
+                    setCellValue("")
+                }
+            }
             row.createCell(21).setCellValue(item.workingCategory2 ?: "")
             row.createCell(22).setCellValue(item.workingCategory3 ?: "")
             row.createCell(23).setCellValue(item.secondWorkType ?: "")
@@ -118,7 +145,10 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
         // 합계 행 — SF Report GrandTotal(레코드 수) + 예방사항 총 체크 Sum 정합
         val totalRow = sheet.createRow(response.items.size + 1)
         totalRow.createCell(0).setCellValue("총 ${response.items.size}건")
-        totalRow.createCell(20).setCellValue(response.items.sumOf { it.precautionChk ?: 0.0 })
+        totalRow.createCell(20).apply {
+            setCellValue(response.items.sumOf { it.precautionChk ?: 0.0 })
+            cellStyle = integerStyle
+        }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
@@ -139,8 +169,9 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             accountSapCode = acc?.externalKey,
             accountName = acc?.name,
             workingCategory1 = s.workingCategory1?.displayName,
-            // 레거시 StartTime - 9/24 의 KST 보정은 신규 미적용 (#841 동일)
-            checkTime = s.startTime?.toString(),
+            // 레거시 StartTime - 9/24 의 KST 보정은 신규 미적용 (#841 동일). 표기는 한국어 일시(`2026. 8. 1. 오후 1:36`)
+            checkTime = DateTimeDisplay.koreanDateTime(s.startTime),
+            checkTimeAt = s.startTime,
             isWorkReport = s.isWorkReport,
             hrCode = s.hrCode,
             equipment1 = s.equipment1,
