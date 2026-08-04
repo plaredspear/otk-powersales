@@ -11,15 +11,22 @@ interface PPTMasterRepository : JpaRepository<ProfessionalPromotionTeamMaster, L
     fun findByEmployeeId(employeeId: Long): List<ProfessionalPromotionTeamMaster>
 
     /**
-     * name(전문행사조 마스터 번호) 채번.
+     * name(전문행사조 마스터 번호) 채번 — SF AutoNumber(displayFormat PM{0000000}) 재현.
+     * 시퀀스 nextval 단독.
      *
-     * name 은 SF AutoNumber(ProfessionalPromotionTeamMaster__c.Name, displayFormat PM{0000000}) 와
-     * 동일한 번호 공간(PM + 7자리)을 공유한다. SF 데이터 sync 가 신규 시스템 시퀀스보다 큰 번호를 적재하면
-     * nextval 만으로는 unique(혹은 표시번호) 충돌이 발생한다. 또한 시퀀스 동기화를 특정 시점에 한 번만 하면
-     * SF 데이터 마이그레이션과의 실행 순서에 의존해 다시 뒤처질 수 있다.
-     *
-     * 이를 시점 의존 없이 해소하기 위해, 채번 때마다 nextval 과 "현재 데이터 최대 번호 + 1" 중 큰 값을
-     * setval 로 확정한다. setval 반환값이 곧 발급 번호이며, 항상 기존 데이터 최대값을 추월하므로 충돌이 없다.
+     * MAX 보정은 [syncNameSeq] 가 담당하며, 번호가 외부에서 주입될 수 있는 시점
+     * (부팅 1회 / SF 마이그레이션 직후)에만 실행한다 — `NameSequenceSyncService`.
+     * 벌크 업로드는 item 마다 본 채번을 호출하므로 hot path 다.
+     */
+    @Query(
+        value = "SELECT nextval('powersales.professional_promotion_team_master_name_seq')",
+        nativeQuery = true
+    )
+    fun getNextNameSeq(): Long
+
+    /**
+     * name 시퀀스를 기존 데이터 최대 번호 위로 끌어올린다 (멱등).
+     * MAX 대상 표현식에는 부분 인덱스(`idx_ppt_master_name_seq_num`)가 있다.
      */
     @Query(
         value = """
@@ -38,5 +45,5 @@ interface PPTMasterRepository : JpaRepository<ProfessionalPromotionTeamMaster, L
         """,
         nativeQuery = true
     )
-    fun getNextNameSeq(): Long
+    fun syncNameSeq(): Long
 }

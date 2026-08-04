@@ -7,15 +7,23 @@ import org.springframework.data.jpa.repository.Query
 interface PromotionRepository : JpaRepository<Promotion, Long>, PromotionRepositoryCustom {
 
     /**
-     * promotion_number 채번.
+     * promotion_number 채번 (SF AutoNumber Name, "PM" + 8자리 재현). 시퀀스 nextval 단독.
      *
-     * promotion_number 는 SF AutoNumber(Name) 와 동일한 번호 공간(PM + 8자리)을 공유한다.
-     * SF 데이터 sync 가 신규 시스템 시퀀스보다 큰 번호를 적재하면 nextval 만으로는 unique 위반이 발생한다.
-     * 또한 시퀀스 동기화를 특정 시점에 한 번만 하면(Flyway setval 등) SF 데이터 마이그레이션과의 실행 순서에 의존해 다시 뒤처질 수 있다.
-     *
-     * 이를 시점 의존 없이 해소하기 위해, 채번 때마다 nextval 과 "현재 데이터 최대 번호 + 1" 중 큰 값을
-     * setval 로 확정한다. setval 반환값이 곧 발급 번호이며, 항상 기존 데이터 최대값을 추월하므로 충돌이 발생하지 않는다.
-     * setval 이 시퀀스 내부값을 즉시 갱신하므로, 한 번 따라잡은 뒤에는 일반 시퀀스처럼 동작한다(MAX 스캔은 항상 작은 값).
+     * 시퀀스를 기존 데이터 최대 번호 위로 끌어올리는 MAX 보정은 [syncPromotionNumberSeq] 가 담당하며,
+     * 번호가 외부에서 주입될 수 있는 시점(부팅 1회 / SF 마이그레이션 직후)에만 실행한다 —
+     * `NameSequenceSyncService`. promotion_number 는 UNIQUE 제약이 있으므로 보정 누락 시 채번이
+     * 실패(예외)하며 조용한 중복은 발생하지 않는다.
+     */
+    @Query(
+        value = "SELECT nextval('powersales.promotion_number_seq')",
+        nativeQuery = true
+    )
+    fun getNextPromotionNumberSeq(): Long
+
+    /**
+     * promotion_number 시퀀스를 기존 데이터 최대 번호 위로 끌어올린다 (멱등).
+     * 이미 앞서 있으면 nextval 1개만 소모하고 값은 그대로다.
+     * MAX 대상 표현식에는 부분 인덱스(`idx_promotion_number_seq_num`)가 있다.
      */
     @Query(
         value = """
@@ -34,5 +42,5 @@ interface PromotionRepository : JpaRepository<Promotion, Long>, PromotionReposit
         """,
         nativeQuery = true
     )
-    fun getNextPromotionNumberSeq(): Long
+    fun syncPromotionNumberSeq(): Long
 }

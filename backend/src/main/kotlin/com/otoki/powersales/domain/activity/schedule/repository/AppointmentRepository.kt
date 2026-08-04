@@ -8,11 +8,21 @@ interface AppointmentRepository : JpaRepository<Appointment, Long> {
 
     /**
      * appointment.name 채번 — SF Appointment__c Name(AutoNumber `AP{00000000}`) 정합.
+     * 시퀀스 nextval 단독.
      *
-     * name 은 SF AutoNumber 와 동일한 번호 공간(AP + 8자리)을 공유한다.
-     * SF 데이터 sync 가 신규 시스템 시퀀스보다 큰 번호를 적재하면 nextval 만으로는 번호 충돌이 발생한다.
-     * 이를 시점 의존 없이 해소하기 위해, 채번 때마다 nextval 과 "현재 데이터 최대 번호 + 1" 중 큰 값을
-     * setval 로 확정한다 (PromotionRepository.getNextPromotionNumberSeq 와 동일 패턴).
+     * MAX 보정은 [syncNameSeq] 가 담당하며, 번호가 외부에서 주입될 수 있는 시점
+     * (부팅 1회 / SF 마이그레이션 직후)에만 실행한다 — `NameSequenceSyncService`.
+     * SAP 인사발령 인바운드가 행마다 본 채번을 호출하므로 hot path 다.
+     */
+    @Query(
+        value = "SELECT nextval('powersales.appointment_name_seq')",
+        nativeQuery = true
+    )
+    fun getNextAppointmentNameSeq(): Long
+
+    /**
+     * name 시퀀스를 기존 데이터 최대 번호 위로 끌어올린다 (멱등).
+     * MAX 대상 표현식에는 부분 인덱스(`idx_appointment_name_seq_num`)가 있다.
      */
     @Query(
         value = """
@@ -31,5 +41,5 @@ interface AppointmentRepository : JpaRepository<Appointment, Long> {
         """,
         nativeQuery = true
     )
-    fun getNextAppointmentNameSeq(): Long
+    fun syncNameSeq(): Long
 }

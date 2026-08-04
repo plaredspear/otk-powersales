@@ -3,6 +3,7 @@ package com.otoki.powersales._migration.sf.stage1
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.platform.common.config.CacheConfig
+import com.otoki.powersales.platform.common.sequence.NameSequenceSyncService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -46,6 +47,8 @@ class Stage1CopyController(
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
     private val branchCodeExpander: com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander,
     private val cacheManager: CacheManager,
+    // SF 원본 Name 을 그대로 적재하므로 적재 후 name/번호 시퀀스를 데이터 최대값 위로 끌어올려야 한다.
+    private val nameSequenceSyncService: NameSequenceSyncService,
     // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.
     @Value("\${app.aws.s3.bucket:}") private val configuredS3Bucket: String,
 ) {
@@ -88,6 +91,8 @@ class Stage1CopyController(
                 if (Stage1Targets.affectsOrganizationCache(req.targetName)) {
                     evictCaches(ORGANIZATION_CACHE_NAMES)
                 }
+                // SF 원본 Name 적재로 뒤처졌을 수 있는 채번 시퀀스 보정 (target 무관 일괄 — 8종 모두 저비용).
+                nameSequenceSyncService.syncAll(reason = "stage1-copy:${req.targetName}")
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
             }
@@ -116,6 +121,8 @@ class Stage1CopyController(
                 branchCodeExpander.reload()
                 // 일괄 적재는 Organization 도 항상 포함 → Redis 조직 캐시 무효화.
                 evictCaches(ORGANIZATION_CACHE_NAMES)
+                // SF 원본 Name 적재로 뒤처졌을 수 있는 채번 시퀀스 보정.
+                nameSequenceSyncService.syncAll(reason = "stage1-copy-all")
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }
@@ -147,6 +154,18 @@ class Stage1CopyController(
         log.warn("[stage1-copy] 진행 상태 강제 초기화 (reset) — stale RUNNING 해제")
         progress.forceReset()
         return ResponseEntity.ok(ApiResponse.success(progress.toResponse()))
+    }
+
+    /**
+     * name/번호 채번 시퀀스 수동 보정 — 앱을 거치지 않고 데이터를 적재했을 때
+     * (psql 직접 COPY / DB dump 복원 / Stage1 이외 경로) **재기동 없이** 시퀀스를 맞추는 안전판.
+     *
+     * 평상시엔 불필요하다 — 부팅 시 1회([NameSequenceSyncRunner])와 Stage1 적재 직후 자동 실행된다.
+     * 멱등이라 여러 번 호출해도 안전하며, 응답은 보정 후 시퀀스 값(라벨별)이다.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage1/sync-name-sequences")
+    fun syncNameSequences(): ResponseEntity<ApiResponse<Map<String, Long>>> {
+        return ResponseEntity.ok(ApiResponse.success(nameSequenceSyncService.syncAll(reason = "manual")))
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/targets")

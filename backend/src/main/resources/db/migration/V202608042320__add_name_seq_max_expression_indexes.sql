@@ -1,8 +1,14 @@
--- name 채번 쿼리(MAX(regexp_replace(name, ...))) 전체 스캔 제거용 표현식 부분 인덱스.
+-- name 채번 시퀀스 보정 쿼리(MAX(regexp_replace(name, ...))) 전체 스캔 제거용 표현식 부분 인덱스.
 --
--- 대상 쿼리 (둘 다 "행사마스터 등록 > 행사사원" 화면의 hot path):
---   1) TeamMemberScheduleRepository.allocateNameSeqBlock / getNextNameSeq  ← 행사사원 일정확정
---   2) PromotionEmployeeRepository.getNextPromotionEmployeeNumberSeq       ← 행사사원 등록
+-- 대상 쿼리:
+--   1) TeamMemberScheduleRepository.syncNameSeq
+--   2) PromotionEmployeeRepository.syncNameSeq
+--
+-- 후속 변경 주의: 본 마이그레이션 작성 시점에는 위 MAX 보정이 **채번 때마다** 실행됐고
+-- ("행사마스터 등록 > 행사사원 일정확정" 지연의 주원인), 같은 PR 후속 커밋에서 보정을
+-- 부팅 1회 / SF 마이그레이션 직후로 분리했다 (NameSequenceSyncService). 따라서 이 인덱스는
+-- 이제 hot path 가 아니라 **보정 시점**을 위한 것이다 — 부팅 때마다 2.9GB 테이블을 전건 스캔하지
+-- 않으려면 여전히 필요하다.
 --
 --   SELECT setval(seq, GREATEST(nextval(seq),
 --       COALESCE((SELECT MAX(NULLIF(regexp_replace(name,'\D','','g'),'')::bigint)

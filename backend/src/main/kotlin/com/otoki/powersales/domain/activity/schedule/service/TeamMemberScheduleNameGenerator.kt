@@ -8,12 +8,13 @@ import org.springframework.stereotype.Component
  * displayFormat `TS{00000000}`) 재현.
  *
  * SF 원본은 `TS` + 8자리 zero-padded 순번(날짜 토큰 없음). 신규 INSERT 경로가 여러 곳이라
- * 포맷/채번 로직을 본 컴포넌트에 단일화한다. 시퀀스 충돌 회피(setval 보정)는 채번 쿼리
- * ([TeamMemberScheduleRepository.getNextNameSeq]) 가 담당한다.
+ * 포맷/채번 로직을 본 컴포넌트에 단일화한다. 채번은 시퀀스 nextval 단독이며, 시퀀스가 기존 데이터를
+ * 추월하도록 맞추는 MAX 보정은 부팅 1회 / SF 마이그레이션 직후에만 도는
+ * `NameSequenceSyncService` 가 담당한다.
  *
- * 벌크 생성(연차 전개 / 행사 확정)은 [nextBatch] 로 필요한 개수를 한 번에 발급받는다 — 건별
- * [next] 반복은 채번 쿼리의 전체 스캔(`MAX(regexp_replace(name, ...))`) 이 건수만큼 반복돼 느리다.
- * 두 경로 모두 시퀀스를 발급 구간 끝까지 밀어두므로 동시 요청·SF sync 추월에 안전하다.
+ * 벌크 생성(연차 전개 / 행사 확정)은 [nextBatch] 로 필요한 개수를 쿼리 1회로 발급받는다 — 건별
+ * [next] 반복은 왕복이 건수만큼 늘어난다. 두 경로 모두 시퀀스를 발급 구간 끝까지 밀어두므로
+ * 동시 요청에 안전하다.
  */
 @Component
 class TeamMemberScheduleNameGenerator(

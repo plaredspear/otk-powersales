@@ -128,16 +128,47 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     ): List<TeamMemberSchedule>
 
     /**
-     * team_member_schedule.name 채번 — SF AutoNumber(Name, "TS{00000000}") 재현.
+     * team_member_schedule.name 채번 — SF AutoNumber(Name, "TS{00000000}") 재현. 시퀀스 nextval 단독.
      *
-     * name 은 SF AutoNumber 와 동일한 번호 공간(TS + 8자리)을 공유한다. SF 데이터 sync 가 신규 시스템
-     * 시퀀스보다 큰 번호를 적재하면 nextval 만으로는 기존 값과 겹칠 수 있다. 또한 시퀀스 동기화를 특정
-     * 시점에 한 번만 하면(Flyway setval 등) SF 데이터 마이그레이션과의 실행 순서에 의존해 다시 뒤처질 수 있다.
+     * 시퀀스를 기존 데이터 최대 번호 위로 끌어올리는 MAX 보정은 [syncNameSeq] 가 담당하며,
+     * **번호가 외부에서 주입될 수 있는 시점에만** 실행한다 (부팅 1회 / SF 마이그레이션 직후 —
+     * `NameSequenceSyncService`). 상시 운영 중에는 앱 밖에서 이 테이블에 name 을 넣는 경로가 없으므로
+     * (SAP 인바운드·배치 모두 본 채번을 경유) 채번마다 MAX 를 재확인할 이유가 없다.
+     * 과거에는 채번마다 `GREATEST(nextval, MAX+1)` 로 보정했는데, MAX 대상이 표현식이라 채번 1회가
+     * 1.76M row 테이블 전건 스캔이었다 (행사 확정 지연의 주원인).
+     */
+    @Query(
+        value = "SELECT nextval('powersales.team_member_schedule_name_seq')",
+        nativeQuery = true
+    )
+    fun getNextNameSeq(): Long
+
+    /**
+     * team_member_schedule.name 벌크 채번 — [getNextNameSeq] 를 [count] 건만큼 반복한 것과 동일한
+     * 번호 구간을 **쿼리 1회**로 확보한다 (행사 확정 / 연차 전개처럼 N 건을 한 번에 만드는 경로용).
      *
-     * 이를 시점 의존 없이 해소하기 위해, 채번 때마다 nextval 과 "현재 데이터 최대 번호 + 1" 중 큰 값을
-     * setval 로 확정한다. setval 반환값이 곧 발급 번호이며, 항상 기존 데이터 최대값을 추월하므로 겹치지 않는다.
-     * setval 이 시퀀스 내부값을 즉시 갱신하므로, 한 번 따라잡은 뒤에는 일반 시퀀스처럼 동작한다(MAX 스캔은 항상 작은 값).
-     * (promotion_number 와 동일 패턴 — `PromotionRepository.getNextPromotionNumberSeq`.)
+     * 반환값은 **구간의 마지막 번호**이며, 발급 구간은 `[반환값 - count + 1, 반환값]` 이다.
+     * nextval 로 구간 시작을 원자적으로 확보한 뒤 setval 로 구간 끝까지 밀어두므로 동시 요청과 번호가
+     * 겹치지 않는다 (건별 호출과 동일 보장).
+     */
+    @Query(
+        value = """
+            SELECT setval(
+                'powersales.team_member_schedule_name_seq',
+                nextval('powersales.team_member_schedule_name_seq') + (:count - 1)
+            )
+        """,
+        nativeQuery = true
+    )
+    fun allocateNameSeqBlock(@Param("count") count: Long): Long
+
+    /**
+     * name 시퀀스를 기존 데이터 최대 번호 위로 끌어올린다 (멱등).
+     *
+     * SF 마이그레이션(Stage1 COPY)은 SF 원본 Name 을 그대로 적재하므로 시퀀스가 뒤처질 수 있다.
+     * 이미 앞서 있으면 nextval 1개만 소모하고 값은 그대로다. MAX 대상 표현식에는 부분 인덱스
+     * (`idx_tms_name_seq_num`)가 있어 index scan 으로 처리된다.
+     * 호출 지점은 `NameSequenceSyncService` 참조 — 채번 hot path 에서는 호출하지 않는다.
      */
     @Query(
         value = """
@@ -156,38 +187,7 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         """,
         nativeQuery = true
     )
-    fun getNextNameSeq(): Long
-
-    /**
-     * team_member_schedule.name 벌크 채번 — [getNextNameSeq] 를 [count] 건만큼 반복하는 것과 동일한
-     * 번호 구간(마지막 발급 번호)을 **쿼리 1회**로 확정한다.
-     *
-     * [getNextNameSeq] 는 호출마다 `MAX(regexp_replace(name, ...))` 로 team_member_schedule 전체를
-     * 스캔한다(해당 표현식 인덱스 없음). 행사 확정·연차 전개처럼 N 건을 한 번에 만드는 경로에서 건별
-     * 호출하면 전체 스캔이 N 회 반복돼 확정 응답이 느려진다. 벌크 경로는 MAX 보정을 **1회만** 수행하고
-     * 나머지 N-1 개는 시퀀스 증분(`setval(base + count)`)으로 확보한다.
-     *
-     * 반환값은 **구간의 마지막 번호**이며, 발급 구간은 `[반환값 - count + 1, 반환값]` 이다.
-     * setval 로 시퀀스를 구간 끝까지 밀어두므로 동시 요청과 번호가 겹치지 않는다(건별 호출과 동일 보장).
-     */
-    @Query(
-        value = """
-            SELECT setval(
-                'powersales.team_member_schedule_name_seq',
-                GREATEST(
-                    nextval('powersales.team_member_schedule_name_seq'),
-                    COALESCE(
-                        (SELECT MAX(NULLIF(regexp_replace(name, '\D', '', 'g'), '')::bigint)
-                           FROM powersales.team_member_schedule
-                          WHERE name ~ '^TS[0-9]+$'),
-                        0
-                    ) + 1
-                ) + (:count - 1)
-            )
-        """,
-        nativeQuery = true
-    )
-    fun allocateNameSeqBlock(@Param("count") count: Long): Long
+    fun syncNameSeq(): Long
 
     /** name 이 비어(NULL/공백) 채번이 필요한 일정 건수 — 백필 도구 preview 용. */
     @Query(
