@@ -141,13 +141,19 @@ class PromotionSchedulesUpsertHelper(
         val savedTeamMemberSchedules = teamMemberScheduleRepository.saveAll(teamMemberSchedulesToSave)
 
         val teamMemberScheduleByPeId = savedTeamMemberSchedules.associateBy { it.promotionEmployee?.id }
+        var linkChanged = false
         for (pe in employees) {
             val teamMemberSchedule = teamMemberScheduleByPeId[pe.id]
-            if (teamMemberSchedule != null) {
+            // 재확정 시 이미 같은 일정을 가리키고 있으면 대입하지 않는다 — 같은 값 재대입도
+            // dirty 판정이라 행사사원 전건에 불필요한 UPDATE 가 나간다.
+            if (teamMemberSchedule != null && pe.teamMemberScheduleId != teamMemberSchedule.id) {
                 pe.teamMemberScheduleId = teamMemberSchedule.id
+                linkChanged = true
             }
         }
-        promotionEmployeeRepository.saveAll(employees)
+        if (linkChanged) {
+            promotionEmployeeRepository.saveAll(employees)
+        }
 
         return PromotionConfirmResponse(
             promotionId = promotionId,

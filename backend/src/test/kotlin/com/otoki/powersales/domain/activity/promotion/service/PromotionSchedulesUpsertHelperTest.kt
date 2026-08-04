@@ -27,6 +27,7 @@ import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleO
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -149,6 +150,50 @@ class PromotionSchedulesUpsertHelperTest {
 
             assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
             assertThat(employees[0].teamMemberScheduleId).isEqualTo(50L)
+        }
+
+        @Test
+        @DisplayName("재확정 - 값 변경 없음 -> 기존 일정/행사사원 재대입 없음(불필요 UPDATE 방지)")
+        fun confirm_reconfirmWithoutChange_doesNotTouchEntities() {
+            val promotion = createPromotion()
+            val pe = createPE(id = 1L, employeeId = 1L, scheduleDate = startDate)
+            pe.teamMemberScheduleId = 50L // 이미 확정되어 연결된 상태
+            val employees = listOf(pe)
+
+            // 확정이 대입하려는 값과 완전히 동일한 기존 일정 (인스턴스만 다름)
+            val originalEmployee = Employee(id = 1L, employeeCode = "EMP001", name = "김철수")
+            val originalAccount = Account(id = 100L)
+            val originalPromotionEmployee = PromotionEmployee(id = 1L, promotionId = 10L)
+            val existingTeamMemberSchedule = TeamMemberSchedule(
+                id = 50L,
+                employee = originalEmployee,
+                account = originalAccount,
+                workingDate = startDate,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.EVENT,
+                workingCategory3 = WorkingCategory3.FIXED,
+                workingCategory4 = null,
+                promotionEmployee = originalPromotionEmployee
+            )
+
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+            every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns listOf(existingTeamMemberSchedule)
+            every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns listOf(existingTeamMemberSchedule)
+            // 조회 결과는 기존 일정이 들고 있는 것과 다른 인스턴스 — 재대입이 일어나면 인스턴스가 바뀐다.
+            every { employeeRepository.findAllById(any()) } returns listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"))
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers { firstArg<List<TeamMemberSchedule>>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
+
+            val result = helper.upsert(10L)
+
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+            // 같은 값 재대입은 dirty 판정(→ 전건 UPDATE) 이므로 발생하면 안 된다.
+            assertThat(existingTeamMemberSchedule.employee).isSameAs(originalEmployee)
+            assertThat(existingTeamMemberSchedule.account).isSameAs(originalAccount)
+            assertThat(existingTeamMemberSchedule.promotionEmployee).isSameAs(originalPromotionEmployee)
+            assertThat(pe.teamMemberScheduleId).isEqualTo(50L)
+            verify(exactly = 0) { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) }
         }
 
         @Test

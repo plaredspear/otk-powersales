@@ -414,13 +414,18 @@ class TeamMemberSchedule(
         workingCategory4: String?,
         promotionEmployee: PromotionEmployee
     ) {
-        this.employee = employee
-        this.account = account
-        this.workingDate = workingDate
-        this.workingType = workingType
-        this.workingCategory1 = workingCategory1
-        this.workingCategory3 = workingCategory3
-        this.workingCategory4 = workingCategory4
-        this.promotionEmployee = promotionEmployee
+        // 실제 변경분만 대입한다. bytecode dirty tracking(Hibernate 7 강제 활성) 은 setter 호출
+        // 자체로 dirty 판정하므로, 같은 값을 다시 넣으면 재확정(이미 확정된 행사를 다시 확정)
+        // 시에도 연결 일정 전건에 UPDATE 가 나간다 — 확정 건수에 비례해 왕복이 쌓인다.
+        // 연관은 proxy/entity 인스턴스가 갈릴 수 있어 식별자로 비교한다 (id getter 는 proxy 를
+        // 초기화하지 않음 — access type PROPERTY).
+        if (this.employee?.id != employee.id) this.employee = employee
+        if (this.account?.id != account?.id) this.account = account
+        if (this.workingDate != workingDate) this.workingDate = workingDate
+        if (this.workingType != workingType) this.workingType = workingType
+        if (this.workingCategory1 != workingCategory1) this.workingCategory1 = workingCategory1
+        if (this.workingCategory3 != workingCategory3) this.workingCategory3 = workingCategory3
+        if (this.workingCategory4 != workingCategory4) this.workingCategory4 = workingCategory4
+        if (this.promotionEmployee?.id != promotionEmployee.id) this.promotionEmployee = promotionEmployee
     }
 }
