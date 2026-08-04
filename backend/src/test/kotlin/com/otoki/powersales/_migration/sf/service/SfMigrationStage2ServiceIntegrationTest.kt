@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchMappingSupplement
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
@@ -133,6 +134,19 @@ class SfMigrationStage2ServiceIntegrationTest {
                 permission VARCHAR(80),
                 created_at TIMESTAMP,
                 PRIMARY KEY (user_id, permission)
+            )
+            """.trimIndent()
+        ).executeUpdate()
+        // branch_mapping — branch-mapping-supplement substep 대상 (V203 스키마 정합).
+        em.createNativeQuery("DROP TABLE IF EXISTS powersales.branch_mapping").executeUpdate()
+        em.createNativeQuery(
+            """
+            CREATE TABLE powersales.branch_mapping (
+                branch_code VARCHAR(20) PRIMARY KEY,
+                included_branch_codes VARCHAR(255) NOT NULL,
+                label VARCHAR(100),
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
             )
             """.trimIndent()
         ).executeUpdate()
@@ -494,6 +508,61 @@ class SfMigrationStage2ServiceIntegrationTest {
         // record_sfid 가 어느 부모와도 매칭 안 되는 dangling row → parent_id NULL 유지.
         assertThat(objOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a01XXXXXXXXXXXAAA'"))
             .isNull()
+    }
+
+    // ------------------------------------------------------------------
+    // branch-mapping-supplement substep
+    // ------------------------------------------------------------------
+
+    @Test
+    @Transactional
+    @DisplayName("branch-mapping-supplement — SoT 보정 행을 적재하고, 기존 SF 원본 행은 건드리지 않는다")
+    fun runBranchMappingSupplement_insertsMissingRow() {
+        // Stage1 이 SF 원본으로 적재해 둔 상태 (CVS전략은 평문 5694 키만 존재).
+        em.createNativeQuery(
+            "INSERT INTO powersales.branch_mapping (branch_code, included_branch_codes, label) " +
+                "VALUES ('5694', '5691,5692,5693,5694', 'cvs전략')"
+        ).executeUpdate()
+
+        val response = service.runBranchMappingSupplement()
+
+        assertThat(response.substep).isEqualTo("branchMappingSupplement")
+        assertThat(response.totalRowsAffected).isEqualTo(BranchMappingSupplement.ROWS.size)
+
+        BranchMappingSupplement.ROWS.forEach { row ->
+            assertThat(
+                strOf(
+                    "SELECT included_branch_codes FROM powersales.branch_mapping " +
+                        "WHERE branch_code = '${row.branchCode}'"
+                )
+            ).isEqualTo(row.includedBranchCodes)
+        }
+
+        // 기존 SF 원본 행은 그대로 (전사 권한자 34개 목록이 '5694' 로 확장 입력을 넘기므로 유지 필요).
+        assertThat(strOf("SELECT included_branch_codes FROM powersales.branch_mapping WHERE branch_code = '5694'"))
+            .isEqualTo("5691,5692,5693,5694")
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("branch-mapping-supplement — 재실행 시 0 row (멱등) + 기존 값 보존")
+    fun runBranchMappingSupplement_isIdempotent() {
+        // 운영자가 값을 손봐 둔 상태를 가정 — 재실행이 덮어쓰지 않아야 한다.
+        val target = BranchMappingSupplement.ROWS.first()
+        em.createNativeQuery(
+            "INSERT INTO powersales.branch_mapping (branch_code, included_branch_codes, label) " +
+                "VALUES ('${target.branchCode}', '9999', 'manual')"
+        ).executeUpdate()
+
+        val response = service.runBranchMappingSupplement()
+
+        assertThat(response.totalRowsAffected).isEqualTo(BranchMappingSupplement.ROWS.size - 1)
+        assertThat(
+            strOf(
+                "SELECT included_branch_codes FROM powersales.branch_mapping " +
+                    "WHERE branch_code = '${target.branchCode}'"
+            )
+        ).isEqualTo("9999")
     }
 
     // ------------------------------------------------------------------

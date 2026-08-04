@@ -7,6 +7,7 @@ import com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed
 import com.otoki.powersales.platform.auth.permission.SystemAdminGrantList
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.policy.TemporaryPasswordPolicy
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchMappingSupplement
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -750,6 +751,65 @@ class SfMigrationStage2Service(
 
         return SfMigrationStage2Response(
             substep = "leaderSalesDashboardGrant",
+            results = results,
+            totalRowsAffected = results.sumOf { it.rowsAffected },
+        )
+    }
+
+    /**
+     * `branch_mapping` 누락 행 보정 적재 — SoT 는 [BranchMappingSupplement.ROWS].
+     *
+     * SF `BranchMapping__mdt` 원본 자체에 빠져 있어 Stage1 CSV 로는 들어올 수 없는 행을 채운다
+     * (현재 `E5694` CVS전략팀 1건 — 근거는 [BranchMappingSupplement] KDoc).
+     *
+     * ## 실행 순서 / 멱등
+     * Stage1 `BranchMapping` 적재와 순서 무관. Stage1 이 같은 테이블을 PK 충돌 `DO NOTHING` 으로
+     * 멱등 적재하므로([com.otoki.powersales._migration.sf.stage1.Stage1Targets] BRANCH_MAPPING),
+     * 본 substep 이 먼저 돌아도 Stage1 재적재가 보정 행을 덮거나 지우지 않는다. 반대로 본 substep 도
+     * 이미 있는 행은 건드리지 않는다 — 운영자가 값을 손봤다면 그 값이 보존된다.
+     *
+     * ## 캐시
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 는 부팅 1회
+     * 메모리 캐시라 적재만으로는 반영되지 않는다. 컨트롤러가 실행 직후 `reload()` 한다
+     * (Stage1 의 `affectsBranchCodeCache` 분기와 동일 정책).
+     */
+    @Transactional
+    fun runBranchMappingSupplement(): SfMigrationStage2Response {
+        val results = BranchMappingSupplement.ROWS.map { row ->
+            // 효과는 Stage1 BRANCH_MAPPING 적재의 `ON CONFLICT (branch_code) DO NOTHING` 과 동일하나,
+            // native query 는 dialect 문법을 그대로 넘기므로 (H2 는 ON CONFLICT 미지원) 존재 확인 +
+            // INSERT 로 표현한다. 1회성 운영 도구 + 행 수 한 자릿수라 2 statement 비용은 무의미하다.
+            val existing = (
+                em.createNativeQuery(
+                    "SELECT COUNT(*) FROM powersales.branch_mapping WHERE branch_code = :branchCode"
+                )
+                    .setParameter("branchCode", row.branchCode)
+                    .singleResult as Number
+                ).toLong()
+
+            val inserted = if (existing > 0L) {
+                0
+            } else {
+                em.createNativeQuery(
+                    """
+                    INSERT INTO powersales.branch_mapping (branch_code, included_branch_codes, label)
+                    VALUES (:branchCode, :includedBranchCodes, :label)
+                    """.trimIndent()
+                )
+                    .setParameter("branchCode", row.branchCode)
+                    .setParameter("includedBranchCodes", row.includedBranchCodes)
+                    .setParameter("label", row.label)
+                    .executeUpdate()
+            }
+
+            SubstepResult(
+                label = "branch_mapping['${row.branchCode}'] ← ${row.includedBranchCodes} (${row.label})",
+                rowsAffected = inserted,
+            )
+        }
+
+        return SfMigrationStage2Response(
+            substep = "branchMappingSupplement",
             results = results,
             totalRowsAffected = results.sumOf { it.rowsAffected },
         )

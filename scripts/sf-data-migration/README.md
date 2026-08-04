@@ -61,6 +61,7 @@ scripts/sf-data-migration/
 | **Stage 2-E** | 공지 본문 rtaImage `<img>` → placeholder 치환 (dry-run 기본) | Stage 2 "공지 본문 이미지 placeholder 치환" (Dry-run/Apply) | `POST /stage2/notice-rta-placeholder?dryRun={bool}` | curl | substep 단위 |
 | **Stage 2-F** | profile_sfid 기준 User.profile_id 최종 정합 | (web 미노출 — API/curl) | `POST /stage2/user-profile-reconcile` | curl | substep 단위 |
 | **Stage 2-G** | 조장 ProfileFlags 초기 권한 적용 (`LeaderProfileFlagsSeed` SoT, `6.조장` 단건) | Stage 2 "조장 ProfileFlags 권한 적용" | `POST /stage2/leader-profile-flags` | curl | substep 단위 |
+| **Stage 2-H** | `branch_mapping` 누락 행 보정 적재 (`BranchMappingSupplement` SoT — 현재 `E5694` CVS전략팀 1건). SF `BranchMapping__mdt` 원본에 없어 Stage 1 CSV 로는 들어올 수 없는 행. Stage 1 적재와 순서 무관 + 기존 행 보존(멱등), 적재 시 `BranchCodeExpander` 캐시 재빌드 | Stage 2 "지점 코드 맵핑 보정 적재" | `POST /stage2/branch-mapping-supplement` | curl | substep 단위 |
 | **Reset**     | DB 초기화. ① 전체 TRUNCATE (`db-reset.sh` truncate, flyway·app_package 보존) — 진짜 처음부터 ② SF 산출물만 삭제 (`reset-dev.main.kts`, sfid IS NOT NULL row) ③ Stage 1 stale RUNNING 락 해제 (`POST /stage1/reset`) | Stage 1 "상태 초기화" (③ 한정) | `POST /stage1/reset` (③) | `db-reset.sh` / `reset-dev.main.kts` | 단일 |
 
 > API 경로는 모두 `/api/v1/admin/sf-migration/` prefix 생략 표기. 전체 경로 예: `POST /api/v1/admin/sf-migration/stage2/fk`.

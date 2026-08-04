@@ -9,6 +9,7 @@ import com.otoki.powersales._migration.sf.service.SfFkResolveProgress
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2FkService
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2NaturalKeyFkService
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2Service
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.platform.common.config.CacheConfig
 import org.slf4j.LoggerFactory
@@ -42,6 +43,7 @@ class SfMigrationStage2Controller(
     private val hierarchyTraversal: UserRoleHierarchyTraversal,
     private val adminPermissionCache: AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
+    private val branchCodeExpander: BranchCodeExpander,
     private val cacheManager: CacheManager,
 ) {
 
@@ -277,6 +279,33 @@ class SfMigrationStage2Controller(
                 "[leader-sales-dashboard-grant] 권한 캐시 invalidate — rowsAffected={}",
                 response.totalRowsAffected,
             )
+        }
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * `branch_mapping` 누락 행 보정 적재 — SF `BranchMapping__mdt` 원본에 없는 행을 채운다.
+     *
+     * 현재 대상은 `E5694`(CVS전략팀) 1건이다. SF 원본은 CVS전략팀 매핑 키를 평문 `5694` 로 들고 있는데
+     * 조직 트리가 산출하는 실제 조직코드는 `E5694` 라서, CVS전략팀 조장의 조회가
+     * [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 확장 없이
+     * `{E5694}` 한 코드로 좁혀져 0건이 된다 (CVS1/CVS2 는 키가 `E5692`/`E5693` 라 정상). 근거와 대상
+     * 목록은 [com.otoki.powersales.domain.org.organization.branchmapping.BranchMappingSupplement] KDoc.
+     *
+     * 기존 `5694` 행은 **지우지 않는다** — 전사 권한자용 34개 고정 목록
+     * ([com.otoki.powersales.admin.service.DashboardBranchResolver]) 이 CVS전략팀을 `5694` 로 넘기므로,
+     * 두 코드가 같은 집합으로 확장되도록 행을 추가하는 방식이다.
+     *
+     * 실행 순서: Stage1 `BranchMapping` 적재 이후 (순서 무관 — 양쪽 다 PK 충돌 DO NOTHING 멱등).
+     * 적재 성공 시 expander 의 부팅 1회 캐시를 재빌드해 재기동 없이 반영한다.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/branch-mapping-supplement")
+    fun runBranchMappingSupplement(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runBranchMappingSupplement()
+        if (response.totalRowsAffected > 0) {
+            // 부팅 1회 메모리 캐시라 적재만으로는 반영되지 않는다 — Stage1 BranchMapping 적재와 동일 정책.
+            branchCodeExpander.reload()
+            log.info("[branch-mapping-supplement] BranchCodeExpander reload — rowsAffected={}", response.totalRowsAffected)
         }
         return ResponseEntity.ok(ApiResponse.success(response))
     }

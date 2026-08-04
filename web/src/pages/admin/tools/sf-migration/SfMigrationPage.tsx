@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import {
   useFkResolvableTables,
   useFkResolveProgress,
+  useRunBranchMappingSupplement,
   useRunLeaderErpOrgRevoke,
   useRunLeaderPasswordReset,
   useRunLeaderProfileFlags,
@@ -33,6 +34,7 @@ import {
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
 import type {
+  BranchMappingSupplementSubstepResult,
   FkResolveProgress,
   FkResolveStatus,
   FkResolveTableResult,
@@ -103,6 +105,7 @@ export default function SfMigrationPage() {
   const runLeaderSalesDashboardGrantMutation = useRunLeaderSalesDashboardGrant();
   const runPasswordHashMutation = useRunPasswordHash();
   const runLeaderPasswordResetMutation = useRunLeaderPasswordReset();
+  const runBranchMappingSupplementMutation = useRunBranchMappingSupplement();
   const runSharingRecalcMutation = useRunSharingRecalcAll();
   const sharingRecalcStatusQuery = useSharingRecalcStatus();
 
@@ -149,6 +152,10 @@ export default function SfMigrationPage() {
   const leaderSalesDashboardGrantResult = runLeaderSalesDashboardGrantMutation.data;
   const leaderSalesDashboardGrantError = runLeaderSalesDashboardGrantMutation.error as Error | null;
   const leaderSalesDashboardGrantPending = runLeaderSalesDashboardGrantMutation.isPending;
+
+  const branchMappingSupplementResult = runBranchMappingSupplementMutation.data;
+  const branchMappingSupplementError = runBranchMappingSupplementMutation.error as Error | null;
+  const branchMappingSupplementPending = runBranchMappingSupplementMutation.isPending;
 
   const passwordHashResult = runPasswordHashMutation.data;
   const passwordHashError = runPasswordHashMutation.error as Error | null;
@@ -970,6 +977,108 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={leaderSalesDashboardGrantResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="지점 코드 맵핑 보정 적재 (SF 원본 누락분)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          SF <Text code>BranchMapping__mdt</Text> 원본 자체에 빠져 있어 Stage 1 CSV 로는 들어올 수 없는{' '}
+          <Text code>branch_mapping</Text> 행을 채운다. 현재 대상은 <Text code>E5694</Text>{' '}
+          (CVS전략팀) <Text strong>1건</Text>이다.
+        </Paragraph>
+        <ul style={{ margin: '0 0 16px', paddingLeft: 20, color: 'rgba(0,0,0,0.45)' }}>
+          <li>
+            CVS1팀 <Text code>E5692</Text> · CVS2팀 <Text code>E5693</Text> 는 조직코드와 매핑 키가
+            일치해 <Text code>5691,5692,5693,5694</Text> 로 정상 확장된다.
+          </li>
+          <li>
+            CVS전략팀만 SF 매핑 키가 평문 <Text code>5694</Text> 인데 조직 트리가 산출하는 실제
+            조직코드는 <Text code>E5694</Text> 라서, 확장이 일어나지 않고{' '}
+            <Text code>{'{E5694}'}</Text> 한 코드로만 조회된다 → CVS전략팀 조장의 거래처 · 여사원 일정
+            조회가 <Text strong>0건</Text>.
+          </li>
+          <li>
+            기존 <Text code>5694</Text> 행은 <Text strong>지우지 않는다</Text> — 전사 권한자용 34개 고정
+            지점 목록이 CVS전략팀을 <Text code>5694</Text> 로 넘기므로, 키를 바꾸면 그쪽이 반대로
+            깨진다. 두 코드가 같은 집합으로 확장되도록 <Text strong>행을 추가</Text>하는 방식이다.
+          </li>
+        </ul>
+        <Paragraph type="secondary">
+          Stage 1 <Text code>BranchMapping</Text> 적재와 <Text strong>순서 무관</Text>하다 — 양쪽 다 PK
+          충돌 시 건너뛰므로 Stage 1 재적재가 보정 행을 덮거나 지우지 않고, 본 카드도 이미 있는 행은
+          건드리지 않는다 (운영자가 값을 손봤다면 그 값이 보존된다). 재실행 시 적용 row 0 —{' '}
+          <Text strong>멱등</Text>.
+          <br />
+          적재 성공 시 backend 가 지점 코드 확장 캐시(부팅 1회 메모리 캐시)를 재빌드하므로{' '}
+          <Text strong>재기동이 필요 없다</Text>. 결과는 <Text strong>시스템 &gt; 지점 코드 맵핑</Text>{' '}
+          화면에서 <Text code>E5694</Text> 를 검색해 확장 수가 5인지로 확인한다.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={branchMappingSupplementPending}
+            disabled={branchMappingSupplementPending}
+            onClick={() => {
+              runBranchMappingSupplementMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {branchMappingSupplementError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="지점 코드 맵핑 보정 적재 실패"
+            description={branchMappingSupplementError.message}
+            closable
+            onClose={() => {
+              runBranchMappingSupplementMutation.reset();
+            }}
+          />
+        )}
+
+        {branchMappingSupplementResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{branchMappingSupplementResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적재 row">
+                {branchMappingSupplementResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {branchMappingSupplementResult.totalRowsAffected === 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적재된 row 가 없습니다"
+                description="이미 보정 행이 존재합니다 (멱등). 기존 값은 보존되므로, 값을 바꾸려면 지점 코드 맵핑 화면에서 현재 값을 먼저 확인하세요."
+              />
+            )}
+            <ResizableTable<BranchMappingSupplementSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적재 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={branchMappingSupplementResult.results}
             />
           </div>
         )}

@@ -395,6 +395,43 @@ export async function runLeaderSalesDashboardGrant(): Promise<LeaderProfileFlags
   return res.data.data;
 }
 
+export interface BranchMappingSupplementSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface BranchMappingSupplementResponse {
+  substep: string;
+  results: BranchMappingSupplementSubstepResult[];
+  totalRowsAffected: number;
+}
+
+/**
+ * Stage 2 — `branch_mapping` 누락 행 보정 적재.
+ *
+ * SF `BranchMapping__mdt` 원본 자체에 빠져 있어 Stage1 CSV 로는 들어올 수 없는 행을 채운다.
+ * 현재 대상은 `E5694`(CVS전략팀) 1건 — SF 원본이 CVS전략팀 매핑을 평문 `5694` 키로 들고 있는데
+ * 조직 트리가 산출하는 실제 조직코드는 `E5694` 라서, 지점 코드 확장이 일어나지 않아 CVS전략팀
+ * 조장의 거래처/일정 조회가 0건이 된다 (CVS1/CVS2 는 키가 `E5692`/`E5693` 라 정상).
+ *
+ * 기존 `5694` 행은 그대로 둔다 — 전사 권한자용 34개 고정 지점 목록이 CVS전략팀을 `5694` 로
+ * 넘기므로, 두 코드가 같은 집합으로 확장되도록 행을 **추가**하는 방식이다.
+ *
+ * Stage1 `BranchMapping` 적재와 순서 무관하고, 이미 있는 행은 건드리지 않는다 (멱등).
+ * 적재 성공 시 backend 가 지점 코드 확장 캐시를 재빌드하므로 재기동이 필요 없다.
+ */
+export async function runBranchMappingSupplement(): Promise<BranchMappingSupplementResponse> {
+  const res = await client.post<ApiResponse<BranchMappingSupplementResponse>>(
+    '/api/v1/admin/sf-migration/stage2/branch-mapping-supplement',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || '지점 코드 맵핑 보정 적재에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
+
 /**
  * Sharing Recalc — OWD / RecordType / FLS / SharingRule 관련 cache 일괄 무효화 (spec #792).
  *
