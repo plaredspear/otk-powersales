@@ -55,7 +55,7 @@ export default function LogisticsClaimReportPage({ period }: Props) {
   // 당월/전월은 진입 시 자동 조회 활성화
   const [autoEnabled, setAutoEnabled] = useState<boolean>(!isCustom);
 
-  const { data: branches = [] } = useLogisticsClaimReportBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useLogisticsClaimReportBranches();
 
   // 메뉴(period) 전환 시 상태 초기화
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function LogisticsClaimReportPage({ period }: Props) {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap align="end">
-        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} isLoading={branchesLoading} />
         <Space direction="vertical" size={4}>
           <span>물류센터명(상온):</span>
           <Input

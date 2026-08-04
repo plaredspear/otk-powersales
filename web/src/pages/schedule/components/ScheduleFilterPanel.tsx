@@ -3,6 +3,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import { MemberFilterTab } from './MemberFilterTab';
 import { AccountFilterTab } from './AccountFilterTab';
 import { AccountBranchSearchSelect } from './AccountBranchSearchSelect';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 import type { Branch, TeamMember, TeamScheduleAccount } from '@/api/team-schedule';
 
 type FilterTab = 'member' | 'account';
@@ -73,8 +74,15 @@ export function ScheduleFilterPanel({
         border: '1px solid #f0f0f0',
       }}
     >
+      {/* 옵션 0건 = 거래처/여사원이 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+      {!isFormLoading && branches.length === 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <BranchScopeEmptyNotice />
+        </div>
+      )}
+
       {/* 지점 선택 — 거래처/여사원 탭 공통. 다중지점 사용자만 노출(단일지점은 본인 지점 자동 스코프). */}
-      {!isSingleBranch && (
+      {!isSingleBranch && branches.length > 0 && (
         <Select
           style={{ width: '100%', marginBottom: 12 }}
           placeholder="지점 (전체)"
@@ -91,7 +99,7 @@ export function ScheduleFilterPanel({
         거래처 먼저 찾기 — 지점 선택이 선행 조건이 되지 않도록, 거래처명으로 전 지점을 검색한다.
         고른 거래처의 지점으로 위 셀렉터가 전환된다 (다중지점 사용자만 의미가 있어 단일지점은 숨김).
       */}
-      {!isSingleBranch && (
+      {!isSingleBranch && branches.length > 0 && (
         <AccountBranchSearchSelect
           effectiveBranchCode={selectedBranchCode}
           effectiveBranchName={

@@ -117,7 +117,7 @@ function ConvertedHeadcountReportContent({ variant, title }: ContentProps) {
 
   // 소속기준 variant 만 지점 스코프가 적용되므로 그 경우에만 셀렉터 노출.
   const branchScoped = isBranchScopedVariant(variant);
-  const { data: branches = [] } = useReportBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useReportBranches();
 
   const reportQuery = useQuery({
     queryKey: ['convertedHeadcountReport', variant, query?.year, query?.month, query?.branchCode],
@@ -182,7 +182,7 @@ function ConvertedHeadcountReportContent({ variant, title }: ContentProps) {
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap align="end">
         {branchScoped && (
-          <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+          <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} isLoading={branchesLoading} />
         )}
         <Space direction="vertical" size={4}>
           <span>조회연월:</span>

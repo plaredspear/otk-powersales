@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Select, Space, Tag } from 'antd';
+import BranchScopeEmptyNotice from './BranchScopeEmptyNotice';
 
 /** 지점 셀렉터 옵션 1건 — 도메인별 지점 화이트리스트 API 응답 형태. */
 export interface BranchOption {
@@ -16,6 +17,11 @@ interface BranchSingleSelectProps {
   onChange: (branchCode: string | undefined) => void;
   /** 라벨 텍스트 (기본 "지점명"). */
   label?: string;
+  /**
+   * 지점 목록 조회 중 여부. 로딩 중에는 목록이 비어 있어도 "조회 가능한 지점 없음" 안내를 띄우지 않는다
+   * (매 진입마다 잘못된 경고가 깜빡이는 것 방지). 미지정이면 로딩이 끝난 것으로 본다.
+   */
+  isLoading?: boolean;
 }
 
 /**
@@ -25,13 +31,15 @@ interface BranchSingleSelectProps {
  * - 단일 지점(조장/지점장 등): 선택지가 없으므로 본인 지점을 자동 선택하고 고정 Tag 로 표시.
  *   backend 는 branchCode 미전송이어도 본인 지점으로 스코프를 강제하지만, 화면 표시 일관성을 위해 자동 선택.
  * - 다중 지점(전사 권한자): 단일 선택 Select. 선택 시 그 지점으로 조회를 좁히고, 미선택이면 전건.
- * 목록이 비면(권한 지점 없음) 아무것도 렌더하지 않는다.
+ * 목록이 비면(권한 지점 없음) 조회가 0건이 되므로 그 사실을 [BranchScopeEmptyNotice] 로 명시한다
+ * — 종전에는 아무것도 렌더하지 않아 "데이터 없음"과 구분되지 않았다.
  */
 export default function BranchSingleSelect({
   branches,
   value,
   onChange,
   label = '지점명',
+  isLoading = false,
 }: BranchSingleSelectProps) {
   const isSingle = branches.length === 1;
 
@@ -48,7 +56,16 @@ export default function BranchSingleSelect({
     }
   }, [branches, isSingle, value, onChange]);
 
-  if (branches.length === 0) return null;
+  if (branches.length === 0) {
+    // 로딩 중에는 종전처럼 아무것도 렌더하지 않는다 (거짓 경고 깜빡임 방지).
+    if (isLoading) return null;
+    return (
+      <Space direction="vertical" size={4}>
+        <span>{label}:</span>
+        <BranchScopeEmptyNotice />
+      </Space>
+    );
+  }
 
   return (
     <Space direction="vertical" size={4}>

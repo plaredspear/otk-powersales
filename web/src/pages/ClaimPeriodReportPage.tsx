@@ -41,7 +41,7 @@ export default function ClaimPeriodReportPage({ type }: Props) {
   const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [range, setRange] = useState<QueryRange | null>(null);
 
-  const { data: branches = [] } = useClaimReportBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useClaimReportBranches();
 
   const query = useQuery({
     queryKey: ['claimPeriodReport', type, range?.startDate, range?.endDate, range?.branchCode],
@@ -110,7 +110,7 @@ export default function ClaimPeriodReportPage({ type }: Props) {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap align="end">
-        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} isLoading={branchesLoading} />
         <Space direction="vertical" size={4}>
           <span>시작일:</span>
           <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />

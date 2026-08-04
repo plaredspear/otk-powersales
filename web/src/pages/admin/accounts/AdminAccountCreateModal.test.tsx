@@ -114,8 +114,10 @@ describe('AdminAccountCreateModal (Spec #640 P2-W)', () => {
     const select = screen.getByRole('combobox');
     await userEvent.click(select);
     await userEvent.type(select, '홍길');
-    await waitFor(() => expect(mockedFetchEmployees).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText(/홍길동/)).toBeInTheDocument());
+    // EmployeeSelect 는 300ms 디바운스 후 조회한다(SEARCH_DEBOUNCE_MS). 전체 스위트 동시 실행 시
+    // 디바운스 + 드롭다운 렌더가 기본 timeout(1s)을 넘겨 간헐 실패하므로 여유를 준다.
+    await waitFor(() => expect(mockedFetchEmployees).toHaveBeenCalled(), { timeout: 3000 });
+    await waitFor(() => expect(screen.getByText(/홍길동/)).toBeInTheDocument(), { timeout: 3000 });
     await userEvent.click(screen.getByText(/홍길동/));
 
     await userEvent.click(screen.getByRole('button', { name: '등록' }));

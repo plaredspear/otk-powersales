@@ -32,6 +32,7 @@ import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
@@ -395,6 +396,8 @@ export default function PPTMasterPage() {
               지점: {singleBranch.branchName}
             </Tag>
           )}
+          {/* 옵션 0건 = 조회가 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+          {branches != null && branches.length === 0 && <BranchScopeEmptyNotice />}
           <Input
             placeholder="사원명"
             value={filterEmployeeName}

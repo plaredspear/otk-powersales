@@ -18,6 +18,7 @@ import { promotionExportParams, type PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ResizableTable from '@/components/common/ResizableTable';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 
 // 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
 const EXPORT_MAX_ROWS = 50000;
@@ -410,6 +411,8 @@ export default function PromotionListPage() {
             지점: {singleBranch.label}
           </Tag>
         )}
+        {/* 옵션 0건 = 조회가 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+        {listMeta != null && branchFilterOptions.length === 0 && <BranchScopeEmptyNotice />}
         <Select
           style={{ width: 130 }}
           value={filterPromotionType}

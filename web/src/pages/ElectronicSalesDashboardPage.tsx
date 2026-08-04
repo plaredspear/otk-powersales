@@ -52,7 +52,7 @@ export default function ElectronicSalesDashboardPage() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs()]);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   // 월 매출(전산실적) 전용 지점 셀렉터 (sales_dashboard 게이팅) — 조직 트리 스코프.
-  const { data: branches = [] } = useElectronicSalesBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useElectronicSalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
@@ -256,6 +256,7 @@ export default function ElectronicSalesDashboardPage() {
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
         branches={branches}
+        branchesLoading={branchesLoading}
         selectedCodes={selectedCodes}
         onCodesChange={setSelectedCodes}
         onSearch={handleSearch}

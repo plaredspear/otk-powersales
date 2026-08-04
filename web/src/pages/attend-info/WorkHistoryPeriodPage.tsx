@@ -5,6 +5,7 @@ import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info
 import type { TeamMember } from '@/api/team-schedule';
 import { MonthlyMemberSelectPanel } from './components/monthly/MonthlyMemberSelectPanel';
 import PeriodAccountBreakdown from './components/period/PeriodAccountBreakdown';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 
 const { Text } = Typography;
 
@@ -134,7 +135,12 @@ export default function WorkHistoryPeriodPage() {
             <Text type="secondary" style={{ fontSize: 12 }}>
               지점명
             </Text>
-            {singleBranch ? (
+            {/* 옵션 0건 = 여사원 목록이 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+            {branches.length === 0 && !branchesQuery.isLoading ? (
+              <div style={{ marginTop: 4 }}>
+                <BranchScopeEmptyNotice />
+              </div>
+            ) : singleBranch ? (
               <div style={{ marginTop: 4 }}>
                 <Tag color="geekblue" style={{ fontSize: 13, padding: '3px 10px', marginInlineEnd: 0 }}>
                   {branches[0].branchName}

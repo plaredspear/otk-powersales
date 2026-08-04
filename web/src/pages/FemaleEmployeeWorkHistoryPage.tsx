@@ -33,7 +33,7 @@ interface QueryParams {
  */
 export default function FemaleEmployeeWorkHistoryPage() {
   // 지점 옵션 — 보고서 공용 /report-branches (안전점검·환산인원과 동일 소스로 통일)
-  const { data: reportBranches = [] } = useReportBranches();
+  const { data: reportBranches = [], isLoading: branchesLoading } = useReportBranches();
   const now = new Date();
   const [employeeCode, setEmployeeCode] = useState<string>('');
   const [year, setYear] = useState<number>(now.getFullYear());
@@ -102,6 +102,7 @@ export default function FemaleEmployeeWorkHistoryPage() {
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
         branches={reportBranches}
+        branchesLoading={branchesLoading}
         year={year}
         month={month}
         selectedCodes={selectedCodes}

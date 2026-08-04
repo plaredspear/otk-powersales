@@ -23,6 +23,7 @@ import {
 } from '@/api/posSales';
 import { fetchFilterOptions } from '@/api/electronicSalesDashboard';
 import ResizableTable from '@/components/common/ResizableTable';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 import { listTableLocale } from '@/lib/listTableLocale';
 import type { Branch } from '@/api/team-schedule';
 
@@ -316,7 +317,10 @@ export default function PosSalesAccountSelectModal({
         <div>
           <span>지점명:</span>
           <div style={{ marginTop: 4 }}>
-            {singleBranch ? (
+            {/* 옵션 0건 = 거래처 검색이 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+            {branches.length === 0 ? (
+              <BranchScopeEmptyNotice />
+            ) : singleBranch ? (
               <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
                 지점: {branches[0].branchName}
               </Tag>

@@ -421,7 +421,7 @@ export default function DashboardPage() {
 
   // 대시보드 전용 지점 목록 — 전사 권한자는 고정 화이트리스트(34개), 그 외는 본인 지점 스코프.
   // 여사원 일정 지점(useTeamScheduleBranches)과 분리하기 위해 branches 를 명시 주입한다.
-  const { data: dashboardBranches = [] } = useDashboardBranches();
+  const { data: dashboardBranches = [], isLoading: branchesLoading } = useDashboardBranches();
   const { hasEntityPermission } = usePermission();
   const canViewFemaleEmployees = hasEntityPermission('female_employee', 'READ');
 
@@ -756,6 +756,7 @@ export default function DashboardPage() {
     <div style={{ padding: 24 }}>
       <PeriodBranchFilterBar
         branches={dashboardBranches}
+        branchesLoading={branchesLoading}
         year={year}
         month={month}
         selectedCodes={selectedCodes}

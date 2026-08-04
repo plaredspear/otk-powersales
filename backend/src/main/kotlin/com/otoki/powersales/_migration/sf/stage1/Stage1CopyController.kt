@@ -78,6 +78,7 @@ class Stage1CopyController(
                 if (Stage1Targets.affectsPermissionCache(req.targetName)) {
                     adminPermissionCache.invalidateAll()
                     adminDataScopeCache.invalidateAll()
+                    evictCaches(SHARING_CACHE_NAMES)
                 }
                 // BranchMapping 적재 시 BranchCodeExpander 의 부팅 1회 캐시 재빌드 (stale 방지).
                 if (Stage1Targets.affectsBranchCodeCache(req.targetName)) {
@@ -85,7 +86,7 @@ class Stage1CopyController(
                 }
                 // Organization 적재 시 Redis 조직 캐시 무효화.
                 if (Stage1Targets.affectsOrganizationCache(req.targetName)) {
-                    evictOrganizationCaches()
+                    evictCaches(ORGANIZATION_CACHE_NAMES)
                 }
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
@@ -110,10 +111,11 @@ class Stage1CopyController(
                 // stale 권한 캐시 무효화.
                 adminPermissionCache.invalidateAll()
                 adminDataScopeCache.invalidateAll()
+                evictCaches(SHARING_CACHE_NAMES)
                 // 일괄 적재는 BranchMapping 도 항상 포함 → BranchCodeExpander 캐시 재빌드 (stale 방지).
                 branchCodeExpander.reload()
                 // 일괄 적재는 Organization 도 항상 포함 → Redis 조직 캐시 무효화.
-                evictOrganizationCaches()
+                evictCaches(ORGANIZATION_CACHE_NAMES)
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }
@@ -164,33 +166,50 @@ class Stage1CopyController(
     }
 
     /**
-     * Organization 적재 후 Redis 조직 캐시 무효화 (TTL 24h stale 방지).
+     * 적재 원천이 바뀐 Redis 캐시 일괄 무효화.
      *
-     * 두 캐시의 `@CacheEvict` 는 SAP daily sync 경로
-     * ([com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService.replaceAll]) 에만 걸려 있는데,
-     * Stage1 은 그 서비스를 경유하지 않고 `TRUNCATE organization` + `COPY` 로 직접 적재한다. 그래서 적재 중
-     * (테이블이 빈 창) 조회가 한 번이라도 들어오면 **빈 결과가 24h 캐시**되어, 적재가 끝나도 조직 스코프가
-     * 계속 0건이 된다. 2026-08-03 운영 마이그레이션에서 실제로 발생 — 지점 사용자의 지점 셀렉터가 0건이 되어
-     * 행사마스터/여사원일정 등이 통째로 빈 목록이었다 (전사 권한자는 하드코딩 34개 상수를 써서 정상이라
-     * 원인 파악이 늦어졌다).
+     * Stage1 은 `TRUNCATE` + `COPY` 로 테이블을 직접 갈아끼우므로, 각 캐시에 걸린 `@CacheEvict`
+     * (SAP daily sync / 권한 편집 화면 등 **다른 경로**에 붙어 있다) 가 발동하지 않는다. 게다가 적재 중
+     * 테이블이 비는 창이 존재해, 그 사이 조회가 한 번이라도 들어오면 **빈 결과가 TTL 만큼 박힌다**.
+     *
+     * 2026-08-03 운영 마이그레이션에서 실제로 발생 — `teamScheduleBranchesV2` 에 빈 목록이 24h 박혀
+     * 지점 사용자의 지점 셀렉터가 0건이 되고 행사마스터/여사원일정이 통째로 빈 목록이었다. 전사 권한자는
+     * 하드코딩 34개 상수([com.otoki.powersales.admin.service.DashboardBranchResolver.DASHBOARD_ALL_BRANCHES])
+     * 를 써서 이 캐시를 타지 않아 관리자 화면은 멀쩡했고, 그래서 원인 파악이 늦어졌다.
      *
      * best-effort — evict 실패가 적재 성공을 되돌리지 않도록 예외를 삼키고 로그만 남긴다.
      */
-    private fun evictOrganizationCaches() {
-        listOf(CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES, CacheConfig.CACHE_ORGANIZATION_CASCADE)
-            .forEach { name ->
-                try {
-                    cacheManager.getCache(name)?.clear()
-                    log.info("[stage1-copy] organization 캐시 무효화: {}", name)
-                } catch (e: Exception) {
-                    log.error("[stage1-copy] organization 캐시 무효화 실패: {}", name, e)
-                }
+    private fun evictCaches(cacheNames: List<String>) {
+        cacheNames.forEach { name ->
+            try {
+                cacheManager.getCache(name)?.clear()
+                log.info("[stage1-copy] 캐시 무효화: {}", name)
+            } catch (e: Exception) {
+                log.error("[stage1-copy] 캐시 무효화 실패: {}", name, e)
             }
+        }
     }
 
     companion object {
         /** Stage1 CSV 의 S3 공통 경로 (bucket 하위). extract-csv.sh 의 input/ 업로드 관례와 정합. */
         const val DEFAULT_S3_KEY_PREFIX = "sf-migration/input"
+
+        /**
+         * Organization 적재로 stale 되는 캐시 — TTL 24h 라 자연 회복을 기대할 수 없다.
+         * `@CacheEvict` 는 SAP daily sync 경로에만 걸려 있어 Stage1 이 직접 지운다.
+         */
+        private val ORGANIZATION_CACHE_NAMES: List<String> = listOf(
+            CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES,
+            CacheConfig.CACHE_ORGANIZATION_CASCADE,
+        )
+
+        /**
+         * 권한/공유 원천 테이블(Profile / PermissionSet* / SharingRule* / Group* / RecordType 등) 적재로
+         * stale 되는 캐시 — sharing recalc(spec #792) 이 쓰는 큐레이션 목록을 그대로 재사용한다
+         * (evict 대상 정의가 두 곳으로 갈라지지 않도록). 권한 매트릭스는 TTL 5분이지만 같은 원천이라 함께 지운다.
+         */
+        private val SHARING_CACHE_NAMES: List<String> =
+            CacheConfig.SHARING_RELATED_CACHE_NAMES + CacheConfig.CACHE_PERMISSION_MATRIX
     }
 }
 

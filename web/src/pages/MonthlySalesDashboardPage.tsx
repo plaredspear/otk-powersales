@@ -73,7 +73,7 @@ export default function MonthlySalesDashboardPage() {
   // 마운트 시점 고정값으로만 쓰므로 ref 대신 상수로 유지한다.
   const [hasInitBranchCodes] = useState<boolean>(initBranchCodes.length > 0);
   // 월 매출(물류배부) 전용 지점 셀렉터 — 대시보드와 동일한 지점 기준(전사 권한자 34개 화이트리스트).
-  const { data: branches = [] } = useMonthlySalesBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useMonthlySalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
@@ -344,6 +344,7 @@ export default function MonthlySalesDashboardPage() {
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
         branches={branches}
+        branchesLoading={branchesLoading}
         year={year}
         month={month}
         selectedCodes={selectedCodes}

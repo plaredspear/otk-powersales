@@ -34,6 +34,7 @@ import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import BranchScopeEmptyNotice from '@/components/common/BranchScopeEmptyNotice';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
@@ -750,6 +751,8 @@ export default function DisplaySchedulePage() {
               지점: {singleBranch.label}
             </Tag>
           )}
+          {/* 옵션 0건 = 조회가 통째로 0건. 종전에는 지점 UI 가 사라져 원인 단서가 없었다. */}
+          {listMeta != null && branchCount === 0 && <BranchScopeEmptyNotice />}
           <Select
             placeholder="유효여부"
             value={filterValidData}

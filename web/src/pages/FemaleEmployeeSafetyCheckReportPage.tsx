@@ -29,7 +29,7 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
   const [queryDate, setQueryDate] = useState<string | null>(null);
   const [queryBranchCode, setQueryBranchCode] = useState<string | undefined>(undefined);
 
-  const { data: branches = [] } = useReportBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useReportBranches();
 
   const query = useQuery({
     queryKey: ['femaleEmployeeSafetyCheckReport', queryDate, queryBranchCode],
@@ -89,7 +89,7 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap align="end">
-        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} isLoading={branchesLoading} />
         <Space direction="vertical" size={4}>
           <span>조회일자:</span>
           <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} />

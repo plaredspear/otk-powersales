@@ -82,10 +82,12 @@ function BranchSelectField({
   branches,
   value,
   onChange,
+  isLoading,
 }: {
   branches: BranchOption[];
   value?: string;
   onChange?: (branchCode: string | undefined) => void;
+  isLoading?: boolean;
 }) {
   return (
     <BranchSingleSelect
@@ -93,6 +95,7 @@ function BranchSelectField({
       value={value}
       onChange={(code) => onChange?.(code)}
       label="지점"
+      isLoading={isLoading}
     />
   );
 }
@@ -100,9 +103,11 @@ function BranchSelectField({
 function BranchField({
   form,
   branches,
+  isLoading,
 }: {
   form: FormInstance<FormValues>;
   branches: BranchOption[];
+  isLoading?: boolean;
 }) {
   const categoryValue = Form.useWatch('category', form);
   if (categoryValue !== 'BRANCH') return null;
@@ -117,7 +122,7 @@ function BranchField({
       rules={[{ required: true, message: '지점을 선택해주세요' }]}
       extra="지점공지는 선택한 지점으로 저장됩니다."
     >
-      <BranchSelectField branches={branches} />
+      <BranchSelectField branches={branches} isLoading={isLoading} />
     </Form.Item>
   );
 }
@@ -524,7 +529,7 @@ export default function NoticeFormPage() {
         <Row gutter={24}>
           <Col xs={24} sm={12} />
           <Col xs={24} sm={12}>
-            <BranchField form={form} branches={branchOptions} />
+            <BranchField form={form} branches={branchOptions} isLoading={metaLoading} />
           </Col>
         </Row>
 

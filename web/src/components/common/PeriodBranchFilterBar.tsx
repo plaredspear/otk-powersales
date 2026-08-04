@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { Button, Checkbox, InputNumber, Select, Space, Tag } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
+import BranchScopeEmptyNotice from './BranchScopeEmptyNotice';
 
 interface BranchOption {
   branchCode: string;
@@ -39,6 +40,11 @@ interface PeriodBranchFilterBarProps {
    * `team_member_schedule` 인 여사원 일정 계열 화면 전용이다.
    */
   branches?: BranchOption[];
+  /**
+   * 지점 목록 조회 중 여부. 로딩 중에는 목록이 비어 있어도 "조회 가능한 지점 없음" 안내를 띄우지 않는다
+   * (매 진입마다 잘못된 경고가 깜빡이는 것 방지). 미지정이면 로딩이 끝난 것으로 본다.
+   */
+  branchesLoading?: boolean;
 }
 
 /**
@@ -58,8 +64,8 @@ export default function PeriodBranchFilterBar(props: PeriodBranchFilterBarProps)
 
 /** `branches` 미지정 시 fallback — 여사원 일정 지점 목록을 조회해 주입. */
 function PeriodBranchFilterBarWithTeamScheduleBranches(props: PeriodBranchFilterBarProps) {
-  const { data: branches = [] } = useTeamScheduleBranches();
-  return <PeriodBranchFilterBarView {...props} branches={branches} />;
+  const { data: branches = [], isLoading } = useTeamScheduleBranches();
+  return <PeriodBranchFilterBarView {...props} branches={branches} branchesLoading={isLoading} />;
 }
 
 function PeriodBranchFilterBarView({
@@ -81,6 +87,7 @@ function PeriodBranchFilterBarView({
   periodFilter,
   searchDisabled = false,
   branches = [],
+  branchesLoading = false,
 }: PeriodBranchFilterBarProps) {
   // 드롭다운 옵션은 지점명(label) 가나다순으로 정렬해 노출한다 (한국어 로케일 기준).
   const branchOptions = useMemo(
@@ -146,7 +153,13 @@ function PeriodBranchFilterBarView({
       <Space wrap align="end">
         <Space direction="vertical" size={4}>
           <span>지점명:</span>
-          {singleBranch ? (
+          {/*
+            옵션 0건은 조회가 통째로 0건이 된다는 뜻이라 그 사실을 명시한다 (빈 화면과 구분).
+            단 로딩 중에는 종전처럼 아무것도 렌더하지 않는다 — 거짓 경고 깜빡임 방지.
+          */}
+          {branches.length === 0 && !branchesLoading ? (
+            <BranchScopeEmptyNotice />
+          ) : singleBranch ? (
             <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
               지점: {branches[0].branchName}
             </Tag>
