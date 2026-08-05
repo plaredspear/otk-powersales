@@ -43,9 +43,13 @@ import org.springframework.transaction.support.TransactionTemplate
  * ## 표현식 인덱스 (V202608042320 / V202608042350)
  * 두 마이그레이션의 표현식 부분 인덱스는 원래 **채번 hot path** 의 전건 스캔을 없애려고 만든 것이나,
  * 위 분리 이후로는 **보정 시점** 비용을 낮추는 용도다 — 부팅 때마다 8개 테이블(최대 2.9GB)을
- * 전건 스캔하지 않으려면 여전히 필요하므로 유지한다. 두 파일의 주석은 작성 시점 기준이며,
- * 이미 적용된 마이그레이션은 checksum 검증 때문에 **주석 한 글자도 수정하지 않는다** — 역할 변경은
- * 이 KDoc 에만 기록한다.
+ * 전건 스캔하지 않으려면 여전히 필요하므로 유지한다.
+ *
+ * **두 파일은 더 이상 건드리지 않는다.** 운영 DB `flyway_schema_history` 가 들고 있는 checksum
+ * (309565945 / 340477800) 이 현재 파일 내용에 대응한다. 주석·공백 한 글자만 바뀌어도 부팅이
+ * `Validate failed: Migration checksum mismatch` 로 실패하며, 실제로 이 파일들에서 두 번
+ * (주석 수정 → 실패 → 운영 repair, 이어서 파일 원복 → 반대 방향 실패) 장애가 났다.
+ * 인덱스의 역할·근거 변경은 이 KDoc 에만 기록하고, 정정이 필요하면 항상 신규 V 파일을 추가한다.
  */
 @Service
 class NameSequenceSyncService(
