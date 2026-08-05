@@ -433,7 +433,7 @@ class _EligibilityBanner extends StatelessWidget {
     final color = ok ? AppColors.secondary : AppColors.warning;
     final icon = ok ? Icons.check_circle_outline : Icons.info_outline;
     final text = ok
-        ? '오늘 ${DateFormat('HH:mm').format(now)} · 17:00까지 대리출근 등록 가능'
+        ? '오늘 ${DateFormat('HH:mm').format(now)} · 대리출근 등록 가능'
         : (eligibility.reason ?? '');
 
     return Container(

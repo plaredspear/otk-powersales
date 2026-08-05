@@ -12,7 +12,6 @@ import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.domain.activity.schedule.exception.AccountCoordsMissingException
 import com.otoki.powersales.domain.activity.schedule.exception.AlreadyRegisteredException
 import com.otoki.powersales.domain.activity.schedule.exception.AttendanceTargetRequiredException
-import com.otoki.powersales.domain.activity.schedule.exception.AttendanceTimeExceededException
 import com.otoki.powersales.domain.activity.schedule.exception.DistanceExceededException
 import com.otoki.powersales.domain.activity.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequiredException
@@ -201,10 +200,6 @@ class AttendanceControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.safetyCheckCompleted").value(true))
                 .andExpect(jsonPath("$.data.accounts[0].isRegistered").value(false))
                 .andExpect(jsonPath("$.data.accounts[1].isRegistered").value(true))
-                // Controller 가 추가하는 deadline / closed 필드는 service mock 응답에 없으므로
-                // controller 가 후처리하는 것을 검증해야 함 — 유지
-                .andExpect(jsonPath("$.data.registrationDeadline").value("17:00"))
-                .andExpect(jsonPath("$.data.isRegistrationClosed").value(false))
         }
 
         @Test
@@ -271,7 +266,6 @@ class AttendanceControllerTest : MobileControllerTestSupport() {
             Arguments.of("거래처 좌표 누락", 400, "ATT_ACCOUNT_COORDS_MISSING", AccountCoordsMissingException(), 35.1234),
             Arguments.of("사원 좌표 무효", 400, "ATT_INVALID_COORDS", InvalidCoordsException(), 91.0),
             Arguments.of("이미 등록", 409, "ALREADY_REGISTERED", AlreadyRegisteredException(), 35.1234),
-            Arguments.of("17시 이후", 400, "ATTENDANCE_TIME_EXCEEDED", AttendanceTimeExceededException(), 35.1234),
             Arguments.of("스케줄 없음", 404, "SCHEDULE_NOT_FOUND", TeamMemberScheduleNotFoundException(), 35.1234)
         )
     }

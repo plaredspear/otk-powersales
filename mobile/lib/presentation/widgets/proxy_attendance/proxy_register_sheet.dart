@@ -6,17 +6,16 @@ import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/leader_daily_status.dart';
 
 /// 대리출근 등록 가능 판정 결과 (레거시 mngDaily `btn-add-sch` 동등).
-enum ProxyEligibility { ok, notToday, afterCutoff }
+enum ProxyEligibility { ok, notToday }
 
 /// 선택 날짜·현재 시각으로 대리출근 가능 여부 판정.
 ///
-/// 당일 + 17시 이전에만 등록 가능. 조장/AccountViewAll 대리출근 공통 규칙.
+/// 당일 일정만 등록 가능 (시간 제한 없음). 조장/AccountViewAll 대리출근 공통 규칙.
 ProxyEligibility proxyEligibility(DateTime selectedDate, DateTime now) {
   final isToday = selectedDate.year == now.year &&
       selectedDate.month == now.month &&
       selectedDate.day == now.day;
   if (!isToday) return ProxyEligibility.notToday;
-  if (now.hour >= 17) return ProxyEligibility.afterCutoff;
   return ProxyEligibility.ok;
 }
 
@@ -30,8 +29,6 @@ extension ProxyEligibilityX on ProxyEligibility {
         return null;
       case ProxyEligibility.notToday:
         return '당일 일정만 대리출근 등록할 수 있습니다.';
-      case ProxyEligibility.afterCutoff:
-        return '오후 5시 이후에는 대리출근 등록할 수 없습니다.';
     }
   }
 }

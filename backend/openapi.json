@@ -324,12 +324,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "registrationClosed" : {
-            "type" : "boolean"
-          },
-          "registrationDeadline" : {
-            "type" : "string"
-          },
           "safetyCheckCompleted" : {
             "type" : "boolean"
           },

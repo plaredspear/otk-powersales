@@ -191,15 +191,6 @@ class AttendanceDualBranchException : BusinessException(
 )
 
 /**
- * 출근등록 마감 시간(17:00) 초과
- */
-class AttendanceTimeExceededException : BusinessException(
-    errorCode = "ATTENDANCE_TIME_EXCEEDED",
-    message = "출근등록은 17시 이전에만 가능합니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-/**
  * 대휴 날짜에 출근 등록 시도
  */
 class AttendanceDayOffConflictException : BusinessException(

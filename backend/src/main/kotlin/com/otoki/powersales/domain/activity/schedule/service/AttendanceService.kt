@@ -30,7 +30,6 @@ import com.otoki.powersales.domain.activity.schedule.exception.AttendanceDayOffC
 import com.otoki.powersales.domain.activity.schedule.exception.AttendanceDualBranchException
 import com.otoki.powersales.domain.activity.schedule.exception.AttendanceTargetConflictException
 import com.otoki.powersales.domain.activity.schedule.exception.AttendanceTargetRequiredException
-import com.otoki.powersales.domain.activity.schedule.exception.AttendanceTimeExceededException
 import com.otoki.powersales.domain.activity.schedule.exception.DisplayAttendanceDuplicateException
 import com.otoki.powersales.domain.activity.schedule.exception.DisplayScheduleNotAssignedException
 import com.otoki.powersales.domain.activity.schedule.exception.DisplayScheduleNotConfirmedException
@@ -55,7 +54,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -79,7 +77,6 @@ class AttendanceService(
 
     companion object {
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm")
         private val SEOUL_ZONE = ZoneId.of("Asia/Seoul")
         private const val LAT_MIN = -90.0
         private const val LAT_MAX = 90.0
@@ -172,16 +169,12 @@ class AttendanceService(
 
         val registeredCount = allAccounts.count { it.isRegistered }
 
-        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
-
         return AccountListResponse(
             safetyCheckCompleted = safetyCheckCompleted,
             accounts = allAccounts,
             totalCount = allAccounts.size,
             registeredCount = registeredCount,
-            currentDate = today.format(DATE_FORMATTER),
-            registrationDeadline = attendanceProperties.registrationDeadline.format(TIME_FORMATTER),
-            isRegistrationClosed = !now.isBefore(attendanceProperties.registrationDeadline)
+            currentDate = today.format(DATE_FORMATTER)
         )
     }
 
@@ -218,12 +211,6 @@ class AttendanceService(
         }
         if (scheduleId != null && (displayWorkScheduleId != null || eventScheduleId != null)) {
             throw AttendanceTargetConflictException()
-        }
-
-        // 시간 제한 검증: 마감 시각(기본 17시, dev 21시) 이후 등록 차단
-        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
-        if (!now.isBefore(attendanceProperties.registrationDeadline)) {
-            throw AttendanceTimeExceededException()
         }
 
         val employee = employeeRepository.findById(userId)
@@ -353,7 +340,6 @@ class AttendanceService(
      * 본인 출근 등록([register])과의 차이:
      * - **GPS 거리 검증 없음** (조장은 현장에 없음 — 레거시 addScheduleProc 동일).
      * - 안전점검 완료 검증 대상이 **대상 여사원([targetEmployee])** 의 당일 안전점검.
-     * - 시간 제한(서울, 기본 17:00 / dev 21:00) 은 서버에서 동일하게 재검증.
      *
      * 진열=displayWorkScheduleId(마스터→TMS 동적 생성/재사용), 행사·기배정=scheduleId 분기.
      * 조장 권한/팀원 검증은 호출부([LeaderScheduleService.registerProxyAttendance]) 책임.
@@ -368,12 +354,6 @@ class AttendanceService(
         val nonNullCount = listOf(scheduleId, displayWorkScheduleId).count { it != null }
         if (nonNullCount == 0) throw AttendanceTargetRequiredException()
         if (nonNullCount > 1) throw AttendanceTargetConflictException()
-
-        // 시간 제한: 마감 시각(기본 17시, dev 21시) 이후 차단 (서버 재검증)
-        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
-        if (!now.isBefore(attendanceProperties.registrationDeadline)) {
-            throw AttendanceTimeExceededException()
-        }
 
         val today = LocalDate.now()
 

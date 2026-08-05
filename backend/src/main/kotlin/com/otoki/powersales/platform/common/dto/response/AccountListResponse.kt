@@ -8,9 +8,7 @@ data class AccountListResponse(
     val accounts: List<AccountInfo>,
     val totalCount: Int,
     val registeredCount: Int,
-    val currentDate: String,
-    val registrationDeadline: String = "17:00",
-    val isRegistrationClosed: Boolean = false
+    val currentDate: String
 )
 
 /**
