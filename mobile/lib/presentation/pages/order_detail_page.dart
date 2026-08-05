@@ -188,6 +188,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final detail = state.orderDetail!;
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () async {
         // pull-to-refresh 는 SAP(SD03052) 를 동기 호출하므로, 마지막 조회 30초 이내 재당김은
         // 억제한다(respectCooldown). 최초 진입/재전송·취소 후 재조회는 쿨다운 미적용.

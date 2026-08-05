@@ -349,7 +349,7 @@ class _LeaderDailyStatusScreenState
           child: loadingOrError ??
               RefreshIndicator(
                 onRefresh: onRefresh,
-                color: AppColors.primary,
+                color: AppColors.secondary,
                 child: sections.isEmpty
                     ? ListView(
                         children: [
@@ -480,7 +480,7 @@ class _LeaderDailyStatusScreenState
     if (displayGroups.isEmpty && eventGroups.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        color: AppColors.primary,
+        color: AppColors.secondary,
         child: ListView(
           children: [
             SizedBox(
@@ -500,7 +500,7 @@ class _LeaderDailyStatusScreenState
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.primary,
+      color: AppColors.secondary,
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         children: [
@@ -545,7 +545,7 @@ class _LeaderDailyStatusScreenState
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.primary,
+      color: AppColors.secondary,
       // 바로가기(진열/행사/연차)는 섹션 헤더의 GlobalKey.currentContext 로 ensureVisible 한다.
       // ListView(children:) 는 화면 밖 항목을 lazy 빌드해 헤더 컨텍스트가 null → 점프가 무시된다.
       // 팀 규모(수십 명)라 전부 즉시 빌드해도 무방하므로 SingleChildScrollView+Column 으로 구성해

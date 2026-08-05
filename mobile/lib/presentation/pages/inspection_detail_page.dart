@@ -106,6 +106,7 @@ class InspectionDetailPage extends ConsumerWidget {
     final detail = state.detail!;
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () async {
         await ref
             .read(inspectionDetailProvider(inspectionId).notifier)

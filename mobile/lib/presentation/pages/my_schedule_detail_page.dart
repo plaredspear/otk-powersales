@@ -57,6 +57,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
   /// 않는다. 각 탭/상태 화면을 개별로 감싼다.
   Widget _refreshable(Widget child) {
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: _refresh,
       child: child,
     );

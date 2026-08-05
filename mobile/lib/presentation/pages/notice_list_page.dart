@@ -143,6 +143,7 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
     // 빈 목록 (당겨서 새로고침 가능하도록 스크롤 가능 영역으로 구성)
     if (state.isEmpty) {
       return RefreshIndicator(
+        color: AppColors.secondary,
         onRefresh: () => notifier.refresh(),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -167,6 +168,7 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
 
     // 목록 표시
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () => notifier.refresh(),
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),

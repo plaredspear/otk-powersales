@@ -113,6 +113,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
     }
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () => notifier.refresh(),
       child: ListView(
         children: [

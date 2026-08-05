@@ -214,6 +214,7 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
 
     if (state.isEmpty) {
       return RefreshIndicator(
+        color: AppColors.secondary,
         onRefresh: () => ref.read(suggestionListProvider.notifier).load(),
         child: ListView(
           children: [
@@ -235,7 +236,7 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
 
     return RefreshIndicator(
       onRefresh: () => ref.read(suggestionListProvider.notifier).load(),
-      color: AppColors.primary,
+      color: AppColors.secondary,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),

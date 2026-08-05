@@ -129,6 +129,7 @@ class _MyScheduleCalendarPageState
           // 캘린더 (아래로 당겨 새로고침)
           Expanded(
             child: RefreshIndicator(
+              color: AppColors.secondary,
               onRefresh: _refresh,
               child: state.isLoading
                   ? const RefreshableCenter(child: LoadingIndicator())

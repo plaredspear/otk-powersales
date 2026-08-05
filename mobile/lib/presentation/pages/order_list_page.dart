@@ -408,6 +408,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       children: [
         Expanded(
           child: RefreshIndicator(
+            color: AppColors.secondary,
             onRefresh: () =>
                 ref.read(orderRequestListProvider.notifier).searchOrders(),
             child: ListView.builder(

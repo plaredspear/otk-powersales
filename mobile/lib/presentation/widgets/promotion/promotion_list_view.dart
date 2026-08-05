@@ -324,6 +324,7 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     }
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: _onRefresh,
       child: ListView.builder(
         controller: _scrollController,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 /// 로딩 인디케이터 위젯
 ///
 /// 데이터 로딩 중임을 사용자에게 표시하는 공통 위젯입니다.
@@ -59,6 +61,13 @@ class LoadingIndicator extends StatelessWidget {
   }
 
   Widget _buildIndicator(BuildContext context) {
+    // primaryColor(노랑)는 흰 배경에서 보이지 않으므로
+    // progressIndicatorTheme 의 인디케이터 전용 색을 따른다.
+    final indicatorColor =
+        color ??
+        ProgressIndicatorTheme.of(context).color ??
+        AppColors.secondary;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -66,19 +75,17 @@ class LoadingIndicator extends StatelessWidget {
           width: size,
           height: size,
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              color ?? Theme.of(context).primaryColor,
-            ),
-            strokeWidth: 3.0,
+            valueColor: AlwaysStoppedAnimation<Color>(indicatorColor),
+            strokeWidth: 3.5,
           ),
         ),
         if (message != null) ...[
           const SizedBox(height: 16),
           Text(
             message!,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
-              color: color ?? Theme.of(context).primaryColor,
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),

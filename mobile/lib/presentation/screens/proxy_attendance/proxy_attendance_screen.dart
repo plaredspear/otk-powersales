@@ -229,6 +229,7 @@ class _ProxyAttendanceScreenState extends ConsumerState<ProxyAttendanceScreen>
 
     if (displayGroups.isEmpty && eventGroups.isEmpty) {
       return RefreshIndicator(
+        color: AppColors.secondary,
         onRefresh: () => ref.read(proxyAttendanceProvider.notifier).load(),
         child: ListView(
           children: const [
@@ -243,6 +244,7 @@ class _ProxyAttendanceScreenState extends ConsumerState<ProxyAttendanceScreen>
     }
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () => ref.read(proxyAttendanceProvider.notifier).load(),
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),

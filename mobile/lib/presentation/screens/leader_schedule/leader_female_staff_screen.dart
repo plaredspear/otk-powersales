@@ -134,6 +134,7 @@ class _LeaderFemaleStaffScreenState
     }
 
     return RefreshIndicator(
+      color: AppColors.secondary,
       onRefresh: () => ref.read(leaderTeamMembersProvider.notifier).load(),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),

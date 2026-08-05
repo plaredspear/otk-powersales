@@ -209,10 +209,13 @@ abstract final class AppTheme {
       ),
 
       // ─── Progress Indicator ────────────────────────────
+      // 인디케이터는 [AppColors.primary](노랑)가 아닌 [AppColors.secondary](네이비) 사용.
+      // 노랑(#FFF300)은 흰 배경 대비 1.16:1 로 사실상 보이지 않는다.
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: AppColors.surfaceVariant,
-        circularTrackColor: AppColors.surfaceVariant,
+        color: AppColors.secondary,
+        strokeWidth: 3.5,
+        linearTrackColor: AppColors.divider,
+        circularTrackColor: AppColors.divider,
       ),
 
       // ─── Chip ──────────────────────────────────────────

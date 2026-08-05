@@ -172,7 +172,7 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
         Expanded(
           child: RefreshIndicator(
             onRefresh: _onRefresh,
-            color: AppColors.primary,
+            color: AppColors.secondary,
             child: _buildPostList(state),
           ),
         ),
