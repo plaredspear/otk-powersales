@@ -98,21 +98,29 @@ class AdminEmployeeUpdateService(
      * 초기화 버튼마저 잠겨 구제 경로가 없었다 ([AdminEmployeeCredentialService] 의 활성 게이트).
      * role 전용 경로([updateEmployeeRole]) 와 같은 단일 축 API 로 분리해 이 사각지대를 연다.
      *
-     * ## lockingFlag 를 함께 뒤집는 이유
-     * 잠금 축과 앱 로그인 축은 SAP 인입에서 `appLoginActive = (LockingFlag != "Y")` 로 묶여 있고
-     * ([EmployeeUpsertService]), 저장 직전 [EmployeeLockingPolicy] 가 `lockingFlag=true` 면
-     * appLoginActive 를 false 로 되돌린다. appLoginActive 만 켜면 **다음 저장(다른 경로)에서 즉시
-     * 원복**되므로 두 필드를 짝으로 뒤집는다.
+     * ## 레거시 동등 — lockingFlag 는 건드리지 않는다
+     * SF 는 사원 레코드 상세 레이아웃(`DKRetail__Employee__c-직원_조장.layout-meta.xml`, "현장사원 설정"
+     * 섹션) 에서 `DKRetail__APPLoginActive__c` 를 `behavior=Edit`, `LockingFlag__c` 를
+     * `behavior=Readonly` 로 두어 **잠금 플래그는 SAP 전용(관리자 읽기전용), 앱 로그인 활성만 수동
+     * 토글**하게 했다. 본 경로도 동일하게 appLoginActive 한 축만 쓴다.
      *
-     * ## 현장 여사원 보호 규칙과의 관계
+     * 이 수동 토글이 필요한 이유도 레거시에 있다 — SF 의 SAP 인입(`IF_REST_SAP_EmployeeMaster.cls:128-131`)
+     * 은 `LockingFlag='Y'` 일 때 `APPLoginActive=false` 만 쓰고 잠금 해제 시 true 로 복원하지 않는다.
+     * 그렇게 꺼진 채 넘어온 사원(= SF 마이그레이션 적재분) 을 되살리는 유일한 수단이 수동 토글이다.
+     *
+     * ## 요청값이 그대로 저장되지 않을 수 있다
      * [EmployeeLockingPolicy] 를 저장 직전에 그대로 적용한다 (경로 무관 동일 규칙 — SF 전역 트리거
-     * 정합). 따라서 현장 여사원 직군(판촉/레이디/OSC) + 재직 + 여사원/조장 권한 사원은
-     * **비활성화가 성립하지 않고 활성으로 강제 복원**된다. 요청값과 실제 저장값이 다를 수 있으므로
-     * 응답의 `appLoginActive` 를 호출자가 확인해야 한다 (컨트롤러가 메시지로 구분).
+     * 정합). 두 방향 모두 정책이 되돌릴 수 있다:
+     * - 활성화 요청 + `lockingFlag=true` → 정책 1번 규칙이 false 로 되돌림 (SF `EmployeeTriggerHandler.cls:40`
+     *   동등 — 레거시에서도 잠긴 사원은 체크해도 활성화되지 않는다. SAP 잠금 해제가 선행돼야 한다.)
+     * - 비활성화 요청 + 현장 여사원 직군(판촉/레이디/OSC) + 재직 + 여사원/조장 → 정책 2번 규칙이
+     *   활성으로 강제 복원 (SF `lockingFlagException` 동등)
+     *
+     * 따라서 응답의 `appLoginActive` 를 호출자가 확인해야 한다 (컨트롤러가 사유별 메시지로 구분).
      *
      * ## 지속성 한계
-     * lockingFlag/appLoginActive 는 SAP 인입이 갱신하는 컬럼이라 다음 인사 인입 시 SAP 값으로
-     * 덮어써진다. 본 경로는 SoT 변경이 아니라 인입 사이의 수동 구제 수단이다.
+     * appLoginActive 는 SAP 인입이 갱신하는 컬럼이라 다음 인사 인입 시 SAP 의 LockingFlag 기준으로
+     * 덮어써진다([EmployeeUpsertService]). 본 경로는 SoT 변경이 아니라 인입 사이의 수동 구제 수단이다.
      */
     @Transactional
     fun updateAppLoginActive(
@@ -125,8 +133,8 @@ class AdminEmployeeUpdateService(
         val previous = employee.appLoginActive
         val requested = request.appLoginActive == true
 
+        // SF 레이아웃 정합 — 관리자가 만지는 축은 appLoginActive 하나뿐 (lockingFlag 는 SAP 전용)
         employee.appLoginActive = requested
-        employee.lockingFlag = !requested
         // before update Trigger 동등 — 잠금 ↔ 앱 로그인 축 (현장 여사원 보호 규칙 포함)
         EmployeeLockingPolicy.applyBeforeSave(employee)
 

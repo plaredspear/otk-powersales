@@ -483,11 +483,12 @@ export async function updateEmployeeRole(
  * 사원 앱 로그인 활성(appLoginActive) 전용 수정.
  *
  * 일반 수정([updateEmployee]) 은 origin=SAP 사원을 차단하는데 운영 사원은 전량 origin=SAP 라,
- * 이 경로가 앱 로그인을 수동으로 켜는 유일한 수단이다. 서버가 잠금 플래그(lockingFlag) 를 짝으로
- * 뒤집어 다음 저장에서 원복되지 않게 한다.
+ * 이 경로가 앱 로그인을 수동으로 켜는 유일한 수단이다. SF 사원 레이아웃이 앱 로그인 활성만
+ * 편집 가능(잠금 플래그는 읽기 전용) 으로 열어둔 것과 동일하게 한 축만 변경한다.
  *
- * 현장 여사원 직군(판촉/레이디/OSC) 재직자는 보호 규칙상 비활성화가 성립하지 않으므로, 응답의
- * `appLoginActive` 가 요청값과 다를 수 있다 — 호출부가 결과값을 확인해야 한다.
+ * 서버가 잠금 정책을 적용하므로 응답의 `appLoginActive` 가 요청값과 다를 수 있다 — 잠긴 사원의
+ * 활성화, 현장 여사원 직군(판촉/레이디/OSC) 재직자의 비활성화가 그 경우다. 호출부가 결과값을
+ * 확인해야 한다.
  */
 export async function updateEmployeeAppLoginActive(
   employeeId: number,

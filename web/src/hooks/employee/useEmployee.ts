@@ -48,7 +48,8 @@ export function useUpdateEmployeeRole() {
 /**
  * 앱 로그인 활성(appLoginActive) 전용 수정 — origin=SAP 사원도 허용.
  *
- * 서버가 현장 여사원 보호 규칙을 적용하므로 응답값이 요청값과 다를 수 있다 (호출부가 결과 확인).
+ * 서버가 잠금 정책(잠긴 사원 활성화 불가 / 현장 여사원 보호) 을 적용하므로 응답값이 요청값과
+ * 다를 수 있다 (호출부가 결과 확인).
  */
 export function useUpdateEmployeeAppLoginActive() {
   const queryClient = useQueryClient();

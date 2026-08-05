@@ -17,6 +17,10 @@ interface AppLoginActiveModalProps {
  * 열리지 않아 도달 불가였다. 운영 사원은 전량 origin=SAP 이므로 사실상 수동 활성화 수단이 없었고,
  * 비활성 사원은 비밀번호/단말 초기화 버튼까지 잠겨 구제 경로가 없었다. 이 모달은 그 사각지대를
  * 여는 단일 축 전용 경로다 (권한 변경 모달과 동일한 분리 패턴).
+ *
+ * 레거시 SF 는 사원 레코드 상세 "현장사원 설정" 섹션에서 `APP로그인활성` 만 편집 가능,
+ * `시스템접근 플래그(LockingFlag)` 는 읽기 전용으로 두었다. 본 모달도 동일하게 앱 로그인 축만
+ * 변경하며, 잠긴 사원은 활성화가 적용되지 않는다(서버 정책이 되돌림).
  */
 export default function AppLoginActiveModal({
   employee,
@@ -33,10 +37,16 @@ export default function AppLoginActiveModal({
         employeeId: employee.id,
         appLoginActive: nextActive,
       });
-      // 서버가 현장 여사원 보호 규칙을 적용해 요청값을 되돌릴 수 있다 — 결과값 기준으로 안내한다.
+      // 서버가 잠금 정책을 적용해 요청값을 되돌릴 수 있다 — 결과값 기준으로 사유까지 안내한다.
       if (updated.appLoginActive === nextActive) {
         notification.success({
           message: nextActive ? '앱 로그인이 활성화되었습니다' : '앱 로그인이 비활성화되었습니다',
+        });
+      } else if (nextActive) {
+        notification.warning({
+          message: '앱 로그인을 활성화할 수 없습니다',
+          description:
+            '시스템 접근 잠금(SAP LockingFlag) 상태의 사원입니다. SAP 인사에서 잠금이 해제되어야 활성화됩니다.',
         });
       } else {
         notification.warning({
@@ -78,11 +88,20 @@ export default function AppLoginActiveModal({
         <br />
         <Text strong>현재 상태:</Text> {currentActive ? '활성' : '비활성'}
       </Paragraph>
+      {nextActive && employee.lockingFlag === true && (
+        <Alert
+          type="warning"
+          showIcon
+          message="시스템 접근 잠금 상태입니다"
+          description="SAP 인사에서 잠금(LockingFlag)이 걸린 사원이라 활성화가 적용되지 않습니다. 현장 여사원 직군(판촉/레이디/OSC) 재직자만 예외로 활성 복원됩니다. 먼저 SAP 잠금 해제가 필요합니다."
+          style={{ marginBottom: 12 }}
+        />
+      )}
       <Alert
         type="info"
         showIcon
         message="SAP 원천 사원도 변경할 수 있습니다"
-        description="앱 로그인 활성은 SAP 의 시스템 접근 잠금(LockingFlag) 과 한 축이라, 저장 시 잠금 플래그도 함께 반대값으로 맞춰집니다. 다만 다음 SAP 인사 인입이 들어오면 SAP 값으로 다시 덮어써지므로, 이 변경은 인입 사이의 수동 조치입니다."
+        description="변경 대상은 앱 로그인 활성 한 축뿐이며, 시스템 접근 잠금(LockingFlag)은 SAP 원천이라 건드리지 않습니다(레거시 SF 레이아웃과 동일). 다음 SAP 인사 인입이 들어오면 SAP 잠금 값 기준으로 다시 덮어써지므로, 이 변경은 인입 사이의 수동 조치입니다."
       />
     </Modal>
   );

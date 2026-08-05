@@ -281,8 +281,9 @@ class AdminEmployeeController(
      * origin=SAP 라, 이 경로가 없으면 앱 로그인을 수동으로 켤 방법이 아예 없다
      * ([AdminEmployeeUpdateService.updateAppLoginActive] KDoc 참조).
      *
-     * 현장 여사원 보호 규칙([EmployeeLockingPolicy]) 때문에 요청값이 그대로 저장되지 않을 수 있어
-     * 응답 메시지를 실제 저장값 기준으로 구분한다.
+     * SF 레이아웃 정합으로 잠금 플래그(SAP 전용) 는 건드리지 않으므로, 잠긴 사원의 활성화 요청과
+     * 현장 여사원의 비활성화 요청은 [EmployeeLockingPolicy] 가 되돌린다. 응답 메시지를 실제 저장값
+     * 기준으로 사유까지 구분한다.
      */
     @PatchMapping("/{employeeId}/app-login-active")
     @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
@@ -295,6 +296,7 @@ class AdminEmployeeController(
         val message = when {
             response.appLoginActive == requested && requested -> "앱 로그인이 활성화되었습니다"
             response.appLoginActive == requested -> "앱 로그인이 비활성화되었습니다"
+            requested -> "시스템 접근 잠금 상태라 앱 로그인을 활성화할 수 없습니다 (SAP 잠금 해제 선행 필요)"
             else -> "현장 여사원 보호 규칙에 따라 앱 로그인 활성 상태가 유지되었습니다"
         }
         return ResponseEntity.ok(ApiResponse.success(response, message))

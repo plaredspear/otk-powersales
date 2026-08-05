@@ -285,13 +285,13 @@ class AdminEmployeeUpdateServiceTest {
     }
 
     @Test
-    @DisplayName("updateAppLoginActive - origin=SAP 사원도 활성화 성공 + 잠금 플래그 동반 해제")
+    @DisplayName("updateAppLoginActive - origin=SAP + 잠금 해제 상태 -> 활성화 성공 (잠금 플래그 미변경)")
     fun updateAppLoginActive_sapOrigin_activates() {
         val sapEmployee = Employee(id = 40L, employeeCode = "400100", name = "SAP사원")
             .apply {
                 origin = EmployeeOrigin.SAP
                 appLoginActive = false
-                lockingFlag = true
+                lockingFlag = false
                 jikchak = "기존직책"
             }
         every { employeeRepository.findWithEmployeeInfoById(40L) } returns sapEmployee
@@ -303,14 +303,39 @@ class AdminEmployeeUpdateServiceTest {
         )
 
         assertThat(response.appLoginActive).isTrue()
-        // lockingFlag 를 함께 뒤집지 않으면 다음 저장에서 EmployeeLockingPolicy 가 즉시 원복한다
+        // SF 레이아웃 정합 — 잠금 플래그는 SAP 전용이라 손대지 않는다
         assertThat(response.lockingFlag).isFalse()
-        // 두 축 외 필드는 건드리지 않는다
+        // 앱 로그인 축 외 필드는 건드리지 않는다
         assertThat(sapEmployee.jikchak).isEqualTo("기존직책")
     }
 
     @Test
-    @DisplayName("updateAppLoginActive - 비활성화 요청 -> 앱 로그인 OFF + 잠금 ON")
+    @DisplayName("updateAppLoginActive - 잠긴 사원 활성화 시도 -> 정책이 되돌려 비활성 유지 (SF 트리거 동등)")
+    fun updateAppLoginActive_lockedEmployee_notActivated() {
+        val employee = Employee(id = 43L, employeeCode = "400400", name = "잠긴사원")
+            .apply {
+                origin = EmployeeOrigin.SAP
+                jobCode = "사무직"
+                status = "재직"
+                role = AppAuthority.WOMAN
+                appLoginActive = false
+                lockingFlag = true
+            }
+        every { employeeRepository.findWithEmployeeInfoById(43L) } returns employee
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.updateAppLoginActive(
+            43L,
+            AdminEmployeeAppLoginActiveUpdateRequest(appLoginActive = true),
+        )
+
+        // SF EmployeeTriggerHandler.cls:40 동등 — 잠긴 사원은 체크해도 활성화되지 않는다
+        assertThat(response.appLoginActive).isFalse()
+        assertThat(response.lockingFlag).isTrue()
+    }
+
+    @Test
+    @DisplayName("updateAppLoginActive - 비활성화 요청 -> 앱 로그인 OFF (잠금 플래그는 그대로)")
     fun updateAppLoginActive_deactivates() {
         val employee = Employee(id = 41L, employeeCode = "400200", name = "일반사원")
             .apply {
@@ -330,7 +355,7 @@ class AdminEmployeeUpdateServiceTest {
         )
 
         assertThat(response.appLoginActive).isFalse()
-        assertThat(response.lockingFlag).isTrue()
+        assertThat(response.lockingFlag).isFalse()
     }
 
     @Test

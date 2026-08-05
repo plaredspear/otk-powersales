@@ -10,6 +10,9 @@ import jakarta.validation.constraints.NotNull
  * 없었다. 권한(role) 전용 경로([AdminEmployeeRoleUpdateRequest]) 와 동일하게 단일 축만 다루는
  * 별도 경로로 분리해 origin 과 무관하게 조작할 수 있도록 한다.
  *
+ * SF 레거시도 동일한 축 하나만 관리자에게 열어뒀다 — 사원 레이아웃 "현장사원 설정" 섹션에서
+ * `DKRetail__APPLoginActive__c` 는 `behavior=Edit`, `LockingFlag__c` 는 `behavior=Readonly`.
+ *
  * 권한 경로와 달리 이 축은 **SAP 인입이 갱신하는 컬럼**(`LockingFlag` → appLoginActive) 이라
  * 다음 인사 인입 시 SAP 값으로 덮어써진다. 즉 본 경로는 SoT 를 바꾸는 것이 아니라 인입 사이의
  * 수동 구제(임시 활성화) 수단이다 — 호출 UI 가 이 점을 안내한다.
