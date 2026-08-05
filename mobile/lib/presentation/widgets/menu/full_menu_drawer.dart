@@ -75,17 +75,24 @@ class FullMenuDrawer extends ConsumerWidget {
                 },
               ),
               // 스크롤 가능한 메뉴 영역
+              //
+              // 상단 인셋은 MenuHeader 가 이미 처리하므로 top: false.
+              // 하단은 제스처 내비게이션(iOS 홈 인디케이터 / Android 제스처 바)에
+              // 마지막 메뉴 항목과 버전 푸터가 가리지 않도록 인셋을 확보한다.
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // 메뉴 그룹 목록 (조장은 "거래처" 다음에 "여사원 관리",
-                      // AccountViewAll 은 "대리출근" 삽입)
-                      ..._buildMenuGroups(
-                          context, ref, user?.role, user?.rawRole),
-                      // 메뉴 가장 하단에 현재 버전 표시 (메뉴와 함께 스크롤)
-                      const _MenuVersionFooter(),
-                    ],
+                child: SafeArea(
+                  top: false,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // 메뉴 그룹 목록 (조장은 "거래처" 다음에 "여사원 관리",
+                        // AccountViewAll 은 "대리출근" 삽입)
+                        ..._buildMenuGroups(
+                            context, ref, user?.role, user?.rawRole),
+                        // 메뉴 가장 하단에 현재 버전 표시 (메뉴와 함께 스크롤)
+                        const _MenuVersionFooter(),
+                      ],
+                    ),
                   ),
                 ),
               ),
