@@ -80,6 +80,10 @@ vi.mock('@/hooks/employee/useEmployee', () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
+  useUpdateEmployeeAppLoginActive: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 /**
@@ -167,6 +171,29 @@ describe('EmployeeDetailPage', () => {
   it('여사원 현황 진입 -> 「발령정보 승인」 버튼 미노출 (호출 API 가 employee:EDIT 가드)', () => {
     renderPage(true);
     expect(screen.queryByRole('button', { name: '발령정보 승인' })).not.toBeInTheDocument();
+  });
+
+  it('SAP origin + 앱 로그인 활성 -> 「앱 로그인 비활성화」 버튼 노출 + 활성 (수정 버튼과 달리 origin 게이트 없음)', () => {
+    renderPage();
+    const toggle = screen.getByRole('button', { name: '앱 로그인 비활성화' });
+    expect(toggle).toBeEnabled();
+  });
+
+  it('앱 로그인 비활성 사원 -> 버튼 라벨이 「앱 로그인 활성화」', () => {
+    sapEmployee.appLoginActive = false;
+    try {
+      renderPage();
+      expect(screen.getByRole('button', { name: '앱 로그인 활성화' })).toBeEnabled();
+      expect(screen.queryByRole('button', { name: '앱 로그인 비활성화' })).not.toBeInTheDocument();
+    } finally {
+      sapEmployee.appLoginActive = true;
+    }
+  });
+
+  it('여사원 현황 진입 -> 앱 로그인 활성 토글 미노출 (호출 API 가 employee:EDIT 가드)', () => {
+    renderPage(true);
+    expect(screen.queryByRole('button', { name: '앱 로그인 비활성화' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '앱 로그인 활성화' })).not.toBeInTheDocument();
   });
 
   it('여사원 현황 진입 -> 「권한 변경」 버튼 미노출 (호출 API 가 employee:EDIT 가드)', () => {

@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.org.employee.service
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeAppLoginActiveUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
@@ -83,6 +84,56 @@ class AdminEmployeeUpdateService(
         logger.info(
             "EMPLOYEE_ROLE_UPDATED id={} code={} previousRole={} newRole={}",
             saved.id, saved.employeeCode, previousRole, saved.role,
+        )
+        return EmployeeDetailResponse.from(saved)
+    }
+
+    /**
+     * 사원 앱 로그인 활성(appLoginActive) 전용 수정 — origin 게이트 없음.
+     *
+     * ## 분리 이유
+     * 일반 수정([update]) 은 origin=SAP 사원을 차단하는데, 운영 사원은 전량 origin=SAP 다
+     * (컬럼 DEFAULT `'SAP'` + SF 마이그레이션이 origin 을 매핑하지 않음). 그래서 웹 관리자에서
+     * 앱 로그인을 수동으로 켤 수단이 아예 없었고, `appLoginActive=false` 인 사원은 비밀번호/단말
+     * 초기화 버튼마저 잠겨 구제 경로가 없었다 ([AdminEmployeeCredentialService] 의 활성 게이트).
+     * role 전용 경로([updateEmployeeRole]) 와 같은 단일 축 API 로 분리해 이 사각지대를 연다.
+     *
+     * ## lockingFlag 를 함께 뒤집는 이유
+     * 잠금 축과 앱 로그인 축은 SAP 인입에서 `appLoginActive = (LockingFlag != "Y")` 로 묶여 있고
+     * ([EmployeeUpsertService]), 저장 직전 [EmployeeLockingPolicy] 가 `lockingFlag=true` 면
+     * appLoginActive 를 false 로 되돌린다. appLoginActive 만 켜면 **다음 저장(다른 경로)에서 즉시
+     * 원복**되므로 두 필드를 짝으로 뒤집는다.
+     *
+     * ## 현장 여사원 보호 규칙과의 관계
+     * [EmployeeLockingPolicy] 를 저장 직전에 그대로 적용한다 (경로 무관 동일 규칙 — SF 전역 트리거
+     * 정합). 따라서 현장 여사원 직군(판촉/레이디/OSC) + 재직 + 여사원/조장 권한 사원은
+     * **비활성화가 성립하지 않고 활성으로 강제 복원**된다. 요청값과 실제 저장값이 다를 수 있으므로
+     * 응답의 `appLoginActive` 를 호출자가 확인해야 한다 (컨트롤러가 메시지로 구분).
+     *
+     * ## 지속성 한계
+     * lockingFlag/appLoginActive 는 SAP 인입이 갱신하는 컬럼이라 다음 인사 인입 시 SAP 값으로
+     * 덮어써진다. 본 경로는 SoT 변경이 아니라 인입 사이의 수동 구제 수단이다.
+     */
+    @Transactional
+    fun updateAppLoginActive(
+        employeeId: Long,
+        request: AdminEmployeeAppLoginActiveUpdateRequest,
+    ): EmployeeDetailResponse {
+        val employee = employeeRepository.findWithEmployeeInfoById(employeeId)
+            ?: throw EmployeeNotFoundException(employeeId)
+
+        val previous = employee.appLoginActive
+        val requested = request.appLoginActive == true
+
+        employee.appLoginActive = requested
+        employee.lockingFlag = !requested
+        // before update Trigger 동등 — 잠금 ↔ 앱 로그인 축 (현장 여사원 보호 규칙 포함)
+        EmployeeLockingPolicy.applyBeforeSave(employee)
+
+        val saved = employeeRepository.save(employee)
+        logger.info(
+            "EMPLOYEE_APP_LOGIN_ACTIVE_UPDATED id={} code={} previous={} requested={} effective={}",
+            saved.id, saved.employeeCode, previous, requested, saved.appLoginActive,
         )
         return EmployeeDetailResponse.from(saved)
     }

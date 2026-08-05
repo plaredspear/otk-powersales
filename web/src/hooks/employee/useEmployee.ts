@@ -3,6 +3,7 @@ import {
   fetchEmployee,
   updateEmployee,
   updateEmployeeRole,
+  updateEmployeeAppLoginActive,
   manualRegisterEmployee,
   confirmPostponedAppointment,
   type EmployeeDetail,
@@ -37,6 +38,23 @@ export function useUpdateEmployeeRole() {
   const queryClient = useQueryClient();
   return useMutation<EmployeeDetail, Error, { employeeId: number; role: AppAuthority }>({
     mutationFn: ({ employeeId, role }) => updateEmployeeRole(employeeId, role),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employee', vars.employeeId] });
+    },
+  });
+}
+
+/**
+ * 앱 로그인 활성(appLoginActive) 전용 수정 — origin=SAP 사원도 허용.
+ *
+ * 서버가 현장 여사원 보호 규칙을 적용하므로 응답값이 요청값과 다를 수 있다 (호출부가 결과 확인).
+ */
+export function useUpdateEmployeeAppLoginActive() {
+  const queryClient = useQueryClient();
+  return useMutation<EmployeeDetail, Error, { employeeId: number; appLoginActive: boolean }>({
+    mutationFn: ({ employeeId, appLoginActive }) =>
+      updateEmployeeAppLoginActive(employeeId, appLoginActive),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'employee', vars.employeeId] });

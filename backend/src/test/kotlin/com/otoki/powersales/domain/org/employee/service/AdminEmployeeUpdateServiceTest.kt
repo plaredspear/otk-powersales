@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeAppLoginActiveUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -280,6 +281,93 @@ class AdminEmployeeUpdateServiceTest {
 
         assertThatThrownBy {
             service.updateEmployeeRole(999L, AdminEmployeeRoleUpdateRequest(role = AppAuthority.WOMAN))
+        }.isInstanceOf(EmployeeNotFoundException::class.java)
+    }
+
+    @Test
+    @DisplayName("updateAppLoginActive - origin=SAP 사원도 활성화 성공 + 잠금 플래그 동반 해제")
+    fun updateAppLoginActive_sapOrigin_activates() {
+        val sapEmployee = Employee(id = 40L, employeeCode = "400100", name = "SAP사원")
+            .apply {
+                origin = EmployeeOrigin.SAP
+                appLoginActive = false
+                lockingFlag = true
+                jikchak = "기존직책"
+            }
+        every { employeeRepository.findWithEmployeeInfoById(40L) } returns sapEmployee
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.updateAppLoginActive(
+            40L,
+            AdminEmployeeAppLoginActiveUpdateRequest(appLoginActive = true),
+        )
+
+        assertThat(response.appLoginActive).isTrue()
+        // lockingFlag 를 함께 뒤집지 않으면 다음 저장에서 EmployeeLockingPolicy 가 즉시 원복한다
+        assertThat(response.lockingFlag).isFalse()
+        // 두 축 외 필드는 건드리지 않는다
+        assertThat(sapEmployee.jikchak).isEqualTo("기존직책")
+    }
+
+    @Test
+    @DisplayName("updateAppLoginActive - 비활성화 요청 -> 앱 로그인 OFF + 잠금 ON")
+    fun updateAppLoginActive_deactivates() {
+        val employee = Employee(id = 41L, employeeCode = "400200", name = "일반사원")
+            .apply {
+                origin = EmployeeOrigin.SAP
+                jobCode = "사무직"
+                status = "재직"
+                role = AppAuthority.WOMAN
+                appLoginActive = true
+                lockingFlag = false
+            }
+        every { employeeRepository.findWithEmployeeInfoById(41L) } returns employee
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.updateAppLoginActive(
+            41L,
+            AdminEmployeeAppLoginActiveUpdateRequest(appLoginActive = false),
+        )
+
+        assertThat(response.appLoginActive).isFalse()
+        assertThat(response.lockingFlag).isTrue()
+    }
+
+    @Test
+    @DisplayName("updateAppLoginActive - 현장 여사원 직군 비활성화 시도 -> 보호 규칙으로 활성 유지")
+    fun updateAppLoginActive_protectedFieldStaff_restored() {
+        val employee = Employee(id = 42L, employeeCode = "400300", name = "판촉여사원")
+            .apply {
+                origin = EmployeeOrigin.SAP
+                jobCode = "판촉직"
+                status = "재직"
+                role = AppAuthority.WOMAN
+                appLoginActive = true
+                lockingFlag = false
+            }
+        every { employeeRepository.findWithEmployeeInfoById(42L) } returns employee
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.updateAppLoginActive(
+            42L,
+            AdminEmployeeAppLoginActiveUpdateRequest(appLoginActive = false),
+        )
+
+        // SF EmployeeTriggerHandler.lockingFlagException 동등 — 현장 여사원은 잠금이 성립하지 않는다
+        assertThat(response.appLoginActive).isTrue()
+        assertThat(response.lockingFlag).isFalse()
+    }
+
+    @Test
+    @DisplayName("updateAppLoginActive - 존재하지 않는 사원 -> EmployeeNotFoundException")
+    fun updateAppLoginActive_notFound() {
+        every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
+
+        assertThatThrownBy {
+            service.updateAppLoginActive(
+                999L,
+                AdminEmployeeAppLoginActiveUpdateRequest(appLoginActive = true),
+            )
         }.isInstanceOf(EmployeeNotFoundException::class.java)
     }
 }

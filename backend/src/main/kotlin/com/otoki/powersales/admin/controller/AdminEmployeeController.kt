@@ -7,6 +7,7 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeAppLoginActiveUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
@@ -271,6 +272,32 @@ class AdminEmployeeController(
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
         val response = adminEmployeeUpdateService.updateEmployeeRole(employeeId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "사원 권한이 수정되었습니다"))
+    }
+
+    /**
+     * 사원 앱 로그인 활성(appLoginActive) 전용 수정.
+     *
+     * 일반 수정([updateEmployee]) 과 달리 origin=SAP 사원도 허용한다 — 운영 사원은 전량
+     * origin=SAP 라, 이 경로가 없으면 앱 로그인을 수동으로 켤 방법이 아예 없다
+     * ([AdminEmployeeUpdateService.updateAppLoginActive] KDoc 참조).
+     *
+     * 현장 여사원 보호 규칙([EmployeeLockingPolicy]) 때문에 요청값이 그대로 저장되지 않을 수 있어
+     * 응답 메시지를 실제 저장값 기준으로 구분한다.
+     */
+    @PatchMapping("/{employeeId}/app-login-active")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
+    fun updateAppLoginActive(
+        @PathVariable employeeId: Long,
+        @Valid @RequestBody request: AdminEmployeeAppLoginActiveUpdateRequest
+    ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
+        val response = adminEmployeeUpdateService.updateAppLoginActive(employeeId, request)
+        val requested = request.appLoginActive == true
+        val message = when {
+            response.appLoginActive == requested && requested -> "앱 로그인이 활성화되었습니다"
+            response.appLoginActive == requested -> "앱 로그인이 비활성화되었습니다"
+            else -> "현장 여사원 보호 규칙에 따라 앱 로그인 활성 상태가 유지되었습니다"
+        }
+        return ResponseEntity.ok(ApiResponse.success(response, message))
     }
 
     /**

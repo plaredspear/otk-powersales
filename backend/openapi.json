@@ -1928,6 +1928,15 @@
         },
         "type" : "object"
       },
+      "AdminEmployeeAppLoginActiveUpdateRequest" : {
+        "properties" : {
+          "appLoginActive" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "required" : [ "appLoginActive" ],
+        "type" : "object"
+      },
       "AdminEmployeeManualRegisterRequest" : {
         "properties" : {
           "costCenterCode" : {
@@ -31749,6 +31758,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/AdminEmployeeUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/app-login-active" : {
+      "patch" : {
+        "operationId" : "updateAppLoginActive",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminEmployeeAppLoginActiveUpdateRequest"
               }
             }
           },

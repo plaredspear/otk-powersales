@@ -18,6 +18,7 @@ import { usePermission } from '@/hooks/usePermission';
 import AppointmentConfirmModal from '@/pages/employee/components/AppointmentConfirmModal';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import EmployeeRoleModal from '@/pages/employee/components/EmployeeRoleModal';
+import AppLoginActiveModal from '@/pages/employee/components/AppLoginActiveModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import WorkHistorySection from '@/pages/employee/components/WorkHistorySection';
@@ -127,6 +128,7 @@ export default function EmployeeDetailPage() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
   const [appointmentConfirmOpen, setAppointmentConfirmOpen] = useState(false);
+  const [appLoginActiveOpen, setAppLoginActiveOpen] = useState(false);
 
   const { data: employee, isLoading, isError, error, refetch } = useEmployee(employeeId, isFemale);
   // 수정 모달 Select 옵션 — 여사원 진입에서 모달을 연 시점에만 로드 (설정 사원 상세는 전용
@@ -170,7 +172,9 @@ export default function EmployeeDetailPage() {
   const credentialsDisabled = employee.appLoginActive !== true || !canReset;
   const credentialsTooltip =
     employee.appLoginActive !== true
-      ? '앱 로그인이 비활성화된 사원입니다. 사원 정보를 먼저 활성화해 주세요.'
+      ? isFemale
+        ? '앱 로그인이 비활성화된 사원입니다. 설정 > 사원 상세에서 먼저 활성화해 주세요.'
+        : '앱 로그인이 비활성화된 사원입니다. 「앱 로그인 활성화」 버튼으로 먼저 활성화해 주세요.'
       : !canReset
         ? '계정 초기화 권한이 없습니다'
         : '';
@@ -214,6 +218,21 @@ export default function EmployeeDetailPage() {
               onClick={() => setAppointmentConfirmOpen(true)}
             >
               발령정보 승인
+            </Button>
+          </Tooltip>
+        )}
+        {/* 앱 로그인 활성 토글 — 「수정」 모달 안의 스위치는 origin=SAP 사원에서 도달 불가라
+            (운영 사원 전량 SAP) 단일 축 전용 버튼으로 분리했다. 권한 변경과 동일하게 origin
+            게이트 없이 employee:EDIT 만으로 가드하며, 여사원 현황 진입에서는 미노출
+            (호출 API 가 employee:EDIT 라 female_employee 권한만으로는 어차피 403). */}
+        {!isFemale && (
+          <Tooltip title={canEdit ? '' : '수정 권한이 없습니다'}>
+            <Button
+              danger={employee.appLoginActive === true}
+              disabled={!canEdit}
+              onClick={() => setAppLoginActiveOpen(true)}
+            >
+              {employee.appLoginActive === true ? '앱 로그인 비활성화' : '앱 로그인 활성화'}
             </Button>
           </Tooltip>
         )}
@@ -365,6 +384,13 @@ export default function EmployeeDetailPage() {
           employee={employee}
           open={true}
           onClose={() => setAppointmentConfirmOpen(false)}
+        />
+      )}
+      {!isFemale && appLoginActiveOpen && (
+        <AppLoginActiveModal
+          employee={employee}
+          open={true}
+          onClose={() => setAppLoginActiveOpen(false)}
         />
       )}
       {passwordOpen && (
