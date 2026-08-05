@@ -6,6 +6,7 @@ import 'package:mobile/core/theme/app_spacing.dart';
 import '../../app_router.dart';
 import '../providers/notice_list_provider.dart';
 import '../providers/notice_list_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/notice/notice_category_filter.dart';
 import '../widgets/notice/notice_pagination.dart';
 import '../widgets/notice/notice_post_item.dart';
@@ -107,9 +108,7 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
   Widget _buildContent(NoticeListState state, NoticeListNotifier notifier) {
     // 로딩 중
     if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const LoadingIndicator();
     }
 
     // 에러

@@ -10,6 +10,7 @@ import '../screens/barcode_scanner_screen.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../widgets/account/account_selector_field.dart';
 import '../widgets/common/info_notice_banner.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/single_date_picker_sheet.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
@@ -273,7 +274,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         ),
         // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
         body: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const LoadingIndicator()
             : GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => FocusScope.of(context).unfocus(),

@@ -12,6 +12,7 @@ import '../widgets/attendance/attendance_status_popup.dart';
 import '../widgets/attendance/account_list_item.dart';
 import '../widgets/attendance/account_search_bar.dart';
 import '../widgets/attendance/safety_check_required_banner.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/primary_button.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
@@ -172,7 +173,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : _buildBody(state, notifier),
       // 고정 근무자는 거래처 목록 바로 아래에 버튼을 배치하므로 하단 고정 바를 두지 않는다.
       bottomNavigationBar: state.isFixedWorker

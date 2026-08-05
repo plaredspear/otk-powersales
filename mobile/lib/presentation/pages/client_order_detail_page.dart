@@ -9,6 +9,7 @@ import '../../domain/entities/client_order.dart';
 import '../../domain/entities/order_detail.dart';
 import '../providers/client_order_detail_provider.dart';
 import '../providers/client_order_detail_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/order/client_order_info_header.dart';
 import '../widgets/order/client_order_item_table.dart';
 import '../widgets/order/delivery_info_popup.dart';
@@ -97,7 +98,7 @@ class _ClientOrderDetailPageState
 
   Widget _buildBody(ClientOrderDetailState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (state.errorMessage != null && !state.hasData) {
@@ -124,7 +125,7 @@ class _ClientOrderDetailPageState
     }
 
     if (!state.hasData) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     final detail = state.orderDetail!;

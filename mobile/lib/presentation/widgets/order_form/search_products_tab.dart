@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/product_add_provider.dart';
+import '../common/loading_indicator.dart';
 import '../common/single_select_sheet.dart';
 import 'product_card_for_add.dart';
 
@@ -178,7 +179,7 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
 
   Widget _buildSearchResults(dynamic state, dynamic notifier) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 바코드 필수 화면(POS/전산 매출조회)에서는 바코드 없는 제품을 목록에서

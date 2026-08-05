@@ -7,6 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/add_product_state.dart';
 import '../common/date_range_filter_field.dart';
+import '../common/loading_indicator.dart';
 import 'product_card_for_add.dart';
 
 /// 주문 이력 탭
@@ -57,7 +58,7 @@ class OrderHistoryTab extends ConsumerWidget {
     WidgetRef ref,
   ) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (state.orderHistoryGroups.isEmpty) {

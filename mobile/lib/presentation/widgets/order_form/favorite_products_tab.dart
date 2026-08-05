@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_for_order.dart';
 import '../../providers/add_product_provider.dart';
+import '../common/loading_indicator.dart';
 import 'product_card_for_add.dart';
 
 /// 즐겨찾기 제품 탭
@@ -53,7 +54,7 @@ class _FavoriteProductsTabState extends ConsumerState<FavoriteProductsTab> {
     final notifier = ref.read(addProductProvider.notifier);
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 바코드 필수 화면(POS/전산 매출조회)에서는 바코드 없는 제품을 목록에서

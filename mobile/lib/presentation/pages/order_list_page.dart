@@ -13,6 +13,7 @@ import '../providers/client_order_list_provider.dart';
 import '../providers/client_order_list_state.dart';
 import '../providers/order_request_list_provider.dart';
 import '../providers/order_request_list_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/order/client_order_card.dart';
 import '../widgets/order/client_order_filter_bar.dart';
 import '../widgets/order/order_request_card.dart';
@@ -341,7 +342,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   Widget _buildOrderList(OrderRequestListState state) {
     // 로딩 상태
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (재시도 버튼)
@@ -399,7 +400,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
 
     // 검색 전 초기 상태
     if (!state.hasSearched) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 주문 카드 리스트 + 페이지네이터 (클라이언트 슬라이스)
@@ -555,7 +556,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   Widget _buildClientOrderList(ClientOrderListState state) {
     // 로딩 상태
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (재시도 버튼)

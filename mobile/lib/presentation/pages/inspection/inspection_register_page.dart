@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/order_form/add_product_bottom_sheet.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/image_picker_helper.dart';
@@ -89,7 +90,7 @@ class _InspectionRegisterPageState
       ),
       // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => FocusScope.of(context).unfocus(),

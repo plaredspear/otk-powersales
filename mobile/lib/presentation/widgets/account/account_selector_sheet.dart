@@ -10,6 +10,7 @@ import '../../../domain/entities/my_account_meta.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/my_accounts_provider.dart';
+import '../common/loading_indicator.dart';
 
 /// 거래처 선택 바텀시트
 ///
@@ -272,7 +273,7 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
 
   Widget _buildList() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
     if (_error != null) {
       return Center(child: Text(_error!));

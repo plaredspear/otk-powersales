@@ -11,6 +11,7 @@ import 'package:mobile/core/theme/app_typography.dart';
 import '../../domain/entities/notice_category.dart';
 import '../providers/notice_detail_provider.dart';
 import '../providers/notice_detail_state.dart';
+import '../widgets/common/loading_indicator.dart';
 
 /// 공지사항 상세 화면
 ///
@@ -61,7 +62,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
   Widget _buildContent(NoticeDetailState state, NoticeDetailNotifier notifier) {
     // 로딩 중
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러

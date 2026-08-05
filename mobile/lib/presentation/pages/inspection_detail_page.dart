@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/inspection_detail.dart';
 import '../providers/inspection_detail_provider.dart';
 import '../providers/inspection_detail_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/inspection/inspection_detail_competitor.dart';
 import '../widgets/inspection/inspection_detail_own.dart';
 import '../widgets/inspection/inspection_detail_row.dart';
@@ -62,7 +63,7 @@ class InspectionDetailPage extends ConsumerWidget {
   ) {
     // 로딩 상태
     if (state.isLoading && !state.hasData) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (데이터 없음)
@@ -100,7 +101,7 @@ class InspectionDetailPage extends ConsumerWidget {
 
     // 데이터 없음
     if (!state.hasData) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     final detail = state.detail!;

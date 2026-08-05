@@ -9,6 +9,7 @@ import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/product_search_provider.dart';
 import '../providers/product_search_state.dart';
 import '../screens/barcode_scanner_screen.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/product_search/empty_search_guide.dart';
 import '../widgets/product_search/product_card.dart';
 import '../widgets/product_search/product_search_app_bar.dart';
@@ -112,7 +113,7 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage>
 
   Widget _buildBody(ProductSearchState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 검색 전 안내 / 검색 후 결과 없음

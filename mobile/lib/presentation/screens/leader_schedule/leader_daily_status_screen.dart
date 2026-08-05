@@ -1314,7 +1314,7 @@ class _EventChangeSheetState extends ConsumerState<_EventChangeSheet> {
             if (membersState.isLoading && members.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: LoadingIndicator(message: '팀원 불러오는 중...'),
+                child: LoadingIndicator.inline(message: '팀원 불러오는 중...'),
               )
             else
               DropdownButtonFormField<int>(

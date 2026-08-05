@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../../domain/entities/claim_category.dart';
@@ -117,7 +118,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
       ),
       // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => FocusScope.of(context).unfocus(),

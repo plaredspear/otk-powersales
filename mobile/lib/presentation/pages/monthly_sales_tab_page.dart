@@ -9,6 +9,7 @@ import '../providers/monthly_sales_provider.dart';
 import '../providers/monthly_sales_state.dart';
 import '../providers/my_accounts_provider.dart';
 import '../widgets/account/account_selector_field.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
 
 /// 월매출 탭 페이지
@@ -86,7 +87,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
     }
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (state.errorMessage != null) {

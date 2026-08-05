@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/promotion.dart';
 import '../../providers/promotion_list_provider.dart';
+import '../common/loading_indicator.dart';
 
 /// "담당 행사 선택" 바텀시트.
 ///
@@ -53,7 +54,7 @@ class MyAssignmentPickerSheet extends ConsumerWidget {
               child: assignmentsAsync.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.all(40),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: LoadingIndicator(),
                 ),
                 error: (_, _) => _ErrorView(
                   onRetry: () =>

@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/my_account.dart';
 import '../providers/client_order_list_provider.dart';
 import '../providers/my_accounts_provider.dart';
+import '../widgets/common/loading_indicator.dart';
 import 'sales_status_page.dart';
 import '../widgets/my_accounts/my_account_card.dart';
 import '../widgets/my_accounts/my_account_search_bar.dart';
@@ -179,7 +180,7 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   Widget _buildBody(myAccountsState) {
     // 로딩 상태
     if (myAccountsState.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (재시도 버튼)

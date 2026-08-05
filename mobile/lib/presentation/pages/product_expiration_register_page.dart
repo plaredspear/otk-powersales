@@ -7,6 +7,7 @@ import '../widgets/account/account_selector_sheet.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/product_expiration_form_provider.dart';
 import '../screens/barcode_scanner_screen.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
 import '../widgets/product_expiration/product_expiration_register_form.dart';
 
@@ -64,7 +65,7 @@ class _ProductExpirationRegisterPageState
         ),
       ),
       body: state.isLoading && !state.hasAccount
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : ProductExpirationRegisterForm(
               accountName: state.selectedAccountName,
               productCode: state.selectedProductCode,

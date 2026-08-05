@@ -9,6 +9,7 @@ import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
 import '../widgets/suggestion/suggestion_logistics_claim_fields.dart';
@@ -161,7 +162,7 @@ class _SuggestionRegisterPageState
       ),
       // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingIndicator()
           : GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => FocusScope.of(context).unfocus(),

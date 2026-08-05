@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/product_expiration_item.dart';
 import '../providers/product_expiration_delete_provider.dart';
 import '../providers/product_expiration_delete_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/product_expiration/product_expiration_delete_card.dart';
 
 /// 소비기한 삭제 페이지
@@ -113,7 +114,7 @@ class _ProductExpirationDeletePageState extends ConsumerState<ProductExpirationD
 
   Widget _buildBody(ProductExpirationDeleteState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     if (state.items.isEmpty) {

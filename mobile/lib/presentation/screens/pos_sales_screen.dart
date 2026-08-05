@@ -8,6 +8,7 @@ import '../../domain/repositories/my_account_repository.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/pos_sales_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/range_calendar_picker.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
 import 'barcode_scanner_screen.dart';
@@ -70,7 +71,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
               if (state.isLoading)
                 const Padding(
                   padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: LoadingIndicator(),
                 ),
               const SizedBox(height: 24),
             ],

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../widgets/common/loading_indicator.dart';
 import 'order_cancel_page.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -144,7 +145,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final orderId = widget.orderId;
     // 로딩 상태
     if (state.isLoading && !state.hasData) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (데이터 없음)
@@ -182,7 +183,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     // 데이터 없음
     if (!state.hasData) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     final detail = state.orderDetail!;

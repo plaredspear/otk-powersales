@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/loading_indicator.dart';
 
 /// GPS 사용 동의 화면
 ///
@@ -104,9 +105,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const LoadingIndicator();
     }
 
     if (_errorMessage != null) {

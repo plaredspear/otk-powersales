@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/product_expiration_item.dart';
 import '../providers/product_expiration_list_provider.dart';
 import '../providers/product_expiration_list_state.dart';
+import '../widgets/common/loading_indicator.dart';
 import '../widgets/product_expiration/product_expiration_filter_bar.dart';
 import '../widgets/product_expiration/product_expiration_group_header.dart';
 import '../widgets/product_expiration/product_expiration_product_card.dart';
@@ -192,7 +193,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
   Widget _buildBody(ProductExpirationListState state) {
     // 로딩 상태
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator();
     }
 
     // 에러 상태 (데이터 없음)
