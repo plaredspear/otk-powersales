@@ -39,6 +39,13 @@ import org.springframework.transaction.support.TransactionTemplate
  * ## 멱등성
  * 각 보정 쿼리는 `GREATEST(nextval, MAX+1)` 이라 이미 시퀀스가 앞서 있으면 값이 그대로 유지되고
  * nextval 1개만 소모한다(번호 gap — SF AutoNumber 도 동일하게 gap 이 생기므로 정합).
+ *
+ * ## 표현식 인덱스 (V202608042320 / V202608042350)
+ * 두 마이그레이션의 표현식 부분 인덱스는 원래 **채번 hot path** 의 전건 스캔을 없애려고 만든 것이나,
+ * 위 분리 이후로는 **보정 시점** 비용을 낮추는 용도다 — 부팅 때마다 8개 테이블(최대 2.9GB)을
+ * 전건 스캔하지 않으려면 여전히 필요하므로 유지한다. 두 파일의 주석은 작성 시점 기준이며,
+ * 이미 적용된 마이그레이션은 checksum 검증 때문에 **주석 한 글자도 수정하지 않는다** — 역할 변경은
+ * 이 KDoc 에만 기록한다.
  */
 @Service
 class NameSequenceSyncService(
