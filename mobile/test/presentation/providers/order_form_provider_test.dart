@@ -153,9 +153,29 @@ void main() {
         await notifier.initialize();
 
         expect(notifier.state.hasDraft, false);
+        // 원인 구분 코드가 붙는다 — DioException 이 아닌 일반 예외는 파싱/기타(E-FMT).
         expect(
           notifier.state.errorMessage,
-          '임시저장 조회 중 오류가 발생했습니다.',
+          '임시저장 조회 중 오류가 발생했습니다. (E-FMT)',
+        );
+      });
+
+      test('GET /draft HTTP 오류는 상태코드를 구분 코드로 노출한다', () async {
+        // 화면 문구만으로 서버 오류(E500) / 네트워크(E-NET) / 파싱(E-FMT) 를 가르기 위한 계약.
+        formRepo.exceptionToThrow = DioException(
+          requestOptions: RequestOptions(path: '/api/v1/mobile/orders/draft'),
+          response: Response(
+            requestOptions:
+                RequestOptions(path: '/api/v1/mobile/orders/draft'),
+            statusCode: 500,
+          ),
+        );
+
+        await notifier.initialize();
+
+        expect(
+          notifier.state.errorMessage,
+          '임시저장 조회 중 오류가 발생했습니다. (E500)',
         );
       });
     });

@@ -246,6 +246,40 @@ class OrderDraftServiceTest {
             assertThat(response.lines[0].boxSize).isEqualTo(12)
             assertThat(response.lines[0].unitPrice).isEqualByComparingTo("616")
         }
+
+        @Test
+        @DisplayName("account_id 가 비어 있어도(레거시 이관 draft) accountExternalKey 는 account_code 로 복원된다")
+        fun fallsBackToAccountCodeWhenAccountIdMissing() {
+            val draft = TmpOrder(
+                id = 100L,
+                tmpEmployeeCode = employeeCode,
+                tmpAccountCode = "EK001",
+                tmpOrderDate = LocalDate.of(2026, 5, 10),
+                tmpTotalAmount = "1000",
+                // 레거시 Heroku 이관 시 account_code → account_id 해석이 실패하면 NULL 로 남는다.
+                accountId = null,
+                employeeId = userId,
+            )
+            draft.products += TmpOrderProduct(
+                id = 2L,
+                tmpProductCode = "P001",
+                employeeId = userId,
+                tmpOrder = draft,
+                lineNumber = 10,
+                unit = "EA",
+                quantity = BigDecimal("10"),
+            )
+            every { tmpOrderRepository.findByEmployeeId(userId) } returns draft
+            // 제품 마스터 미존재(단종/미적재) — productName 은 null 로 내려간다.
+            every { productRepository.findByProductCodeIn(eq(listOf("P001"))) } returns emptyList()
+
+            val response = service.findByUserId(userId)
+
+            assertThat(response).isNotNull
+            assertThat(response!!.accountExternalKey).isEqualTo("EK001")
+            assertThat(response.lines[0].productName).isNull()
+            assertThat(response.lines[0].boxSize).isEqualTo(0)
+        }
     }
 
     @Nested

@@ -6,7 +6,11 @@ class OrderDraftResponseModel {
   final int draftId;
   final int accountId;
   final String accountName;
-  final String accountExternalKey;
+
+  /// 거래처 SF external_key. 백엔드 계약상 nullable —
+  /// 거래처 행이 없거나(삭제) 레거시 이관 draft 의 `account_id` 가 비어 있으면 null 로 내려온다.
+  /// non-null 로 캐스팅하면 주문서 진입 자체가 "임시저장 조회 오류" 로 막히므로 nullable 유지.
+  final String? accountExternalKey;
   final String? deliveryDate;
   final int totalAmount;
   final String savedAt;
@@ -16,7 +20,7 @@ class OrderDraftResponseModel {
     required this.draftId,
     required this.accountId,
     required this.accountName,
-    required this.accountExternalKey,
+    this.accountExternalKey,
     this.deliveryDate,
     required this.totalAmount,
     required this.savedAt,
@@ -27,8 +31,8 @@ class OrderDraftResponseModel {
     return OrderDraftResponseModel(
       draftId: (json['draftId'] as num).toInt(),
       accountId: (json['accountId'] as num).toInt(),
-      accountName: json['accountName'] as String,
-      accountExternalKey: json['accountExternalKey'] as String,
+      accountName: json['accountName'] as String? ?? '',
+      accountExternalKey: json['accountExternalKey'] as String?,
       deliveryDate: json['deliveryDate'] as String?,
       totalAmount: (json['totalAmount'] as num).toInt(),
       savedAt: json['savedAt'] as String,
@@ -42,6 +46,10 @@ class OrderDraftResponseModel {
 class OrderDraftLineModel {
   final int lineNumber;
   final String productCode;
+
+  /// 제품명. 백엔드가 제품 마스터에서 재조회해 내려주므로 단종/삭제/미적재 코드면 null 이다
+  /// (`tmp_order_product` 에는 제품명 컬럼이 없어 저장값 fallback 이 불가능).
+  /// 표시가 끊기지 않도록 그 경우 제품코드로 대체해 채운다.
   final String productName;
   final String unit;
   final double quantity;
@@ -67,10 +75,11 @@ class OrderDraftLineModel {
   });
 
   factory OrderDraftLineModel.fromJson(Map<String, dynamic> json) {
+    final productCode = json['productCode'] as String? ?? '';
     return OrderDraftLineModel(
       lineNumber: (json['lineNumber'] as num).toInt(),
-      productCode: json['productCode'] as String,
-      productName: json['productName'] as String,
+      productCode: productCode,
+      productName: json['productName'] as String? ?? productCode,
       unit: json['unit'] as String,
       quantity: (json['quantity'] as num).toDouble(),
       quantityPieces: (json['quantityPieces'] as num?)?.toInt(),

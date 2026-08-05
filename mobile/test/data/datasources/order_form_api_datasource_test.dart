@@ -106,6 +106,48 @@ void main() {
         expect(result.lines[0].productCode, 'P001');
         expect(result.lines[0].boxSize, 12);
       });
+
+      test('accountExternalKey / productName 이 null 이어도 파싱된다', () async {
+        // 백엔드 계약상 두 필드는 nullable — 거래처 행 없음(레거시 이관 draft) / 제품 마스터
+        // 미존재(단종·삭제) 시 null 로 내려온다. non-null 캐스팅이면 여기서 TypeError 가 나고
+        // 주문서 진입이 "임시저장 조회 중 오류" 로 막혔다(회귀 방지).
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'data': {
+                  'draftId': 99,
+                  'accountId': 0,
+                  'accountName': '',
+                  'accountExternalKey': null,
+                  'deliveryDate': null,
+                  'totalAmount': 0,
+                  'savedAt': '2026-05-04T10:00:00Z',
+                  'lines': [
+                    {
+                      'lineNumber': 10,
+                      'productCode': 'P001',
+                      'productName': null,
+                      'unit': 'EA',
+                      'quantity': 10,
+                      'boxSize': 0,
+                    }
+                  ],
+                },
+              },
+            ));
+          },
+        ));
+
+        final result = await dataSource.getOrderDraft();
+
+        expect(result, isNotNull);
+        expect(result!.accountExternalKey, isNull);
+        // 제품명이 비면 화면 표시가 끊기지 않도록 제품코드로 대체한다.
+        expect(result.lines[0].productName, 'P001');
+      });
     });
 
     group('saveOrderDraft (#596 POST)', () {

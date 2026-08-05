@@ -1,5 +1,7 @@
 import '../../core/utils/error_utils.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/network/dio_provider.dart';
@@ -73,6 +75,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   final SubmitOrderRequest _submitOrderRequest;
   final SearchProductsForOrder _searchProductsForOrder;
   final Uuid _uuid;
+  final Logger _logger;
 
   OrderFormNotifier({
     required GetLoanInquiry getLoanInquiry,
@@ -82,6 +85,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     required SubmitOrderRequest submitOrderRequest,
     required SearchProductsForOrder searchProductsForOrder,
     Uuid? uuid,
+    Logger? logger,
   })  : _getLoanInquiry = getLoanInquiry,
         _getOrderDraft = getOrderDraft,
         _saveOrderDraft = saveOrderDraft,
@@ -89,6 +93,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         _submitOrderRequest = submitOrderRequest,
         _searchProductsForOrder = searchProductsForOrder,
         _uuid = uuid ?? const Uuid(),
+        _logger = logger ?? Logger(),
         super(OrderFormState.initial());
 
   /// 초기화 (Spec #598 P2-M §2.1).
@@ -122,14 +127,28 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       } else {
         state = state.copyWith(hasDraft: false, clearPendingDraft: true);
       }
-    } catch (e) {
-      // 임시저장 조회 실패는 SnackBar 만 노출, 빈 폼으로 진입
+    } catch (e, stackTrace) {
+      // 임시저장 조회 실패는 SnackBar 만 노출, 빈 폼으로 진입.
+      // 원인은 콘솔 로그로 남기고, 사용자 문구에는 구분 코드만 덧붙인다 — 코드가 없으면
+      // 네트워크 실패 / 서버 오류 / 응답 파싱 실패가 화면상 전부 같은 문구라 원인 판별이 불가능하다.
+      _logger.w('임시저장 조회 실패', error: e, stackTrace: stackTrace);
       state = state.copyWith(
         hasDraft: false,
         clearPendingDraft: true,
-        errorMessage: '임시저장 조회 중 오류가 발생했습니다.',
+        errorMessage: '임시저장 조회 중 오류가 발생했습니다. (${_draftErrorCode(e)})',
       );
     }
+  }
+
+  /// 임시저장 조회 실패 원인 구분 코드 — 사용자 화면/스크린샷만으로 계층을 가른다.
+  ///
+  /// `E<상태코드>` = 서버 응답 오류, `E-NET` = 연결/타임아웃, `E-FMT` = 응답 파싱(계약 불일치).
+  String _draftErrorCode(Object error) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      return status != null ? 'E$status' : 'E-NET';
+    }
+    return 'E-FMT';
   }
 
   /// 임시저장 다이얼로그 [예] — 폼 채움 + 여신 호출 (Spec #598 P2-M §2.2).
@@ -180,8 +199,9 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       clearPendingDraft: true,
     );
 
-    if (pending.accountExternalKey.isNotEmpty) {
-      await _fetchLoanInquiry(pending.accountExternalKey);
+    final externalKey = pending.accountExternalKey;
+    if (externalKey != null && externalKey.isNotEmpty) {
+      await _fetchLoanInquiry(externalKey);
     }
   }
 

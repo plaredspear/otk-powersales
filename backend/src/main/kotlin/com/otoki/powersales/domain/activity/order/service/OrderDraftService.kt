@@ -145,7 +145,10 @@ class OrderDraftService(
             draftId = draft.id,
             accountId = draft.accountId ?: 0,
             accountName = account?.name.orEmpty(),
-            accountExternalKey = account?.externalKey,
+            // 거래처 행이 없거나(삭제) 레거시 이관 draft 의 account_id 가 비어 있으면
+            // 저장 시 함께 적재한 account_code(= account.externalKey, [save] 참조) 로 복원한다.
+            // 여신조회(#594)가 external_key 로만 동작하므로 여기서 비면 복원 draft 의 여신이 안 뜬다.
+            accountExternalKey = account?.externalKey ?: draft.tmpAccountCode,
             deliveryDate = draft.tmpOrderDate,
             totalAmount = draft.tmpTotalAmount?.toLongOrNull() ?: 0L,
             savedAt = draft.updatedAt,
