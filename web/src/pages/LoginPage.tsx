@@ -60,10 +60,10 @@ export default function LoginPage() {
           제목 텍스트 대신 사이더와 동일한 브랜드 이미지(오뚜기 심볼 + O'mate 워드마크).
           원본이 939x207 이라 높이만 고정하면 가로는 비율대로 약 200px — 카드(400px) 안에 여유롭게 들어간다.
 
-          상하 여백 76px 은 로고 좌우 여백과 맞춘 값이다:
-          카드 본문 폭 352px(400 - Card padding 24×2) 에서 로고 폭 약 200px 을 빼면 좌우 각 76px.
+          상하 여백 38px 은 로고 좌우 여백(76px = (352 - 200) / 2, 카드 본문 폭 352px = 400 - padding 24×2)
+          의 절반이다. 좌우와 동일하게 두면 카드가 지나치게 길어져 절반으로 줄였다.
         */}
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '76px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '38px 0' }}>
           <img
             src="/brand-omate.png"
             alt="오뚜기 O'mate"
