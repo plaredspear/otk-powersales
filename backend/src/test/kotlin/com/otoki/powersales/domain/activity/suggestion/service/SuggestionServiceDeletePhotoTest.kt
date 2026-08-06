@@ -45,6 +45,7 @@ class SuggestionServiceDeletePhotoTest {
     private val productRepository: ProductRepository = mockk()
     private val orgCostCenterMatchService: OrgCostCenterMatchService = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
+    private val photoUploader: SuggestionPhotoUploader = mockk()
     private val validator: SuggestionValidator = mockk()
     private val storageService: StorageService = mockk(relaxUnitFun = true)
     private val sfOutboundClient: SfOutboundClient = mockk()
@@ -59,6 +60,7 @@ class SuggestionServiceDeletePhotoTest {
         productRepository,
         orgCostCenterMatchService,
         fileStorageService,
+        photoUploader,
         validator,
         storageService,
         sfOutboundClient,

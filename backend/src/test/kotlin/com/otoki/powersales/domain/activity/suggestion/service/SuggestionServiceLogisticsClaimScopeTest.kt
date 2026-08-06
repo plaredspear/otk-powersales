@@ -39,6 +39,7 @@ class SuggestionServiceLogisticsClaimScopeTest {
     private val productRepository: ProductRepository = mockk()
     private val orgCostCenterMatchService: OrgCostCenterMatchService = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
+    private val photoUploader: SuggestionPhotoUploader = mockk()
     private val validator: SuggestionValidator = mockk()
     private val storageService: StorageService = mockk(relaxUnitFun = true)
     private val sfOutboundClient: SfOutboundClient = mockk()
@@ -46,7 +47,7 @@ class SuggestionServiceLogisticsClaimScopeTest {
 
     private val service = SuggestionService(
         suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
-        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
+        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, photoUploader, validator, storageService,
         sfOutboundClient, txTemplate,
     )
 

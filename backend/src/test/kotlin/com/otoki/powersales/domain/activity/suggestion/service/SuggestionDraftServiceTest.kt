@@ -3,7 +3,6 @@ package com.otoki.powersales.domain.activity.suggestion.service
 import com.otoki.powersales.domain.activity.suggestion.dto.request.SuggestionDraftRequest
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionDraft
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
-import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
 import io.mockk.every
 import io.mockk.mockk
@@ -18,9 +17,9 @@ import java.time.LocalDate
 class SuggestionDraftServiceTest {
 
     private val suggestionDraftRepository: SuggestionDraftRepository = mockk(relaxUnitFun = true)
-    private val fileStorageService: FileStorageService = mockk()
+    private val photoUploader: SuggestionPhotoUploader = mockk()
     private val storageService: StorageService = mockk()
-    private val service = SuggestionDraftService(suggestionDraftRepository, fileStorageService, storageService)
+    private val service = SuggestionDraftService(suggestionDraftRepository, photoUploader, storageService)
 
     private val userId = 100L
 
@@ -105,16 +104,16 @@ class SuggestionDraftServiceTest {
         every { photo2.isEmpty } returns false
         every { suggestionDraftRepository.findByEmployeeId(userId) } returns null
         every { suggestionDraftRepository.save(any<SuggestionDraft>()) } answers { firstArg() }
-        every { fileStorageService.uploadSuggestionPhoto(photo1, 0L) } returns "private/suggestion/1.jpg"
-        every { fileStorageService.uploadSuggestionPhoto(photo2, 0L) } returns "private/suggestion/2.jpg"
+        every { photoUploader.storeDraft(photo1) } returns "private/suggestion/1.jpg"
+        every { photoUploader.storeDraft(photo2) } returns "private/suggestion/2.jpg"
         every { storageService.getPresignedUrl("private/suggestion/1.jpg", any()) } returns "https://signed/1.jpg"
         every { storageService.getPresignedUrl("private/suggestion/2.jpg", any()) } returns "https://signed/2.jpg"
 
         val result = service.saveDraft(userId, request(), listOf(photo1, photo2))
 
         assertThat(result.photoUrls).containsExactly("https://signed/1.jpg", "https://signed/2.jpg")
-        verify { fileStorageService.uploadSuggestionPhoto(photo1, 0L) }
-        verify { fileStorageService.uploadSuggestionPhoto(photo2, 0L) }
+        verify { photoUploader.storeDraft(photo1) }
+        verify { photoUploader.storeDraft(photo2) }
     }
 
     @Test

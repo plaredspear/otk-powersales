@@ -67,6 +67,7 @@ class AdminSuggestionService(
     private val productRepository: ProductRepository,
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
+    private val photoUploader: SuggestionPhotoUploader,
     private val validator: SuggestionValidator,
     private val suggestionService: SuggestionService,
     private val policyEvaluator: SharingRulePolicyEvaluator,
@@ -252,15 +253,14 @@ class AdminSuggestionService(
 
         val attachments = photos?.mapIndexedNotNull { index, file ->
             if (file.isEmpty) return@mapIndexedNotNull null
-            val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
-            // SF 전송용 공유 버킷 사본 (mobile [SuggestionService.create] 정합) — 등록 직후 AFTER_COMMIT 릴레이가
-            // 이 sfUniqueKey 를 SF `/ProposalRegist` 로 보낸다.
-            val sfKey = fileStorageService.uploadSuggestionPhotoForSf(file, employee.employeeCode, index + 1)
+            // mobile [SuggestionService.create] 와 동일 파이프라인 — 650 축소본 + private/SF 두 사본.
+            // 등록 직후 AFTER_COMMIT 릴레이가 이 sfUniqueKey 를 SF `/ProposalRegist` 로 보낸다.
+            val stored = photoUploader.store(file, employee.employeeCode)
             val uploadFile = UploadFile(
-                name = file.originalFilename,
-                uniqueKey = key,
-                sfUniqueKey = sfKey,
-                fileSize = suggestionService.formatFileSize(file.size),
+                name = stored.fileName,
+                uniqueKey = stored.uniqueKey,
+                sfUniqueKey = stored.sfUniqueKey,
+                fileSize = stored.fileSize,
                 parentType = UploadFileParentTypes.SUGGESTION,
                 parentId = saved.id,
                 isDeleted = false
@@ -268,8 +268,8 @@ class AdminSuggestionService(
             val savedFile = uploadFileRepository.save(uploadFile)
             SuggestionAttachment(
                 id = savedFile.id,
-                s3Url = suggestionService.composeS3Url(key),
-                fileName = file.originalFilename,
+                s3Url = suggestionService.composeS3Url(stored.uniqueKey),
+                fileName = stored.fileName,
                 sortOrder = index
             )
         } ?: emptyList()
@@ -377,18 +377,13 @@ class AdminSuggestionService(
         val baseIndex = existing.size
         return photos.mapIndexedNotNull { index, file ->
             if (file.isEmpty) return@mapIndexedNotNull null
-            val key = fileStorageService.uploadSuggestionPhoto(file, suggestion.id)
             // 재전송(sf-claim-resend) 시 SF 로 보낼 수 있도록 공유 버킷 사본도 함께 만든다.
-            val sfKey = fileStorageService.uploadSuggestionPhotoForSf(
-                file,
-                suggestion.employee?.employeeCode,
-                baseIndex + index + 1
-            )
+            val stored = photoUploader.store(file, suggestion.employee?.employeeCode)
             val uploadFile = UploadFile(
-                name = file.originalFilename,
-                uniqueKey = key,
-                sfUniqueKey = sfKey,
-                fileSize = suggestionService.formatFileSize(file.size),
+                name = stored.fileName,
+                uniqueKey = stored.uniqueKey,
+                sfUniqueKey = stored.sfUniqueKey,
+                fileSize = stored.fileSize,
                 parentType = UploadFileParentTypes.SUGGESTION,
                 parentId = suggestion.id,
                 isDeleted = false
@@ -396,8 +391,8 @@ class AdminSuggestionService(
             val saved = uploadFileRepository.save(uploadFile)
             SuggestionAttachment(
                 id = saved.id,
-                s3Url = suggestionService.composeS3Url(key),
-                fileName = file.originalFilename,
+                s3Url = suggestionService.composeS3Url(stored.uniqueKey),
+                fileName = stored.fileName,
                 sortOrder = baseIndex + index
             )
         }

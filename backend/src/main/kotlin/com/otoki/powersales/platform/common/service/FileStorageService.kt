@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
+import java.util.concurrent.atomic.AtomicLong
 
 @Service
 class FileStorageService(
@@ -118,14 +119,18 @@ class FileStorageService(
 	 * 제안(물류 클레임) 첨부 사진 업로드 (Spec #664). 권한 통제 대상이므로 제품 클레임과 동일하게 S3 private/ 폴더에
 	 * 저장된다(조회 시 presigned URL). 반환 key(= DB uniqueKey)는 segment 없는
 	 * `uploads/suggestion/<yyyy>/<mm>/<dd>/<uuid>.<ext>` 형식이며, 실제 S3 객체는 `private/` + key 에 위치한다.
+	 *
+	 * 인자가 MultipartFile 이 아니라 바이트인 이유: 레거시 정합상 **650×650 축소본**을 저장해야 하고, 같은
+	 * 축소본을 SF 공유 버킷 사본([uploadSuggestionPhotoForSf])에도 그대로 써야 하기 때문이다
+	 * (축소는 [com.otoki.powersales.domain.activity.suggestion.service.SuggestionPhotoUploader] 가 1회 수행).
 	 */
-	fun uploadSuggestionPhoto(file: MultipartFile, suggestionId: Long): String {
-		validateNotEmpty(file)
+	fun uploadSuggestionPhoto(bytes: ByteArray, originalName: String, contentType: String): String {
+		validateNotEmpty(bytes)
 		val result = storageService.uploadPrivate(
 			domain = "suggestion",
-			originalName = file.originalFilename ?: "unknown",
-			bytes = file.bytes,
-			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+			originalName = originalName,
+			bytes = bytes,
+			contentType = contentType
 		)
 		return result.key
 	}
@@ -138,18 +143,18 @@ class FileStorageService(
 	 * 그래서 파워세일즈 전용 버킷의 private key 를 보내면 SF 화면에서 이미지가 깨진다 — 앱 조회용 private 사본
 	 * ([uploadSuggestionPhoto]) 과 **별도로** 레거시 공유 버킷에 익명 read 사본을 1장 더 올리고, 그 key 를 SF 에 보낸다.
 	 *
-	 * key 형식은 레거시 `AWSService.uploadAWS`(= `System.currentTimeMillis() + 사번`) 정합이되, 같은 밀리초에
-	 * 2장을 연속 업로드하면 키가 겹쳐 뒷장이 앞장을 덮어쓰는 레거시 결함이 있어 슬롯 번호를 덧붙인다.
-	 * SF 는 key 를 파싱하지 않고 URL 에 그대로 concat 하므로 형식 자유도가 있다.
+	 * key 는 레거시 `AWSService.uploadAWS` 와 **동일한 형식** `System.currentTimeMillis() + 사번` (prefix·확장자 없음).
+	 * 다만 레거시는 같은 밀리초에 2장을 연속 업로드하면 key 가 겹쳐 뒷장이 앞장을 덮어쓰고 두 `UploadFile__c`
+	 * 가 같은 이미지를 가리키는 결함이 있어, 형식은 그대로 두고 **발급 millis 를 단조 증가**시켜 회피한다.
 	 *
 	 * @return 업로드된 key. 공유 버킷 미설정 환경이면 null.
 	 */
-	fun uploadSuggestionPhotoForSf(file: MultipartFile, employeeCode: String?, slot: Int): String? {
-		validateNotEmpty(file)
+	fun uploadSuggestionPhotoForSf(bytes: ByteArray, contentType: String, employeeCode: String?): String? {
+		validateNotEmpty(bytes)
 		return storageService.uploadSfShared(
-			uniqueKey = buildSfSharedKey(employeeCode, slot),
-			bytes = file.bytes,
-			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+			uniqueKey = "${nextSfSharedKeyMillis()}${employeeCode.orEmpty()}",
+			bytes = bytes,
+			contentType = contentType
 		)
 	}
 
@@ -169,8 +174,12 @@ class FileStorageService(
 		storageService.deleteSfShared(fileKey)
 	}
 
-	private fun buildSfSharedKey(employeeCode: String?, slot: Int): String =
-		"${System.currentTimeMillis()}${employeeCode.orEmpty()}_$slot"
+	/**
+	 * SF 공유 버킷 key 의 millis 성분을 단조 증가로 발급한다 — 같은 밀리초에 여러 장을 올려도 key 가 겹치지
+	 * 않는다. 형식(13자리 epoch millis)은 레거시와 동일하게 유지된다.
+	 */
+	private fun nextSfSharedKeyMillis(): Long =
+		lastSfSharedKeyMillis.updateAndGet { previous -> maxOf(System.currentTimeMillis(), previous + 1) }
 
 	/**
 	 * 현장점검(site-activity) 사진 업로드. 현장점검 데이터는 "본인만 조회"로 권한 통제되므로
@@ -199,5 +208,14 @@ class FileStorageService(
 	private fun validateNotEmpty(file: MultipartFile) {
 		if (file.isEmpty) throw InvalidFileException("빈 파일은 업로드할 수 없습니다")
 		if (file.originalFilename.isNullOrBlank()) throw InvalidFileException("파일명이 올바르지 않습니다")
+	}
+
+	private fun validateNotEmpty(bytes: ByteArray) {
+		if (bytes.isEmpty()) throw InvalidFileException("빈 파일은 업로드할 수 없습니다")
+	}
+
+	private companion object {
+		/** SF 공유 버킷 key 중복 방지용 마지막 발급 millis (프로세스 내 단조 증가). */
+		val lastSfSharedKeyMillis = AtomicLong(0)
 	}
 }

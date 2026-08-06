@@ -46,6 +46,7 @@ class SuggestionServiceSfSendTest {
     private val productRepository: ProductRepository = mockk()
     private val orgCostCenterMatchService: OrgCostCenterMatchService = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
+    private val photoUploader: SuggestionPhotoUploader = mockk()
     private val validator: SuggestionValidator = mockk()
     private val storageService: StorageService = mockk(relaxUnitFun = true)
     private val sfOutboundClient: SfOutboundClient = mockk()
@@ -53,7 +54,7 @@ class SuggestionServiceSfSendTest {
 
     private val service = SuggestionService(
         suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
-        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
+        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, photoUploader, validator, storageService,
         sfOutboundClient, txTemplate,
     )
 
@@ -174,7 +175,7 @@ class SuggestionServiceSfSendTest {
             service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
 
             assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1750000000000E777_1")
-            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a.jpg")
+            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a_resize.jpg")
         }
 
         /** 공유 버킷 미설정 환경에서도 등록 자체는 진행 — 이미지 슬롯은 private key 로 fallback 한다. */
@@ -198,8 +199,12 @@ class SuggestionServiceSfSendTest {
             every { suggestionRepository.findByIdAndIsDeletedFalse(any()) } returns
                 Suggestion(proposalNumber = "S-20260806-000001")
             every { suggestionDraftRepository.findByEmployeeId(1L) } returns null
-            every { fileStorageService.uploadSuggestionPhoto(any(), any()) } returns PRIVATE_KEY
-            every { fileStorageService.uploadSuggestionPhotoForSf(any(), any(), any()) } returns sfKey
+            every { photoUploader.store(any(), any()) } returns SuggestionPhotoUploader.StoredPhoto(
+                uniqueKey = PRIVATE_KEY,
+                sfUniqueKey = sfKey,
+                fileName = "a_resize.jpg",
+                fileSize = "1.0KB",
+            )
             every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg() }
             every { storageService.getPresignedUrl(any(), any()) } returns "https://presigned"
             every { txTemplate.execute<Any?>(any()) } answers {

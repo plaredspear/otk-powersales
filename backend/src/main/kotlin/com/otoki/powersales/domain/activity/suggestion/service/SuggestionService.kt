@@ -76,6 +76,7 @@ class SuggestionService(
     private val productRepository: ProductRepository,
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
+    private val photoUploader: SuggestionPhotoUploader,
     private val validator: SuggestionValidator,
     private val storageService: StorageService,
     private val sfOutboundClient: SfOutboundClient,
@@ -194,38 +195,28 @@ class SuggestionService(
             val photoMetas = mutableListOf<SfPhotoMeta>()
             val attachments = photos?.mapIndexedNotNull { index, file ->
                 if (file.isEmpty) return@mapIndexedNotNull null
-                val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
-                // SF 는 사진 바이트를 받지 않고 UniqueKey 를 레거시 공유 버킷 주소에 concat 해 렌더하므로,
-                // 앱 조회용 private 사본과 별개로 그 버킷에 익명 read 사본을 1장 더 올리고 그 key 를 SF 에 보낸다.
-                val sfKey = fileStorageService.uploadSuggestionPhotoForSf(file, employee.employeeCode, index + 1)
-                if (sfKey == null) {
-                    log.warn(
-                        "SF 공유 버킷 사본 미생성 — SF 화면에서 이미지가 보이지 않는다 suggestionId={} slot={}",
-                        saved.id, index + 1
-                    )
-                }
-                // 레거시 `ImageUtil.getFileSize()` 정합 — SF `S3ImageFileSize`/`UploadFile__c.Size__c`(Text) 는
-                // raw byte 정수가 아니라 포맷 문자열("200.0KB")을 저장한다. DB 저장값과 SF 전송값을 동일하게 맞춘다.
-                val formattedSize = formatFileSize(file.size)
+                // 레거시 `suggestProc` 1장 처리 재현 — 650 축소본 생성 → private 사본 + SF 공유 버킷 사본,
+                // 파일명/크기 모두 축소본 기준 (SF `UploadFile__c.Name`/`Size__c` 정합).
+                val stored = photoUploader.store(file, employee.employeeCode)
                 val uploadFile = UploadFile(
-                    name = file.originalFilename,
-                    uniqueKey = key,
-                    sfUniqueKey = sfKey,
-                    fileSize = formattedSize,
+                    name = stored.fileName,
+                    uniqueKey = stored.uniqueKey,
+                    sfUniqueKey = stored.sfUniqueKey,
+                    fileSize = stored.fileSize,
                     parentType = UploadFileParentTypes.SUGGESTION,
                     parentId = saved.id,
                     isDeleted = false
                 )
                 val savedFile = uploadFileRepository.save(uploadFile)
                 photoMetas += SfPhotoMeta(
-                    uniqueKey = sfKey ?: key,
-                    fileSize = formattedSize,
-                    fileName = file.originalFilename
+                    uniqueKey = stored.sfUniqueKey ?: stored.uniqueKey,
+                    fileSize = stored.fileSize,
+                    fileName = stored.fileName
                 )
                 SuggestionAttachment(
                     id = savedFile.id,
-                    s3Url = composeS3Url(key),
-                    fileName = file.originalFilename,
+                    s3Url = composeS3Url(stored.uniqueKey),
+                    fileName = stored.fileName,
                     sortOrder = index
                 )
             } ?: emptyList()
@@ -584,32 +575,6 @@ class SuggestionService(
     internal fun composeS3Url(key: String): String =
         storageService.getPresignedUrl(key, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS)
 
-    /**
-     * 파일크기 포맷 — 레거시 Heroku `ImageUtil.getFileSize(long)` 완전 재현.
-     *
-     * SF `S3ImageFileSize`/`UploadFile__c.Size__c`(Text) 및 DB `upload_file.size` 에 저장되는 값의 정합을
-     * 위해 레거시와 동일한 포맷을 사용한다. 레거시 특성:
-     *  - `fileSize /= 1024` 를 `long` 으로 수행 → **정수 절삭**(예: 1536B → "1.0KB", "1.5KB" 아님)
-     *  - 단위 배열 `{Byte, KB, MB}` — GB 이상(인덱스 초과)이면 예외 경로로 "0.0 Byte"
-     *  - 0 byte 는 루프 미진입 → "0.0Byte"
-     *  - 숫자는 항상 `.0` 으로 끝남(double 로 승격된 정수), 단위 앞 공백 없음(정상 경로)
-     */
-    internal fun formatFileSize(bytes: Long): String {
-        val units = arrayOf("Byte", "KB", "MB")
-        return try {
-            var fileSize = bytes
-            var unitIndex = 0
-            var changeSize = 0.0
-            var x = 0
-            while (fileSize / 1024.0 > 0) {
-                unitIndex = x
-                changeSize = fileSize.toDouble()
-                x++
-                fileSize /= 1024
-            }
-            "$changeSize${units[unitIndex]}"
-        } catch (ex: Exception) {
-            "0.0 Byte"
-        }
-    }
+    /** 파일크기 포맷 — 구현은 [LegacyFileSizeFormatter] (admin 등록 경로와 공유). */
+    internal fun formatFileSize(bytes: Long): String = LegacyFileSizeFormatter.format(bytes)
 }

@@ -4,7 +4,6 @@ import com.otoki.powersales.domain.activity.suggestion.dto.request.SuggestionDra
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionDraftResponse
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionDraft
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
-import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import org.springframework.stereotype.Service
@@ -36,7 +35,7 @@ import org.springframework.web.multipart.MultipartFile
 @Transactional(readOnly = true)
 class SuggestionDraftService(
     private val suggestionDraftRepository: SuggestionDraftRepository,
-    private val fileStorageService: FileStorageService,
+    private val photoUploader: SuggestionPhotoUploader,
     private val storageService: StorageService
 ) {
 
@@ -93,10 +92,9 @@ class SuggestionDraftService(
 
     // ───── private helpers ─────
 
-    // 임시저장은 suggestion row 가 없으므로 suggestionId 자리에 0 을 넘긴다
-    // (uploadSuggestionPhoto 는 suggestionId 를 key 에 사용하지 않음).
+    // 레거시 `tempSuggestProc` 정합 — 임시저장도 650 축소본을 저장한다 (SF 전송은 없으므로 private 사본만).
     private fun uploadPhoto(photo: MultipartFile): String =
-        fileStorageService.uploadSuggestionPhoto(photo, 0L)
+        photoUploader.storeDraft(photo)
 
     private fun resolveUrl(key: String?): String? =
         key?.takeIf { it.isNotBlank() }
