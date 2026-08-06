@@ -132,8 +132,20 @@ export default function AdminLayout() {
   return (
     <BreadcrumbProvider>
       <ProLayout
-        title="판매여사원관리시스템"
-        logo="/favicon.svg"
+        // 브랜드는 로고+워드마크가 한 장에 들어간 이미지(O'mate)라 ProLayout 기본 logo+title 조합
+        // (아이콘 + <h1> 텍스트) 대신 menuHeaderRender 로 이미지 하나만 렌더한다.
+        // 접힘 폭(64px)에는 가로로 긴 워드마크가 들어가지 않으므로 심볼 마크(favicon)로 대체.
+        title={false}
+        logo={false}
+        menuHeaderRender={() => (
+          <span className={`admin-sider-brand${collapsed ? ' admin-sider-brand--collapsed' : ''}`}>
+            <img
+              className="admin-sider-brand-logo"
+              src={collapsed ? '/favicon.svg' : '/brand-omate.png'}
+              alt="오뚜기 O'mate"
+            />
+          </span>
+        )}
         route={searchedMenuRoute}
         location={{ pathname: location.pathname }}
         fixSiderbar

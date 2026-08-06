@@ -44,6 +44,29 @@
 }
 
 /*
+ * 사이더 브랜드(오뚜기 심볼 + O'mate 워드마크 일체형 이미지). ProLayout 기본 헤더는
+ * 로고 아이콘 + <h1> 텍스트 조합이지만 여기서는 이미지 한 장이 그 둘을 겸하므로
+ * 컨테이너를 flex 로 잡고 이미지 높이만 고정한다 (가로는 비율대로).
+ */
+.admin-sider-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-sider-brand-logo {
+  height: 30px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* 접힘(64px) 상태에서는 워드마크 대신 심볼 마크만 노출되므로 정사각 아이콘 크기로. */
+.admin-sider-brand--collapsed .admin-sider-brand-logo {
+  height: 32px;
+}
+
+/*
  * 검색 영역은 ProLayout SiderMenu 의 `-extra` 슬롯 (logo 아래 / 스크롤 영역 위) 에 렌더되어
  * 이미 스크롤과 무관하게 고정돼 있다. 다만 배경/경계가 없으면 아래 메뉴가 스크롤되어 지나갈 때
  * "고정 헤더" 가 아니라 "메뉴 목록의 첫 항목" 처럼 읽히므로, 영역 배경 + 하단 구분선으로 분리한다.
