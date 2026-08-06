@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
 import '../../data/datasources/suggestion_api_datasource.dart';
 import '../../data/datasources/suggestion_remote_datasource.dart';
 import '../../data/repositories/suggestion_repository_impl.dart';
@@ -223,11 +224,10 @@ class SuggestionRegisterNotifier
       await _registerSuggestion.call(state.form);
       state = state.toSuccess('제안이 등록되었습니다');
     } catch (e) {
-      final errorMessage = e
-          .toString()
-          .replaceFirst('Exception: ', '')
-          .replaceFirst('Error: ', '');
-      state = state.toError(errorMessage);
+      // 서버 표준 error.message 를 그대로 노출한다 — SF 가 거부한 사유
+      // ("잘못된 값입니다. (ProductCode)" 등)를 보고 사용자가 입력을 고칠 수 있어야 한다.
+      // e.toString() 을 쓰면 raw DioException 문자열이 그대로 보인다.
+      state = state.toError(extractErrorMessage(e));
     }
   }
 
@@ -244,11 +244,7 @@ class SuggestionRegisterNotifier
       state = state.copyWith(hasDraft: true, clearErrorMessage: true);
       return true;
     } catch (e) {
-      final message = e
-          .toString()
-          .replaceFirst('Exception: ', '')
-          .replaceFirst('Error: ', '');
-      state = state.toError(message);
+      state = state.toError(extractErrorMessage(e));
       return false;
     }
   }

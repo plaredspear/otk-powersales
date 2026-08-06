@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggesti
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionAccessDeniedException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhotoNotFoundException
+import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionSfRegistFailedException
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -118,10 +119,16 @@ class SuggestionService(
      *  1. 검증 + 의존 entity 조회 + 매핑(트리거 부수효과 이식)
      *  2. [Tx1] suggestion + 첨부 INSERT (sf_send_status=PENDING) + 임시저장 삭제
      *  3. [SF call, 트랜잭션 외부] apiMap 빌드 + SfOutboundClient.callApi("/ProposalRegist", apiMap)
-     *  4. [Tx2] 전송상태 update (성공 → SENT + sf_sent_at, 실패 → SEND_FAILED + sf_send_fail_message)
+     *  4. [Tx2] 성공 → SENT + sf_sent_at / **실패 → 등록 취소(보상 삭제) 후 400 예외**
      *
-     * SF 호출 실패는 catch 하여 SEND_FAILED 로 기록하고 등록은 성공(201)으로 응답한다 — 사용자 등록을
-     * SF 장애로 막지 않는다(클레임 등록 정책 동일). 실패 row 는 sf_send_status=SEND_FAILED 로 남아 추적된다.
+     * **SF 실패 = 등록 실패** (레거시 `suggestProc` 의 `RESULT_CODE != 200` → E4/E5 반환 정합).
+     * 레거시는 SF 가 유일한 저장소라 거부되면 아무것도 남지 않았고, 신규도 목록에 "SF 에 없는 등록 건" 이
+     * 남지 않도록 [rollbackFailedRegistration] 으로 되돌린 뒤 [SuggestionSfRegistFailedException] 을 던진다.
+     * SF `RESULT_MSG`("잘못된 값입니다. (ProductCode)" 등)를 그대로 노출해 사용자가 입력을 고칠 수 있게 한다.
+     *
+     * ⚠️ 이 정책은 **SF 일시 장애(타임아웃/OAuth/5xx)에도 등록을 막는다**. SF 가 내려가면 영업사원이
+     * 물류클레임을 올릴 수 없다 — 레거시와 동일한 트레이드오프다. 등록을 살려두고 재전송에 맡기는 경로는
+     * admin 등록([AdminSuggestionService.create] → AFTER_COMMIT 비동기 릴레이) 에만 남아 있다.
      *
      * 클래스 기본 `@Transactional(readOnly=true)` 가 외곽을 감싸지 않도록 NOT_SUPPORTED 로 두고,
      * write 트랜잭션 2건은 [txTemplate] 로 명시 분리한다(SF HTTP 호출 구간을 DB 트랜잭션 밖으로 뺀다).
@@ -251,19 +258,15 @@ class SuggestionService(
             )
         )
 
-        // step 7 — [Tx2] 전송상태 update (+ 실패 시 SF 공유 버킷 사본 회수)
+        // step 7 — [Tx2] SF 실패면 등록 취소(보상 롤백), 성공이면 전송상태 SENT 로 전이.
+        if (!sfResult.success) {
+            rollbackFailedRegistration(inserted.id)
+            throw SuggestionSfRegistFailedException(sfFailureMessage(sfResult))
+        }
         txTemplate.execute {
             val persisted = suggestionRepository.findByIdAndIsDeletedFalse(inserted.id)
                 ?: throw SuggestionNotFoundException()
             applySfResult(persisted, sfResult)
-            if (!sfResult.success) {
-                // 레거시 `suggestProc` 의 RESULT_CODE != 200 분기 정합 — 공유 버킷에 고아 이미지를 남기지 않는다.
-                // 재전송 시 [SuggestionSfResendService] 가 private 사본으로 공유 사본을 다시 만든다.
-                photoUploader.discardSfCopies(
-                    uploadFileRepository
-                        .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, inserted.id)
-                )
-            }
         }
 
         return SuggestionCreateResponse(
@@ -272,6 +275,51 @@ class SuggestionService(
             attachments = inserted.attachments
         )
     }
+
+    /**
+     * SF 전송 실패로 등록을 취소한다 — 레거시 `suggestProc` 의 `RESULT_CODE != 200` 분기 정합.
+     *
+     * [Tx1] 이 이미 커밋된 뒤(=SF 호출을 트랜잭션 밖에서 하기 때문) 실패를 알게 되므로, DB 롤백이 아니라
+     * **보상 삭제**로 되돌린다. 레거시는 SF 가 유일한 저장소라 실패 시 아무것도 남지 않았고, 신규도 목록에
+     * "SF 에 없는 등록 건"이 남지 않도록 같은 상태로 맞춘다.
+     *
+     * 삭제 순서: S3 객체(공유 사본 → private 사본) → upload_file → suggestion.
+     * S3 삭제 실패는 삼킨다 — 객체가 남는 것보다 DB 정리를 못 끝내는 쪽이 더 나쁘다(고아 객체는 S3
+     * lifecycle 로 정리 가능하지만, 남은 DB row 는 사용자 목록에 계속 보인다).
+     *
+     * 실패 사유 추적은 외부 API 호출 이력(`external_api_outbound_log`)에 남으므로 suggestion row 를
+     * 보존하지 않아도 된다. proposal_number 시퀀스 한 칸은 소비된 채 비게 된다(레거시도 채번 후 실패 시 동일).
+     */
+    private fun rollbackFailedRegistration(suggestionId: Long) {
+        runCatching {
+            txTemplate.execute {
+                val attachments = uploadFileRepository
+                    .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+                attachments.forEach { file ->
+                    file.sfUniqueKey?.takeIf { it.isNotBlank() }?.let {
+                        runCatching { fileStorageService.deleteSuggestionPhotoForSf(it) }
+                            .onFailure { e -> log.warn("등록 취소 — SF 공유 사본 삭제 실패 key={}", it, e) }
+                    }
+                    file.uniqueKey?.takeIf { it.isNotBlank() }?.let {
+                        runCatching { fileStorageService.deleteSuggestionPhoto(it) }
+                            .onFailure { e -> log.warn("등록 취소 — private 사본 삭제 실패 key={}", it, e) }
+                    }
+                }
+                uploadFileRepository.deleteAll(attachments)
+                suggestionRepository.findByIdAndIsDeletedFalse(suggestionId)
+                    ?.let { suggestionRepository.delete(it) }
+            }
+        }.onFailure {
+            // 보상 삭제가 실패해도 사용자에게는 등록 실패를 알려야 한다(SF 에 없으므로).
+            // 남은 row 는 sf_send_status=PENDING 이라 재전송 배치가 집어가지 않는다.
+            log.error("제안 등록 취소(보상 삭제) 실패 — suggestionId={} 잔여 row 확인 필요", suggestionId, it)
+        }
+    }
+
+    /** SF 실패 사유 — 응답이 있으면 SF `RESULT_MSG` 를 그대로, 호출 자체가 실패했으면 일반 안내. */
+    private fun sfFailureMessage(result: SfPushResult): String =
+        result.apiResponse?.resultMsg?.takeIf { it.isNotBlank() }
+            ?: "Salesforce 등록에 실패했습니다. 잠시 후 다시 시도해주세요."
 
     /**
      * SF push — 실패해도 예외를 throw 하지 않고 [SfPushResult] 로 반환(클레임 등록 정합).

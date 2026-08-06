@@ -26,7 +26,9 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionSfRegistFailedException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -190,12 +192,63 @@ class SuggestionServiceSfSendTest {
         }
 
         /**
-         * 레거시 `suggestProc` 은 `RESULT_CODE != 200` 이면 방금 올린 공유 버킷 객체를 지운다
-         * (line 1762-1767) — 공유 버킷에 고아 이미지를 남기지 않기 위해서다.
+         * 레거시 `suggestProc` 은 `RESULT_CODE != 200` 이면 사용자에게 오류(E4/E5)를 반환하고 아무것도
+         * 남기지 않았다. 신규도 동일하게 등록을 취소한다 — 목록에 "SF 에 없는 등록 건" 이 남으면 안 된다.
          */
         @Test
-        fun `SF 전송 실패 시 공유 버킷 사본을 회수한다`() {
+        fun `SF 전송 실패 시 등록도 실패한다 — SF RESULT_MSG 를 그대로 노출`() {
             stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = false)
+            stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }
+                .isInstanceOf(SuggestionSfRegistFailedException::class.java)
+                .hasMessage("잘못된 값입니다. (ProductCode)")
+        }
+
+        /** 등록 취소는 DB row 와 S3 객체(공유 사본 + private 사본)를 모두 되돌린다. */
+        @Test
+        fun `SF 전송 실패 시 suggestion·첨부·S3 객체를 되돌린다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = false)
+            val files = stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }.isInstanceOf(SuggestionSfRegistFailedException::class.java)
+
+            verify { fileStorageService.deleteSuggestionPhotoForSf("1750000000000E777") }
+            verify { fileStorageService.deleteSuggestionPhoto(PRIVATE_KEY) }
+            verify { uploadFileRepository.deleteAll(files) }
+            verify { suggestionRepository.delete(any<Suggestion>()) }
+        }
+
+        /** SF 응답 없이 호출 자체가 실패한 경우(타임아웃/OAuth)도 등록 실패 — 일반 안내 문구. */
+        @Test
+        fun `SF 호출 자체가 실패해도 등록은 취소된다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+            every { sfOutboundClient.callApi(any(), any()) } throws RuntimeException("timeout")
+            stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }
+                .isInstanceOf(SuggestionSfRegistFailedException::class.java)
+                .hasMessageContaining("Salesforce 등록에 실패했습니다")
+        }
+
+        @Test
+        fun `SF 전송 성공 시 등록이 유지된다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+
+            val result = service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+
+            assertThat(result.proposalNumber).isNotBlank()
+            verify(exactly = 0) { suggestionRepository.delete(any<Suggestion>()) }
+        }
+
+        /** 보상 삭제 경로가 조회하는 첨부/제안 stub. */
+        private fun stubRollbackLookups(): List<UploadFile> {
             val files = listOf(
                 UploadFile(
                     name = "a_resize.jpg",
@@ -209,20 +262,9 @@ class SuggestionServiceSfSendTest {
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, any())
             } returns files
-            every { photoUploader.discardSfCopies(any()) } just Runs
-
-            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
-
-            verify { photoUploader.discardSfCopies(files) }
-        }
-
-        @Test
-        fun `SF 전송 성공 시 공유 버킷 사본을 유지한다`() {
-            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
-
-            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
-
-            verify(exactly = 0) { photoUploader.discardSfCopies(any()) }
+            every { uploadFileRepository.deleteAll(any<List<UploadFile>>()) } returns Unit
+            every { suggestionRepository.delete(any<Suggestion>()) } returns Unit
+            return files
         }
 
         private fun stubCreateFlow(sfKey: String?, sfSuccess: Boolean = true): CapturingSlot<Map<String, Any?>> {
@@ -249,7 +291,7 @@ class SuggestionServiceSfSendTest {
             }
             return slot<Map<String, Any?>>().also {
                 every { sfOutboundClient.callApi(any(), capture(it)) } returns
-                    if (sfSuccess) SfApiResponse("200", "OK", "{}") else SfApiResponse("500", "거래처 없음", "{}")
+                    if (sfSuccess) SfApiResponse("200", "OK", "{}") else SfApiResponse("0", "잘못된 값입니다. (ProductCode)", "{}")
             }
         }
     }
