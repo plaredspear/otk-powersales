@@ -97,6 +97,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           representative: null,
           ownerName: null,
           geocodeUnresolved: false,
+          geocodeFailCount: 0,
         },
       ]);
     } else if (open) {

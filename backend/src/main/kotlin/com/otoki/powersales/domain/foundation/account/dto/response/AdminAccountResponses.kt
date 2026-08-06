@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.foundation.account.entity.FreezerType
 import com.otoki.powersales.domain.foundation.account.entity.Industry
 import com.otoki.powersales.domain.foundation.account.entity.Ownership
 import com.otoki.powersales.domain.foundation.account.entity.Rating
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -44,9 +45,13 @@ data class AccountListItem(
     val representative: String?,
     // SF Owner.LastName 동등 위치 — 신규는 소유자 전체 이름(User.name) 표시.
     val ownerName: String?,
-    // 좌표변환(Naver Geocode) 영구 실패 여부 — true 면 주소로 좌표를 못 찾아(주소 수정 필요) 배치 재조회에서
-    // 제외된 상태. "좌표 미수신" 필터 조회 시 운영자가 주소 확인 대상 거래처를 식별하기 위한 플래그.
-    val geocodeUnresolved: Boolean
+    // 좌표변환(Naver Geocode) 재시도 포기 여부 — true 면 주소 미확정 실패가 상한(GeocodeRetryPolicy)에
+    // 도달해(주소 수정 필요) 배치 재조회 + 출근등록 온디맨드 보강 양쪽에서 제외된 상태.
+    // "좌표 미수신" 필터 조회 시 운영자가 주소 확인 대상 거래처를 식별하기 위한 플래그.
+    val geocodeUnresolved: Boolean,
+    // 좌표변환 주소 미확정 누적 실패 횟수 — 상한 도달 전이라도 몇 번 실패했는지 노출해 주소 품질이
+    // 나쁜 거래처를 미리 식별할 수 있게 한다 (일시 오류는 카운트되지 않음).
+    val geocodeFailCount: Int
 ) {
     companion object {
         fun from(account: Account): AccountListItem = AccountListItem(
@@ -64,7 +69,8 @@ data class AccountListItem(
             zipCode = account.zipCode,
             representative = account.representative,
             ownerName = account.ownerUser?.name,
-            geocodeUnresolved = account.geocodeUnresolved == true
+            geocodeUnresolved = GeocodeRetryPolicy.isExhausted(account.geocodeFailCount),
+            geocodeFailCount = account.geocodeFailCount
         )
     }
 }

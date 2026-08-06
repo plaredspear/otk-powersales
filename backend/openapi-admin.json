@@ -237,6 +237,10 @@
           "externalKey" : {
             "type" : [ "string", "null" ]
           },
+          "geocodeFailCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "geocodeUnresolved" : {
             "type" : "boolean"
           },

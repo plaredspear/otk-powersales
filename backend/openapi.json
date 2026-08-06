@@ -486,8 +486,12 @@
           "freezerType" : {
             "type" : [ "string", "null" ]
           },
+          "geocodeFailCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "geocodeUnresolved" : {
-            "type" : [ "boolean", "null" ]
+            "type" : "boolean"
           },
           "id" : {
             "format" : "int64",

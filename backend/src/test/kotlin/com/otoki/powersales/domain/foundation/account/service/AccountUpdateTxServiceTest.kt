@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountUpdateRequest
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.domain.foundation.account.exception.AccountNameBlankException
 import com.otoki.powersales.domain.foundation.account.exception.AccountNameDuplicateException
 import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefixRequiredForUpdateException
@@ -422,9 +423,9 @@ class AccountUpdateTxServiceTest {
         }
 
         @Test
-        @DisplayName("address1 변경 - 좌표변환 영구 실패 마킹 해제 (배치 재진입 보장)")
-        fun address1Changed_clearsGeocodeUnresolved() {
-            val account = nativeAccount(address1 = "잘못된 주소").also { it.geocodeUnresolved = true }
+        @DisplayName("address1 변경 - 좌표변환 실패 횟수 초기화 (배치 재진입 보장)")
+        fun address1Changed_resetsGeocodeFailCount() {
+            val account = nativeAccount(address1 = "잘못된 주소").also { it.geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT }
             every { accountRepository.findActiveById(accountId) } returns account
 
             service.applyUpdate(
@@ -433,16 +434,16 @@ class AccountUpdateTxServiceTest {
                 request = AdminAccountUpdateRequest(address1 = "서울특별시 강남구 테헤란로 100")
             )
 
-            // 해제하지 않으면 후행 재조회가 일시 오류로 실패했을 때 배치·온디맨드 양쪽에서 영구 제외된다.
-            assertThat(account.geocodeUnresolved).isNull()
+            // 초기화하지 않으면 후행 재조회가 일시 오류로 실패했을 때 배치·온디맨드 양쪽에서 계속 제외된다.
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
-        @DisplayName("address2 만 변경 - 영구 실패 마킹 유지 (재조회 결과가 동일하므로 재시도 불필요)")
-        fun address2Changed_keepsGeocodeUnresolved() {
+        @DisplayName("address2 만 변경 - 실패 횟수 유지 (재조회 결과가 동일하므로 재시도 불필요)")
+        fun address2Changed_keepsGeocodeFailCount() {
             val account = nativeAccount(address1 = "잘못된 주소").also {
                 it.address2 = "기존 주소2"
-                it.geocodeUnresolved = true
+                it.geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT
             }
             every { accountRepository.findActiveById(accountId) } returns account
 
@@ -452,7 +453,7 @@ class AccountUpdateTxServiceTest {
                 request = AdminAccountUpdateRequest(address2 = "10층 1001호")
             )
 
-            assertThat(account.geocodeUnresolved).isTrue()
+            assertThat(account.geocodeFailCount).isEqualTo(GeocodeRetryPolicy.MAX_FAIL_COUNT)
         }
 
         @Test

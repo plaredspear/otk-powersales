@@ -124,12 +124,13 @@ class Account(
     @Column(name = "longitude", length = 100)
     var longitude: String? = null,
 
-    // 좌표변환(Naver Geocode) 영구 실패 플래그 — SF sync 대상 아닌 로컬 전용 컬럼(@SFField 미부여).
-    // true = 주소로 좌표를 확정할 수 없어(주소 못 찾음) 배치 재조회 대상에서 제외. 주소 변경 시 null 로
-    // 초기화되어 재시도 재개(AccountUpsertMapper.invalidateCoordinatesIfAddressChanged). null = 미판정/재시도 가능.
-    @FieldName("좌표변환실패")
-    @Column(name = "geocode_unresolved")
-    var geocodeUnresolved: Boolean? = null,
+    // 좌표변환(Naver Geocode) 주소 미확정 누적 횟수 — SF sync 대상 아닌 로컬 전용 컬럼(@SFField 미부여).
+    // 상한(GeocodeRetryPolicy.MAX_FAIL_COUNT) 이상이면 배치 재조회 + 출근등록 온디맨드 보강에서 제외.
+    // 호출 자체가 실패한 일시 오류(HTTP/네트워크)는 카운트하지 않는다. 좌표 조회 성공 또는 주소(address1)
+    // 변경 시 0 으로 초기화되어 재시도 재개(AccountUpsertMapper / AccountUpdateTxService).
+    @FieldName("좌표변환실패횟수")
+    @Column(name = "geocode_fail_count", nullable = false)
+    var geocodeFailCount: Int = 0,
 
     @SFField("ClosingTime1__c")
     @FieldName("주문마감시간_상온")

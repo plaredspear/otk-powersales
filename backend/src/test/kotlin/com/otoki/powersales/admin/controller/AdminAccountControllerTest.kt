@@ -147,7 +147,8 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                         zipCode = "06234",
                         representative = "홍길동",
                         ownerName = "김성준",
-                        geocodeUnresolved = false
+                        geocodeUnresolved = false,
+                        geocodeFailCount = 0
                     )
                 ),
                 page = 0,

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import com.otoki.powersales.platform.common.naver.NaverGeocodeResponse
@@ -31,7 +32,7 @@ class AccountNaverGeocodeServiceTest {
         @Test
         @DisplayName("정상 — 응답 x/y → longitude/latitude set + SUCCESS 반환 + 마킹 해제")
         fun enrichSingleAccount_success() {
-            val account = createAccount(id = 10, address1 = "부산시 해운대구", geocodeUnresolved = true)
+            val account = createAccount(id = 10, address1 = "부산시 해운대구", geocodeFailCount = 2)
             every { accountRepository.findById(10) } returns Optional.of(account)
             every { naverGeocodeClient.geocode("부산시 해운대구") } returns
                 NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "129.158", y = "35.163")))
@@ -41,8 +42,8 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result).isEqualTo(AccountNaverGeocodeService.GeocodeResult.SUCCESS)
             assertThat(account.longitude).isEqualTo("129.158")
             assertThat(account.latitude).isEqualTo("35.163")
-            // 이전 영구 실패 마킹이 성공 시 해제된다.
-            assertThat(account.geocodeUnresolved).isNull()
+            // 이전 실패 이력이 성공 시 초기화된다.
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
@@ -65,7 +66,7 @@ class AccountNaverGeocodeServiceTest {
             val result = service.enrichSingleAccount(11)
 
             assertThat(result).isEqualTo(AccountNaverGeocodeService.GeocodeResult.ADDRESS_NOT_FOUND)
-            assertThat(account.geocodeUnresolved).isTrue
+            assertThat(account.geocodeFailCount).isEqualTo(1)
             verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
         }
 
@@ -81,8 +82,8 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result).isEqualTo(AccountNaverGeocodeService.GeocodeResult.CALL_FAILED)
             assertThat(account.latitude).isNull()
             assertThat(account.longitude).isNull()
-            // 일시 실패는 마킹하지 않는다 — 다음 배치 재시도 대상으로 남긴다.
-            assertThat(account.geocodeUnresolved).isNull()
+            // 일시 실패는 카운트하지 않는다 — 다음 배치 재시도 대상으로 남긴다.
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
@@ -97,8 +98,8 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result).isEqualTo(AccountNaverGeocodeService.GeocodeResult.ADDRESS_NOT_FOUND)
             assertThat(account.latitude).isNull()
             assertThat(account.longitude).isNull()
-            // 주소로 좌표를 못 찾음 → 영구 실패 마킹 (배치 재조회 제외).
-            assertThat(account.geocodeUnresolved).isTrue
+            // 주소로 좌표를 못 찾음 → 실패 횟수 증가 (상한 도달 시 배치 재조회 제외).
+            assertThat(account.geocodeFailCount).isEqualTo(1)
         }
 
         @Test
@@ -114,7 +115,7 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result).isEqualTo(AccountNaverGeocodeService.GeocodeResult.ADDRESS_NOT_FOUND)
             assertThat(account.latitude).isNull()
             assertThat(account.longitude).isNull()
-            assertThat(account.geocodeUnresolved).isTrue
+            assertThat(account.geocodeFailCount).isEqualTo(1)
         }
     }
 
@@ -127,7 +128,7 @@ class AccountNaverGeocodeServiceTest {
         fun refreshSingleAccount_success() {
             val account = createAccount(
                 id = 20, address1 = "서울특별시 강남구 테헤란로 100",
-                latitude = "1.0", longitude = "2.0", geocodeUnresolved = true
+                latitude = "1.0", longitude = "2.0", geocodeFailCount = 2
             )
             every { accountRepository.findById(20) } returns Optional.of(account)
             every { naverGeocodeClient.geocode("서울특별시 강남구 테헤란로 100") } returns
@@ -137,8 +138,8 @@ class AccountNaverGeocodeServiceTest {
 
             assertThat(account.longitude).isEqualTo("127.0276")
             assertThat(account.latitude).isEqualTo("37.4979")
-            // 성공 시 이전 영구 실패 마킹 해제.
-            assertThat(account.geocodeUnresolved).isNull()
+            // 성공 시 이전 실패 이력 초기화.
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
@@ -221,9 +222,9 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result.succeeded).isEqualTo(2)
             assertThat(result.callFailed).isEqualTo(1)
             assertThat(result.unresolved).isEqualTo(1)
-            // 주소 못 찾은 a4 만 영구 실패 마킹, 호출 실패한 a2 는 마킹 안 함.
-            assertThat(a4.geocodeUnresolved).isTrue
-            assertThat(a2.geocodeUnresolved).isNull()
+            // 주소 못 찾은 a4 만 실패 횟수 증가, 호출 실패한 a2 는 카운트 안 함.
+            assertThat(a4.geocodeFailCount).isEqualTo(1)
+            assertThat(a2.geocodeFailCount).isZero
             verify(exactly = 4) { naverGeocodeClient.geocode(any()) }
         }
 
@@ -269,7 +270,7 @@ class AccountNaverGeocodeServiceTest {
         @Test
         @DisplayName("정상 — 좌표 set + 마킹 해제 + 확보 좌표 반환")
         fun onDemand_success() {
-            val account = createAccount(id = 20, address1 = "서울시 강남구", geocodeUnresolved = null)
+            val account = createAccount(id = 20, address1 = "서울시 강남구", geocodeFailCount = 0)
             every { accountRepository.findById(20) } returns Optional.of(account)
             every { naverGeocodeClient.geocode("서울시 강남구") } returns
                 NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "127.0", y = "37.5")))
@@ -279,7 +280,7 @@ class AccountNaverGeocodeServiceTest {
             assertThat(result).isEqualTo(AccountNaverGeocodeService.Coordinates(latitude = "37.5", longitude = "127.0"))
             assertThat(account.latitude).isEqualTo("37.5")
             assertThat(account.longitude).isEqualTo("127.0")
-            assertThat(account.geocodeUnresolved).isNull()
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
@@ -295,9 +296,9 @@ class AccountNaverGeocodeServiceTest {
         }
 
         @Test
-        @DisplayName("영구 실패 마킹됨 — Naver 호출 없이 null (매 요청 외부 API 호출 억제)")
-        fun onDemand_geocodeUnresolved() {
-            val account = createAccount(id = 22, address1 = "찾을 수 없는 주소", geocodeUnresolved = true)
+        @DisplayName("실패 상한 도달 — Naver 호출 없이 null (매 요청 외부 API 호출 억제)")
+        fun onDemand_failCountExhausted() {
+            val account = createAccount(id = 22, address1 = "찾을 수 없는 주소", geocodeFailCount = 3)
             every { accountRepository.findById(22) } returns Optional.of(account)
 
             val result = service.resolveCoordinatesOnDemand(22)
@@ -307,7 +308,7 @@ class AccountNaverGeocodeServiceTest {
         }
 
         @Test
-        @DisplayName("address1 없음 — Naver 호출 없이 null (마킹도 하지 않음)")
+        @DisplayName("address1 없음 — Naver 호출 없이 null (카운트도 하지 않음)")
         fun onDemand_addressBlank() {
             val account = createAccount(id = 23, address1 = "  ")
             every { accountRepository.findById(23) } returns Optional.of(account)
@@ -315,12 +316,12 @@ class AccountNaverGeocodeServiceTest {
             val result = service.resolveCoordinatesOnDemand(23)
 
             assertThat(result).isNull()
-            assertThat(account.geocodeUnresolved).isNull()
+            assertThat(account.geocodeFailCount).isZero
             verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
         }
 
         @Test
-        @DisplayName("Naver 호출 실패 — null + 마킹 안 함 (일시 실패, 배치 재시도 대상 유지)")
+        @DisplayName("Naver 호출 실패 — null + 카운트 안 함 (일시 실패, 배치 재시도 대상 유지)")
         fun onDemand_callFailed() {
             val account = createAccount(id = 24, address1 = "서울시 종로구")
             every { accountRepository.findById(24) } returns Optional.of(account)
@@ -330,11 +331,11 @@ class AccountNaverGeocodeServiceTest {
 
             assertThat(result).isNull()
             assertThat(account.latitude).isNull()
-            assertThat(account.geocodeUnresolved).isNull()
+            assertThat(account.geocodeFailCount).isZero
         }
 
         @Test
-        @DisplayName("좌표 미확정 (addresses 비어있음) — null + 영구 실패 마킹")
+        @DisplayName("좌표 미확정 (addresses 비어있음) — null + 실패 횟수 증가")
         fun onDemand_addressNotFound() {
             val account = createAccount(id = 25, address1 = "없는 주소")
             every { accountRepository.findById(25) } returns Optional.of(account)
@@ -343,7 +344,22 @@ class AccountNaverGeocodeServiceTest {
             val result = service.resolveCoordinatesOnDemand(25)
 
             assertThat(result).isNull()
-            assertThat(account.geocodeUnresolved).isTrue
+            assertThat(account.geocodeFailCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("상한 직전(2회) — 호출 수행 + 실패 시 상한 도달로 이후 차단")
+        fun onDemand_lastAttemptBeforeExhaustion() {
+            val account = createAccount(id = 26, address1 = "없는 주소", geocodeFailCount = 2)
+            every { accountRepository.findById(26) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("없는 주소") } returns NaverGeocodeResponse(addresses = emptyList())
+
+            val result = service.resolveCoordinatesOnDemand(26)
+
+            assertThat(result).isNull()
+            assertThat(account.geocodeFailCount).isEqualTo(GeocodeRetryPolicy.MAX_FAIL_COUNT)
+            assertThat(GeocodeRetryPolicy.isRetryable(account.geocodeFailCount)).isFalse
+            verify(exactly = 1) { naverGeocodeClient.geocode("없는 주소") }
         }
 
         @Test
@@ -363,7 +379,7 @@ class AccountNaverGeocodeServiceTest {
         address1: String? = "주소",
         latitude: String? = null,
         longitude: String? = null,
-        geocodeUnresolved: Boolean? = null
+        geocodeFailCount: Int = 0
     ): Account = Account(
         id = id,
         externalKey = "EXT-$id",
@@ -371,6 +387,6 @@ class AccountNaverGeocodeServiceTest {
         latitude = latitude,
         longitude = longitude,
         accountStatusName = "거래",
-        geocodeUnresolved = geocodeUnresolved
+        geocodeFailCount = geocodeFailCount
     )
 }

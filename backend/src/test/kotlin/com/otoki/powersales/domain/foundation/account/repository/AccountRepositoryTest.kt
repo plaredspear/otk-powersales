@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.querydsl.core.types.dsl.Expressions
 import org.assertj.core.api.Assertions
@@ -291,19 +292,19 @@ class AccountRepositoryTest {
         }
 
         @Test
-        @DisplayName("영구 실패 마킹(geocodeUnresolved=true) 거래처는 배치 재조회에서 제외")
-        fun findCoordinatesMissingAccounts_excludesGeocodeUnresolved() {
-            // Given — 셋 다 좌표 미수신이나 마킹 상태만 다름
-            persistAccount(externalKey = "EXT-NULL", latitude = null, longitude = null, geocodeUnresolved = null) // 포함
-            persistAccount(externalKey = "EXT-FALSE", latitude = null, longitude = null, geocodeUnresolved = false) // 포함
-            persistAccount(externalKey = "EXT-TRUE", latitude = null, longitude = null, geocodeUnresolved = true) // 영구 실패 → 제외
+        @DisplayName("실패 상한 도달(geocodeFailCount >= MAX) 거래처는 배치 재조회에서 제외")
+        fun findCoordinatesMissingAccounts_excludesExhaustedFailCount() {
+            // Given — 셋 다 좌표 미수신이나 실패 횟수만 다름
+            persistAccount(externalKey = "EXT-ZERO", latitude = null, longitude = null, geocodeFailCount = 0) // 포함
+            persistAccount(externalKey = "EXT-BELOW", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT - 1) // 포함
+            persistAccount(externalKey = "EXT-MAX", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT) // 상한 → 제외
 
             // When
             val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
 
-            // Then — 마킹되지 않은 2건만
+            // Then — 상한 미만 2건만
             Assertions.assertThat(result.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-NULL", "EXT-FALSE")
+                .containsExactlyInAnyOrder("EXT-ZERO", "EXT-BELOW")
         }
     }
 
@@ -346,16 +347,16 @@ class AccountRepositoryTest {
         }
 
         @Test
-        @DisplayName("coordinatesMissing=true → 영구 실패(geocodeUnresolved=true) 거래처도 포함 (운영자 확인용)")
-        fun coordinatesMissingTrue_includesGeocodeUnresolved() {
-            // Given — 화면 필터는 배치와 달리 영구 실패 건을 제외하지 않는다 (운영자가 봐야 함)
-            persistAccount(externalKey = "EXT-A", latitude = null, longitude = null, geocodeUnresolved = null)
-            persistAccount(externalKey = "EXT-B", latitude = null, longitude = null, geocodeUnresolved = true)
+        @DisplayName("coordinatesMissing=true → 실패 상한 도달 거래처도 포함 (운영자 확인용)")
+        fun coordinatesMissingTrue_includesExhaustedFailCount() {
+            // Given — 화면 필터는 배치와 달리 상한 도달 건을 제외하지 않는다 (운영자가 봐야 함)
+            persistAccount(externalKey = "EXT-A", latitude = null, longitude = null, geocodeFailCount = 0)
+            persistAccount(externalKey = "EXT-B", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT)
 
             // When
             val result = findAllAccessible(coordinatesMissing = true)
 
-            // Then — 영구 실패 마킹된 EXT-B 도 포함
+            // Then — 상한 도달한 EXT-B 도 포함
             Assertions.assertThat(result.content.map { it.externalKey })
                 .containsExactlyInAnyOrder("EXT-A", "EXT-B")
         }
@@ -398,7 +399,7 @@ class AccountRepositoryTest {
         longitude: String? = null,
         address1: String? = "부산시 테스트구",
         accountStatusName: String? = "거래",
-        geocodeUnresolved: Boolean? = null
+        geocodeFailCount: Int = 0
     ): Account {
         val account = Account(
             name = "거래처-${externalKey ?: "NULL"}",
@@ -407,7 +408,7 @@ class AccountRepositoryTest {
             latitude = latitude,
             longitude = longitude,
             accountStatusName = accountStatusName,
-            geocodeUnresolved = geocodeUnresolved
+            geocodeFailCount = geocodeFailCount
         )
         val saved = testEntityManager.persistAndFlush(account)
         testEntityManager.clear()

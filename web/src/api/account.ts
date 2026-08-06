@@ -34,8 +34,10 @@ export interface Account {
   zipCode: string | null;
   representative: string | null;
   ownerName: string | null;
-  // 좌표변환 영구 실패 여부 — true 면 주소로 좌표를 못 찾아(주소 수정 필요) 배치 재조회에서 제외된 상태.
+  // 좌표변환 재시도 포기 여부 — true 면 주소 미확정 실패가 상한에 도달해(주소 수정 필요) 배치 재조회에서 제외된 상태.
   geocodeUnresolved: boolean;
+  // 좌표변환 주소 미확정 누적 실패 횟수 (일시 오류는 카운트되지 않음). 상한 도달 전에도 주소 품질 확인용.
+  geocodeFailCount: number;
 }
 
 export interface AccountListData {

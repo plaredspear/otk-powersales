@@ -137,12 +137,12 @@ class AccountUpdateTxService(
         // 반드시 동일한 좌표를 돌려받는다. SAP 인바운드 경로(AccountUpsertMapper)와 동일 기준.
         val addressChanged = prevAddress1 != account.address1
 
-        // 주소가 바뀌면 좌표변환 영구 실패 마킹을 해제한다 — SAP 인바운드 경로
+        // 주소가 바뀌면 좌표변환 실패 횟수를 초기화한다 — SAP 인바운드 경로
         // (AccountUpsertMapper.invalidateCoordinatesIfAddressChanged) 와 동일 책임.
-        // 미적용 시: 운영자가 잘못된 주소를 웹에서 고쳐도 후행 재조회가 일시 오류로 실패하면 마킹이
-        // true 로 잔존해 배치·온디맨드 양쪽에서 영구 제외되어 좌표가 영영 채워지지 않는다.
+        // 미적용 시: 운영자가 잘못된 주소를 웹에서 고쳐도 후행 재조회가 일시 오류로 실패하면 카운터가
+        // 상한에 머물러 배치·온디맨드 양쪽에서 제외되어 좌표가 영영 채워지지 않는다.
         if (addressChanged) {
-            account.geocodeUnresolved = null
+            account.geocodeFailCount = 0
         }
 
         return addressChanged

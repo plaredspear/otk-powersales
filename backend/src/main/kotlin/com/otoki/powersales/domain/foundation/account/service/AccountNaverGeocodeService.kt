@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import org.slf4j.LoggerFactory
@@ -55,12 +56,12 @@ class AccountNaverGeocodeService(
      *
      * dirty checking 으로 트랜잭션 commit 시 자동 UPDATE.
      *
-     * 실패를 두 부류로 구분한다:
-     * - **영구 실패([GeocodeResult.ADDRESS_NOT_FOUND])**: Naver 가 그 주소로 좌표를 확정하지 못함
+     * 실패를 두 부류로 구분한다 ([GeocodeRetryPolicy]):
+     * - **주소 미확정([GeocodeResult.ADDRESS_NOT_FOUND])**: Naver 가 그 주소로 좌표를 확정하지 못함
      *   (응답 `addresses` 비어있음 / x·y 없음). 주소가 바뀌지 않는 한 재시도해도 결과가 같으므로
-     *   `geocodeUnresolved = true` 로 마킹해 다음 배치 재조회 대상에서 제외한다(무한 재시도 억제).
+     *   `geocodeFailCount` 를 증가시키고, 상한 도달 시 재조회 대상에서 제외한다(무한 재시도 억제).
      * - **일시 실패([GeocodeResult.CALL_FAILED])**: HTTP/네트워크/파싱 오류(`geocode()` 가 null).
-     *   다음 실행에 성공할 수 있으므로 마킹하지 않고 재시도 대상으로 남긴다.
+     *   다음 실행에 성공할 수 있으므로 카운트하지 않고 재시도 대상으로 남긴다.
      *
      * @return 처리 결과 ([GeocodeResult]).
      */
@@ -70,33 +71,34 @@ class AccountNaverGeocodeService(
             log.warn("Account 조회 실패 — accountId={}", accountId)
             return GeocodeResult.CALL_FAILED
         }
-        // 배치 후보 필터가 address1 non-null 을 보장하지만, 방어적으로 blank 도 영구 실패로 마킹한다
-        // (조회할 주소가 없으면 재시도해도 동일 — 주소가 채워지면 주소 변경 훅이 마킹을 초기화).
+        // 배치 후보 필터가 address1 non-null 을 보장하지만, 방어적으로 blank 도 주소 미확정으로 카운트한다
+        // (조회할 주소가 없으면 재시도해도 동일 — 주소가 채워지면 주소 변경 훅이 카운터를 초기화).
         val address = account.address1
         if (address.isNullOrBlank()) {
-            account.geocodeUnresolved = true
+            account.geocodeFailCount++
             return GeocodeResult.ADDRESS_NOT_FOUND
         }
 
-        // geocode() == null → HTTP/네트워크/파싱 예외 (일시 실패). 마킹하지 않고 재시도에 맡긴다.
+        // geocode() == null → HTTP/네트워크/파싱 예외 (일시 실패). 카운트하지 않고 재시도에 맡긴다.
         val response = naverGeocodeClient.geocode(address) ?: return GeocodeResult.CALL_FAILED
 
-        // 호출은 성공했으나 주소로 좌표를 찾지 못함 → 영구 실패로 마킹.
+        // 호출은 성공했으나 주소로 좌표를 찾지 못함 → 실패 횟수 증가.
         val first = response.addresses.firstOrNull()
         val x = first?.x
         val y = first?.y
         if (x.isNullOrBlank() || y.isNullOrBlank()) {
+            account.geocodeFailCount++
             log.warn(
-                "Naver Geocode 좌표 확정 실패 — accountId={} externalKey={} address={} (영구 실패 마킹)",
-                accountId, account.externalKey, address
+                "Naver Geocode 좌표 확정 실패 — accountId={} externalKey={} address={} failCount={}/{}",
+                accountId, account.externalKey, address,
+                account.geocodeFailCount, GeocodeRetryPolicy.MAX_FAIL_COUNT
             )
-            account.geocodeUnresolved = true
             return GeocodeResult.ADDRESS_NOT_FOUND
         }
         account.longitude = x
         account.latitude = y
-        // 이전에 영구 실패로 마킹되었더라도(주소 변경으로 재진입한 경우 등) 성공 시 마킹 해제.
-        account.geocodeUnresolved = null
+        // 이전 실패 이력이 있어도(주소 변경으로 재진입한 경우 등) 성공 시 카운터 초기화.
+        account.geocodeFailCount = 0
         return GeocodeResult.SUCCESS
     }
 
@@ -113,10 +115,10 @@ class AccountNaverGeocodeService(
      *   호출자의 쓰기 트랜잭션이 DB 커넥션을 점유하지 않도록. 보강 결과는 호출자 트랜잭션이
      *   이후 롤백되더라도 독립 커밋되어 남는다 (다음 요청이 재호출하지 않도록).
      * - **기존 좌표를 절대 null 로 덮어쓰지 않음** — 실시간 경로의 일시 오류가 데이터를 훼손하면 안 된다.
-     * - **영구 실패 마킹(`geocodeUnresolved=true`) 거래처는 호출 없이 즉시 포기** — 주소가 바뀌지 않는 한
-     *   결과가 같으므로, 매 요청마다 외부 API 를 때리는 것을 막는다.
+     * - **실패 상한([GeocodeRetryPolicy.MAX_FAIL_COUNT]) 도달 거래처는 호출 없이 즉시 포기** — 주소가
+     *   바뀌지 않는 한 결과가 같으므로, 매 요청마다 외부 API 를 때리는 것을 막는다. 카운터는 배치와 공유한다.
      *
-     * @return 확보한 좌표. 보강 불가(주소 부재 / 영구 실패 마킹 / 호출 실패 / 좌표 미확정) 시 `null`.
+     * @return 확보한 좌표. 보강 불가(주소 부재 / 실패 상한 도달 / 호출 실패 / 좌표 미확정) 시 `null`.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun resolveCoordinatesOnDemand(accountId: Long): Coordinates? {
@@ -129,8 +131,8 @@ class AccountNaverGeocodeService(
             return Coordinates(latitude = currentLat, longitude = currentLng)
         }
 
-        // 영구 실패로 판정된 거래처 — 주소가 바뀔 때까지 재호출해도 결과가 같다.
-        if (account.geocodeUnresolved == true) return null
+        // 실패 상한 도달 — 주소가 바뀔 때까지 재호출해도 결과가 같다.
+        if (!GeocodeRetryPolicy.isRetryable(account.geocodeFailCount)) return null
 
         val address = account.address1
         if (address.isNullOrBlank()) return null
@@ -145,17 +147,17 @@ class AccountNaverGeocodeService(
         val x = first?.x
         val y = first?.y
         if (x.isNullOrBlank() || y.isNullOrBlank()) {
+            account.geocodeFailCount++
             log.warn(
-                "Naver Geocode 온디맨드 좌표 확정 실패 — accountId={} address={} (영구 실패 마킹)",
-                accountId, address
+                "Naver Geocode 온디맨드 좌표 확정 실패 — accountId={} address={} failCount={}/{}",
+                accountId, address, account.geocodeFailCount, GeocodeRetryPolicy.MAX_FAIL_COUNT
             )
-            account.geocodeUnresolved = true
             return null
         }
 
         account.longitude = x
         account.latitude = y
-        account.geocodeUnresolved = null
+        account.geocodeFailCount = 0
         log.info("ACCOUNT_GEOCODE_ON_DEMAND_RESOLVED accountId={} lat={} lng={}", accountId, y, x)
         return Coordinates(latitude = y, longitude = x)
     }
@@ -209,29 +211,30 @@ class AccountNaverGeocodeService(
             log.warn("거래처 주소 변경 좌표 조회 실패 — accountId={} address={}", accountId, address)
             account.latitude = null
             account.longitude = null
-            // 즉시 조회 1회 실패는 영구 실패로 마킹하지 않는다 — 일시 오류일 수 있으므로 배치 재시도에 맡긴다.
-            // 배치 재진입의 전제인 마킹 해제는 호출자([AccountUpdateTxService.applyUpdate]) 가 주소 변경
-            // 감지 시점에 수행한다. 배치가 재시도 후 여전히 못 찾으면 그때 영구 마킹된다.
+            // 즉시 조회 1회 실패는 실패 횟수에 넣지 않는다 — 주소 미확정인지 일시 오류인지 구분하지 않고
+            // 호출하는 경로라(`geocode()` 반환값 null 여부를 보지 않음) 일시 오류를 카운트할 위험이 있다.
+            // 배치 재진입의 전제인 카운터 초기화는 호출자([AccountUpdateTxService.applyUpdate]) 가 주소
+            // 변경 감지 시점에 수행한다. 배치가 재시도 후 여전히 못 찾으면 그때 카운터가 쌓인다.
             return
         }
         account.longitude = x
         account.latitude = y
-        // 성공 시 이전 영구 실패 마킹 해제(주소 변경 훅이 이미 초기화하지만 방어적으로 null 보장).
-        account.geocodeUnresolved = null
+        // 성공 시 실패 카운터 초기화(주소 변경 훅이 이미 초기화하지만 방어적으로 0 보장).
+        account.geocodeFailCount = 0
     }
 
     /**
      * 좌표 미수신 거래처를 [limit] 건 조회 → 거래처별 보강.
      *
-     * 실패는 영구/일시로 나눠 집계한다:
-     * - `unresolved`: 주소로 좌표를 못 찾아 영구 실패로 마킹한 건 (다음 배치부터 재조회 제외).
-     * - `callFailed`: HTTP/네트워크/파싱 오류 등 일시 실패 (다음 배치 재시도 대상 유지).
+     * 실패는 주소 미확정 / 일시로 나눠 집계한다:
+     * - `unresolved`: 주소로 좌표를 못 찾아 실패 횟수를 올린 건 (상한 도달 시 다음 배치부터 재조회 제외).
+     * - `callFailed`: HTTP/네트워크/파싱 오류 등 일시 실패 (카운트하지 않음, 다음 배치 재시도 대상 유지).
      *
-     * 조회 후보(`findCandidates`)에는 이미 영구 실패 마킹(`geocodeUnresolved=true`)된 거래처가
-     * 제외되므로, 매 실행마다 재시도되는 건은 "아직 판정되지 않은 신규/일시실패" 뿐이다.
+     * 조회 후보(`findCandidates`)에는 실패 상한([GeocodeRetryPolicy.MAX_FAIL_COUNT])에 도달한 거래처가
+     * 제외되므로, 매 실행마다 재시도되는 건은 "아직 상한에 닿지 않은 신규/실패이력/일시실패" 뿐이다.
      *
      * @return 처리 결과 — `scanned` (조회 건수), `succeeded` (좌표 set 성공),
-     *         `unresolved` (영구 실패 마킹), `callFailed` (일시 실패)
+     *         `unresolved` (주소 미확정 — 실패 횟수 증가), `callFailed` (일시 실패)
      */
     fun enrichCoordinatesMissingAccounts(limit: Int): GeocodeBatchResult {
         val candidates = findCandidates(limit)
@@ -271,9 +274,9 @@ class AccountNaverGeocodeService(
     data class GeocodeBatchResult(
         val scanned: Int,
         val succeeded: Int,
-        /** 주소로 좌표를 못 찾아 영구 실패로 마킹한 건 (다음 배치부터 재조회 제외). */
+        /** 주소로 좌표를 못 찾아 실패 횟수를 올린 건 (상한 도달 시 다음 배치부터 재조회 제외). */
         val unresolved: Int,
-        /** HTTP/네트워크/파싱 오류 등 일시 실패 (다음 배치 재시도 대상 유지). */
+        /** HTTP/네트워크/파싱 오류 등 일시 실패 (카운트하지 않음 — 다음 배치 재시도 대상 유지). */
         val callFailed: Int,
     )
 }

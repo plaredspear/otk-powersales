@@ -130,7 +130,9 @@ export default function AccountPage() {
         <Space size={4} wrap>
           {val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-'}
           {account.geocodeUnresolved && (
-            <Tooltip title="주소로 좌표를 찾지 못해 좌표변환 배치 재조회에서 제외된 상태입니다. 주소를 확인·수정하면 자동으로 재시도됩니다.">
+            <Tooltip
+              title={`주소로 좌표를 찾지 못해(${account.geocodeFailCount}회 실패) 좌표변환 재조회에서 제외된 상태입니다. 주소를 확인·수정하면 자동으로 재시도됩니다.`}
+            >
               <Tag color="volcano">변환실패</Tag>
             </Tooltip>
           )}

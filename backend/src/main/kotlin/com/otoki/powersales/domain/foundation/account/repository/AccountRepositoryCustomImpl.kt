@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.foundation.account.repository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.QAccount
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
@@ -119,7 +120,7 @@ class AccountRepositoryCustomImpl(
             .selectFrom(account)
             // 배치 후보 = 좌표 미수신 AND 영구 실패로 마킹되지 않은 것만 (무한 재시도 억제).
             // 화면 필터(coordinatesMissing)는 영구 실패 건도 운영자가 봐야 하므로 이 제외를 적용하지 않는다.
-            .where(coordinatesMissingPredicate(), notGeocodeUnresolved())
+            .where(coordinatesMissingPredicate(), geocodeRetryable())
             .limit(limit.toLong())
             .fetch()
     }
@@ -305,14 +306,14 @@ class AccountRepositoryCustomImpl(
             .and(account.accountStatusName.eq(ACCOUNT_STATUS_ACTIVE))
 
     /**
-     * 좌표변환 영구 실패로 마킹되지 않은 거래처 — `geocode_unresolved` 가 TRUE 가 아님(FALSE 또는 NULL).
+     * 좌표변환 실패 상한에 도달하지 않은 거래처 — `geocode_fail_count < GeocodeRetryPolicy.MAX_FAIL_COUNT`.
      *
      * 배치 재조회 후보를 "재시도 가치가 있는 것"으로 좁혀 무한 재시도를 억제한다. 주소로 좌표를 못 찾은
-     * 거래처는 [AccountNaverGeocodeService.enrichSingleAccount] 가 `geocodeUnresolved=true` 로 마킹하고,
-     * 주소가 바뀌면([AccountUpsertMapper.invalidateCoordinatesIfAddressChanged]) NULL 로 초기화되어 재진입한다.
+     * 거래처는 [AccountNaverGeocodeService.enrichSingleAccount] 가 카운터를 올리고, 주소(address1)가
+     * 바뀌면([AccountUpsertMapper.invalidateCoordinatesIfAddressChanged]) 0 으로 초기화되어 재진입한다.
      */
-    private fun notGeocodeUnresolved() =
-        account.geocodeUnresolved.isNull.or(account.geocodeUnresolved.eq(false))
+    private fun geocodeRetryable() =
+        account.geocodeFailCount.lt(GeocodeRetryPolicy.MAX_FAIL_COUNT)
 
     /**
      * SF `DKRetail__Promotion__c.AccId__c.lookupFilter` 동등 비즈니스 필터.

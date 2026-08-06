@@ -2,6 +2,7 @@ package com.otoki.powersales.external.ovip.inbound.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.domain.foundation.account.repository.AccountSnapshotRow
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -79,8 +80,18 @@ data class AccountRow(
     @JsonProperty("longitude")
     val longitude: String?,
 
+    /**
+     * 좌표변환(Naver Geocode) 주소 미확정 누적 실패 횟수.
+     *
+     * 이전 `geocodeUnresolved` boolean 컬럼을 대체한다 — 기존 소비자 호환을 위해 boolean 상당값도
+     * [geocodeUnresolved] 로 계속 노출하되, 그쪽은 이제 DB 컬럼이 아니라 상한 도달 여부 파생값이다.
+     */
+    @JsonProperty("geocodeFailCount")
+    val geocodeFailCount: Int,
+
+    /** 좌표변환 재시도 포기 여부 — `geocodeFailCount >= GeocodeRetryPolicy.MAX_FAIL_COUNT` 파생값. */
     @JsonProperty("geocodeUnresolved")
-    val geocodeUnresolved: Boolean?,
+    val geocodeUnresolved: Boolean,
 
     @JsonProperty("closingTime1")
     val closingTime1: String?,
@@ -290,7 +301,8 @@ data class AccountRow(
             zipCode = zipCode,
             latitude = latitude,
             longitude = longitude,
-            geocodeUnresolved = geocodeUnresolved,
+            geocodeFailCount = geocodeFailCount,
+            geocodeUnresolved = GeocodeRetryPolicy.isExhausted(geocodeFailCount),
             closingTime1 = closingTime1,
             closingTime2 = closingTime2,
             closingTime3 = closingTime3,
