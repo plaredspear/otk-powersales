@@ -167,6 +167,13 @@ class FileStorageService(
 	}
 
 	/**
+	 * 제안(물류 클레임) 첨부 사진 바이트 다운로드. SF 전송 실패로 회수된 공유 버킷 사본을 재전송 시점에
+	 * 다시 만들 때 원본이 된다 (private 사본은 이미 650 축소본이라 그대로 재업로드된다).
+	 */
+	fun downloadSuggestionPhoto(uniqueKey: String): ByteArray =
+		storageService.downloadPrivate(uniqueKey)
+
+	/**
 	 * 제안(물류 클레임) 첨부 사진의 SF 공유 버킷 사본 삭제 (레거시 `del_img` → `awsService.deleteAWS` 정합).
 	 * 사본을 지우면 SF 화면의 해당 이미지는 더 이상 로드되지 않는다 (SF `UploadFile__c` row 자체는 SF 소관).
 	 */

@@ -243,11 +243,19 @@ class SuggestionService(
             )
         )
 
-        // step 7 — [Tx2] 전송상태 update
+        // step 7 — [Tx2] 전송상태 update (+ 실패 시 SF 공유 버킷 사본 회수)
         txTemplate.execute {
             val persisted = suggestionRepository.findByIdAndIsDeletedFalse(inserted.id)
                 ?: throw SuggestionNotFoundException()
             applySfResult(persisted, sfResult)
+            if (!sfResult.success) {
+                // 레거시 `suggestProc` 의 RESULT_CODE != 200 분기 정합 — 공유 버킷에 고아 이미지를 남기지 않는다.
+                // 재전송 시 [SuggestionSfResendService] 가 private 사본으로 공유 사본을 다시 만든다.
+                photoUploader.discardSfCopies(
+                    uploadFileRepository
+                        .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, inserted.id)
+                )
+            }
         }
 
         return SuggestionCreateResponse(

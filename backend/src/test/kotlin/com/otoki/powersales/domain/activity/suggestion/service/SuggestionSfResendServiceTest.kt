@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -29,11 +30,12 @@ class SuggestionSfResendServiceTest {
 
     private val suggestionRepository: SuggestionRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
+    private val photoUploader: SuggestionPhotoUploader = mockk()
     private val sfOutboundClient: SfOutboundClient = mockk()
     private val txTemplate: TransactionTemplate = mockk()
 
     private val service = SuggestionSfResendService(
-        suggestionRepository, uploadFileRepository, sfOutboundClient, txTemplate,
+        suggestionRepository, uploadFileRepository, photoUploader, sfOutboundClient, txTemplate,
     )
 
     private fun suggestion(
@@ -166,71 +168,108 @@ class SuggestionSfResendServiceTest {
     @DisplayName("resend — 상태 가드")
     inner class Resend {
 
+        private fun photo(sfKey: String?) = UploadFile(
+            name = "a_resize.jpg",
+            uniqueKey = "uploads/suggestion/2026/08/06/uuid.jpg",
+            sfUniqueKey = sfKey,
+            fileSize = "200.0KB",
+            parentType = UploadFileParentTypes.SUGGESTION,
+            parentId = 7L,
+        )
+
+        private fun stubTx() {
+            every { txTemplate.execute<Any?>(any()) } answers {
+                val cb = firstArg<org.springframework.transaction.support.TransactionCallback<Any?>>()
+                cb.doInTransaction(mockk(relaxed = true))
+            }
+        }
+
         /**
          * SF 는 이미지 바이트를 받지 않고 UniqueKey 를 레거시 공유 버킷 주소에 concat 해 렌더한다.
          * 따라서 재전송 payload 도 파워세일즈 전용 버킷의 private key(unique_key) 가 아니라
-         * 공유 버킷 사본 key(sf_unique_key) 를 실어야 한다.
+         * 공유 버킷 사본 key 를 실어야 한다.
          */
         @Test
-        fun `payload 이미지 key 는 sf_unique_key — private unique_key 를 보내지 않는다`() {
+        fun `payload 이미지 key 는 공유 버킷 사본 key — private unique_key 를 보내지 않는다`() {
             val target = suggestion(id = 7L)
             every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
             every { suggestionRepository.findByIdWithSfRefs(7L) } returns target
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 7L)
-            } returns listOf(
-                UploadFile(
-                    name = "a.jpg",
-                    uniqueKey = "uploads/suggestion/2026/08/06/uuid.jpg",
-                    sfUniqueKey = "1750000000000E777_1",
-                    fileSize = "200.0KB",
-                    parentType = UploadFileParentTypes.SUGGESTION,
-                    parentId = 7L,
-                )
-            )
+            } returns listOf(photo(sfKey = "1750000000000E777"))
+            every { photoUploader.ensureSfCopy(any(), "E777") } returns "1750000000000E777"
             stubStatusTransition(target)
-            every { txTemplate.execute<Any?>(any()) } answers {
-                val cb = firstArg<org.springframework.transaction.support.TransactionCallback<Any?>>()
-                cb.doInTransaction(mockk(relaxed = true))
-            }
+            stubTx()
             val sent = slot<Map<String, Any?>>()
             every { sfOutboundClient.callApi(any(), capture(sent)) } returns SfApiResponse("200", "OK", "{}")
 
             service.resend(7L)
 
-            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1750000000000E777_1")
-            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a.jpg")
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1750000000000E777")
+            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a_resize.jpg")
         }
 
-        /** sf_unique_key 도입 이전 row 는 unique_key 로 fallback — 전송 자체가 누락되지 않는다. */
+        /**
+         * 직전 실패에서 공유 사본을 회수했으므로(레거시 RESULT_CODE != 200 분기) 재전송은 private 사본으로
+         * 사본을 다시 만든 뒤 그 key 를 보낸다 — 회수 때문에 이미지가 영구히 빠지면 안 된다.
+         */
         @Test
-        fun `sf_unique_key 가 없는 과거 row 는 unique_key 로 fallback`() {
+        fun `회수된 사본은 재생성한 key 로 전송된다`() {
             val target = suggestion(id = 8L)
             every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
             every { suggestionRepository.findByIdWithSfRefs(8L) } returns target
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 8L)
-            } returns listOf(
-                UploadFile(
-                    name = "legacy.jpg",
-                    uniqueKey = "1699999999999E777",
-                    sfUniqueKey = null,
-                    fileSize = "100.0KB",
-                    parentType = UploadFileParentTypes.SUGGESTION,
-                    parentId = 8L,
-                )
-            )
+            } returns listOf(photo(sfKey = null))
+            every { photoUploader.ensureSfCopy(any(), "E777") } returns "1760000000000E777"
             stubStatusTransition(target)
-            every { txTemplate.execute<Any?>(any()) } answers {
-                val cb = firstArg<org.springframework.transaction.support.TransactionCallback<Any?>>()
-                cb.doInTransaction(mockk(relaxed = true))
-            }
+            stubTx()
             val sent = slot<Map<String, Any?>>()
             every { sfOutboundClient.callApi(any(), capture(sent)) } returns SfApiResponse("200", "OK", "{}")
 
             service.resend(8L)
 
-            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1699999999999E777")
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1760000000000E777")
+        }
+
+        /** 레거시 `suggestProc` 의 RESULT_CODE != 200 분기 — 공유 버킷에 고아 이미지를 남기지 않는다. */
+        @Test
+        fun `전송 실패 시 공유 버킷 사본을 회수한다`() {
+            val target = suggestion(id = 9L)
+            every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
+            every { suggestionRepository.findByIdWithSfRefs(9L) } returns target
+            val files = listOf(photo(sfKey = "1750000000000E777"))
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 9L)
+            } returns files
+            every { photoUploader.ensureSfCopy(any(), "E777") } returns "1750000000000E777"
+            every { photoUploader.discardSfCopies(any()) } just Runs
+            stubStatusTransition(target)
+            stubTx()
+            every { sfOutboundClient.callApi(any(), any()) } returns SfApiResponse("500", "거래처 없음", "{}")
+
+            service.resend(9L)
+
+            verify { photoUploader.discardSfCopies(files) }
+        }
+
+        /** 성공 시에는 회수하지 않는다 — SF 가 그 key 로 이미지를 렌더한다. */
+        @Test
+        fun `전송 성공 시 공유 버킷 사본을 유지한다`() {
+            val target = suggestion(id = 10L)
+            every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
+            every { suggestionRepository.findByIdWithSfRefs(10L) } returns target
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 10L)
+            } returns listOf(photo(sfKey = "1750000000000E777"))
+            every { photoUploader.ensureSfCopy(any(), "E777") } returns "1750000000000E777"
+            stubStatusTransition(target)
+            stubTx()
+            every { sfOutboundClient.callApi(any(), any()) } returns SfApiResponse("200", "OK", "{}")
+
+            service.resend(10L)
+
+            verify(exactly = 0) { photoUploader.discardSfCopies(any()) }
         }
 
         @Test

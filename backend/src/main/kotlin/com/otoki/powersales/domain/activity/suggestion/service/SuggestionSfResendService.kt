@@ -29,16 +29,20 @@ import java.time.format.DateTimeFormatter
  *  - employee/product/account 는 fetch join([SuggestionRepository.findByIdWithSfRefs])으로 즉시 로드해
  *    enhancement 환경의 LAZY 미초기화 함정을 회피한다.
  *
- * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/FileName/FileSize)만 전송하는 방식이라, 등록 시
- * 저장된 UploadFile row 의 sfUniqueKey / name / fileSize 를 1·2번 슬롯(최대 2장)에 채운다 — 재업로드 불필요.
+ * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/FileName/FileSize)만 전송하는 방식이라, 저장된
+ * UploadFile row 의 sfUniqueKey / name / fileSize 를 1·2번 슬롯(최대 2장)에 채운다.
  * uniqueKey 가 아니라 sfUniqueKey 인 이유: SF 는 받은 key 를 레거시 공유 버킷 주소에 concat 해 이미지를
  * 렌더하므로, 파워세일즈 전용 버킷의 private key 를 보내면 SF 화면에서 이미지가 깨진다.
+ *
+ * 직전 전송 실패 때 공유 버킷 사본을 회수했으므로(레거시 RESULT_CODE != 200 분기 정합) 재전송은 먼저
+ * [SuggestionPhotoUploader.ensureSfCopy] 로 사본을 다시 만든 뒤 그 key 를 보낸다.
  * fileSize 는 등록 시 `formatFileSize()`(레거시 ImageUtil.getFileSize 정합)로 저장된 포맷 문자열 그대로다.
  */
 @Service
 class SuggestionSfResendService(
     private val suggestionRepository: SuggestionRepository,
     private val uploadFileRepository: UploadFileRepository,
+    private val photoUploader: SuggestionPhotoUploader,
     private val sfOutboundClient: SfOutboundClient,
     private val txTemplate: TransactionTemplate,
 ) {
@@ -65,17 +69,16 @@ class SuggestionSfResendService(
             }
             val photoMetas = uploadFileRepository
                 .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+                .sortedBy { it.createdAt }
+                .take(MAX_PHOTO_SLOTS)
                 .mapNotNull { file ->
                     // SF 로 보낼 key 는 SF 공유 버킷 사본의 key 다 — unique_key(파워세일즈 전용 버킷 private key)를
-                    // 보내면 SF 가 조립하는 URL 이 항상 깨진다. sf_unique_key 도입 이전 row 만 unique_key 로 fallback.
-                    val sfKey = file.sfUniqueKey?.takeIf { it.isNotBlank() }
-                        ?: file.uniqueKey?.takeIf { it.isNotBlank() }
+                    // 보내면 SF 가 조립하는 URL 이 항상 깨진다. 직전 실패에서 회수됐거나 sf_unique_key 도입
+                    // 이전 row 면 private 사본으로 공유 사본을 다시 만든다.
+                    val sfKey = photoUploader.ensureSfCopy(file, suggestion.employee?.employeeCode)
                         ?: return@mapNotNull null
-                    file to sfKey
+                    SfPhotoMeta(uniqueKey = sfKey, fileName = file.name, fileSize = file.fileSize)
                 }
-                .sortedBy { (file, _) -> file.createdAt }
-                .take(MAX_PHOTO_SLOTS)
-                .map { (file, sfKey) -> SfPhotoMeta(uniqueKey = sfKey, fileName = file.name, fileSize = file.fileSize) }
             buildSfApiMap(suggestion, photoMetas)
         } ?: return null
 
@@ -91,6 +94,14 @@ class SuggestionSfResendService(
             val suggestion = suggestionRepository.findByIdWithSfRefs(suggestionId)
                 ?: throw SuggestionNotFoundException()
             applySfResult(suggestion, sfResult)
+            if (!sfResult.success) {
+                // 레거시 `suggestProc` 의 RESULT_CODE != 200 분기 정합 — 공유 버킷에 고아 이미지를 남기지 않는다.
+                // 다음 재전송 때 위 [SuggestionPhotoUploader.ensureSfCopy] 가 private 사본으로 다시 만든다.
+                photoUploader.discardSfCopies(
+                    uploadFileRepository
+                        .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+                )
+            }
         }
         return sfResult
     }

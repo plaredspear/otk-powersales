@@ -18,6 +18,7 @@ import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -188,7 +189,43 @@ class SuggestionServiceSfSendTest {
             assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo(PRIVATE_KEY)
         }
 
-        private fun stubCreateFlow(sfKey: String?): CapturingSlot<Map<String, Any?>> {
+        /**
+         * 레거시 `suggestProc` 은 `RESULT_CODE != 200` 이면 방금 올린 공유 버킷 객체를 지운다
+         * (line 1762-1767) — 공유 버킷에 고아 이미지를 남기지 않기 위해서다.
+         */
+        @Test
+        fun `SF 전송 실패 시 공유 버킷 사본을 회수한다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = false)
+            val files = listOf(
+                UploadFile(
+                    name = "a_resize.jpg",
+                    uniqueKey = PRIVATE_KEY,
+                    sfUniqueKey = "1750000000000E777",
+                    fileSize = "1.0KB",
+                    parentType = UploadFileParentTypes.SUGGESTION,
+                    parentId = 1L,
+                )
+            )
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, any())
+            } returns files
+            every { photoUploader.discardSfCopies(any()) } just Runs
+
+            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+
+            verify { photoUploader.discardSfCopies(files) }
+        }
+
+        @Test
+        fun `SF 전송 성공 시 공유 버킷 사본을 유지한다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+
+            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+
+            verify(exactly = 0) { photoUploader.discardSfCopies(any()) }
+        }
+
+        private fun stubCreateFlow(sfKey: String?, sfSuccess: Boolean = true): CapturingSlot<Map<String, Any?>> {
             every { validator.validate(any(), any(), any(), any(), any(), any()) } just Runs
             every { employeeRepository.findById(1L) } returns
                 Optional.of(Employee(id = 1L, employeeCode = "E777", name = "사원"))
@@ -211,7 +248,8 @@ class SuggestionServiceSfSendTest {
                 firstArg<TransactionCallback<Any?>>().doInTransaction(mockk(relaxed = true))
             }
             return slot<Map<String, Any?>>().also {
-                every { sfOutboundClient.callApi(any(), capture(it)) } returns SfApiResponse("200", "OK", "{}")
+                every { sfOutboundClient.callApi(any(), capture(it)) } returns
+                    if (sfSuccess) SfApiResponse("200", "OK", "{}") else SfApiResponse("500", "거래처 없음", "{}")
             }
         }
     }

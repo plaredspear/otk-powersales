@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.suggestion.service
 
+import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.image.LegacyImageResizer
 import com.otoki.powersales.platform.common.service.FileStorageService
 import org.slf4j.LoggerFactory
@@ -75,6 +76,66 @@ class SuggestionPhotoUploader(
             fileSize = LegacyFileSizeFormatter.format(resized.bytes.size.toLong()),
         )
     }
+
+    /**
+     * SF 전송 실패 시 공유 버킷 사본 회수 — 레거시 `suggestProc` 의 `RESULT_CODE != 200` 분기
+     * (`awsService.deleteAWS(S3ImageUniqueKey1/2)`, line 1762-1767) 정합.
+     *
+     * 레거시는 SF 가 거부하면 방금 올린 공개 객체를 지워 공유 버킷에 고아 이미지가 남지 않게 했다.
+     * 신규도 동일하게 지우되, DB 의 `sf_unique_key` 도 함께 비워 **삭제된 객체를 가리키는 key 가
+     * 남지 않게** 한다 — 이 값이 남아 있으면 재전송이 죽은 key 를 그대로 보내 SF 이미지가 영구히 깨진다.
+     * 재전송 시점에는 [ensureSfCopy] 가 private 사본에서 공유 사본을 다시 만든다.
+     *
+     * private 사본은 건드리지 않는다 — 앱 조회용이고 재전송의 원본이기도 하다.
+     */
+    fun discardSfCopies(uploadFiles: List<UploadFile>) {
+        uploadFiles.forEach { file ->
+            file.sfUniqueKey?.takeIf { it.isNotBlank() }?.let { key ->
+                runCatching { fileStorageService.deleteSuggestionPhotoForSf(key) }
+                    .onFailure { log.warn("SF 공유 버킷 사본 삭제 실패 key={}", key, it) }
+            }
+            file.sfUniqueKey = null
+        }
+    }
+
+    /**
+     * 재전송 직전 공유 버킷 사본을 보장한다 — 없으면 private 사본 바이트로 다시 만든다.
+     *
+     * [discardSfCopies] 로 회수됐거나 `sf_unique_key` 도입 이전에 등록된 row 가 대상이다. private 사본은
+     * 이미 축소본이라 추가 축소 없이 그대로 올린다(재인코딩 반복으로 화질이 깎이지 않게).
+     *
+     * @return 공유 버킷 key. 재생성 실패(공유 버킷 미설정·private 객체 부재 등)면 null.
+     */
+    fun ensureSfCopy(uploadFile: UploadFile, employeeCode: String?): String? {
+        uploadFile.sfUniqueKey?.takeIf { it.isNotBlank() }?.let { return it }
+
+        val privateKey = uploadFile.uniqueKey?.takeIf { it.isNotBlank() } ?: return null
+        val recreated = runCatching {
+            fileStorageService.uploadSuggestionPhotoForSf(
+                bytes = fileStorageService.downloadSuggestionPhoto(privateKey),
+                contentType = contentTypeOf(uploadFile.name),
+                employeeCode = employeeCode,
+            )
+        }.onFailure {
+            log.warn("SF 공유 버킷 사본 재생성 실패 uploadFileId={} key={}", uploadFile.id, privateKey, it)
+        }.getOrNull()
+
+        uploadFile.sfUniqueKey = recreated
+        return recreated
+    }
+
+    /**
+     * 재업로드용 content type — 저장 시점 content type 을 보관하지 않으므로 파일명 확장자로 되짚는다.
+     * (`StorageConstants.ALLOWED_CONTENT_TYPES` 화이트리스트를 통과해야 한다.)
+     */
+    private fun contentTypeOf(fileName: String?): String =
+        when (fileName?.substringAfterLast('.', "")?.lowercase()) {
+            "png" -> "image/png"
+            "gif" -> "image/gif"
+            "webp" -> "image/webp"
+            "heic" -> "image/heic"
+            else -> DEFAULT_CONTENT_TYPE
+        }
 
     /**
      * 임시저장 사진 1장 저장 — private 사본만 만든다.

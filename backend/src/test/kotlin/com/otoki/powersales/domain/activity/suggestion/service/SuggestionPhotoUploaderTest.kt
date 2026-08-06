@@ -1,9 +1,12 @@
 package com.otoki.powersales.domain.activity.suggestion.service
 
+import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -30,6 +33,15 @@ class SuggestionPhotoUploaderTest {
         ImageIO.write(BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), "jpg", out)
         return MockMultipartFile("photos", name, "image/jpeg", out.toByteArray())
     }
+
+    private fun uploadFile(sfUniqueKey: String?) = UploadFile(
+        name = "photo_resize.jpg",
+        uniqueKey = "uploads/suggestion/x.jpg",
+        sfUniqueKey = sfUniqueKey,
+        fileSize = "1.0KB",
+        parentType = UploadFileParentTypes.SUGGESTION,
+        parentId = 1L,
+    )
 
     @Test
     fun `private 사본과 SF 사본은 동일한 축소본 바이트를 쓴다`() {
@@ -81,6 +93,60 @@ class SuggestionPhotoUploaderTest {
 
         assertThat(stored.sfUniqueKey).isNull()
         assertThat(stored.uniqueKey).isEqualTo("uploads/suggestion/x.jpg")
+    }
+
+    @Test
+    fun `SF 전송 실패 회수 — 공유 사본을 지우고 sf_unique_key 를 비운다`() {
+        // key 가 남아 있으면 재전송이 삭제된 객체의 key 를 그대로 보내 SF 이미지가 영구히 깨진다.
+        val deleted = slot<String>()
+        every { fileStorageService.deleteSuggestionPhotoForSf(capture(deleted)) } returns Unit
+        val file = uploadFile(sfUniqueKey = "1750000000000E777")
+
+        uploader.discardSfCopies(listOf(file))
+
+        assertThat(deleted.captured).isEqualTo("1750000000000E777")
+        assertThat(file.sfUniqueKey).isNull()
+    }
+
+    @Test
+    fun `회수는 private 사본을 건드리지 않는다 — 재전송의 원본이다`() {
+        every { fileStorageService.deleteSuggestionPhotoForSf(any()) } returns Unit
+
+        uploader.discardSfCopies(listOf(uploadFile(sfUniqueKey = "sf-key")))
+
+        verify(exactly = 0) { fileStorageService.deleteSuggestionPhoto(any()) }
+    }
+
+    @Test
+    fun `ensureSfCopy — 사본이 이미 있으면 재업로드하지 않는다`() {
+        val file = uploadFile(sfUniqueKey = "sf-key")
+
+        assertThat(uploader.ensureSfCopy(file, "E777")).isEqualTo("sf-key")
+
+        verify(exactly = 0) { fileStorageService.uploadSuggestionPhotoForSf(any(), any(), any()) }
+    }
+
+    @Test
+    fun `ensureSfCopy — 회수된 사본은 private 사본 바이트로 다시 만든다`() {
+        val bytes = byteArrayOf(7, 7, 7)
+        val uploaded = slot<ByteArray>()
+        every { fileStorageService.downloadSuggestionPhoto("uploads/suggestion/x.jpg") } returns bytes
+        every { fileStorageService.uploadSuggestionPhotoForSf(capture(uploaded), any(), any()) } returns "new-sf-key"
+        val file = uploadFile(sfUniqueKey = null)
+
+        val key = uploader.ensureSfCopy(file, "E777")
+
+        assertThat(key).isEqualTo("new-sf-key")
+        assertThat(file.sfUniqueKey).isEqualTo("new-sf-key")
+        // private 사본은 이미 축소본이라 재축소 없이 그대로 올린다.
+        assertThat(uploaded.captured).isEqualTo(bytes)
+    }
+
+    @Test
+    fun `ensureSfCopy — 재생성 실패는 예외 대신 null (재전송 자체는 계속된다)`() {
+        every { fileStorageService.downloadSuggestionPhoto(any()) } throws RuntimeException("no such key")
+
+        assertThat(uploader.ensureSfCopy(uploadFile(sfUniqueKey = null), "E777")).isNull()
     }
 
     @Test
