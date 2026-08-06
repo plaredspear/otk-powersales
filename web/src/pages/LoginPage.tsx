@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Alert, Typography, Checkbox } from 'antd';
+import { Card, Form, Input, Button, Alert, Checkbox } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
-
-const { Title } = Typography;
 
 const REMEMBER_USERNAME_KEY = 'login.rememberedUsername';
 
@@ -58,9 +56,17 @@ export default function LoginPage() {
       }}
     >
       <Card style={{ width: 400 }}>
-        <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          파워세일즈 관리시스템
-        </Title>
+        {/*
+          제목 텍스트 대신 사이더와 동일한 브랜드 이미지(오뚜기 심볼 + O'mate 워드마크).
+          원본이 939x207 이라 높이만 고정하면 가로는 비율대로 약 200px — 카드(400px) 안에 여유롭게 들어간다.
+        */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          <img
+            src="/brand-omate.png"
+            alt="오뚜기 O'mate"
+            style={{ height: 44, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+          />
+        </div>
 
         {error && (
           <Alert
