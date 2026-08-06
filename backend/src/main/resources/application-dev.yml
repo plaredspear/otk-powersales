@@ -1,0 +1,89 @@
+# ---------------------------------------------------------------------------
+# dev 프로파일 전용 설정 (SPRING_PROFILES_ACTIVE=dev).
+#
+# application.yml 은 전 환경 공통(base)만 담고, 환경별 값은 프로파일 파일로 분리한다
+# (application-local.yml / application-test.yml 과 동일 형태).
+# 단, dev·prod 공통인 Secrets Manager import 문서는 어느 한쪽 프로파일 파일에 속하지
+# 않고 양쪽에 복제하면 drift 위험이 커서 application.yml 에 남겨 두었다.
+#
+# - 단말 바인딩 면제 사번 추가: 00000009 는 base 에서 전 환경 공통 면제. dev 에서는
+#   20030239, 20230001 도 추가 면제한다 (운영 미적용). EB 에 UUID_CHECK_EXCLUDED
+#   환경변수를 설정하지 않아야 이 값이 유효하다.
+# ---------------------------------------------------------------------------
+app:
+  # SF 공유 이미지 저장소(sandbox). 레거시 Heroku application-local.properties 의
+  # aws.s3.bucket.name 과 동일 버킷 — SF sandbox 가 이 주소로 이미지를 렌더한다
+  # (VisualforceToExcel.page 의 `ottogi-nonsap-{isSandbox ? dev : prd}-imagerepository-s3`).
+  aws:
+    s3:
+      sf-image-bucket: "ottogi-nonsap-dev-imagerepository-s3"
+  auth:
+    uuid-check:
+      excluded-employee-codes: "00000009,20030239,20230001"
+  # dev 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
+  # 클레임 / 물류클레임 상태 업데이트 sync + 전문행사조 마스터 sync/만료 를 dev 에서 활성화한다.
+  batch:
+    claim-master:
+      sync:
+        enabled: true
+    logistics-claim-master:
+      sync:
+        enabled: true
+    # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등).
+    # sync: 매일 01:00, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+    ppt-master:
+      sync:
+        enabled: true
+      expire:
+        enabled: true
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 06:00 / 월매출 매월 9일 12:00 — 레거시 SF CronTrigger 주기 정합).
+    orora:
+      daily:
+        enabled: true
+      monthly:
+        enabled: true
+    # 진열 전월매출 배치 (매일 02:00).
+    display:
+      last-month-revenue:
+        enabled: true
+    # 일정 평균매출 배치 (매월 1일 03:00).
+    mfeis:
+      this-month-revenue:
+        enabled: true
+    # 목표마스터 sync 배치 (매시 정각).
+    sales-progress-rate-master:
+      sync:
+        enabled: true
+    # 거래처 좌표변환 배치 (매일 02:00, Naver Geocode).
+    account-naver-geocode:
+      enabled: true
+    # 연기예약 처리 배치 (매일 00:00).
+    postponed-appointment:
+      enabled: true
+    # 유통기한 만료 FCM 알림 배치 (매일 09:00 KST, alarm_date=당일 담당 여사원). 레거시 Heroku UTC 0 0 0 = KST 09:00 정합.
+    # 실제 발송은 app.push.fcm.enabled + credential 필요.
+    product-expiration-alert:
+      enabled: true
+    # SF 전송실패 건 재전송 배치 (매시간 50분). 제품클레임 + 물류클레임 SEND_FAILED 이고 시도횟수 상한 미만 건 재전송.
+    sf-resend:
+      enabled: true
+    # 만료 refresh token / family 무효화 행 정리 배치 (매일 04:20). Redis TTL 자동만료의 DB 대체물.
+    refresh-token-cleanup:
+      enabled: true
+  # SF outbound 재전송 시도횟수 상한 (초과 건은 영구 실패로 간주하고 재전송 제외).
+  sf:
+    resend:
+      max-attempt: 3
+  # SAP outbox 송신 워커 (기본 5분 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
+  sap:
+    outbox:
+      enabled: true
+    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+    outbound:
+      team-member-schedule:
+        enabled: true
+      display:
+        enabled: true
+      ppt-master:
+        enabled: true

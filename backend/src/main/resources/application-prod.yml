@@ -1,0 +1,124 @@
+# ---------------------------------------------------------------------------
+# prod 프로파일 전용 설정 (SPRING_PROFILES_ACTIVE=prod).
+#
+# application.yml 은 전 환경 공통(base)만 담고, 환경별 값은 프로파일 파일로 분리한다
+# (application-local.yml / application-test.yml 과 동일 형태).
+# 단, dev·prod 공통인 Secrets Manager import 문서는 어느 한쪽 프로파일 파일에 속하지
+# 않고 양쪽에 복제하면 drift 위험이 커서 application.yml 에 남겨 두었다.
+#
+# - API 문서 비활성화 (보안): Swagger UI / OpenAPI JSON 모두 차단해 인터페이스 스펙
+#   노출을 막는다. 스펙 확인은 dev Swagger UI 또는 SAP 인바운드 가이드 문서 기준.
+# ---------------------------------------------------------------------------
+spring:
+  # prod 에서는 show-sql(System.out 직접 SQL 출력)도 기본 off. base 기본이 true 라
+  # logging.level.org.hibernate.SQL 을 낮춰도 이 경로로 SQL 이 계속 찍힌다.
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:false}
+  # prod 전용 HikariCP 풀 상향. base 기본(pool 5 / idle 2)은 local·dev 부하 기준이라
+  # 운영 스파이크(출근·마감 동시 몰림) 시 커넥션풀 고갈로 요청이 직렬화된다.
+  # RDS(db.t4g.xlarge, max_connections ≈ 1,600)는 여유가 크므로 prod 만 20 으로 올린다.
+  # EB 환경변수 용량 제약으로 값은 코드에 못 박고, 필요 시 환경변수로 override 가능.
+  datasource:
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# prod 로깅 기본값 — base document(root INFO / 앱·security·SQL DEBUG, bind TRACE)는
+# 개발 편의용 기본이라 운영에 그대로 뜨면 매 요청 SQL·바인딩값을 문자열로 조립해
+# 힙·GC·CPU 를 상시 낭비한다(운영 메모리 압박 사건). prod document 에서 안전한
+# 기본을 코드로 못 박아 환경변수 누락 시에도 상시 DEBUG 로 뜨지 않게 한다.
+# 필요 시 EB 환경 속성(LOG_LEVEL_*)으로 여전히 override 가능하며, 재배포 없는 런타임
+# 임시 상향은 개발자 도구 화면(POST /api/v1/admin/tools/log-levels, 시스템 관리자 전용)
+# 으로 처리한다 — actuator loggers 는 security 체인 밖이라 일부러 열지 않는다.
+logging:
+  level:
+    com.otoki.powersales: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:INFO}
+    # 외부 HTTP outbound 응답 본문 전문 로그 차단 (base 와 동일 취지 — prod 에서 이중 명시).
+    # 운영에서 root/앱 로그레벨이 DEBUG 로 상향되어도 SF/SAP 응답 PII 가 콘솔에 새지 않게 못 박는다.
+    org.springframework.web.client: ${LOG_LEVEL_SPRING_WEB_CLIENT:INFO}
+
+app:
+  # SF 공유 이미지 저장소(운영). 레거시 Heroku application.properties 의 aws.s3.bucket.name(prd) 과
+  # 동일 버킷 — SF 운영 조직이 CustomLabel/ProposalToExcel.page/SiteImage__c formula 등에서
+  # 이 주소를 하드코딩해 이미지를 렌더한다. 여기 값이 틀리면 SF 화면 이미지가 조용히 깨진다.
+  aws:
+    s3:
+      sf-image-bucket: "ottogi-nonsap-prd-imagerepository-s3"
+  # prod 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
+  # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등) 을 prod 에서 활성화한다.
+  # sync: 매일 01:00, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+  batch:
+    # 클레임/물류클레임 상태 업데이트 sync — 단일 잡(ClaimMasterSyncBatch, 매시 정각)으로 통합, 도메인별 개별 on/off.
+    # 잡 빈 게이팅 = claim-master.sync.enabled. 두 도메인 처리 여부는 ClaimMasterSyncBatchService 가 각 플래그로 재판정한다.
+    # (claim-master.sync.enabled=false 로 잡을 끄면 logistics 도메인도 함께 멎으니, 물류만 돌리려면 claim 은 켠 채 로직 조정.)
+    claim-master:
+      sync:
+        enabled: true
+    logistics-claim-master:
+      sync:
+        enabled: true
+    ppt-master:
+      sync:
+        enabled: true
+      expire:
+        enabled: true
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 06:00 / 월매출 매월 9일 12:00 — 레거시 SF CronTrigger 주기 정합).
+    orora:
+      daily:
+        enabled: true
+      monthly:
+        enabled: true
+    # 진열 전월매출 배치 (매일 02:00).
+    display:
+      last-month-revenue:
+        enabled: true
+    # 일정 평균매출 배치 (매월 1일 03:00).
+    mfeis:
+      this-month-revenue:
+        enabled: true
+    # 목표마스터 sync 배치 (매시 정각).
+    sales-progress-rate-master:
+      sync:
+        enabled: true
+    # 거래처 좌표변환 배치 (매일 02:00, Naver Geocode).
+    account-naver-geocode:
+      enabled: true
+    # 연기예약 처리 배치 (매일 00:00).
+    postponed-appointment:
+      enabled: true
+    # 유통기한 만료 FCM 알림 배치 (매일 09:00 KST, alarm_date=당일 담당 여사원). 레거시 Heroku UTC 0 0 0 = KST 09:00 정합.
+    # 실제 발송은 app.push.fcm.enabled + credential 필요.
+    product-expiration-alert:
+      enabled: true
+    # SF 전송실패 건 재전송 배치 (매시간 50분). 제품클레임 + 물류클레임 SEND_FAILED 이고 시도횟수 상한 미만 건 재전송.
+    sf-resend:
+      enabled: true
+    # 만료 refresh token / family 무효화 행 정리 배치 (매일 04:20). Redis TTL 자동만료의 DB 대체물.
+    refresh-token-cleanup:
+      enabled: true
+  # SF outbound 재전송 시도횟수 상한 (초과 건은 영구 실패로 간주하고 재전송 제외).
+  sf:
+    resend:
+      max-attempt: 3
+  # SAP outbox 송신 워커 (기본 5분 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
+  sap:
+    outbox:
+      enabled: true
+    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+    outbound:
+      team-member-schedule:
+        enabled: true
+      display:
+        enabled: true
+      ppt-master:
+        enabled: true

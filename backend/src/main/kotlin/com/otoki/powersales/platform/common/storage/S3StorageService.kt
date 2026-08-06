@@ -26,8 +26,9 @@ import java.util.UUID
 class S3StorageService(
 	private val s3Client: S3Client,
 	@Value("\${app.aws.s3.bucket}") private val bucket: String,
-	// SF 공유 이미지 저장소 버킷 (레거시 ottogi-nonsap-{dev|prd}-imagerepository-s3). 미설정이면 SF 사본 업로드 skip.
-	@Value("\${app.aws.s3.sf-image-bucket:}") private val sfImageBucket: String
+	// SF 공유 이미지 저장소 버킷 (레거시 ottogi-nonsap-{dev|prd}-imagerepository-s3). 값은 환경변수가 아니라
+	// application.yml 의 dev/prod document 에 프로파일별로 박혀 있다. 공백이면 SF 사본 업로드 skip.
+	@Value("\${app.aws.s3.sf-image-bucket}") private val sfImageBucket: String
 ) : StorageService {
 
 	private val log = LoggerFactory.getLogger(javaClass)

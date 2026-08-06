@@ -3,8 +3,6 @@ package com.otoki.powersales.platform.batch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.yaml.snakeyaml.Yaml
-import java.io.File
 
 /**
  * SF 클레임/물류클레임 상태 업데이트 통합 배치([ClaimMasterSyncBatch]) 의 도메인별 enabled 플래그가
@@ -20,29 +18,15 @@ import java.io.File
  *    비발화 → logistics 도 함께 멎는다. 이 결합을 명시적으로 문서화·고정해, 누군가 claim 플래그를 끄면서
  *    "logistics 는 계속 돌겠지" 라고 오해하는 회귀를 방지한다.
  *
- * `application.yml` 은 `---` 멀티 도큐먼트라 SnakeYAML `loadAll` 로 문서별로 분리해
- * 각 `spring.config.activate.on-profile` 문서의 플래그를 확인한다. (선행 [ProductExpirationAlertBatchProfileEnabledTest] 정합.)
- * 검증 대상은 운영 `src/main/resources/application.yml` — test classpath 우선 로드를 피해 파일을 직접 읽는다.
+ * dev/prod 전용 설정은 `application-{profile}.yml` 에 있다 — 운영 설정 로딩은
+ * [ProfileConfigReader] 가 담당한다 (base 병합 / test classpath 우회 규칙 포함).
+ * (선행 [ProductExpirationAlertBatchProfileEnabledTest] 정합.)
  */
 @DisplayName("클레임/물류클레임 통합 sync 배치 프로파일 활성화 가드 — dev/prod 에서 도메인별 enabled")
 class ClaimMasterSyncBatchProfileEnabledTest {
 
-    @Suppress("UNCHECKED_CAST")
-    private fun docForProfile(profile: String): Map<String, Any?> {
-        val yaml = Yaml()
-        val ymlFile = File("src/main/resources/application.yml")
-        check(ymlFile.exists()) { "운영 application.yml 을 찾지 못함: ${ymlFile.absolutePath}" }
-        val docs = ymlFile.inputStream().use { input ->
-            yaml.loadAll(input).filterIsInstance<Map<String, Any?>>()
-        }
-        return docs.firstOrNull { doc ->
-            val onProfile = (((doc["spring"] as? Map<String, Any?>)
-                ?.get("config") as? Map<String, Any?>)
-                ?.get("activate") as? Map<String, Any?>)
-                ?.get("on-profile")
-            onProfile == profile
-        } ?: error("on-profile=$profile 문서를 application.yml 에서 찾지 못함")
-    }
+    private fun docForProfile(profile: String): Map<String, Any?> =
+        ProfileConfigReader.effectiveConfig(profile)
 
     @Suppress("UNCHECKED_CAST")
     private fun syncEnabled(doc: Map<String, Any?>, domainKey: String): Any? {
