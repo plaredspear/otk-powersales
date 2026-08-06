@@ -422,6 +422,40 @@ class AccountUpdateTxServiceTest {
         }
 
         @Test
+        @DisplayName("address1 변경 - 좌표변환 영구 실패 마킹 해제 (배치 재진입 보장)")
+        fun address1Changed_clearsGeocodeUnresolved() {
+            val account = nativeAccount(address1 = "잘못된 주소").also { it.geocodeUnresolved = true }
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.applyUpdate(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(address1 = "서울특별시 강남구 테헤란로 100")
+            )
+
+            // 해제하지 않으면 후행 재조회가 일시 오류로 실패했을 때 배치·온디맨드 양쪽에서 영구 제외된다.
+            assertThat(account.geocodeUnresolved).isNull()
+        }
+
+        @Test
+        @DisplayName("address2 만 변경 - 영구 실패 마킹 유지 (재조회 결과가 동일하므로 재시도 불필요)")
+        fun address2Changed_keepsGeocodeUnresolved() {
+            val account = nativeAccount(address1 = "잘못된 주소").also {
+                it.address2 = "기존 주소2"
+                it.geocodeUnresolved = true
+            }
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.applyUpdate(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(address2 = "10층 1001호")
+            )
+
+            assertThat(account.geocodeUnresolved).isTrue()
+        }
+
+        @Test
         @DisplayName("T22 주소 미변경 (다른 필드만 수정) - addressChanged false 반환")
         fun t22_addressUnchanged_returnsFalse() {
             val account = nativeAccount(address1 = "기존 주소1").also { it.address2 = "기존 주소2" }

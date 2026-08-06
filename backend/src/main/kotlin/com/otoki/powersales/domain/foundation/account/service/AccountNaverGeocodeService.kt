@@ -209,8 +209,9 @@ class AccountNaverGeocodeService(
             log.warn("거래처 주소 변경 좌표 조회 실패 — accountId={} address={}", accountId, address)
             account.latitude = null
             account.longitude = null
-            // 즉시 조회 1회 실패는 영구 실패로 마킹하지 않는다 — 일시 오류일 수 있으므로 배치 재시도에 맡긴다
-            // (주소 변경으로 geocodeUnresolved 는 이미 초기화됨). 배치가 재시도 후 여전히 못 찾으면 영구 마킹.
+            // 즉시 조회 1회 실패는 영구 실패로 마킹하지 않는다 — 일시 오류일 수 있으므로 배치 재시도에 맡긴다.
+            // 배치 재진입의 전제인 마킹 해제는 호출자([AccountUpdateTxService.applyUpdate]) 가 주소 변경
+            // 감지 시점에 수행한다. 배치가 재시도 후 여전히 못 찾으면 그때 영구 마킹된다.
             return
         }
         account.longitude = x
