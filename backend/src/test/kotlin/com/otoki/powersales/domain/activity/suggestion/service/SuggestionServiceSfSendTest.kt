@@ -223,6 +223,50 @@ class SuggestionServiceSfSendTest {
             verify { suggestionRepository.delete(any<Suggestion>()) }
         }
 
+        /**
+         * SF 는 DML 실패를 `RESULT_MSG='ERROR'` 로만 알린다 — 실제 사유(어느 필드가 왜 거부됐는지)는
+         * SF 내부 `InternalExceptionLog__c` 에만 남는다. 그대로 노출하면 사용자가 할 수 있는 게 없으므로
+         * 조치 가능한 안내로 바꾼다. 원문은 external_api_log.error_detail 에 그대로 보존된다.
+         */
+        @Test
+        fun `SF 가 사유 없는 ERROR 만 주면 사용자에게는 관리자 문의 안내로 바꾼다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+            every { sfOutboundClient.callApi(any(), any()) } returns SfApiResponse("0", "ERROR", "{}")
+            stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }
+                .isInstanceOf(SuggestionSfRegistFailedException::class.java)
+                .hasMessage("Salesforce 등록에 실패했습니다. 관리자에게 문의해주세요.")
+        }
+
+        /** Apex 예외 문자열도 사용자에겐 무의미하고 내부 구조가 노출되므로 감춘다. */
+        @Test
+        fun `Apex 예외 문자열도 일반 안내로 바꾼다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+            every { sfOutboundClient.callApi(any(), any()) } returns
+                SfApiResponse("0", "System.QueryException: List has no rows for assignment", "{}")
+            stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }
+                .isInstanceOf(SuggestionSfRegistFailedException::class.java)
+                .hasMessage("Salesforce 등록에 실패했습니다. 관리자에게 문의해주세요.")
+        }
+
+        /** 반대로 사용자가 고칠 수 있는 메시지는 그대로 통과시킨다. */
+        @Test
+        fun `조치 가능한 SF 메시지는 그대로 노출한다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = false)
+            stubRollbackLookups()
+
+            assertThatThrownBy {
+                service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+            }.hasMessage("잘못된 값입니다. (ProductCode)")
+        }
+
         /** SF 응답 없이 호출 자체가 실패한 경우(타임아웃/OAuth)도 등록 실패 — 일반 안내 문구. */
         @Test
         fun `SF 호출 자체가 실패해도 등록은 취소된다`() {

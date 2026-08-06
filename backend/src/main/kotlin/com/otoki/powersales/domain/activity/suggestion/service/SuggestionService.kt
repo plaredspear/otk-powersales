@@ -110,6 +110,15 @@ class SuggestionService(
 
         /** SF Apex `Date.valueOf(String)` 는 ISO(yyyy-MM-dd) 만 파싱 (클레임 등록 정합). */
         private val SF_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+        /** SF 가 사유 없이 실패만 알린 응답의 RESULT_MSG 값 (대문자 비교). */
+        private val UNINFORMATIVE_RESULT_MESSAGES = setOf("ERROR", "FAIL", "FAILURE", "FALSE", "N")
+
+        /** SF 호출 자체가 실패 — 일시 장애일 수 있어 재시도를 안내한다. */
+        private const val SF_RETRYABLE_MESSAGE = "Salesforce 등록에 실패했습니다. 잠시 후 다시 시도해주세요."
+
+        /** SF 가 거부했으나 사유를 담지 않은 경우 — 재시도해도 같으므로 관리자 확인이 필요하다. */
+        private const val SF_UNKNOWN_MESSAGE = "Salesforce 등록에 실패했습니다. 관리자에게 문의해주세요."
     }
 
     /**
@@ -317,9 +326,36 @@ class SuggestionService(
     }
 
     /** SF 실패 사유 — 응답이 있으면 SF `RESULT_MSG` 를 그대로, 호출 자체가 실패했으면 일반 안내. */
-    private fun sfFailureMessage(result: SfPushResult): String =
-        result.apiResponse?.resultMsg?.takeIf { it.isNotBlank() }
-            ?: "Salesforce 등록에 실패했습니다. 잠시 후 다시 시도해주세요."
+    private fun sfFailureMessage(result: SfPushResult): String {
+        val raw = result.apiResponse?.resultMsg?.trim()
+        // 응답 자체가 없음(타임아웃/OAuth/네트워크) — 재시도가 의미 있는 상황.
+        if (raw.isNullOrBlank()) {
+            log.warn("[suggestion-create] SF 호출 실패 — {}", result.errorSummary)
+            return SF_RETRYABLE_MESSAGE
+        }
+        // SF 가 사유를 담지 않은 응답. 원문은 external_api_log(error_detail) + 아래 로그에 남기고,
+        // 사용자에게는 조치 가능한 안내로 바꾼다 — "ERROR" 를 그대로 보여주면 아무 도움이 안 된다.
+        if (isUninformative(raw)) {
+            log.warn("[suggestion-create] SF 가 사유 없는 실패 응답 — RESULT_MSG={}", raw)
+            return SF_UNKNOWN_MESSAGE
+        }
+        return raw
+    }
+
+    /**
+     * SF `RESULT_MSG` 가 사용자에게 아무 정보도 주지 못하는 값인지 판정한다.
+     *
+     * - `ERROR` — `IF_REST_MOBILE_ProposalRegist.cls:266` 의 DML 실패 경로. 실제 사유(어느 필드가 왜
+     *   거부됐는지)는 SF 내부 `InternalExceptionLog__c` 에만 기록되고 응답에는 담기지 않는다.
+     * - `System.*Exception: ...` — 같은 클래스의 catch 블록(L274-277)이 `String.valueOf(e)` 를 그대로
+     *   넣는다. Apex 스택이라 사용자에게 무의미하고 내부 구조가 노출된다.
+     *
+     * 반대로 `잘못된 값입니다. (ProductCode)` 처럼 사용자가 입력을 고칠 수 있는 메시지는 그대로 통과시킨다.
+     */
+    private fun isUninformative(resultMsg: String): Boolean =
+        resultMsg.uppercase() in UNINFORMATIVE_RESULT_MESSAGES ||
+            resultMsg.startsWith("System.") ||
+            resultMsg.contains("Exception:")
 
     /**
      * SF push — 실패해도 예외를 throw 하지 않고 [SfPushResult] 로 반환(클레임 등록 정합).
