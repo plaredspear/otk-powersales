@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 /**
@@ -32,7 +33,14 @@ import org.springframework.transaction.annotation.Transactional
  * 레거시는 거래처 마스터 수신 시 주소(Address1/Address2)가 변경되면 trigger(setLatLongNull)가
  * 좌표를 null 로 초기화해 본 batch 후보로 자연 재진입시킨다. 신규는 SF Trigger 가 없으므로
  * 그 책임을 [AccountUpsertMapper.update] 가 대신 진다 (주소 변경 감지 → latitude/longitude null).
+ * 단 판정 축은 **`address1` 단독** 으로 축소했다 — 좌표 query 는 `address1` 만 보내므로 `address2`
+ * 변경으로 무효화해도 결과 좌표가 같아, 공백 구간만 늘리기 때문이다 (`legacy-deviation.md` §6).
  * 따라서 본 batch 의 "좌표 미수신" 후보에는 신규 거래처뿐 아니라 주소가 바뀐 기존 거래처도 포함된다.
+ *
+ * ## 배치 주기 공백 구제
+ * 본 batch 는 매일 02시 1회 실행이라, SAP 인바운드가 주소 변경을 수신한 시점부터 다음 실행까지
+ * 해당 거래처는 좌표가 없다. GPS 거리 검증이 필요한 출근 등록이 그 사이 전면 차단되므로,
+ * [resolveCoordinatesOnDemand] 가 등록 시점 1회 즉시 보강으로 공백을 메운다.
  */
 @Service
 class AccountNaverGeocodeService(
@@ -91,6 +99,69 @@ class AccountNaverGeocodeService(
         account.geocodeUnresolved = null
         return GeocodeResult.SUCCESS
     }
+
+    /**
+     * 실시간 경로에서 좌표가 비어 있을 때 **1회 즉시 보강** — 배치 주기(매일 02시) 공백 구제.
+     *
+     * SAP 인바운드가 주소 변경을 수신하면 [AccountUpsertMapper] 가 좌표를 null 로 무효화하고,
+     * 실제 재취득은 다음 [com.otoki.powersales.platform.batch.AccountNaverGeocodeBatch] 실행까지 미뤄진다.
+     * 그 사이 GPS 거리 검증이 필요한 기능(출근 등록)은 "거래처 좌표 없음"으로 전면 차단되므로,
+     * 차단 직전에 본 메서드로 좌표를 즉시 확보해 정상 진행시킨다.
+     *
+     * [enrichSingleAccount] / [refreshSingleAccount] 와 다른 점:
+     * - **호출자 트랜잭션과 분리**([Propagation.REQUIRES_NEW]) — 외부 HTTP 응답(최대 read 5s) 동안
+     *   호출자의 쓰기 트랜잭션이 DB 커넥션을 점유하지 않도록. 보강 결과는 호출자 트랜잭션이
+     *   이후 롤백되더라도 독립 커밋되어 남는다 (다음 요청이 재호출하지 않도록).
+     * - **기존 좌표를 절대 null 로 덮어쓰지 않음** — 실시간 경로의 일시 오류가 데이터를 훼손하면 안 된다.
+     * - **영구 실패 마킹(`geocodeUnresolved=true`) 거래처는 호출 없이 즉시 포기** — 주소가 바뀌지 않는 한
+     *   결과가 같으므로, 매 요청마다 외부 API 를 때리는 것을 막는다.
+     *
+     * @return 확보한 좌표. 보강 불가(주소 부재 / 영구 실패 마킹 / 호출 실패 / 좌표 미확정) 시 `null`.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun resolveCoordinatesOnDemand(accountId: Long): Coordinates? {
+        val account = accountRepository.findById(accountId).orElse(null) ?: return null
+
+        // 이미 좌표가 있으면(동시 요청이 먼저 보강한 경우 등) 외부 호출 없이 그대로 사용.
+        val currentLat = account.latitude
+        val currentLng = account.longitude
+        if (!currentLat.isNullOrBlank() && !currentLng.isNullOrBlank()) {
+            return Coordinates(latitude = currentLat, longitude = currentLng)
+        }
+
+        // 영구 실패로 판정된 거래처 — 주소가 바뀔 때까지 재호출해도 결과가 같다.
+        if (account.geocodeUnresolved == true) return null
+
+        val address = account.address1
+        if (address.isNullOrBlank()) return null
+
+        val response = naverGeocodeClient.geocode(address) ?: run {
+            // 일시 실패 — 마킹하지 않고 배치 재시도에 맡긴다. 기존 좌표(null)도 건드리지 않는다.
+            log.warn("Naver Geocode 온디맨드 호출 실패 — accountId={} address={}", accountId, address)
+            return null
+        }
+
+        val first = response.addresses.firstOrNull()
+        val x = first?.x
+        val y = first?.y
+        if (x.isNullOrBlank() || y.isNullOrBlank()) {
+            log.warn(
+                "Naver Geocode 온디맨드 좌표 확정 실패 — accountId={} address={} (영구 실패 마킹)",
+                accountId, address
+            )
+            account.geocodeUnresolved = true
+            return null
+        }
+
+        account.longitude = x
+        account.latitude = y
+        account.geocodeUnresolved = null
+        log.info("ACCOUNT_GEOCODE_ON_DEMAND_RESOLVED accountId={} lat={} lng={}", accountId, y, x)
+        return Coordinates(latitude = y, longitude = x)
+    }
+
+    /** 온디맨드 보강으로 확보한 거래처 좌표 (Account 저장 형식과 동일한 String). */
+    data class Coordinates(val latitude: String, val longitude: String)
 
     /** 거래처 1건 좌표 보강 결과. */
     enum class GeocodeResult {

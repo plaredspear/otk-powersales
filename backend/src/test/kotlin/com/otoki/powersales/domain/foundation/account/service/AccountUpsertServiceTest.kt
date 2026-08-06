@@ -670,8 +670,8 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("Address2 만 변경 - latitude/longitude null 초기화")
-        fun update_address2Changed_clearsCoords() {
+        @DisplayName("Address2 만 변경 - 좌표 유지 (레거시 이탈: 좌표 query 는 address1 만 사용)")
+        fun update_address2Changed_keepsCoords() {
             val existing = existingWithCoords()
             every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(existing)
             every { organizationRepository.findAll() } returns emptyList()
@@ -679,9 +679,12 @@ class AccountUpsertServiceTest {
 
             service.upsert(listOf(command(address1 = "서울시 강남구 옛주소", address2 = "202동")))
 
+            // 상세주소만 바뀌면 Naver 재조회 결과 좌표가 동일하므로 무효화하지 않는다 —
+            // 무효화하면 다음 배치(매일 02시)까지 출근 등록이 차단되는 공백만 생긴다.
             val saved = savedSlot.captured.single()
-            assertThat(saved.latitude).isNull()
-            assertThat(saved.longitude).isNull()
+            assertThat(saved.latitude).isEqualTo("37.5")
+            assertThat(saved.longitude).isEqualTo("127.0")
+            assertThat(saved.geocodeUnresolved).isTrue
         }
 
         @Test

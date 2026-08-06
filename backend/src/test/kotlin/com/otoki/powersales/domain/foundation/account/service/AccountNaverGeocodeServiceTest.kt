@@ -262,6 +262,102 @@ class AccountNaverGeocodeServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("resolveCoordinatesOnDemand — 실시간 경로(출근 등록) 즉시 보강")
+    inner class ResolveCoordinatesOnDemandTests {
+
+        @Test
+        @DisplayName("정상 — 좌표 set + 마킹 해제 + 확보 좌표 반환")
+        fun onDemand_success() {
+            val account = createAccount(id = 20, address1 = "서울시 강남구", geocodeUnresolved = null)
+            every { accountRepository.findById(20) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("서울시 강남구") } returns
+                NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "127.0", y = "37.5")))
+
+            val result = service.resolveCoordinatesOnDemand(20)
+
+            assertThat(result).isEqualTo(AccountNaverGeocodeService.Coordinates(latitude = "37.5", longitude = "127.0"))
+            assertThat(account.latitude).isEqualTo("37.5")
+            assertThat(account.longitude).isEqualTo("127.0")
+            assertThat(account.geocodeUnresolved).isNull()
+        }
+
+        @Test
+        @DisplayName("이미 좌표 보유 — Naver 호출 없이 기존 좌표 반환 (동시 요청이 먼저 보강한 경우)")
+        fun onDemand_alreadyHasCoords() {
+            val account = createAccount(id = 21, latitude = "37.1", longitude = "127.1")
+            every { accountRepository.findById(21) } returns Optional.of(account)
+
+            val result = service.resolveCoordinatesOnDemand(21)
+
+            assertThat(result).isEqualTo(AccountNaverGeocodeService.Coordinates(latitude = "37.1", longitude = "127.1"))
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+
+        @Test
+        @DisplayName("영구 실패 마킹됨 — Naver 호출 없이 null (매 요청 외부 API 호출 억제)")
+        fun onDemand_geocodeUnresolved() {
+            val account = createAccount(id = 22, address1 = "찾을 수 없는 주소", geocodeUnresolved = true)
+            every { accountRepository.findById(22) } returns Optional.of(account)
+
+            val result = service.resolveCoordinatesOnDemand(22)
+
+            assertThat(result).isNull()
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+
+        @Test
+        @DisplayName("address1 없음 — Naver 호출 없이 null (마킹도 하지 않음)")
+        fun onDemand_addressBlank() {
+            val account = createAccount(id = 23, address1 = "  ")
+            every { accountRepository.findById(23) } returns Optional.of(account)
+
+            val result = service.resolveCoordinatesOnDemand(23)
+
+            assertThat(result).isNull()
+            assertThat(account.geocodeUnresolved).isNull()
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+
+        @Test
+        @DisplayName("Naver 호출 실패 — null + 마킹 안 함 (일시 실패, 배치 재시도 대상 유지)")
+        fun onDemand_callFailed() {
+            val account = createAccount(id = 24, address1 = "서울시 종로구")
+            every { accountRepository.findById(24) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("서울시 종로구") } returns null
+
+            val result = service.resolveCoordinatesOnDemand(24)
+
+            assertThat(result).isNull()
+            assertThat(account.latitude).isNull()
+            assertThat(account.geocodeUnresolved).isNull()
+        }
+
+        @Test
+        @DisplayName("좌표 미확정 (addresses 비어있음) — null + 영구 실패 마킹")
+        fun onDemand_addressNotFound() {
+            val account = createAccount(id = 25, address1 = "없는 주소")
+            every { accountRepository.findById(25) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("없는 주소") } returns NaverGeocodeResponse(addresses = emptyList())
+
+            val result = service.resolveCoordinatesOnDemand(25)
+
+            assertThat(result).isNull()
+            assertThat(account.geocodeUnresolved).isTrue
+        }
+
+        @Test
+        @DisplayName("Account 미존재 — null + Naver 호출 없음")
+        fun onDemand_accountNotFound() {
+            every { accountRepository.findById(98) } returns Optional.empty()
+
+            val result = service.resolveCoordinatesOnDemand(98)
+
+            assertThat(result).isNull()
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+    }
+
     private fun createAccount(
         id: Long,
         address1: String? = "주소",

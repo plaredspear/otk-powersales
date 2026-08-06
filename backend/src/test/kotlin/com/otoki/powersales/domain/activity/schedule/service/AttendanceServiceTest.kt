@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.service.AccountNaverGeocodeService
 import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
@@ -74,6 +75,7 @@ class AttendanceServiceTest {
     private val clock: Clock = mockk()
     private val attendanceProperties: AttendanceProperties = spyk(AttendanceProperties(gpsThresholdMeters = 500))
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
+    private val accountNaverGeocodeService: AccountNaverGeocodeService = mockk()
 
     private val attendanceService = AttendanceService(
         employeeRepository,
@@ -85,12 +87,16 @@ class AttendanceServiceTest {
         adminMonthlyIntegrationService,
         attendanceProperties,
         teamMemberScheduleOwnerResolver,
+        accountNaverGeocodeService,
         clock,
     )
 
     init {
         every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
+        // 기본: 온디맨드 보강 실패 (좌표 누락 → 등록 거부 라는 기존 동작 유지).
+        // 보강 성공 케이스는 개별 테스트가 override 한다 (MockK 는 마지막 stub 우선).
+        every { accountNaverGeocodeService.resolveCoordinatesOnDemand(any()) } returns null
     }
 
     @BeforeEach
@@ -1392,6 +1398,135 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        // ========== 좌표 누락 시 Naver Geocode 온디맨드 보강 ==========
+
+        @Test
+        @DisplayName("좌표 누락 + 온디맨드 보강 성공 -> 보강 좌표로 거리 검증 후 등록 성공")
+        fun register_missingCoordsResolvedOnDemand_registers() {
+            // Given — SAP 인바운드가 주소 변경으로 좌표를 비운 직후 (배치 전) 상태
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, commuteLogSfid = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = null, accountLongitude = null
+            )
+            val account = teamMemberSchedule.account!!
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+            every { accountNaverGeocodeService.resolveCoordinatesOnDemand(account.id) } returns
+                AccountNaverGeocodeService.Coordinates(
+                    latitude = accountLat.toString(),
+                    longitude = accountLon.toString()
+                )
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then — 등록 성공 + managed entity 에도 보강 좌표 반영 (이후 dirty flush 가 stale null 로 덮지 않도록)
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(account.latitude).isEqualTo(accountLat.toString())
+            assertThat(account.longitude).isEqualTo(accountLon.toString())
+            verify(exactly = 1) { accountNaverGeocodeService.resolveCoordinatesOnDemand(account.id) }
+        }
+
+        @Test
+        @DisplayName("좌표 누락 + 온디맨드 보강 실패 -> 기존과 동일하게 ATT_ACCOUNT_COORDS_MISSING")
+        fun register_missingCoordsOnDemandFailed_throwsAccountCoordsMissing() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogSfid = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = null, accountLongitude = null
+            )
+            val account = teamMemberSchedule.account!!
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { accountNaverGeocodeService.resolveCoordinatesOnDemand(account.id) } returns null
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("좌표 정상 -> 온디맨드 보강 호출 안 함 (불필요한 외부 API 호출 억제)")
+        fun register_validCoords_doesNotCallOnDemand() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, commuteLogSfid = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+
+            // When
+            attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            verify(exactly = 0) { accountNaverGeocodeService.resolveCoordinatesOnDemand(any()) }
+        }
+
+        @Test
+        @DisplayName("ABC 면제 거래처 + 좌표 누락 -> GPS 검증 자체 skip 이라 온디맨드 보강도 호출 안 함")
+        fun register_exemptAccountMissingCoords_doesNotCallOnDemand() {
+            // Given — 면제 코드(AbcExemptCode) 거래처는 거리 검증 진입 전에 skip 된다
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, commuteLogSfid = null,
+                accountName = "면제매장", accountAbcTypeCode = "1110",
+                accountLatitude = null, accountLongitude = null
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+
+            // When
+            attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            verify(exactly = 0) { accountNaverGeocodeService.resolveCoordinatesOnDemand(any()) }
         }
 
         @Test

@@ -41,23 +41,28 @@ class AccountUpsertMapper {
         matchedOrg: Organization?,
         matchedUser: User?
     ) {
-        // 주소(address1/address2) 변경 감지를 위해 갱신 전 값을 캡처한다 (applyMutableFields 가 덮어쓰기 전).
+        // 주소(address1) 변경 감지를 위해 갱신 전 값을 캡처한다 (applyMutableFields 가 덮어쓰기 전).
         val prevAddress1 = account.address1
-        val prevAddress2 = account.address2
 
         account.name = name
         applyMutableFields(account, command, matchedOrg, matchedUser)
 
-        invalidateCoordinatesIfAddressChanged(account, prevAddress1, prevAddress2)
+        invalidateCoordinatesIfAddressChanged(account, prevAddress1)
     }
 
     /**
-     * 주소 변경 시 좌표 무효화 — 레거시 AccountTriggerHandler.setLatLongNull() 동등 복원.
+     * 주소 변경 시 좌표 무효화 — 레거시 AccountTriggerHandler.setLatLongNull() 대응.
      *
      * 레거시는 ClientMasterReceiver bypass 경로의 beforeUpdate 트리거에서
      * `oldAcc.Address1__c != acc.Address1__c || oldAcc.Address2__c != acc.Address2__c` 일 때
      * Latitude__c / Longitude__c 를 null 로 초기화하고, 이후 좌표 보강 배치(Naver Geocode)가
      * null 좌표 거래처를 재취득한다. 신규는 SF Trigger 가 없으므로 본 매퍼가 동일 책임을 진다.
+     *
+     * **레거시 이탈 — 판정 축을 `address1` 단독으로 축소한다** (`legacy-deviation.md` §6 외부 연동).
+     * 좌표 조회는 `address1` 만 query 로 보내므로([AccountNaverGeocodeService]), `address2`(상세주소)
+     * 변경으로 무효화해도 재조회 결과 좌표는 반드시 동일하다. 즉 레거시의 address2 축은 좌표를 못 쓰는
+     * 공백 구간만 만들고 얻는 것이 없다 — SAP 인바운드 수신 시점부터 다음 배치(매일 02시)까지 해당
+     * 거래처의 GPS 거리 검증(출근 등록)이 차단되는 실제 장애 원인이었다.
      *
      * 신규 생성(newAccount) 경로에는 적용하지 않는다 — 신규 거래처는 좌표가 애초에 null 이라
      * 보강 후보(latitude/longitude IS NULL)로 자연 진입한다 (레거시 beforeInsert 도 호출 안 함).
@@ -71,10 +76,9 @@ class AccountUpsertMapper {
      */
     private fun invalidateCoordinatesIfAddressChanged(
         account: Account,
-        prevAddress1: String?,
-        prevAddress2: String?
+        prevAddress1: String?
     ) {
-        if (prevAddress1 != account.address1 || prevAddress2 != account.address2) {
+        if (prevAddress1 != account.address1) {
             account.latitude = null
             account.longitude = null
             account.geocodeUnresolved = null

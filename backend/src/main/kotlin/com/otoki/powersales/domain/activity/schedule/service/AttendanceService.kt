@@ -11,6 +11,7 @@ import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.platform.common.util.GeoUtils
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.service.AccountNaverGeocodeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
@@ -70,6 +71,7 @@ class AttendanceService(
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val attendanceProperties: AttendanceProperties,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
+    private val accountNaverGeocodeService: AccountNaverGeocodeService,
     private val clock: Clock
 ) {
 
@@ -762,8 +764,13 @@ class AttendanceService(
             throw InvalidCoordsException()
         }
 
-        // 2. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 등록 거부)
-        val coords = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
+        // 2. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 온디맨드 보강 1회 시도 후에도 실패하면 등록 거부)
+        val parsed = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
+        val coords = if (parsed is AccountCoordinateParser.Coords.Missing) {
+            resolveCoordsOnDemand(account, employeeId)
+        } else {
+            parsed
+        }
         if (coords is AccountCoordinateParser.Coords.Missing) {
             throw AccountCoordsMissingException()
         }
@@ -786,5 +793,43 @@ class AttendanceService(
             "ATT_GPS_DISTANCE_OK employeeId={} accountId={} distanceMeters={} thresholdMeters={}",
             employeeId, account?.id, distanceMeters, thresholdMeters
         )
+    }
+
+    /**
+     * 거래처 좌표 누락 시 Naver Geocode 온디맨드 보강 1회 시도.
+     *
+     * SAP 인바운드가 주소 변경으로 좌표를 무효화한 뒤 좌표변환 배치(매일 02시)가 돌기 전까지는
+     * 해당 거래처의 출근 등록이 전면 차단된다. 그 공백을 등록 시점에 메워 정상 진행시킨다.
+     *
+     * 외부 HTTP 호출이므로 정상 수백 ms, 최악 8초(connect 3s + read 5s)의 지연이 등록 응답에 더해진다.
+     * 보강 실패 시에는 기존과 동일하게 [AccountCoordsMissingException] 으로 떨어진다 (호출자 판정).
+     * 영구 실패로 마킹된 거래처는 [AccountNaverGeocodeService] 내부에서 외부 호출 없이 즉시 포기하므로,
+     * 좌표를 못 찾는 주소로 매 출근 요청마다 API 를 때리지 않는다.
+     */
+    private fun resolveCoordsOnDemand(account: Account?, employeeId: Long): AccountCoordinateParser.Coords {
+        val accountId = account?.id ?: return AccountCoordinateParser.Coords.Missing
+
+        val resolved = accountNaverGeocodeService.resolveCoordinatesOnDemand(accountId)
+        if (resolved == null) {
+            log.info("ATT_GPS_COORDS_ON_DEMAND_FAILED employeeId={} accountId={}", employeeId, accountId)
+            return AccountCoordinateParser.Coords.Missing
+        }
+
+        // 보강 값도 거리 계산 전 동일 파서를 통과해야 한다 — Naver 가 파싱 불가/범위 밖 값을 준 경우까지
+        // 기존 누락 판정으로 흡수한다 (managed entity 에는 반영하지 않음).
+        val coords = AccountCoordinateParser.parse(resolved.latitude, resolved.longitude)
+        if (coords is AccountCoordinateParser.Coords.Missing) {
+            log.warn("ATT_GPS_COORDS_ON_DEMAND_UNPARSABLE employeeId={} accountId={}", employeeId, accountId)
+            return coords
+        }
+
+        // 보강은 별도 트랜잭션(REQUIRES_NEW)에서 커밋됐으므로 본 트랜잭션의 managed entity 는 stale 이다.
+        // 같은 값을 managed entity 에도 반영해 둔다 — 이후 다른 필드의 dirty flush 가 전체 컬럼 UPDATE 로
+        // 방금 적재한 좌표를 stale null 로 덮어쓰는 것을 막는다 (AttendanceRegistrarImpl 백링크 유실 사례 동형).
+        account.latitude = resolved.latitude
+        account.longitude = resolved.longitude
+
+        log.info("ATT_GPS_COORDS_ON_DEMAND_RESOLVED employeeId={} accountId={}", employeeId, accountId)
+        return coords
     }
 }

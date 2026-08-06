@@ -46,7 +46,7 @@ import org.springframework.transaction.annotation.Transactional
  * - **prefix 메시지 분기**: 신규 [AccountNamePrefixRequiredForUpdateException] — errorCode 는 `ACCOUNT_NAME_PREFIX_REQUIRED` 동일 (#640 와 호환), 메시지만 "거래처 수정은 ..." 으로 분기.
  * - **자기 자신 제외 중복 검증**: 레거시 `Trigger.oldMap` 비교 동등 효과 — `existsActiveByNameAndIdNot(name, id)` 로 자기 자신 제외.
  * - **employeeCode 변경 허용 + branch 자동 재계산 안 함**: 레거시 동등 — `BranchCode__c` 자동 set 은 `newAccount()` (CREATE) 경로 한정. 운영자 필요 시 branch 직접 수정. 결정 근거: 스펙 §3 Q-D.
- * - **Address 변경 시 좌표 즉시 재조회**: Address1/Address2 변경 감지 시 메인 쓰기 트랜잭션 커밋 후 [AccountNaverGeocodeService.refreshSingleAccount] 로 `address1` 을 동기 재조회해 `latitude/longitude` 를 즉시 갱신. 외부 HTTP 호출은 메인 쓰기 트랜잭션 밖에서 별도 트랜잭션으로 수행 (커넥션 점유 최소화). 조회 실패 / 주소 부재 시 좌표 null 무효화 → Naver Geocode batch 가 재변환 픽업(fallback). (SAP 인바운드 경로 [AccountUpsertMapper] 는 좌표 null 무효화 후 batch 보강 방식 유지.)
+ * - **Address 변경 시 좌표 즉시 재조회**: Address1 변경 감지 시 메인 쓰기 트랜잭션 커밋 후 [AccountNaverGeocodeService.refreshSingleAccount] 로 `address1` 을 동기 재조회해 `latitude/longitude` 를 즉시 갱신. 외부 HTTP 호출은 메인 쓰기 트랜잭션 밖에서 별도 트랜잭션으로 수행 (커넥션 점유 최소화). 조회 실패 / 주소 부재 시 좌표 null 무효화 → Naver Geocode batch 가 재변환 픽업(fallback). (SAP 인바운드 경로 [AccountUpsertMapper] 는 좌표 null 무효화 후 batch 보강 방식 유지.)
  * - **PUT 부분 갱신 시맨틱**: nullable 필드 + null = 미포함 (보존) 패턴 — Q-E 의 "null 명시 = null 로 덮어쓰기" 부분만 의도적 단순화 (본 P1-B 구현 시점, 운영 시나리오 빈도 낮음).
  * - **SAP 동기 키 silent ignore**: DTO 정의 자체에서 제외 — Jackson deserialization 단에서 알 수 없는 필드 무시.
  *
@@ -61,7 +61,7 @@ class AccountUpdateService(
     /**
      * 거래처 수정 단일 진입.
      *
-     * 주소(address1/address2) 변경이 감지되면, 메인 쓰기 트랜잭션 커밋 **후** [AccountNaverGeocodeService.refreshSingleAccount]
+     * 주소(address1) 변경이 감지되면, 메인 쓰기 트랜잭션 커밋 **후** [AccountNaverGeocodeService.refreshSingleAccount]
      * 로 좌표를 동기 재조회한다 (외부 HTTP 응답 동안 메인 쓰기 트랜잭션이 DB 커넥션을 점유하지 않도록 트랜잭션 분리).
      * 트랜잭션 메서드([AccountUpdateTxService])는 별도 빈으로 분리해 self-invocation 으로 인한 프록시 우회를 방지한다.
      *
@@ -110,7 +110,7 @@ class AccountUpdateTxService(
      * 두 조회조건 옵션 캐시(통합일정 + 전산실적/POS)를 커밋 후 무효화한다 — admin 단건 수정은 빈도가
      * 낮지만 24h TTL fallback 만으로는 즉시 반영되지 않으므로 evict 로 정합성을 완성한다.
      *
-     * @return 주소(address1/address2) 변경 여부
+     * @return 주소(address1) 변경 여부 — 좌표 재조회 트리거 판정
      */
     @Caching(
         evict = [
@@ -128,13 +128,14 @@ class AccountUpdateTxService(
             ?: throw AccountNotFoundException(id)
 
         val prevAddress1 = account.address1
-        val prevAddress2 = account.address2
 
         validateAndApplyName(account, request.name, principal)
         validateAndApplyEmployeeCode(account, request.employeeCode)
         applyOtherFields(account, request)
 
-        return prevAddress1 != account.address1 || prevAddress2 != account.address2
+        // 재조회 판정은 address1 단독 — 좌표 query 로 address1 만 보내므로 address2(상세주소) 변경은
+        // 반드시 동일한 좌표를 돌려받는다. SAP 인바운드 경로(AccountUpsertMapper)와 동일 기준.
+        return prevAddress1 != account.address1
     }
 
     @Transactional(readOnly = true)

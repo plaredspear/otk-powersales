@@ -404,8 +404,8 @@ class AccountUpdateTxServiceTest {
         }
 
         @Test
-        @DisplayName("T21 address2 변경 - addressChanged true 반환")
-        fun t21_address2Changed_returnsTrue() {
+        @DisplayName("T21 address2 만 변경 - addressChanged false 반환 (좌표 query 는 address1 만 사용)")
+        fun t21_address2Changed_returnsFalse() {
             val account = nativeAccount(address1 = "기존 주소1").also { it.address2 = "기존 주소2" }
             every { accountRepository.findActiveById(accountId) } returns account
 
@@ -415,7 +415,10 @@ class AccountUpdateTxServiceTest {
                 request = AdminAccountUpdateRequest(address2 = "10층 1001호")
             )
 
-            assertThat(addressChanged).isTrue()
+            // 상세주소만 바뀌면 Naver 재조회가 반드시 동일 좌표를 돌려주므로 재조회 자체가 불필요하다.
+            // (재조회 실패 시 좌표를 null 로 무효화하는 refreshSingleAccount 특성상, 무의미한 호출이
+            //  멀쩡한 좌표를 날릴 위험만 만든다.)
+            assertThat(addressChanged).isFalse()
         }
 
         @Test
