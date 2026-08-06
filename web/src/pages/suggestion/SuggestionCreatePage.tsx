@@ -16,6 +16,7 @@ import { UploadOutlined } from '@ant-design/icons';
 import { useSuggestionCreate } from '@/hooks/suggestions/useSuggestionCreate';
 import { fetchAccountsForClaimLookup, type Account } from '@/api/account';
 import { fetchProductsForClaimLookup, type Product } from '@/api/product';
+import { SUGGESTION_MAX_PHOTOS as MAX_PHOTOS } from '@/api/suggestions';
 import type {
   SuggestionActionStatus,
   SuggestionCreatePayload,
@@ -28,7 +29,6 @@ const ACTION_STATUS_OPTIONS: Array<{ value: SuggestionActionStatus; label: strin
   { value: 'DUPLICATE_RECEPTION', label: '중복접수' },
 ];
 
-const MAX_PHOTOS = 10;
 
 export default function SuggestionCreatePage() {
   const navigate = useNavigate();

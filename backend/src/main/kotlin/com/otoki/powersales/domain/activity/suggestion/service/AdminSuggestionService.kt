@@ -75,7 +75,8 @@ class AdminSuggestionService(
 ) {
 
     companion object {
-        private const val MAX_PHOTO_COUNT = 10
+        /** 첨부 사진 상한 — mobile 등록과 동일한 [SuggestionService.MAX_PHOTO_COUNT] (SF 2슬롯 정합). */
+        private const val MAX_PHOTO_COUNT = SuggestionService.MAX_PHOTO_COUNT
         private const val MAX_PAGE_SIZE = 100
     }
 

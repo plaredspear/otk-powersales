@@ -28,6 +28,7 @@ import {
   useSuggestionPhotoDelete,
 } from '@/hooks/suggestions/useSuggestionPhotoMutations';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { SUGGESTION_MAX_PHOTOS as MAX_PHOTOS } from '@/api/suggestions';
 import type {
   SuggestionActionStatus,
   SuggestionUpdatePayload,
@@ -146,9 +147,9 @@ export default function SuggestionDetailPage() {
     const files = Array.from(event.target.files ?? []);
     event.target.value = '';
     if (files.length === 0) return;
-    const remaining = 10 - suggestion.attachments.length;
+    const remaining = MAX_PHOTOS - suggestion.attachments.length;
     if (files.length > remaining) {
-      message.error(`사진은 최대 10장까지 첨부 가능합니다 (남은 슬롯 ${remaining}장)`);
+      message.error(`사진은 최대 ${MAX_PHOTOS}장까지 첨부 가능합니다 (남은 슬롯 ${remaining}장)`);
       return;
     }
     try {

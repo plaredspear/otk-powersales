@@ -86,7 +86,15 @@ class SuggestionService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
-        private const val MAX_PHOTO_COUNT = 10
+        /**
+         * 제안/물류클레임 첨부 사진 상한 — 레거시 정합으로 2장.
+         *
+         * SF `/ProposalRegist` 는 `S3ImageUniqueKey1/2` 2슬롯만 받고(레거시 write.jsp 도 "사진 (최대 2장)"),
+         * 모바일도 이미 2장으로 막고 있다. 백엔드/웹만 10 이었는데, 3장 이상 등록되면 공유 버킷에는 사본이
+         * 만들어지지만 SF payload 슬롯이 없어 **조용히 누락 + 고아 객체**가 남았다. 상한을 슬롯 수에 맞춰
+         * 그 불일치 자체를 없앤다. admin 등록/사진추가([AdminSuggestionService])도 이 값을 공유한다.
+         */
+        internal const val MAX_PHOTO_COUNT = 2
         private val PROPOSAL_NUMBER_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
         /** SF LogisticsResponsibility__c picklist default — 등록 시 항상 이 값 (해당/미해당/확인중 중 default). */

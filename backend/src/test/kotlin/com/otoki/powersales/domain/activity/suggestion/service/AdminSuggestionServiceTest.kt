@@ -447,15 +447,15 @@ class AdminSuggestionServiceTest {
         }
 
         @Test
-        @DisplayName("photos > 10 → IllegalArgumentException")
+        @DisplayName("photos 가 상한(2장) 초과 → IllegalArgumentException")
         fun rejectsTooManyPhotos() {
-            val photos = (1..11).map { MockMultipartFile("p", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
+            val photos = (1..3).map { MockMultipartFile("p", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
             val request = AdminSuggestionCreateRequest(
                 category = SuggestionCategory.NEW_PRODUCT, title = "x", content = "y"
             )
             assertThatThrownBy { service.create(adminId, request, photos) }
                 .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("최대 10")
+                .hasMessageContaining("최대 2")
         }
     }
 
@@ -545,7 +545,7 @@ class AdminSuggestionServiceTest {
     @DisplayName("uploadPhotos - 사진 추가 업로드")
     inner class UploadPhotosTests {
         @Test
-        @DisplayName("정상 - 기존 + 신규 합이 10 이내 → 모두 업로드")
+        @DisplayName("정상 - 기존 + 신규 합이 상한(2장) 이내 → 모두 업로드")
         fun uploadsWhenWithinLimit() {
             val suggestion = suggestionOf(otherEmployee)
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
@@ -560,27 +560,26 @@ class AdminSuggestionServiceTest {
             )
             every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg<UploadFile>() }
 
-            val photos = (1..3).map { MockMultipartFile("photos", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
+            val photos = listOf(MockMultipartFile("photos", "1.jpg", "image/jpeg", byteArrayOf(1)))
             val result = service.uploadPhotos(allowAllScope, suggestionId, photos)
 
-            assertThat(result).hasSize(3)
+            assertThat(result).hasSize(1)
             assertThat(result[0].sortOrder).isEqualTo(1)  // baseIndex = existing.size = 1
-            assertThat(result[2].sortOrder).isEqualTo(3)
         }
 
         @Test
-        @DisplayName("기존 + 신규 합이 10 초과 → IllegalArgumentException")
+        @DisplayName("기존 + 신규 합이 상한(2장) 초과 → IllegalArgumentException")
         fun rejectsWhenOverLimit() {
             val suggestion = suggestionOf(otherEmployee)
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
-            } returns (1..8).map { photoOf(key = "uploads/suggestion/$it.jpg") }  // existing = 8
+            } returns (1..2).map { photoOf(key = "uploads/suggestion/$it.jpg") }  // existing = 2
 
-            val photos = (1..3).map { MockMultipartFile("photos", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
+            val photos = listOf(MockMultipartFile("photos", "3.jpg", "image/jpeg", byteArrayOf(1)))
             assertThatThrownBy { service.uploadPhotos(allowAllScope, suggestionId, photos) }
                 .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("최대 10")
+                .hasMessageContaining("최대 2")
             verify(exactly = 0) { photoUploader.store(any(), any()) }
         }
 
