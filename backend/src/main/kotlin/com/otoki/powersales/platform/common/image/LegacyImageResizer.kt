@@ -40,6 +40,17 @@ object LegacyImageResizer {
     /** 레거시 축소본 파일명 접미 (`photo.jpg` → `photo_resize.jpg`). */
     private const val RESIZE_SUFFIX = "_resize"
 
+    /**
+     * 파일명 최대 길이 — SF `UploadFile__c.Name` 이 표준 Name 필드라 **80자** 제한이다.
+     *
+     * 초과하면 SF 가 `STRING_TOO_LONG` 으로 DML 을 거부하고, `IF_REST_MOBILE_ProposalRegist` 는 그 실패를
+     * `RESULT_CODE=0 / RESULT_MSG='ERROR'` 로만 돌려줘 원인을 알 수 없다(상세는 SF `InternalExceptionLog__c`
+     * 에만 남는다). 레거시는 웹 업로드라 사용자 원본 파일명이 짧아 이 한계에 닿지 않았지만, 모바일
+     * `image_picker` 는 `image_picker_<UUID>-<pid>-<hex>_jpeg.jpg`(약 81자) 를 만들어 `_resize` 를 붙이면
+     * 항상 초과한다. DB `upload_file.name` 도 같은 값으로 맞춰 SF 와 어긋나지 않게 여기서 자른다.
+     */
+    private const val MAX_FILE_NAME_LENGTH = 80
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
@@ -60,7 +71,7 @@ object LegacyImageResizer {
     fun resize(bytes: ByteArray, originalFilename: String?): Result {
         val safeName = originalFilename?.substringAfterLast('\\')?.takeIf { it.isNotBlank() } ?: DEFAULT_NAME
         val ext = safeName.substringAfterLast('.', "").lowercase()
-        val fallback = Result(bytes = bytes, fileName = safeName, resized = false)
+        val fallback = Result(bytes = bytes, fileName = limitLength(safeName), resized = false)
 
         if (ext.isBlank()) {
             log.warn("확장자가 없어 리사이즈 skip — fileName={}", safeName)
@@ -113,9 +124,29 @@ object LegacyImageResizer {
         return maxOf(width, 1) to maxOf(height, 1)
     }
 
-    /** `photo.jpg` → `photo_resize.jpg` (마지막 확장자만 치환 — 레거시 정규식 버그 미재현). */
-    private fun resizedName(fileName: String, ext: String): String =
-        "${fileName.substringBeforeLast('.')}$RESIZE_SUFFIX.$ext"
+    /**
+     * `photo.jpg` → `photo_resize.jpg` (마지막 확장자만 치환 — 레거시 정규식 버그 미재현).
+     * 결과가 [MAX_FILE_NAME_LENGTH] 를 넘으면 base 부분만 잘라 맞춘다 — 확장자와 `_resize` 는 보존한다.
+     */
+    private fun resizedName(fileName: String, ext: String): String {
+        val base = fileName.substringBeforeLast('.')
+        val tail = "$RESIZE_SUFFIX.$ext"
+        val budget = MAX_FILE_NAME_LENGTH - tail.length
+        // 확장자가 비정상적으로 길어 base 여유가 없으면 전체를 자르는 쪽으로 물러선다.
+        if (budget <= 0) return "$base$tail".take(MAX_FILE_NAME_LENGTH)
+        return "${base.take(budget)}$tail"
+    }
+
+    /** 리사이즈 없이 원본 파일명을 쓰는 fallback 경로에도 SF 80자 제약을 적용한다. */
+    private fun limitLength(fileName: String): String {
+        if (fileName.length <= MAX_FILE_NAME_LENGTH) return fileName
+        val ext = fileName.substringAfterLast('.', "")
+        if (ext.isBlank()) return fileName.take(MAX_FILE_NAME_LENGTH)
+        val tail = ".$ext"
+        val budget = MAX_FILE_NAME_LENGTH - tail.length
+        if (budget <= 0) return fileName.take(MAX_FILE_NAME_LENGTH)
+        return "${fileName.substringBeforeLast('.').take(budget)}$tail"
+    }
 
     private const val DEFAULT_NAME = "unknown"
 }

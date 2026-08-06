@@ -92,6 +92,41 @@ class LegacyImageResizerTest {
 
             assertThat(result.fileName).isEqualTo("photo_resize.jpg")
         }
+
+        /**
+         * SF `UploadFile__c.Name` 은 표준 Name 필드라 80자 제한이다. 초과하면 SF 가 STRING_TOO_LONG 으로
+         * DML 을 거부하고 `RESULT_CODE=0 / 'ERROR'` 만 돌려줘 원인을 알 수 없다(2026-08-06 실제 장애).
+         */
+        @Test
+        fun `iOS image_picker 임시 파일명은 80자 이내로 잘린다`() {
+            // 실제 실패했던 파일명 (88자).
+            val actual = "image_picker_5962C445-86AD-4230-A0BA-9631D9BF296A-69444-00001238B487D8A7_jpeg.jpg"
+
+            val result = LegacyImageResizer.resize(imageBytes(100, 100), actual)
+
+            assertThat(result.fileName).hasSizeLessThanOrEqualTo(80)
+            // 확장자와 _resize 접미는 보존된다 — 잘리는 건 base 부분뿐.
+            assertThat(result.fileName).endsWith("_resize.jpg")
+            assertThat(result.fileName).startsWith("image_picker_5962C445")
+        }
+
+        @Test
+        fun `80자 이내면 그대로 둔다`() {
+            val result = LegacyImageResizer.resize(imageBytes(100, 100), "photo.jpg")
+
+            assertThat(result.fileName).isEqualTo("photo_resize.jpg")
+        }
+
+        @Test
+        fun `리사이즈 skip 경로(원본 파일명 유지)에도 80자 제한이 걸린다`() {
+            val longHeic = "image_picker_5962C445-86AD-4230-A0BA-9631D9BF296A-69444-00001238B487D8A7_x.heic"
+
+            val result = LegacyImageResizer.resize(byteArrayOf(1, 2, 3), longHeic)
+
+            assertThat(result.resized).isFalse()
+            assertThat(result.fileName).hasSizeLessThanOrEqualTo(80)
+            assertThat(result.fileName).endsWith(".heic")
+        }
     }
 
     @Nested
