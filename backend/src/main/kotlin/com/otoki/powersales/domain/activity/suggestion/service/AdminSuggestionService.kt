@@ -253,9 +253,13 @@ class AdminSuggestionService(
         val attachments = photos?.mapIndexedNotNull { index, file ->
             if (file.isEmpty) return@mapIndexedNotNull null
             val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
+            // SF 전송용 공유 버킷 사본 (mobile [SuggestionService.create] 정합) — 등록 직후 AFTER_COMMIT 릴레이가
+            // 이 sfUniqueKey 를 SF `/ProposalRegist` 로 보낸다.
+            val sfKey = fileStorageService.uploadSuggestionPhotoForSf(file, employee.employeeCode, index + 1)
             val uploadFile = UploadFile(
                 name = file.originalFilename,
                 uniqueKey = key,
+                sfUniqueKey = sfKey,
                 fileSize = suggestionService.formatFileSize(file.size),
                 parentType = UploadFileParentTypes.SUGGESTION,
                 parentId = saved.id,
@@ -374,9 +378,16 @@ class AdminSuggestionService(
         return photos.mapIndexedNotNull { index, file ->
             if (file.isEmpty) return@mapIndexedNotNull null
             val key = fileStorageService.uploadSuggestionPhoto(file, suggestion.id)
+            // 재전송(sf-claim-resend) 시 SF 로 보낼 수 있도록 공유 버킷 사본도 함께 만든다.
+            val sfKey = fileStorageService.uploadSuggestionPhotoForSf(
+                file,
+                suggestion.employee?.employeeCode,
+                baseIndex + index + 1
+            )
             val uploadFile = UploadFile(
                 name = file.originalFilename,
                 uniqueKey = key,
+                sfUniqueKey = sfKey,
                 fileSize = suggestionService.formatFileSize(file.size),
                 parentType = UploadFileParentTypes.SUGGESTION,
                 parentId = suggestion.id,
@@ -413,6 +424,10 @@ class AdminSuggestionService(
 
         uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let {
             fileStorageService.deleteSuggestionPhoto(it)
+        }
+        // SF 공유 버킷 사본도 함께 정리 (mobile [SuggestionService.deletePhoto] 정합).
+        uploadFile.sfUniqueKey?.takeIf { it.isNotBlank() }?.let {
+            fileStorageService.deleteSuggestionPhotoForSf(it)
         }
         uploadFile.isDeleted = true
         uploadFileRepository.save(uploadFile)

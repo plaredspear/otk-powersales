@@ -220,6 +220,11 @@ app:
     s3:
       bucket: ${S3_BUCKET:}
       public-url-prefix: ${S3_PUBLIC_URL_PREFIX:}
+      # SF 공유 이미지 저장소 버킷 (레거시 ottogi-nonsap-dev/prd-imagerepository-s3).
+      # SF 는 물류클레임 사진을 바이트로 받지 않고 UniqueKey 를 이 버킷 주소에 concat 해 렌더하므로,
+      # SF 로 보낼 사진 사본은 반드시 이 버킷에 익명 read 가능 객체로 올라가야 한다.
+      # 미설정 시 SF 사본 업로드를 skip 하고 private key 로 fallback 전송한다(= SF 이미지 깨짐, 경고 로그).
+      sf-image-bucket: ${SF_IMAGE_S3_BUCKET:}
   domain:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}

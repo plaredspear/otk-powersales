@@ -39,4 +39,23 @@ interface StorageService {
 
 	/** private/ 객체 삭제. */
 	fun deletePrivate(uniqueKey: String)
+
+	// ───── SF 공유 이미지 저장소(레거시 버킷) 연산 ─────
+	// SF Apex REST(`/ProposalRegist`) 는 이미지 **바이트를 받지 않고** UniqueKey 문자열만 저장한 뒤,
+	// 렌더 시점에 `https://ottogi-nonsap-{dev|prd}-imagerepository-s3.s3.amazonaws.com/` + UniqueKey 로
+	// URL 을 조립한다 (CustomLabel / ProposalToExcel.page / VisualforceToExcel.page / SiteImage__c formula).
+	// 따라서 SF 로 보낼 키는 반드시 **그 레거시 공유 버킷의 익명 read 가능 객체**여야 한다 — 파워세일즈
+	// 전용 버킷의 private 객체 key 를 보내면 SF 화면에서 이미지가 깨진다.
+
+	/**
+	 * SF 공유 이미지 저장소 버킷에 익명 read 가능한 객체로 업로드한다 (레거시 `AWSService.uploadAWS` 정합 —
+	 * 평면 key + PublicRead).
+	 *
+	 * @param uniqueKey SF `UploadFile__c.UniqueKey__c` 로 전송할 key. 도메인이 직접 소유한다(레거시 key 규칙 재현).
+	 * @return 업로드된 key. 공유 버킷이 설정되지 않은 환경이면 null.
+	 */
+	fun uploadSfShared(uniqueKey: String, bytes: ByteArray, contentType: String): String?
+
+	/** SF 공유 이미지 저장소 객체 삭제. 공유 버킷 미설정이면 no-op. */
+	fun deleteSfShared(uniqueKey: String)
 }

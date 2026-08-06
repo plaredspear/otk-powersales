@@ -30,7 +30,9 @@ import java.time.format.DateTimeFormatter
  *    enhancement 환경의 LAZY 미초기화 함정을 회피한다.
  *
  * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/FileName/FileSize)만 전송하는 방식이라, 등록 시
- * 저장된 UploadFile row 의 uniqueKey/name/fileSize 를 1·2번 슬롯(최대 2장)에 채운다 — S3 재다운로드 불필요.
+ * 저장된 UploadFile row 의 sfUniqueKey / name / fileSize 를 1·2번 슬롯(최대 2장)에 채운다 — 재업로드 불필요.
+ * uniqueKey 가 아니라 sfUniqueKey 인 이유: SF 는 받은 key 를 레거시 공유 버킷 주소에 concat 해 이미지를
+ * 렌더하므로, 파워세일즈 전용 버킷의 private key 를 보내면 SF 화면에서 이미지가 깨진다.
  * fileSize 는 등록 시 `formatFileSize()`(레거시 ImageUtil.getFileSize 정합)로 저장된 포맷 문자열 그대로다.
  */
 @Service
@@ -63,10 +65,17 @@ class SuggestionSfResendService(
             }
             val photoMetas = uploadFileRepository
                 .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
-                .filter { !it.uniqueKey.isNullOrBlank() }
-                .sortedBy { it.createdAt }
+                .mapNotNull { file ->
+                    // SF 로 보낼 key 는 SF 공유 버킷 사본의 key 다 — unique_key(파워세일즈 전용 버킷 private key)를
+                    // 보내면 SF 가 조립하는 URL 이 항상 깨진다. sf_unique_key 도입 이전 row 만 unique_key 로 fallback.
+                    val sfKey = file.sfUniqueKey?.takeIf { it.isNotBlank() }
+                        ?: file.uniqueKey?.takeIf { it.isNotBlank() }
+                        ?: return@mapNotNull null
+                    file to sfKey
+                }
+                .sortedBy { (file, _) -> file.createdAt }
                 .take(MAX_PHOTO_SLOTS)
-                .map { SfPhotoMeta(uniqueKey = it.uniqueKey!!, fileName = it.name, fileSize = it.fileSize) }
+                .map { (file, sfKey) -> SfPhotoMeta(uniqueKey = sfKey, fileName = file.name, fileSize = file.fileSize) }
             buildSfApiMap(suggestion, photoMetas)
         } ?: return null
 

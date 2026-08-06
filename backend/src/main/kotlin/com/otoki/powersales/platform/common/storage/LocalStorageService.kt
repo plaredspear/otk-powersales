@@ -97,6 +97,25 @@ class LocalStorageService : StorageService {
 		store.remove(StorageConstants.privateKey(uniqueKey))
 	}
 
+	// SF 공유 이미지 저장소는 로컬에 없으므로 별도 네임스페이스로만 구분해 담아둔다 (S3 impl 과 동일 계약).
+	override fun uploadSfShared(uniqueKey: String, bytes: ByteArray, contentType: String): String {
+		if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) {
+			throw UnsupportedMediaTypeException(contentType)
+		}
+		if (bytes.size.toLong() > StorageConstants.MAX_FILE_BYTES) {
+			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.MAX_FILE_BYTES)
+		}
+
+		store[sfSharedKey(uniqueKey)] = bytes.copyOf()
+		return uniqueKey
+	}
+
+	override fun deleteSfShared(uniqueKey: String) {
+		store.remove(sfSharedKey(uniqueKey))
+	}
+
+	private fun sfSharedKey(uniqueKey: String): String = "$SF_SHARED_NAMESPACE/$uniqueKey"
+
 	private fun buildKey(domain: String, originalName: String): String {
 		val today = LocalDate.now()
 		val ext = extractExtension(originalName)
@@ -113,5 +132,9 @@ class LocalStorageService : StorageService {
 	private fun extractExtension(filename: String): String {
 		val dot = filename.lastIndexOf('.')
 		return if (dot > 0) filename.substring(dot) else ""
+	}
+
+	private companion object {
+		const val SF_SHARED_NAMESPACE = "sf-shared"
 	}
 }

@@ -368,6 +368,7 @@ class AdminSuggestionServiceTest {
             val savedSuggestion = suggestionOf(adminEmployee)
             every { suggestionRepository.save(any<Suggestion>()) } returns savedSuggestion
             every { fileStorageService.uploadSuggestionPhoto(any(), any()) } returns "uploads/suggestion/new.jpg"
+            every { fileStorageService.uploadSuggestionPhotoForSf(any(), any(), any()) } returns "1750000000000EMP_1"
             every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg<UploadFile>().also { } }
 
             val photo: MultipartFile = MockMultipartFile("photos", "p.jpg", "image/jpeg", byteArrayOf(1, 2))
@@ -546,6 +547,7 @@ class AdminSuggestionServiceTest {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
             } returns listOf(photoOf())  // existing = 1
             every { fileStorageService.uploadSuggestionPhoto(any(), any()) } returns "uploads/suggestion/new.jpg"
+            every { fileStorageService.uploadSuggestionPhotoForSf(any(), any(), any()) } returns "1750000000000EMP_1"
             every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg<UploadFile>() }
 
             val photos = (1..3).map { MockMultipartFile("photos", "$it.jpg", "image/jpeg", byteArrayOf(1)) }

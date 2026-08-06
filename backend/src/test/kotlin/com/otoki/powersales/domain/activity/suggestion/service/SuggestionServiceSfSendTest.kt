@@ -13,18 +13,27 @@ import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchSe
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
+import io.mockk.CapturingSlot
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.transaction.support.TransactionCallback
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
+import java.util.Optional
 
 @DisplayName("SuggestionService - SF ProposalRegist dual-write payload/상태 전이")
 class SuggestionServiceSfSendTest {
@@ -63,6 +72,11 @@ class SuggestionServiceSfSendTest {
         claimDate = claimDate,
         carNumber = carNumber,
     )
+
+    private companion object {
+        /** 파워세일즈 전용 버킷의 private key — SF 가 렌더하지 못하는 형식. */
+        const val PRIVATE_KEY = "uploads/suggestion/2026/08/06/uuid.jpg"
+    }
 
     @Nested
     @DisplayName("buildSfApiMap — 레거시 ProposalRegist Input key 정합 + pwrskey")
@@ -141,6 +155,59 @@ class SuggestionServiceSfSendTest {
             // 레거시 ImageUtil.getFileSize() 포맷 문자열 그대로 (raw byte 정수 아님).
             assertThat(map).containsEntry("S3ImageFileSize1", "200.0KB")
             assertThat(map).doesNotContainKey("S3ImageUniqueKey2")
+        }
+    }
+
+    @Nested
+    @DisplayName("create — SF 로 보내는 이미지 key 는 SF 공유 버킷 사본")
+    inner class CreatePhotoKey {
+
+        /**
+         * SF `IF_REST_MOBILE_ProposalRegist` 는 이미지 바이트를 받지 않고 UniqueKey 문자열만 `UploadFile__c` 에
+         * 저장한 뒤, 렌더 시점에 레거시 공유 버킷 주소(`ottogi-nonsap-*-imagerepository-s3`)에 그 key 를 concat 한다.
+         * 따라서 파워세일즈 전용 버킷의 private key 를 보내면 SF 화면의 이미지가 항상 깨진다.
+         */
+        @Test
+        fun `S3ImageUniqueKey 는 공유 버킷 사본 key — private uploads 키를 보내지 않는다`() {
+            val sent = stubCreateFlow(sfKey = "1750000000000E777_1")
+
+            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1750000000000E777_1")
+            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a.jpg")
+        }
+
+        /** 공유 버킷 미설정 환경에서도 등록 자체는 진행 — 이미지 슬롯은 private key 로 fallback 한다. */
+        @Test
+        fun `공유 버킷 사본이 없으면 private key 로 fallback 하고 등록은 계속된다`() {
+            val sent = stubCreateFlow(sfKey = null)
+
+            service.create(1L, request(), listOf(MockMultipartFile("photos", "a.jpg", "image/jpeg", byteArrayOf(1))))
+
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo(PRIVATE_KEY)
+        }
+
+        private fun stubCreateFlow(sfKey: String?): CapturingSlot<Map<String, Any?>> {
+            every { validator.validate(any(), any(), any(), any(), any(), any()) } just Runs
+            every { employeeRepository.findById(1L) } returns
+                Optional.of(Employee(id = 1L, employeeCode = "E777", name = "사원"))
+            every { productRepository.findByProductCode(any()) } returns null
+            every { accountRepository.findById(any()) } returns Optional.empty()
+            every { suggestionRepository.nextProposalNumberSeqValue() } returns 1L
+            every { suggestionRepository.save(any<Suggestion>()) } answers { firstArg() }
+            every { suggestionRepository.findByIdAndIsDeletedFalse(any()) } returns
+                Suggestion(proposalNumber = "S-20260806-000001")
+            every { suggestionDraftRepository.findByEmployeeId(1L) } returns null
+            every { fileStorageService.uploadSuggestionPhoto(any(), any()) } returns PRIVATE_KEY
+            every { fileStorageService.uploadSuggestionPhotoForSf(any(), any(), any()) } returns sfKey
+            every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg() }
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://presigned"
+            every { txTemplate.execute<Any?>(any()) } answers {
+                firstArg<TransactionCallback<Any?>>().doInTransaction(mockk(relaxed = true))
+            }
+            return slot<Map<String, Any?>>().also {
+                every { sfOutboundClient.callApi(any(), capture(it)) } returns SfApiResponse("200", "OK", "{}")
+            }
         }
     }
 

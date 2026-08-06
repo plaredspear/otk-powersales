@@ -41,6 +41,15 @@ class UploadFile(
     @Column(name = "unique_key", length = 500)
     val uniqueKey: String? = null,
 
+    // SF 공유 이미지 저장소(레거시 ottogi-nonsap-{dev|prd}-imagerepository-s3) 사본의 key.
+    // SF 는 이미지 바이트를 받지 않고 이 값을 자기 버킷 URL 에 concat 해 렌더하므로, SF `UploadFile__c.UniqueKey__c`
+    // 로 전송하는 값은 unique_key(파워세일즈 전용 버킷 private key) 가 아니라 이 컬럼이다.
+    // SF 필드 역매핑이 아니라 "SF 로 무엇을 보냈는가" 의 로컬 기록이므로 @SFField 를 붙이지 않는다.
+    // null = 공유 버킷 미설정 환경 또는 본 컬럼 도입 이전 row (그 경우 unique_key 로 fallback 전송).
+    @FieldName("SF유니크키")
+    @Column(name = "sf_unique_key", length = 500)
+    var sfUniqueKey: String? = null,
+
     // SF RecordId__c = 부모 SObject 의 sfid (parent_type 별로 claim/notice/proposal/site_activity).
     // *_sfid 패턴으로 명명 — Stage2 polymorphic-parent substep 이 (parent_type, record_sfid) → parent_id 변환.
     @SFField("RecordId__c")

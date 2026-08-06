@@ -131,12 +131,46 @@ class FileStorageService(
 	}
 
 	/**
+	 * 제안(물류 클레임) 첨부 사진의 **SF 공유 버킷 사본** 업로드.
+	 *
+	 * SF `/ProposalRegist` 는 이미지 바이트를 받지 않고 `UploadFile__c.UniqueKey__c` 만 저장한 뒤, 렌더 시점에
+	 * `https://ottogi-nonsap-{dev|prd}-imagerepository-s3.s3.amazonaws.com/` + UniqueKey 로 URL 을 조립한다.
+	 * 그래서 파워세일즈 전용 버킷의 private key 를 보내면 SF 화면에서 이미지가 깨진다 — 앱 조회용 private 사본
+	 * ([uploadSuggestionPhoto]) 과 **별도로** 레거시 공유 버킷에 익명 read 사본을 1장 더 올리고, 그 key 를 SF 에 보낸다.
+	 *
+	 * key 형식은 레거시 `AWSService.uploadAWS`(= `System.currentTimeMillis() + 사번`) 정합이되, 같은 밀리초에
+	 * 2장을 연속 업로드하면 키가 겹쳐 뒷장이 앞장을 덮어쓰는 레거시 결함이 있어 슬롯 번호를 덧붙인다.
+	 * SF 는 key 를 파싱하지 않고 URL 에 그대로 concat 하므로 형식 자유도가 있다.
+	 *
+	 * @return 업로드된 key. 공유 버킷 미설정 환경이면 null.
+	 */
+	fun uploadSuggestionPhotoForSf(file: MultipartFile, employeeCode: String?, slot: Int): String? {
+		validateNotEmpty(file)
+		return storageService.uploadSfShared(
+			uniqueKey = buildSfSharedKey(employeeCode, slot),
+			bytes = file.bytes,
+			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+		)
+	}
+
+	/**
 	 * 제안(물류 클레임) 첨부 사진 삭제 (Spec #828). private/ 객체로 저장되므로 deletePrivate 로 삭제한다
 	 * (실 객체 key = private/ + uniqueKey). 레거시 마이그레이션 키(segment·uploads 미포함)도 private/ 합성으로 처리.
 	 */
 	fun deleteSuggestionPhoto(fileKey: String) {
 		storageService.deletePrivate(fileKey)
 	}
+
+	/**
+	 * 제안(물류 클레임) 첨부 사진의 SF 공유 버킷 사본 삭제 (레거시 `del_img` → `awsService.deleteAWS` 정합).
+	 * 사본을 지우면 SF 화면의 해당 이미지는 더 이상 로드되지 않는다 (SF `UploadFile__c` row 자체는 SF 소관).
+	 */
+	fun deleteSuggestionPhotoForSf(fileKey: String) {
+		storageService.deleteSfShared(fileKey)
+	}
+
+	private fun buildSfSharedKey(employeeCode: String?, slot: Int): String =
+		"${System.currentTimeMillis()}${employeeCode.orEmpty()}_$slot"
 
 	/**
 	 * 현장점검(site-activity) 사진 업로드. 현장점검 데이터는 "본인만 조회"로 권한 통제되므로

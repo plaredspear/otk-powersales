@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
@@ -39,7 +40,7 @@ class S3StorageServiceTest {
 
 	@BeforeEach
 	fun setUp() {
-		service = S3StorageService(s3Client, "test-bucket")
+		service = S3StorageService(s3Client, "test-bucket", "sf-shared-bucket")
 	}
 
 	@Nested
@@ -189,6 +190,89 @@ class S3StorageServiceTest {
 			service.deletePrivate("uploads/claim/2026/01/01/x.jpg")
 
 			assertThat(captured.captured.key()).isEqualTo("private/uploads/claim/2026/01/01/x.jpg")
+		}
+	}
+
+	@Nested
+	@DisplayName("SF 공유 이미지 저장소 - 레거시 버킷 + 익명 read")
+	inner class SfSharedTests {
+
+		@Test
+		@DisplayName("uploadSfShared - 공유 버킷에 PublicRead ACL 로 평면 key PUT (private/ segment 없음)")
+		fun uploadSfShared_putsPublicReadIntoSharedBucket() {
+			val captured: CapturingSlot<PutObjectRequest> = slot()
+			every { s3Client.putObject(capture(captured), any<RequestBody>()) } returns
+				PutObjectResponse.builder().build()
+
+			val result = service.uploadSfShared("1750000000000EMP001_1", byteArrayOf(1, 2, 3), "image/jpeg")
+
+			val request = captured.captured
+			// SF 는 이 key 를 레거시 버킷 URL 에 그대로 concat 하므로 버킷/키/ACL 세 가지가 모두 맞아야 한다.
+			assertThat(request.bucket()).isEqualTo("sf-shared-bucket")
+			assertThat(request.key()).isEqualTo("1750000000000EMP001_1")
+			assertThat(request.acl()).isEqualTo(ObjectCannedACL.PUBLIC_READ)
+			assertThat(result).isEqualTo("1750000000000EMP001_1")
+		}
+
+		@Test
+		@DisplayName("ACL 비활성 버킷(AccessControlListNotSupported) - ACL 없이 재시도해 성공")
+		fun uploadSfShared_retriesWithoutAclWhenAclDisabled() {
+			val aclEx = S3Exception.builder()
+				.awsErrorDetails(
+					AwsErrorDetails.builder()
+						.errorCode("AccessControlListNotSupported")
+						.errorMessage("The bucket does not allow ACLs")
+						.build()
+				)
+				.build() as S3Exception
+			val captured = mutableListOf<PutObjectRequest>()
+			every { s3Client.putObject(capture(captured), any<RequestBody>()) } answers {
+				if (captured.last().acl() != null) throw aclEx else PutObjectResponse.builder().build()
+			}
+
+			val result = service.uploadSfShared("key-1", byteArrayOf(1), "image/jpeg")
+
+			assertThat(result).isEqualTo("key-1")
+			assertThat(captured).hasSize(2)
+			assertThat(captured[1].acl()).isNull()
+		}
+
+		@Test
+		@DisplayName("ACL 외 S3Exception 은 재시도 없이 StorageWriteFailedException")
+		fun uploadSfShared_propagatesOtherS3Failures() {
+			val s3Ex = S3Exception.builder()
+				.awsErrorDetails(AwsErrorDetails.builder().errorCode("AccessDenied").errorMessage("denied").build())
+				.build() as S3Exception
+			every { s3Client.putObject(any<PutObjectRequest>(), any<RequestBody>()) } throws s3Ex
+
+			assertThatThrownBy { service.uploadSfShared("key-1", byteArrayOf(1), "image/jpeg") }
+				.isInstanceOf(StorageWriteFailedException::class.java)
+			verify(exactly = 1) { s3Client.putObject(any<PutObjectRequest>(), any<RequestBody>()) }
+		}
+
+		@Test
+		@DisplayName("공유 버킷 미설정 - PUT 없이 null 반환 (기동 실패시키지 않음)")
+		fun uploadSfShared_skipsWhenBucketUnset() {
+			val unconfigured = S3StorageService(s3Client, "test-bucket", "")
+
+			assertThat(unconfigured.uploadSfShared("key-1", byteArrayOf(1), "image/jpeg")).isNull()
+
+			verify(exactly = 0) { s3Client.putObject(any<PutObjectRequest>(), any<RequestBody>()) }
+		}
+
+		@Test
+		@DisplayName("deleteSfShared - 공유 버킷에서 삭제, 미설정이면 no-op")
+		fun deleteSfShared_deletesFromSharedBucket() {
+			val captured: CapturingSlot<DeleteObjectRequest> = slot()
+			every { s3Client.deleteObject(capture(captured)) } returns DeleteObjectResponse.builder().build()
+
+			service.deleteSfShared("key-1")
+
+			assertThat(captured.captured.bucket()).isEqualTo("sf-shared-bucket")
+			assertThat(captured.captured.key()).isEqualTo("key-1")
+
+			S3StorageService(s3Client, "test-bucket", "").deleteSfShared("key-2")
+			verify(exactly = 1) { s3Client.deleteObject(any<DeleteObjectRequest>()) }
 		}
 	}
 }

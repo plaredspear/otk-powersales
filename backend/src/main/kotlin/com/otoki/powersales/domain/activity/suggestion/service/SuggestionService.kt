@@ -195,19 +195,33 @@ class SuggestionService(
             val attachments = photos?.mapIndexedNotNull { index, file ->
                 if (file.isEmpty) return@mapIndexedNotNull null
                 val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
+                // SF 는 사진 바이트를 받지 않고 UniqueKey 를 레거시 공유 버킷 주소에 concat 해 렌더하므로,
+                // 앱 조회용 private 사본과 별개로 그 버킷에 익명 read 사본을 1장 더 올리고 그 key 를 SF 에 보낸다.
+                val sfKey = fileStorageService.uploadSuggestionPhotoForSf(file, employee.employeeCode, index + 1)
+                if (sfKey == null) {
+                    log.warn(
+                        "SF 공유 버킷 사본 미생성 — SF 화면에서 이미지가 보이지 않는다 suggestionId={} slot={}",
+                        saved.id, index + 1
+                    )
+                }
                 // 레거시 `ImageUtil.getFileSize()` 정합 — SF `S3ImageFileSize`/`UploadFile__c.Size__c`(Text) 는
                 // raw byte 정수가 아니라 포맷 문자열("200.0KB")을 저장한다. DB 저장값과 SF 전송값을 동일하게 맞춘다.
                 val formattedSize = formatFileSize(file.size)
                 val uploadFile = UploadFile(
                     name = file.originalFilename,
                     uniqueKey = key,
+                    sfUniqueKey = sfKey,
                     fileSize = formattedSize,
                     parentType = UploadFileParentTypes.SUGGESTION,
                     parentId = saved.id,
                     isDeleted = false
                 )
                 val savedFile = uploadFileRepository.save(uploadFile)
-                photoMetas += SfPhotoMeta(uniqueKey = key, fileSize = formattedSize, fileName = file.originalFilename)
+                photoMetas += SfPhotoMeta(
+                    uniqueKey = sfKey ?: key,
+                    fileSize = formattedSize,
+                    fileName = file.originalFilename
+                )
                 SuggestionAttachment(
                     id = savedFile.id,
                     s3Url = composeS3Url(key),
@@ -516,6 +530,10 @@ class SuggestionService(
 
         uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let {
             fileStorageService.deleteSuggestionPhoto(it)
+        }
+        // SF 공유 버킷 사본도 함께 정리 (레거시 `del_img` → `awsService.deleteAWS` 정합).
+        uploadFile.sfUniqueKey?.takeIf { it.isNotBlank() }?.let {
+            fileStorageService.deleteSuggestionPhotoForSf(it)
         }
 
         uploadFile.isDeleted = true

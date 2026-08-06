@@ -9,9 +9,14 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient
+import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -53,6 +58,15 @@ class SuggestionSfResendServiceTest {
             every { this@mockk.claimDate } returns claimDate
             every { this@mockk.carNumber } returns carNumber
         }
+    }
+
+    /** Tx2(applySfResult) 가 건드리는 전송상태 필드 stub — payload 검증 테스트의 관심사가 아니다. */
+    private fun stubStatusTransition(target: Suggestion) {
+        every { target.sfSendAttemptCount } returns 0
+        every { target.sfSendAttemptCount = any() } just Runs
+        every { target.sfSendStatus = any() } just Runs
+        every { target.sfSentAt = any() } just Runs
+        every { target.sfSendFailMessage = any() } just Runs
     }
 
     @Nested
@@ -151,6 +165,73 @@ class SuggestionSfResendServiceTest {
     @Nested
     @DisplayName("resend — 상태 가드")
     inner class Resend {
+
+        /**
+         * SF 는 이미지 바이트를 받지 않고 UniqueKey 를 레거시 공유 버킷 주소에 concat 해 렌더한다.
+         * 따라서 재전송 payload 도 파워세일즈 전용 버킷의 private key(unique_key) 가 아니라
+         * 공유 버킷 사본 key(sf_unique_key) 를 실어야 한다.
+         */
+        @Test
+        fun `payload 이미지 key 는 sf_unique_key — private unique_key 를 보내지 않는다`() {
+            val target = suggestion(id = 7L)
+            every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
+            every { suggestionRepository.findByIdWithSfRefs(7L) } returns target
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 7L)
+            } returns listOf(
+                UploadFile(
+                    name = "a.jpg",
+                    uniqueKey = "uploads/suggestion/2026/08/06/uuid.jpg",
+                    sfUniqueKey = "1750000000000E777_1",
+                    fileSize = "200.0KB",
+                    parentType = UploadFileParentTypes.SUGGESTION,
+                    parentId = 7L,
+                )
+            )
+            stubStatusTransition(target)
+            every { txTemplate.execute<Any?>(any()) } answers {
+                val cb = firstArg<org.springframework.transaction.support.TransactionCallback<Any?>>()
+                cb.doInTransaction(mockk(relaxed = true))
+            }
+            val sent = slot<Map<String, Any?>>()
+            every { sfOutboundClient.callApi(any(), capture(sent)) } returns SfApiResponse("200", "OK", "{}")
+
+            service.resend(7L)
+
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1750000000000E777_1")
+            assertThat(sent.captured["S3ImageFileName1"]).isEqualTo("a.jpg")
+        }
+
+        /** sf_unique_key 도입 이전 row 는 unique_key 로 fallback — 전송 자체가 누락되지 않는다. */
+        @Test
+        fun `sf_unique_key 가 없는 과거 row 는 unique_key 로 fallback`() {
+            val target = suggestion(id = 8L)
+            every { target.sfSendStatus } returns SuggestionSfSendStatus.SEND_FAILED
+            every { suggestionRepository.findByIdWithSfRefs(8L) } returns target
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, 8L)
+            } returns listOf(
+                UploadFile(
+                    name = "legacy.jpg",
+                    uniqueKey = "1699999999999E777",
+                    sfUniqueKey = null,
+                    fileSize = "100.0KB",
+                    parentType = UploadFileParentTypes.SUGGESTION,
+                    parentId = 8L,
+                )
+            )
+            stubStatusTransition(target)
+            every { txTemplate.execute<Any?>(any()) } answers {
+                val cb = firstArg<org.springframework.transaction.support.TransactionCallback<Any?>>()
+                cb.doInTransaction(mockk(relaxed = true))
+            }
+            val sent = slot<Map<String, Any?>>()
+            every { sfOutboundClient.callApi(any(), capture(sent)) } returns SfApiResponse("200", "OK", "{}")
+
+            service.resend(8L)
+
+            assertThat(sent.captured["S3ImageUniqueKey1"]).isEqualTo("1699999999999E777")
+        }
 
         @Test
         fun `SEND_FAILED 가 아니면 SF 호출 없이 skip`() {
