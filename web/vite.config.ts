@@ -38,7 +38,10 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // userEvent.type 한글 입력 + Form validation + mutation 처리 누적으로 전체 테스트 실행 시
     // 5초 기본 timeout 을 초과하는 케이스가 다수 발생. 개별 it 마다 명시하던 timeout 옵션을
-    // 전역 10초로 통일 — 신규 테스트 추가 시에도 일관 적용.
-    testTimeout: 10000,
+    // 전역으로 통일 — 신규 테스트 추가 시에도 일관 적용.
+    // 20초인 이유: Vite transform 캐시가 비어 있는 첫 실행(CI 신규 러너 / 캐시 삭제 후)에는
+    // 62개 파일 병렬 transform 이 워커를 굶겨 개별 테스트 wall-clock 이 평소의 수 배가 된다.
+    // 10초에서는 이때 무거운 antd 폼 테스트가 일제히 timeout 났다(캐시 warm 상태면 전부 통과).
+    testTimeout: 20000,
   },
 })
