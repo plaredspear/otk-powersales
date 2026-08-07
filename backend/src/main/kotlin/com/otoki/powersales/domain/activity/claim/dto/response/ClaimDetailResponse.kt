@@ -34,6 +34,8 @@ data class ClaimDetailResponse(
     val defectQuantity: BigDecimal? = null,
     val sampleCollectionFlag: Boolean? = null,
     // status/statusLabel : SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용.
+    // statusLabel 은 사원 화면 문구인 ClaimStatus.mobileLabel (DRAFT="조치중"). SF/DB 원본값이
+    // 필요하면 status(enum name) 로 판정한다.
     val status: String?,
     val statusLabel: String?,
     // sfSendStatus/sfSendStatusLabel : 신규→SF 전송상태 (ClaimSfSendStatus). 재전송 버튼 판정 축.
@@ -95,7 +97,7 @@ data class ClaimDetailResponse(
             defectQuantity = claim.defectQuantity,
             sampleCollectionFlag = claim.sampleCollectionFlag,
             status = claim.status?.name,
-            statusLabel = claim.status?.displayName,
+            statusLabel = claim.status?.mobileLabel,
             sfSendStatus = claim.sfSendStatus?.name,
             sfSendStatusLabel = claim.sfSendStatus?.displayName,
             customerDeliveryDate = claim.customerDeliveryDate,

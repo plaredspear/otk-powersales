@@ -66,7 +66,8 @@ class ClaimQueryServiceTest {
             assertThat(result).hasSize(1)
             assertThat(result[0].claimId).isEqualTo(1L)
             assertThat(result[0].status).isEqualTo("DRAFT")
-            assertThat(result[0].statusLabel).isEqualTo("임시저장")
+            // 사원 화면 문구 — SF 원본 "임시저장" 이 아니라 ClaimStatus.mobileLabel.
+            assertThat(result[0].statusLabel).isEqualTo("조치중")
         }
 
         @Test
@@ -173,7 +174,7 @@ class ClaimQueryServiceTest {
 
             assertThat(result.claimId).isEqualTo(1L)
             assertThat(result.status).isEqualTo("DRAFT")
-            assertThat(result.statusLabel).isEqualTo("임시저장")
+            assertThat(result.statusLabel).isEqualTo("조치중")
             assertThat(result.dateType).isEqualTo("EXPIRY_DATE")
             assertThat(result.dateTypeLabel).isEqualTo("유통기한")
             assertThat(result.photos).hasSize(1)

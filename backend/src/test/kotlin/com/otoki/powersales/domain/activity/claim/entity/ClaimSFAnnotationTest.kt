@@ -203,6 +203,18 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
+        @DisplayName("mobileLabel — 사원 화면 문구는 DRAFT 만 다르고 저장값(displayName) 은 불변")
+        fun claimStatusMobileLabel() {
+            // DRAFT 의 SF 원본 "임시저장" 은 사원에게 ① 이미 접수된 건이고 ② 클레임 등록 화면의
+            // 진짜 임시저장(이어쓰기) 과 같은 단어라 혼동을 줘서 모바일에서만 "조치중" 으로 표시한다.
+            // SF restricted picklist 라 displayName 자체는 절대 바꿀 수 없다.
+            assertThat(ClaimStatus.DRAFT.mobileLabel).isEqualTo("조치중")
+            assertThat(ClaimStatus.DRAFT.displayName).isEqualTo("임시저장")
+            assertThat(ClaimStatus.SENT.mobileLabel).isEqualTo(ClaimStatus.SENT.displayName)
+            assertThat(ClaimStatus.SEND_FAILED.mobileLabel).isEqualTo(ClaimStatus.SEND_FAILED.displayName)
+        }
+
+        @Test
         @DisplayName("ClaimStatusConverter — enum ↔ DB 한국어 displayName 양방향")
         fun converter() {
             val converter = ClaimStatusConverter()
