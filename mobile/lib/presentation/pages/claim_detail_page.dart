@@ -8,6 +8,7 @@ import '../../domain/entities/claim_detail.dart';
 import '../../domain/entities/claim_photo.dart';
 import '../providers/claim_detail_provider.dart';
 import '../widgets/claim/claim_status_badge.dart';
+import '../widgets/claim/claim_status_info_sheet.dart';
 import '../widgets/common/loading_indicator.dart';
 
 /// 클레임 상세 페이지
@@ -134,9 +135,21 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
   }
 
   Widget _buildStatusSection(ClaimDetail detail) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: ClaimStatusBadge(label: detail.actionStatusLabel),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        ClaimStatusBadge(label: detail.actionStatusLabel),
+        const SizedBox(width: AppSpacing.xs),
+        GestureDetector(
+          onTap: () => ClaimStatusInfoSheet.show(context),
+          behavior: HitTestBehavior.opaque,
+          child: const Icon(
+            Icons.info_outline,
+            size: 16,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
     );
   }
 

@@ -8,6 +8,7 @@ import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/claim_list_provider.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/claim/claim_list_item_card.dart';
+import '../widgets/claim/claim_status_info_sheet.dart';
 import '../widgets/common/date_range_filter_field.dart';
 import '../widgets/common/loading_indicator.dart';
 
@@ -65,7 +66,18 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('제품 클레임 조회')),
+      appBar: AppBar(
+        title: const Text('제품 클레임 조회'),
+        actions: [
+          // 카드 우측 뱃지(조치상태) 가 무엇인지 설명 — 값이 고정 목록이 아니라 안내가 필요하다.
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            color: AppColors.textSecondary,
+            tooltip: '클레임 상태 안내',
+            onPressed: () => ClaimStatusInfoSheet.show(context),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           _buildAccountFilter(state),
