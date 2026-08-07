@@ -293,8 +293,15 @@ class AccountRepositoryCustomImpl(
     /**
      * Naver Geocode batch(#637) 진입 후보 조건 — 좌표 미수신 거래처.
      *
-     * `(latitude IS NULL OR longitude IS NULL) AND address1 IS NOT NULL AND external_key IS NOT NULL
-     * AND account_status_name = '거래'`. 레거시 SOQL(`Batch_AccountLatLong.cls#start`) 동등.
+     * `(latitude IS NULL OR longitude IS NULL) AND address1 IS NOT NULL AND external_key IS NOT NULL`.
+     *
+     * **레거시 이탈 — 거래처상태 필터 제거** (`legacy-deviation.md` §6 외부 연동).
+     * 레거시 SOQL(`Batch_AccountLatLong.cls#start`) 은 `AccountStatusName__c = '거래'` 로 후보를
+     * 좁혀 `출고중지` / `폐업` 거래처는 좌표를 영구히 못 받았다. 특히 SAP 인바운드가 주소 변경을
+     * 수신하면 [AccountUpsertMapper] 가 상태와 무관하게 좌표를 null 로 무효화하는데, 재취득 배치가
+     * `거래` 만 보므로 그 거래처는 좌표 없는 상태로 잔존했다. 상태와 무관하게 좌표를 갱신하도록
+     * 조건을 제거한다 — 좌표는 거래 가능 여부와 무관한 위치 속성이고, 출고중지/폐업 거래처도
+     * 출근 등록(GPS 거리 검증) / 지도 표시 대상이 될 수 있다.
      *
      * [findCoordinatesMissingAccounts] (배치 후보 조회) 와 [findAllAccessibleByPolicy] 의
      * `coordinatesMissing` 필터(거래처 화면 "좌표 미수신" 조회) 가 동일 조건을 쓰도록 단일 출처로 추출.
@@ -303,7 +310,6 @@ class AccountRepositoryCustomImpl(
         account.latitude.isNull.or(account.longitude.isNull)
             .and(account.address1.isNotNull)
             .and(account.externalKey.isNotNull)
-            .and(account.accountStatusName.eq(ACCOUNT_STATUS_ACTIVE))
 
     /**
      * 좌표변환 실패 상한에 도달하지 않은 거래처 — `geocode_fail_count < GeocodeRetryPolicy.MAX_FAIL_COUNT`.
@@ -339,7 +345,6 @@ class AccountRepositoryCustomImpl(
         )
 
     companion object {
-        private const val ACCOUNT_STATUS_ACTIVE = "거래"
         private const val ACCOUNT_STATUS_CLOSED = "폐업"
         private val ACCOUNT_GROUP_SALES_VALUES = listOf("1000", "1010")
     }

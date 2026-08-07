@@ -19,12 +19,18 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 레거시 동작 요약
  * 1. 입력: `(latitude=null OR longitude=null) AND address1!=null AND external_key!=null AND account_status_name='거래'` 거래처 1000건
+ *    (신규는 `account_status_name` 조건 미적용 — 아래 "신규 차이" 참조)
  * 2. 거래처별 직렬 HTTP GET 호출 → Naver API (`https://maps.apigw.ntruss.com/map-geocode/v2/geocode`)
  * 3. 응답 `addresses[0].x` → `longitude` (String), `addresses[0].y` → `latitude` (String) set
  * 4. 부수 효과: `TriggerHandler.bypass('ClientMasterReceiver')` 후 `Database.update(accList, false)` partial-success
  * 5. 분기: HTTP/JSON 예외 catch → `IF_Util.setLog('IF_Util_updateCoords', ..., 'outbound', ...)`
  *
  * ## 신규 차이
+ * - **거래처상태 필터 제거** — 레거시 SOQL 의 `AccountStatusName__c = '거래'` 조건을 적용하지 않는다.
+ *   `출고중지` / `폐업` 거래처도 좌표 미수신이면 동일하게 보강 대상이다. 레거시는 이 조건 때문에
+ *   비-거래 상태 거래처가 좌표를 영구히 못 받았고, 특히 SAP 인바운드가 주소 변경을 수신하면
+ *   [AccountUpsertMapper] 가 상태와 무관하게 좌표를 null 로 무효화하는데 재취득 배치는 `거래` 만 봐서
+ *   좌표 없는 상태로 잔존했다. 참조: `legacy-deviation.md` §6 외부 연동.
  * - DML 실패 audit 미적재 — slf4j WARN + ScheduledJobRunner metadata 의 `failed` 카운터로 대체.
  *   거래처별 단일 트랜잭션 (JPA dirty-checking) 이라 partial-success 적재 단위가 부재. 좌표 null 잔존이 다음 batch 자연 재진입의 신호.
  *   참조: `legacy-deviation.md` §7 시스템·인프라 ("legacy partial-success DML audit → slf4j + ScheduledJobRun metadata 대체")

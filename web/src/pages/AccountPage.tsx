@@ -247,7 +247,7 @@ export default function AccountPage() {
           showIcon
           style={{ marginBottom: 16, flexShrink: 0 }}
           message="좌표 미수신 거래처만 표시 중"
-          description="위/경도가 비어 있는 '거래' 상태 거래처(주소·거래처코드 보유)만 조회합니다. 스케줄 잡 '거래처 좌표변환'(매일 02시)이 이 거래처들의 좌표를 네이버 Geocode API 로 보강하며, 조회에 실패한 거래처는 다음 실행 때 다시 대상이 됩니다."
+          description="위/경도가 비어 있는 거래처(주소·거래처코드 보유)만 조회합니다. 거래처상태는 가리지 않아 '출고중지'·'폐업' 거래처도 포함됩니다. 스케줄 잡 '거래처 좌표변환'(매일 02시)이 이 거래처들의 좌표를 네이버 Geocode API 로 보강하며, 조회에 실패한 거래처는 다음 실행 때 다시 대상이 됩니다."
         />
       )}
       {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}

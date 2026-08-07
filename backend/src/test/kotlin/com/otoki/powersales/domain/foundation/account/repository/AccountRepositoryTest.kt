@@ -237,7 +237,7 @@ class AccountRepositoryTest {
     inner class FindCoordinatesMissingAccountsTests {
 
         @Test
-        @DisplayName("좌표 미수신 + 거래 상태 거래처만 조회")
+        @DisplayName("좌표 미수신 거래처 조회 — 거래처상태 무관 (출고중지/폐업 포함)")
         fun findCoordinatesMissingAccounts_filtersByConditions() {
             // Given — 다양한 조건의 거래처 7건
             // (1) 좌표 모두 null + 조건 충족 → 포함
@@ -250,17 +250,21 @@ class AccountRepositoryTest {
             persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래")
             // (5) externalKey null → 제외
             persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래")
-            // (6) 거래 상태 아님 → 제외
-            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "휴면")
+            // (6) 출고중지 → 포함 (레거시 이탈 — 거래처상태 필터 제거)
+            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "출고중지")
             // (7) longitude 만 null + 거래 → 포함
             persistAccount(externalKey = "EXT-7", latitude = "37.5", longitude = null, accountStatusName = "거래")
+            // (8) 폐업 → 포함 (레거시 이탈)
+            persistAccount(externalKey = "EXT-8", latitude = null, longitude = null, accountStatusName = "폐업")
+            // (9) 상태 null → 포함
+            persistAccount(externalKey = "EXT-9", latitude = null, longitude = null, accountStatusName = null)
 
             // When
             val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
 
-            // Then — (1) (2) (7) 만 매칭 (3건)
-            Assertions.assertThat(result).hasSize(3)
-            Assertions.assertThat(result.map { it.externalKey }).containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-7")
+            // Then — (1) (2) (6) (7) (8) (9) 매칭
+            Assertions.assertThat(result.map { it.externalKey })
+                .containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-6", "EXT-7", "EXT-8", "EXT-9")
         }
 
         @Test
@@ -321,14 +325,14 @@ class AccountRepositoryTest {
             persistAccount(externalKey = "EXT-3", latitude = "37.5", longitude = "127.1", accountStatusName = "거래") // 좌표 있음 → 제외
             persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래") // 주소 없음 → 제외
             persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래") // externalKey 없음 → 제외
-            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "휴면") // 비-거래 → 제외
+            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "폐업") // 비-거래 → 포함 (상태 무관)
 
             // When
             val result = findAllAccessible(coordinatesMissing = true)
 
-            // Then — EXT-1, EXT-2 만 매칭
+            // Then — EXT-1, EXT-2, EXT-6 매칭
             Assertions.assertThat(result.content.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-1", "EXT-2")
+                .containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-6")
         }
 
         @Test
