@@ -170,6 +170,21 @@ class AdminPPTMasterService(
         )
     }
 
+    /**
+     * 전문행사조 마스터 생성.
+     *
+     * 기간 검증 → 중복 검증(동일 사원 + 동일 거래처 + 동일 teamType) → **다른** teamType 유효 마스터 자동 종료
+     * (신규 시작일 -1일) 후 insert. 확정=true + 시작일=오늘이면 사원의 전문행사조를 즉시 갱신하고
+     * 미래 근무일정 삭제 + 이력 insert (`updateEmployeeTeam`).
+     *
+     * 동일 teamType 은 자동 종료 대상이 아니므로 **한 사원이 여러 거래처에 같은 조로 동시 배정**될 수 있다
+     * (거래처1 카레세일조 + 거래처2 카레세일조 공존). 반대로 다른 조를 등록하면 기존 조가 자동 종료되어
+     * 사원의 소속 조(`Employee.professionalPromotionTeam` 단일 값) 는 항상 1개로 수렴한다.
+     *
+     * 레거시 매핑: `PPTMasterTriggerHandler.ChangeToNormal` (before insert) + `ImmediatelyChange` (after insert) — UC-04.
+     * 레거시 동등성: 자동 종료 SOQL 의 `ProfessionalPromotionTeam__c != :신규조 AND EndDate__c = null` 조건을
+     * 그대로 적용 (`autoTerminateExistingMasters`).
+     */
     @Transactional
     fun createMaster(request: PPTMasterCreateRequest): PPTMasterResponse {
         val employee = findEmployeeById(request.employeeId)
@@ -178,8 +193,8 @@ class AdminPPTMasterService(
         validateDateRange(request.startDate, request.endDate)
         validateNoDuplicate(request.employeeId, request.accountId, request.teamType, request.startDate)
 
-        // 동일 사원의 다른 teamType 유효 마스터 자동 종료
-        autoTerminateExistingMasters(request.employeeId, request.startDate)
+        // 동일 사원의 다른 teamType 유효 마스터 자동 종료 (동일 teamType 은 거래처가 달라도 유지)
+        autoTerminateExistingMasters(request.employeeId, request.startDate, request.teamType)
 
         val master = pptMasterRepository.save(
             ProfessionalPromotionTeamMaster(
@@ -215,6 +230,9 @@ class AdminPPTMasterService(
      * 중복 검증 + 동일 사원의 다른 teamType 유효 마스터 자동 종료(신규 시작일 -1일) 후 마스터 update.
      * 확정=true + 시작일=오늘이면 직원의 전문행사조를 즉시 갱신하고 미래 일정 삭제 + 이력 insert.
      *
+     * 자동 종료는 **다른 teamType** 만 대상이므로, 같은 조로 배정된 다른 거래처 마스터는 수정 시에도 유지된다
+     * (`createMaster` KDoc 참조).
+     *
      * 레거시 매핑: PPTMasterTriggerHandler.ChangeToNormal (before update) + ChangeToNormalAfter (after update).
      * 레거시 동등성: before update 의 종료일 자동 set 룰을 신규에서 동등 적용 (자기 객체 자동 종료 — UC-05).
      */
@@ -238,7 +256,7 @@ class AdminPPTMasterService(
         }
 
         // 동일 사원의 다른 teamType 유효 마스터 자동 종료 (본 레코드 자신은 제외)
-        autoTerminateExistingMasters(request.employeeId, request.startDate, excludeId = id)
+        autoTerminateExistingMasters(request.employeeId, request.startDate, request.teamType, excludeId = id)
 
         master.update(
             request.teamType,
@@ -530,6 +548,21 @@ class AdminPPTMasterService(
         )
     }
 
+    /**
+     * 엑셀 업로드 항목 일괄 등록.
+     *
+     * 전량 재검증(실패 1건이라도 있으면 [PPTMasterBulkValidationFailedException]) 후 행 단위로
+     * 중복(동일 사원 + 거래처 + teamType 유효 마스터) 스킵 → 다른 teamType 유효 마스터 자동 종료 → insert.
+     * 단건 등록과 동일하게 **같은 teamType 은 거래처가 달라도 자동 종료 대상이 아니므로**, 한 파일에
+     * 사원 A × 거래처1·2·3 (같은 조) 을 넣으면 3건이 모두 유효하게 남는다.
+     * 벌크는 `isConfirmed = false` 로 적재하므로 사원 전문행사조 즉시 반영(`updateEmployeeTeam`) 은 없다 —
+     * 운영자가 확정(`confirmByIds`) 하거나 새벽 sync 배치가 도래일에 반영한다.
+     *
+     * 레거시 매핑: `UplExcelBtnPPTMasterController` (엑셀 업로드) → `PPTMasterTriggerHandler.ChangeToNormal` — UC-10.
+     * 레거시 차이: 레거시 before-insert SOQL 은 같은 트랜잭션의 형제 행을 보지 못하지만, 신규는 행마다
+     * flush 되므로 **한 파일 안에 서로 다른 조가 섞이면 뒤 행이 앞 행을 종료**시킨다. 파일 내 조 혼재는
+     * 정상 입력이 아니므로 별도 차단은 두지 않는다.
+     */
     @Transactional
     fun confirmBulk(request: PPTMasterBulkValidateRequest): BulkConfirmResponse {
         // Re-validate
@@ -554,8 +587,8 @@ class AdminPPTMasterService(
             )
             if (duplicates.isNotEmpty()) continue
 
-            // 기존 유효 마스터 자동 종료 (생성 규칙 6번)
-            autoTerminateExistingMasters(employee.id, item.startDate)
+            // 기존 유효 마스터 자동 종료 (생성 규칙 6번 — 다른 teamType 만 대상)
+            autoTerminateExistingMasters(employee.id, item.startDate, item.teamType)
 
             pptMasterRepository.save(
                 ProfessionalPromotionTeamMaster(
@@ -654,10 +687,29 @@ class AdminPPTMasterService(
         if (duplicates.isNotEmpty()) throw PPTMasterDuplicateException()
     }
 
-    private fun autoTerminateExistingMasters(employeeId: Long, newStartDate: LocalDate, excludeId: Long? = null) {
+    /**
+     * 동일 사원의 **다른** 전문행사조 유효 마스터(종료일 없음)를 신규 시작일 -1일로 자동 종료한다.
+     *
+     * `newTeamType` 과 같은 조의 마스터는 **거래처가 달라도 종료하지 않는다** — 한 사원이 여러 거래처에
+     * 같은 조로 동시 배정되는 것이 정상 운영 형태이기 때문(거래처1·2·3 카레세일조 공존). 조를 갈아타는
+     * 등록(카레 → 냉동)일 때만 기존 조가 일괄 종료되어, 사원의 소속 조가 항상 1개로 유지된다.
+     *
+     * 레거시 매핑: `PPTMasterTriggerHandler.ChangeToNormal` 의
+     * `WHERE EmployeeNumber__c = :사번 AND ValidData__c = '유효' AND ProfessionalPromotionTeam__c != :신규조
+     *  AND EndDate__c = null AND Id != :본인` SOQL.
+     * teamType 이 null 인 마스터(SF 마이그레이션 잔존 '일반'/'해당없음' → converter 가 null 변환)도 종료 대상이다 —
+     * SOQL 의 `!=` 는 null row 를 포함하므로 레거시와 동일하다.
+     */
+    private fun autoTerminateExistingMasters(
+        employeeId: Long,
+        newStartDate: LocalDate,
+        newTeamType: ProfessionalPromotionTeamType,
+        excludeId: Long? = null,
+    ) {
         val existingValid = pptMasterRepository.findByEmployeeIdAndEndDateIsNull(employeeId)
         for (existing in existingValid) {
             if (excludeId != null && existing.id == excludeId) continue
+            if (existing.teamType == newTeamType) continue
             existing.endDate = newStartDate.minusDays(1)
             pptMasterRepository.save(existing)
         }

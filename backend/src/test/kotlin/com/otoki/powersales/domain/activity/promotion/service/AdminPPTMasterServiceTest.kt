@@ -285,6 +285,62 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 동일 teamType 은 거래처가 달라도 자동 종료되지 않음 (한 사원 다중 거래처 배정)")
+        fun createMaster_sameTeamTypeOtherAccount_notTerminated() {
+            // 거래처1(id=1) 카레세일조 유효 마스터 보유 상태에서 거래처2(id=2) 를 같은 조로 추가 등록
+            val existingAccount1 = createMaster(
+                id = 10L, accountId = 1, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION
+            )
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 2, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(2) } returns Optional.of(createAccount(id = 2, externalKey = "SAP002"))
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingAccount1)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+
+            service.createMaster(request)
+
+            // 레거시 SOQL 의 `ProfessionalPromotionTeam__c != :신규조` 조건 동등 — 같은 조는 그대로 유효 유지
+            assertThat(existingAccount1.endDate).isNull()
+        }
+
+        @Test
+        @DisplayName("성공 - 조 변경 등록 시 다른 teamType 마스터는 거래처 무관 전부 자동 종료")
+        fun createMaster_differentTeamType_terminatesAllOtherAccounts() {
+            // 거래처1·2 를 카레세일조로 배정한 상태에서 거래처3 을 프레시세일조_냉동으로 등록
+            val curryAccount1 = createMaster(
+                id = 10L, accountId = 1, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION
+            )
+            val curryAccount2 = createMaster(
+                id = 11L, accountId = 2, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION
+            )
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 3, teamType = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(3) } returns Optional.of(createAccount(id = 3, externalKey = "SAP003"))
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every {
+                pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
+            } returns listOf(curryAccount1, curryAccount2)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+
+            service.createMaster(request)
+
+            // 사원의 소속 조는 항상 1개로 수렴 — 조가 섞인 상태로 공존하지 않는다
+            assertThat(curryAccount1.endDate).isEqualTo(LocalDate.of(2026, 3, 31))
+            assertThat(curryAccount2.endDate).isEqualTo(LocalDate.of(2026, 3, 31))
+        }
+
+        @Test
         @DisplayName("실패 - startDate > endDate -> PPTMasterInvalidDateRangeException")
         fun createMaster_invalidDateRange() {
             val request = PPTMasterCreateRequest(
@@ -457,6 +513,36 @@ class AdminPPTMasterServiceTest {
             // 본 레코드 자신은 종료되지 않고 다른 마스터만 종료일 자동 set
             assertThat(master.endDate).isNull()
             assertThat(existingOther.endDate).isEqualTo(LocalDate.of(2026, 3, 31))
+        }
+
+        @Test
+        @DisplayName("성공 - update 시 동일 teamType 다른 거래처 마스터는 자동 종료되지 않음")
+        fun updateMaster_sameTeamTypeOtherAccount_notTerminated() {
+            val master = createMaster(
+                id = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION
+            )
+            val sameTeamOtherAccount = createMaster(
+                id = 10L, accountId = 2, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION, endDate = null
+            )
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every {
+                pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
+            } returns listOf(master, sameTeamOtherAccount)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+
+            service.updateMaster(1L, request)
+
+            assertThat(master.endDate).isNull()
+            assertThat(sameTeamOtherAccount.endDate).isNull()
         }
 
         @Test
@@ -746,6 +832,43 @@ class AdminPPTMasterServiceTest {
             // save 캡처분 중 신규 생성 2건의 name 확인 (autoTerminate 저장분은 없음)
             val names = saved.mapNotNull { it.name }
             assertThat(names).containsExactlyInAnyOrder("PM0000921", "PM0000922")
+        }
+
+        @Test
+        @DisplayName("성공 - 동일 사원 × 거래처 3건(같은 조) 일괄 등록 시 기존 같은 조 마스터 유지 + 3건 모두 생성")
+        fun confirmBulk_sameEmployeeMultipleAccounts_sameTeamType() {
+            val emp = createEmployee(id = 1L, employeeCode = "11111111")
+            val accounts = listOf(
+                createAccount(id = 1, externalKey = "SAP001"),
+                createAccount(id = 2, externalKey = "SAP002"),
+                createAccount(id = 3, externalKey = "SAP003"),
+            )
+            val existingSameTeam = createMaster(
+                id = 10L, accountId = 9, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION
+            )
+            val request = PPTMasterBulkValidateRequest(
+                items = listOf(
+                    PPTMasterBulkItem("11111111", "SAP001", ProfessionalPromotionTeamType.CURRY_PROMOTION, LocalDate.of(2026, 4, 1)),
+                    PPTMasterBulkItem("11111111", "SAP002", ProfessionalPromotionTeamType.CURRY_PROMOTION, LocalDate.of(2026, 4, 1)),
+                    PPTMasterBulkItem("11111111", "SAP003", ProfessionalPromotionTeamType.CURRY_PROMOTION, LocalDate.of(2026, 4, 1)),
+                )
+            )
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every { accountRepository.findByExternalKeyIn(any()) } returns accounts
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingSameTeam)
+            every { pptMasterRepository.getNextNameSeq() } returnsMany listOf(1L, 2L, 3L)
+            val saved = mutableListOf<ProfessionalPromotionTeamMaster>()
+            every { pptMasterRepository.save(capture(saved)) } answers { firstArg() }
+
+            val response = service.confirmBulk(request)
+
+            assertThat(response.createdCount).isEqualTo(3)
+            assertThat(saved.mapNotNull { it.accountId }).containsExactly(1L, 2L, 3L)
+            // 같은 조의 기존 마스터는 자동 종료 대상이 아니므로 유효 유지
+            assertThat(existingSameTeam.endDate).isNull()
         }
     }
 
