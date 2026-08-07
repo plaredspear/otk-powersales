@@ -252,7 +252,7 @@ void main() {
 
         // Then
         expect(notifier.state.isSubmitting, false);
-        expect(notifier.state.successMessage, '제안이 등록되었습니다');
+        expect(notifier.state.successMessage, '신제품 제안이 등록되었습니다');
         expect(notifier.state.errorMessage, null);
       });
 
@@ -268,7 +268,30 @@ void main() {
 
         // Then
         expect(notifier.state.isSubmitting, false);
-        expect(notifier.state.successMessage, '제안이 등록되었습니다');
+        expect(notifier.state.successMessage, '기존제품 상품가치향상이 등록되었습니다');
+      });
+
+      test('물류 클레임 등록 성공 문구는 분류명을 쓴다', () async {
+        // Given — 한 화면을 분류별로 재사용하므로 "제안" 이 아니라 "물류 클레임" 이라고 알려야 한다.
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+        notifier.selectAccount(
+          accountId: 100,
+          accountName: '오뚜기 농협',
+          sapAccountCode: 'SAP-0001',
+        );
+        notifier.selectProduct('12345678', '진라면');
+        notifier.updateTitle('파손 클레임');
+        notifier.updateContent('하차 중 박스 파손 확인');
+        notifier.updateClaimType('취급부주의 제품 파손');
+        notifier.updateClaimDate(DateTime(2026, 5, 22));
+        notifier.addPhoto(File('test1.jpg'));
+
+        // When
+        await notifier.submit();
+
+        // Then
+        expect(notifier.state.errorMessage, null);
+        expect(notifier.state.successMessage, '물류 클레임이 등록되었습니다');
       });
 
       test('필수 항목 누락 시 에러가 발생한다 (제목)', () async {

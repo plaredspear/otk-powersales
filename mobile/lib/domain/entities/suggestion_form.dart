@@ -19,6 +19,11 @@ enum SuggestionCategory {
   /// 화면 표시용 이름
   final String displayName;
 
+  /// 등록 완료 안내 문구.
+  /// 한 화면(제안하기 / 물류 클레임 등록)이 분류별로 재사용되므로 분류명을 넣어 무엇이 등록됐는지 알린다.
+  /// 현재 3개 라벨이 모두 받침으로 끝나 조사는 '이' 로 고정한다.
+  String get registeredMessage => '$displayName이 등록되었습니다';
+
   /// 코드로부터 enum 값 찾기
   static SuggestionCategory fromCode(String code) {
     return SuggestionCategory.values.firstWhere(

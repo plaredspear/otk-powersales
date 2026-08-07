@@ -222,7 +222,7 @@ class SuggestionRegisterNotifier
 
     try {
       await _registerSuggestion.call(state.form);
-      state = state.toSuccess('제안이 등록되었습니다');
+      state = state.toSuccess(state.form.category.registeredMessage);
     } catch (e) {
       // 서버 표준 error.message 를 그대로 노출한다 — SF 가 거부한 사유
       // ("잘못된 값입니다. (ProductCode)" 등)를 보고 사용자가 입력을 고칠 수 있어야 한다.
