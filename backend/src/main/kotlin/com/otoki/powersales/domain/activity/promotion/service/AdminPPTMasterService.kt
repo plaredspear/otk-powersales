@@ -173,9 +173,10 @@ class AdminPPTMasterService(
     /**
      * 전문행사조 마스터 생성.
      *
-     * 기간 검증 → 중복 검증(동일 사원 + 동일 거래처 + 동일 teamType) → **다른** teamType 유효 마스터 자동 종료
-     * (신규 시작일 -1일) 후 insert. 확정=true + 시작일=오늘이면 사원의 전문행사조를 즉시 갱신하고
-     * 미래 근무일정 삭제 + 이력 insert (`updateEmployeeTeam`).
+     * 기간 검증 → 중복 검증(동일 사원 + 동일 거래처 + 동일 teamType) → **다른** teamType 의 현재 유효
+     * (확정 + 시작일 도래 + 종료일 없음) 마스터 자동 종료(신규 시작일 -1일) 후 insert.
+     * 확정=true + 시작일=오늘이면 사원의 전문행사조를 즉시 갱신하고 미래 근무일정 삭제 + 이력 insert
+     * (`updateEmployeeTeam`).
      *
      * 동일 teamType 은 자동 종료 대상이 아니므로 **한 사원이 여러 거래처에 같은 조로 동시 배정**될 수 있다
      * (거래처1 카레세일조 + 거래처2 카레세일조 공존). 반대로 다른 조를 등록하면 기존 조가 자동 종료되어
@@ -558,10 +559,14 @@ class AdminPPTMasterService(
      * 벌크는 `isConfirmed = false` 로 적재하므로 사원 전문행사조 즉시 반영(`updateEmployeeTeam`) 은 없다 —
      * 운영자가 확정(`confirmByIds`) 하거나 새벽 sync 배치가 도래일에 반영한다.
      *
+     * 한 파일 안에 서로 다른 조가 섞여도 **앞 행이 뒤 행에 의해 종료되지 않는다** — 벌크 적재분은
+     * `isConfirmed = false`(미확정) 이라 자동 종료 대상 조건(ValidData__c = '유효')에 걸리지 않기 때문이며,
+     * 형제 행을 보지 못하는 레거시 before-insert SOQL 과 결과가 같다.
+     *
      * 레거시 매핑: `UplExcelBtnPPTMasterController` (엑셀 업로드) → `PPTMasterTriggerHandler.ChangeToNormal` — UC-10.
-     * 레거시 차이: 레거시 before-insert SOQL 은 같은 트랜잭션의 형제 행을 보지 못하지만, 신규는 행마다
-     * flush 되므로 **한 파일 안에 서로 다른 조가 섞이면 뒤 행이 앞 행을 종료**시킨다. 파일 내 조 혼재는
-     * 정상 입력이 아니므로 별도 차단은 두지 않는다.
+     * 레거시 차이: 중복 스킵 판정(동일 사원 + 거래처 + 조 + 기간 겹침)은 신규 추가분이다. 레거시 dup 검증은
+     * `EndDate__c <= :신규 StartDate__c` 조건 탓에 사실상 동작하지 않아(`DuplicatedValid` 도 주석 처리됨)
+     * 같은 파일의 동일 행을 그대로 2건 적재했다 — 신규는 스펙 #386 결정에 따라 중복 적재를 막는다.
      */
     @Transactional
     fun confirmBulk(request: PPTMasterBulkValidateRequest): BulkConfirmResponse {
@@ -688,17 +693,24 @@ class AdminPPTMasterService(
     }
 
     /**
-     * 동일 사원의 **다른** 전문행사조 유효 마스터(종료일 없음)를 신규 시작일 -1일로 자동 종료한다.
+     * 동일 사원의 **다른 조 + 현재 유효(ValidData__c = '유효')** 마스터를 신규 시작일 -1일로 자동 종료한다.
      *
-     * `newTeamType` 과 같은 조의 마스터는 **거래처가 달라도 종료하지 않는다** — 한 사원이 여러 거래처에
-     * 같은 조로 동시 배정되는 것이 정상 운영 형태이기 때문(거래처1·2·3 카레세일조 공존). 조를 갈아타는
-     * 등록(카레 → 냉동)일 때만 기존 조가 일괄 종료되어, 사원의 소속 조가 항상 1개로 유지된다.
+     * 종료 대상 조건 (모두 AND):
+     * 1. 종료일 없음 (`endDate IS NULL`)
+     * 2. `newTeamType` 과 **다른** 조 — 같은 조는 **거래처가 달라도 종료하지 않는다**. 한 사원이 여러 거래처에
+     *    같은 조로 동시 배정되는 것이 정상 운영 형태이기 때문(거래처1·2·3 카레세일조 공존). 조를 갈아타는
+     *    등록(카레 → 냉동)일 때만 기존 조가 일괄 종료되어, 사원의 소속 조가 항상 1개로 유지된다.
+     * 3. 확정됨 + 시작일 도래 (`isConfirmed && startDate <= 오늘`) — 즉 「미확정」/「예정」 상태의 마스터는
+     *    아직 사원 소속 조에 반영되지 않았으므로 건드리지 않는다. 엑셀 일괄 등록분(`isConfirmed = false`) 이
+     *    같은 트랜잭션의 뒤 행에 의해 종료되지 않는 것도 이 조건 덕분이다.
      *
      * 레거시 매핑: `PPTMasterTriggerHandler.ChangeToNormal` 의
      * `WHERE EmployeeNumber__c = :사번 AND ValidData__c = '유효' AND ProfessionalPromotionTeam__c != :신규조
      *  AND EndDate__c = null AND Id != :본인` SOQL.
-     * teamType 이 null 인 마스터(SF 마이그레이션 잔존 '일반'/'해당없음' → converter 가 null 변환)도 종료 대상이다 —
-     * SOQL 의 `!=` 는 null row 를 포함하므로 레거시와 동일하다.
+     * - `ValidData__c = '유효'` 수식 = `Confirmed__c = true AND StartDate__c <= TODAY() AND
+     *   (EndDate__c >= TODAY() OR EndDate__c = null)` → 위 조건 1 + 3 과 동일 (조건 1 이 EndDate 절을 흡수).
+     * - teamType 이 null 인 마스터(SF 마이그레이션 잔존 '일반'/'해당없음' → converter 가 null 변환)도 종료 대상이다 —
+     *   SOQL 의 `!=` 는 null row 를 포함하므로 레거시와 동일하다.
      */
     private fun autoTerminateExistingMasters(
         employeeId: Long,
@@ -706,10 +718,13 @@ class AdminPPTMasterService(
         newTeamType: ProfessionalPromotionTeamType,
         excludeId: Long? = null,
     ) {
+        val today = LocalDate.now()
         val existingValid = pptMasterRepository.findByEmployeeIdAndEndDateIsNull(employeeId)
         for (existing in existingValid) {
             if (excludeId != null && existing.id == excludeId) continue
             if (existing.teamType == newTeamType) continue
+            // ValidData__c = '유효' 동등 — 미확정 / 예정(시작일 미도래) 마스터는 자동 종료 대상 아님
+            if (!existing.isConfirmed || existing.startDate.isAfter(today)) continue
             existing.endDate = newStartDate.minusDays(1)
             pptMasterRepository.save(existing)
         }

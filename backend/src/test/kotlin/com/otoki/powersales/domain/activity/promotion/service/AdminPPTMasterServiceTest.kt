@@ -341,6 +341,54 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 미확정 마스터는 다른 조 등록에도 자동 종료되지 않음 (ValidData__c='유효' 조건)")
+        fun createMaster_unconfirmedMaster_notTerminated() {
+            val unconfirmed = createMaster(
+                id = 10L, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION,
+                startDate = LocalDate.now().minusDays(10), isConfirmed = false
+            )
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN,
+                startDate = LocalDate.now(), isConfirmed = false
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(unconfirmed)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+
+            service.createMaster(request)
+
+            assertThat(unconfirmed.endDate).isNull()
+        }
+
+        @Test
+        @DisplayName("성공 - 예정(시작일 미도래) 마스터는 다른 조 등록에도 자동 종료되지 않음")
+        fun createMaster_futureStartMaster_notTerminated() {
+            val scheduled = createMaster(
+                id = 10L, teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION,
+                startDate = LocalDate.now().plusDays(7), isConfirmed = true
+            )
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN,
+                startDate = LocalDate.now(), isConfirmed = false
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(scheduled)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+
+            service.createMaster(request)
+
+            assertThat(scheduled.endDate).isNull()
+        }
+
+        @Test
         @DisplayName("실패 - startDate > endDate -> PPTMasterInvalidDateRangeException")
         fun createMaster_invalidDateRange() {
             val request = PPTMasterCreateRequest(
@@ -869,6 +917,39 @@ class AdminPPTMasterServiceTest {
             assertThat(saved.mapNotNull { it.accountId }).containsExactly(1L, 2L, 3L)
             // 같은 조의 기존 마스터는 자동 종료 대상이 아니므로 유효 유지
             assertThat(existingSameTeam.endDate).isNull()
+        }
+
+        @Test
+        @DisplayName("성공 - 한 파일에 조가 섞여도 앞 행이 뒤 행에 의해 종료되지 않음 (미확정 적재)")
+        fun confirmBulk_mixedTeamTypes_previousRowNotTerminated() {
+            val emp = createEmployee(id = 1L, employeeCode = "11111111")
+            val accounts = listOf(
+                createAccount(id = 1, externalKey = "SAP001"),
+                createAccount(id = 2, externalKey = "SAP002"),
+            )
+            val request = PPTMasterBulkValidateRequest(
+                items = listOf(
+                    PPTMasterBulkItem("11111111", "SAP001", ProfessionalPromotionTeamType.FRESH_SALE_FROZEN, LocalDate.now()),
+                    PPTMasterBulkItem("11111111", "SAP002", ProfessionalPromotionTeamType.CURRY_PROMOTION, LocalDate.now()),
+                )
+            )
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every { accountRepository.findByExternalKeyIn(any()) } returns accounts
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+            } returns emptyList()
+            val saved = mutableListOf<ProfessionalPromotionTeamMaster>()
+            // 실제 JPA 는 조회 직전 flush 되어 같은 트랜잭션의 앞 행이 보인다 — 그 가시성을 재현
+            every {
+                pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
+            } answers { saved.filter { it.endDate == null } }
+            every { pptMasterRepository.save(capture(saved)) } answers { firstArg() }
+
+            val response = service.confirmBulk(request)
+
+            assertThat(response.createdCount).isEqualTo(2)
+            // 앞 행(냉동)은 미확정 적재라 뒤 행(카레) 등록 시 자동 종료 대상이 아니다
+            assertThat(saved.map { it.endDate }).containsOnlyNulls()
         }
     }
 
