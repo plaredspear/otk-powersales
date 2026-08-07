@@ -44,9 +44,10 @@ class AdminPromotionEmployeeController(
      * SF 여사원일정 지점 스코프(getIncludedBranchCode) 정합. 전사 사원 lookup(`/employees/lookup`)과 달리
      * 행사 거래처 지점 + 여사원(role=WOMAN) 으로 후보를 제한한다. promotion READ 권한으로 가드.
      *
-     * 영업지원2팀(costCenterCode=4889) 전사 조회 예외는 2026-08-02 제거 — 로그인 사용자와 무관하게
-     * 항상 거래처 지점 스코프를 적용한다
-     * ([com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]).
+     * 영업지원2팀(costCenterCode=4889) 은 거래처 지점에 더해 본인 조직 여사원도 후보로 본다
+     * (2026-08-07 요구 — 2026-08-02 에 제거된 "전사 조회" 예외보다 좁은 범위.
+     * [com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]). 판정에 쓰는
+     * `principal.costCenterCode` 는 REST 계약이 아닌 principal 파생값이라 요청 파라미터는 그대로다.
      */
     @GetMapping("/api/v1/admin/promotions/{promotionId}/employees/lookup")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -58,7 +59,7 @@ class AdminPromotionEmployeeController(
         @RequestParam(required = false, defaultValue = "5") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminPromotionEmployeeService.lookupEmployeeCandidates(
-            scope, promotionId, keyword, size
+            scope, promotionId, keyword, size, principal.costCenterCode
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

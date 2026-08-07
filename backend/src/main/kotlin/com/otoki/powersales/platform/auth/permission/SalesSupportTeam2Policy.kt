@@ -14,12 +14,16 @@ package com.otoki.powersales.platform.auth.permission
  * **거래처 조회만** 다시 전 지점으로 연다 ([isAllBranchAccountLookup]). 영업지원1팀 / 영업본부는
  * 종전대로 전사 (SF `CurrentUserBranchNameList.cls` 의 `UserRole.Name LIKE '%영업지원%'` 정합 유지).
  *
+ * 2026-08-07 요구로 **행사사원 후보 lookup 에 본인 조직(4889) 여사원을 더한다**
+ * ([includesOwnTeamInPromotionEmployeeLookup]) — 아래 "반쪽 상태" 해소.
+ *
  * ## 현재 스코프 요약
  * | 대상 | 스코프 |
  * |---|---|
  * | 거래처 관리 목록·상세·지점 셀렉터 (`GET /admin/accounts`, `/{id}`, `/branches`) | **전 지점** |
  * | 행사마스터 거래처 lookup (`GET /admin/accounts/lookup` + `/lookup-filter-options`) | **전 지점** |
- * | 그 외 전 화면 (대시보드 / 여사원 현황 / 행사사원 후보 / 진열 / 매출 등) | 본인 지점(4889) |
+ * | 행사사원 후보 lookup (`GET /admin/promotions/{id}/employees/lookup`) | 거래처 지점 **+ 본인 지점(4889)** |
+ * | 그 외 전 화면 (대시보드 / 여사원 현황 / 진열 / 매출 등) | 본인 지점(4889) |
  * | 거래처 등록·수정·삭제 | 종전 권한 정책 그대로 (본 예외는 조회 전용) |
  *
  * 거래처 조회는 가시성 축이 둘이라 (지점 셀렉터/필터 = principal, sharing policy = [DataScope]) 진입점에서
@@ -59,4 +63,22 @@ object SalesSupportTeam2Policy {
      * 늘어나면 본 함수만 확장한다.
      */
     fun isAllBranchAccountLookup(costCenterCode: String?): Boolean = isTeam2(costCenterCode)
+
+    /**
+     * 행사사원 후보 lookup 에서 **행사 거래처 지점에 더해 본인 조직(4889) 여사원까지** 후보로 볼 수 있는
+     * 사용자인지 (2026-08-07 요구 — 영업지원2팀 한정 예외).
+     *
+     * ## 배경 — [isAllBranchAccountLookup] 만 열려 있던 반쪽 상태
+     * 영업지원2팀은 전 지점 거래처로 행사를 대행 등록하는데(거래처 조회 예외), 정작 그 행사에 붙일
+     * 자기 팀 여사원은 후보에 없었다. 행사사원 후보 스코프가 **행사 거래처의 지점**이라
+     * `cost_center_code = 4889` 인 영업지원2팀 여사원은 타 지점 거래처 행사에서 항상 탈락했기 때문이다
+     * (영업지원2팀 여사원은 소속은 4889 이면서 근무 거래처는 전국에 흩어져 있다).
+     *
+     * 2026-07-14 에는 이 문제를 "영업지원2팀이면 전 지점 여사원 조회" 로 풀었다가 2026-08-02 예외
+     * 일괄 제거 때 함께 닫혔다. 이번에는 전 지점이 아니라 **본인 조직만 더하는 방식**으로 좁게 연다 —
+     * 필요한 것은 "영업지원2팀 여사원 지정" 이고, 타 지점 여사원은 거래처 지점 축이 이미 커버한다.
+     *
+     * 판정 축을 [isTeam2] 와 분리해 둔 이유는 [isAllBranchAccountLookup] 과 동일하다.
+     */
+    fun includesOwnTeamInPromotionEmployeeLookup(costCenterCode: String?): Boolean = isTeam2(costCenterCode)
 }

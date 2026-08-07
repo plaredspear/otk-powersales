@@ -30,6 +30,7 @@ import com.otoki.powersales.domain.activity.promotion.exception.ScheduleDateOutO
 import com.otoki.powersales.domain.activity.promotion.exception.TeamCategoryMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleWorkReportDeleteException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -168,29 +169,42 @@ class AdminPromotionEmployeeService(
      * 참고: 여사원일정 경로와 동일하게 Organization 조직트리 레벨 정규화(orgCodeLevel2~5 승격)는 태우지 않는다
      * (SF `ScheduleSearchByTeamMemberController` 가 getIncludedBranchCode 만 쓰는 것과 정합).
      *
-     * 영업지원2팀 예외(거래처 지점 무관 전사 여사원 조회)는 2026-08-02 제거됐다 — 다른 지점과 동일하게
-     * 거래처 지점 스코프만 적용한다
-     * ([com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy]).
+     * ## 영업지원2팀 예외 — 거래처 지점 + 본인 조직(4889)
+     * 로그인 사용자([loginCostCenterCode], 대행 시 대행 대상 기준)가 영업지원2팀이면 거래처 지점에
+     * **본인 조직 코드를 더해** 후보를 넓힌다
+     * ([com.otoki.powersales.platform.auth.permission.SalesSupportTeam2Policy.includesOwnTeamInPromotionEmployeeLookup]).
+     * 영업지원2팀 여사원은 소속이 4889 이면서 전국 거래처에 배치되므로, 거래처 지점 축만으로는 자기 팀
+     * 여사원을 한 명도 지정할 수 없었다. 2026-07-14~08-02 의 "전 지점 조회" 예외와 달리 본인 조직만
+     * 더하는 방식이라 타 지점 여사원 노출은 종전(거래처 지점) 그대로다.
      *
      * ## 가시성
      * 부모 Promotion 가시 범위를 [validateParentVisible] 로 검증(ControlledByParent) — 타 지점 행사 promotionId
      * 추측으로 후보를 열람하는 과다노출 방지.
      *
-     * 거래처 또는 거래처지점코드가 없으면 빈 결과. 응답은 [EmployeeListResponse] 재사용(기존 사원 lookup 정합).
+     * 후보 지점 코드가 하나도 없으면(거래처/거래처지점코드 없음 + 영업지원2팀 아님) 빈 결과.
+     * 응답은 [EmployeeListResponse] 재사용(기존 사원 lookup 정합).
      */
     fun lookupEmployeeCandidates(
         scope: DataScope,
         promotionId: Long,
         keyword: String?,
         size: Int,
+        loginCostCenterCode: String?,
     ): EmployeeListResponse {
         val promotion = findActivePromotion(promotionId)
         validateParentVisible(scope, promotion)
 
-        // 거래처 지점(없으면 빈 결과) 확장 집합으로 제한.
-        val branchCode = promotion.account?.branchCode?.takeIf { it.isNotBlank() }
-            ?: return EmployeeListResponse(content = emptyList(), page = 0, size = size, totalElements = 0, totalPages = 0)
-        val expandedBranchCodes: List<String> = branchCodeExpander.expand(setOf(branchCode)).toList()
+        // 후보 지점 = 거래처 지점 (+ 영업지원2팀 로그인 사용자면 본인 조직). 둘 다 없으면 빈 결과.
+        val branchCodes = buildSet {
+            promotion.account?.branchCode?.takeIf { it.isNotBlank() }?.let { add(it) }
+            if (SalesSupportTeam2Policy.includesOwnTeamInPromotionEmployeeLookup(loginCostCenterCode)) {
+                add(SalesSupportTeam2Policy.ORG_CODE)
+            }
+        }
+        if (branchCodes.isEmpty()) {
+            return EmployeeListResponse(content = emptyList(), page = 0, size = size, totalElements = 0, totalPages = 0)
+        }
+        val expandedBranchCodes: List<String> = branchCodeExpander.expand(branchCodes).toList()
         val today = LocalDate.now()
         val kw = keyword?.trim()?.takeIf { it.isNotBlank() }
 
