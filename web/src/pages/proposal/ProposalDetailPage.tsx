@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -18,21 +18,17 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useSuggestionDetail } from '@/hooks/suggestions/useSuggestionDetail';
 import { useSuggestionUpdate } from '@/hooks/suggestions/useSuggestionUpdate';
 import { useSuggestionDelete } from '@/hooks/suggestions/useSuggestionDelete';
-import {
-  useSuggestionPhotoUpload,
-  useSuggestionPhotoDelete,
-} from '@/hooks/suggestions/useSuggestionPhotoMutations';
+import { useSuggestionPhotoDelete } from '@/hooks/suggestions/useSuggestionPhotoMutations';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
-import {
-  SUGGESTION_MAX_PHOTOS as MAX_PHOTOS,
-  type SuggestionActionStatus,
-  type SuggestionCategory,
-  type SuggestionUpdatePayload,
+import type {
+  SuggestionActionStatus,
+  SuggestionCategory,
+  SuggestionUpdatePayload,
 } from '@/api/suggestions';
 
 const CATEGORY_TAG: Record<SuggestionCategory, { color: string; label: string }> = {
@@ -64,11 +60,9 @@ export default function ProposalDetailPage() {
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const [editMode, setEditMode] = useState(false);
   const [form] = Form.useForm();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateMutation = useSuggestionUpdate(id);
   const deleteMutation = useSuggestionDelete();
-  const photoUploadMutation = useSuggestionPhotoUpload(id);
   const photoDeleteMutation = useSuggestionPhotoDelete(id);
 
   const isClaim = suggestion?.category === 'LOGISTICS_CLAIM';
@@ -145,27 +139,6 @@ export default function ProposalDetailPage() {
       await deleteMutation.mutateAsync(id);
       message.success('제안사항이 삭제되었습니다');
       navigate('/proposal');
-    } catch (err) {
-      if (err instanceof Error) message.error(err.message);
-    }
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFilesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = '';
-    if (files.length === 0) return;
-    const remaining = MAX_PHOTOS - suggestion.attachments.length;
-    if (files.length > remaining) {
-      message.error(`사진은 최대 ${MAX_PHOTOS}장까지 첨부 가능합니다 (남은 슬롯 ${remaining}장)`);
-      return;
-    }
-    try {
-      await photoUploadMutation.mutateAsync(files);
-      message.success('사진이 추가되었습니다');
     } catch (err) {
       if (err instanceof Error) message.error(err.message);
     }
@@ -332,28 +305,7 @@ export default function ProposalDetailPage() {
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card
-            title="첨부사진"
-            extra={
-              <Button
-                icon={<UploadOutlined />}
-                size="small"
-                loading={photoUploadMutation.isPending}
-                onClick={handleUploadClick}
-                disabled={editMode || suggestion.attachments.length >= MAX_PHOTOS}
-              >
-                업로드
-              </Button>
-            }
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleFilesSelected}
-            />
+          <Card title="첨부사진">
             {suggestion.attachments.length === 0 ? (
               <Typography.Text type="secondary">등록된 사진이 없습니다</Typography.Text>
             ) : (

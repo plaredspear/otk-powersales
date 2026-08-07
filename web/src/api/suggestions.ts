@@ -192,20 +192,6 @@ export async function deleteSuggestion(id: number): Promise<void> {
   }
 }
 
-export async function uploadSuggestionPhotos(id: number, photos: File[]): Promise<SuggestionAttachment[]> {
-  const form = new FormData();
-  photos.forEach((file) => form.append('photos', file));
-  const res = await client.post<ApiResponse<SuggestionAttachment[]>>(
-    `/api/v1/admin/suggestions/${id}/photos`,
-    form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '사진 업로드에 실패했습니다');
-  }
-  return res.data.data;
-}
-
 export async function deleteSuggestionPhoto(suggestionId: number, photoId: number): Promise<void> {
   const res = await client.delete<ApiResponse<null>>(
     `/api/v1/admin/suggestions/${suggestionId}/photos/${photoId}`,
