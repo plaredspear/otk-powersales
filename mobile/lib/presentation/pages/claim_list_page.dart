@@ -149,8 +149,9 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
           Expanded(
             // 주문 현황 납기일과 동일한 인라인 기간 UI.
             // 레거시(claim/list.jsp): minDate/maxDate 없음, maxSpan 7일.
+            // 라벨이 길어 한 줄에 안 들어가면 필드가 2단 배치로 자동 전환한다.
             child: DateRangeFilterField(
-              label: '기간',
+              label: '클레임 발생일',
               startDate: state.startDate,
               endDate: state.endDate,
               maxRangeDays: 7,
