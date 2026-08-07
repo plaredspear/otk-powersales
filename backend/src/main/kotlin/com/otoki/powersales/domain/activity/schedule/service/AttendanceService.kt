@@ -319,6 +319,7 @@ class AttendanceService(
             scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
             workType = workType ?: teamMemberSchedule.workingType?.displayName,
+            secondWorkType = teamMemberSchedule.secondWorkTypeLabel,
             distanceKm = 0.0, // Spec #585 Q4: 실제 거리는 응답에 노출하지 않음 (서버 로그에만 기록)
             totalCount = totalCount,
             registeredCount = registeredCount,
@@ -436,6 +437,7 @@ class AttendanceService(
             scheduleId = teamMemberSchedule.id,
             accountName = account?.name ?: "",
             workType = teamMemberSchedule.workingType?.displayName,
+            secondWorkType = teamMemberSchedule.secondWorkTypeLabel,
             distanceKm = 0.0,
             totalCount = totalCount,
             registeredCount = registeredCount,
@@ -466,7 +468,7 @@ class AttendanceService(
                 accountName = teamMemberSchedule.account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
                 status = if (teamMemberSchedule.attendanceLog != null) "REGISTERED" else "PENDING",
-                secondWorkType = teamMemberSchedule.workingCategory4?.takeIf { it.isNotBlank() }
+                secondWorkType = teamMemberSchedule.secondWorkTypeLabel
             )
         }.sortedBy { it.accountName }
 

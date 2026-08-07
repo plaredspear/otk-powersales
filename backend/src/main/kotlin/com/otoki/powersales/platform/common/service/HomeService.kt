@@ -350,8 +350,9 @@ class HomeService(
             // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             // (DisplayWorkSchedule 측 typeOfWork3 와 의미 일치)
             workType = teamMemberSchedule.workingCategory3?.displayName,
-            // 근무유형4 — 레거시 selectAccList(행사) 만 조회하는 컬럼.
-            secondWorkType = teamMemberSchedule.workingCategory4?.takeIf { it.isNotBlank() },
+            // 근무유형4 — 레거시 selectAccList(행사) 만 조회하는 컬럼. 정본은 SF `SecondWorkType__c`
+            // (행사마스터 제품유형 파생), 구 `WorkingCategory4__c` 는 SF 이관 row 용 fallback.
+            secondWorkType = teamMemberSchedule.secondWorkTypeLabel,
             isCommuteRegistered = teamMemberSchedule.attendanceLog != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )

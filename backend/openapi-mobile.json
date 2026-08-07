@@ -2672,6 +2672,9 @@
             "format" : "date",
             "type" : [ "string", "null" ]
           },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
           "totalCount" : {
             "format" : "int32",
             "type" : "integer"

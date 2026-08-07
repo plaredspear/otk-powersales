@@ -14,7 +14,6 @@ class AccountScheduleItem {
   final double? latitude;
   final double? longitude;
   final bool isRegistered;
-  final String? registeredWorkType;
   final String source;
 
   const AccountScheduleItem({
@@ -30,7 +29,6 @@ class AccountScheduleItem {
     this.latitude,
     this.longitude,
     required this.isRegistered,
-    this.registeredWorkType,
     this.source = 'schedule',
   });
 
@@ -47,7 +45,6 @@ class AccountScheduleItem {
     double? latitude,
     double? longitude,
     bool? isRegistered,
-    String? registeredWorkType,
     String? source,
   }) {
     return AccountScheduleItem(
@@ -64,7 +61,6 @@ class AccountScheduleItem {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       isRegistered: isRegistered ?? this.isRegistered,
-      registeredWorkType: registeredWorkType ?? this.registeredWorkType,
       source: source ?? this.source,
     );
   }
@@ -83,7 +79,6 @@ class AccountScheduleItem {
       'latitude': latitude,
       'longitude': longitude,
       'isRegistered': isRegistered,
-      'registeredWorkType': registeredWorkType,
       'source': source,
     };
   }
@@ -102,7 +97,6 @@ class AccountScheduleItem {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       isRegistered: json['isRegistered'] as bool,
-      registeredWorkType: json['registeredWorkType'] as String?,
       source: json['source'] as String? ?? 'schedule',
     );
   }

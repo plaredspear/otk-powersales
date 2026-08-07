@@ -62,8 +62,6 @@ class AccountListItem extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          _buildRegisteredWorkTypeBadge(),
         ],
       ),
     );
@@ -166,25 +164,4 @@ class AccountListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildRegisteredWorkTypeBadge() {
-    if (account.registeredWorkType == null) return const SizedBox.shrink();
-
-    final label = account.registeredWorkType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppColors.success,
-        ),
-      ),
-    );
-  }
 }

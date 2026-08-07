@@ -19,6 +19,7 @@ import com.otoki.powersales.domain.activity.promotion.exception.WorkType3LimitEx
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -27,6 +28,7 @@ import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleO
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -118,6 +120,72 @@ class PromotionSchedulesUpsertHelperTest {
             assertThat(employees[0].teamMemberScheduleId).isEqualTo(100L)
             assertThat(employees[1].teamMemberScheduleId).isEqualTo(101L)
             assertThat(employees[2].teamMemberScheduleId).isEqualTo(102L)
+        }
+
+        @Test
+        @DisplayName("근무유형4 - 행사마스터 제품유형(대표제품 보관방법)이 신규/기존 일정 양쪽에 복사된다")
+        fun confirm_copiesSecondWorkTypeFromPromotionCategory1() {
+            // 레거시 PromotionToScheduleQuickActionController.cls:47
+            // (`t.SecondWorkType__c = p.WorkType4__c` = Promotion.Category1__c) 동등.
+            val promotion = createPromotion(storeConditionText = "라면")
+            val employees = listOf(
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate),
+                createPE(id = 2L, employeeId = 2L, scheduleDate = startDate.plus(1, ChronoUnit.DAYS))
+            )
+            // PE 1 은 기존 일정 재확정, PE 2 는 신규 생성 경로를 각각 탄다.
+            val existingTeamMemberSchedule = TeamMemberSchedule(
+                id = 50L,
+                employee = Employee(id = 1L, employeeCode = "EMP001", name = "김철수"),
+                account = Account(id = 100L),
+                workingDate = startDate,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.EVENT,
+                workingCategory3 = WorkingCategory3.FIXED,
+                secondWorkType = null,
+                promotionEmployee = employees[0]
+            )
+
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+            every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns listOf(existingTeamMemberSchedule)
+            every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns listOf(existingTeamMemberSchedule)
+            every { employeeRepository.findAllById(any()) } returns listOf(
+                createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"),
+                createEmployee(id = 2L, employeeCode = "EMP002", name = "이영희")
+            )
+            val savedSlot = slot<List<TeamMemberSchedule>>()
+            every { teamMemberScheduleRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<TeamMemberSchedule>>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
+
+            helper.upsert(10L)
+
+            assertThat(savedSlot.captured).hasSize(2)
+            assertThat(savedSlot.captured.map { it.secondWorkType }).containsOnly("라면")
+            // 구 필드 `WorkingCategory4__c` 는 레거시도 2024-03 이후 쓰지 않는다 — null 유지.
+            assertThat(savedSlot.captured.map { it.workingCategory4 }).containsOnlyNulls()
+            // 표시 getter 는 정본(secondWorkType)을 우선한다.
+            assertThat(savedSlot.captured.map { it.secondWorkTypeLabel }).containsOnly("라면")
+        }
+
+        @Test
+        @DisplayName("근무유형4 - 대표제품이 없으면 null (뱃지 미표시)")
+        fun confirm_secondWorkTypeNullWhenNoPrimaryProduct() {
+            val promotion = createPromotion()
+            val employees = listOf(createPE(id = 1L, employeeId = 1L, scheduleDate = startDate))
+
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+            every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns emptyList()
+            every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns emptyList()
+            every { employeeRepository.findAllById(any()) } returns listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"))
+            val savedSlot = slot<List<TeamMemberSchedule>>()
+            every { teamMemberScheduleRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<TeamMemberSchedule>>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
+
+            helper.upsert(10L)
+
+            assertThat(savedSlot.captured.single().secondWorkType).isNull()
+            assertThat(savedSlot.captured.single().secondWorkTypeLabel).isNull()
         }
 
         @Test
@@ -683,7 +751,8 @@ class PromotionSchedulesUpsertHelperTest {
         account: Account? = createAccount(),
         isDeleted: Boolean = false,
         startDate: LocalDate? = this.startDate,
-        endDate: LocalDate? = this.endDate
+        endDate: LocalDate? = this.endDate,
+        storeConditionText: String? = null
     ): Promotion = Promotion(
         id = id,
         promotionNumber = "PRO-0001",
@@ -691,7 +760,12 @@ class PromotionSchedulesUpsertHelperTest {
         startDate = startDate,
         endDate = endDate,
         isDeleted = isDeleted
-    )
+    ).apply {
+        // Promotion.category1 = 대표제품 보관방법 (SF formula `DKRetail__PrimaryProductId__r.StoreCondition__c`).
+        if (storeConditionText != null) {
+            primaryProduct = Product(id = 900L, storeConditionText = storeConditionText)
+        }
+    }
 
     private fun createPE(
         id: Long = 1L,

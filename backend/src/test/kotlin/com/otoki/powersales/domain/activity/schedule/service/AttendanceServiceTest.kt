@@ -764,6 +764,67 @@ class AttendanceServiceTest {
             // Spec #585 Q4: 응답에 실제 거리 미노출 → 항상 0.0
             assertThat(result.distanceKm).isEqualTo(0.0)
             assertThat(result.workType).isEqualTo("근무")
+            // 근무유형4 미설정 일정 -> null (모바일 뱃지 미표시)
+            assertThat(result.secondWorkType).isNull()
+        }
+
+        @Test
+        @DisplayName("근무유형4 - 일정의 SecondWorkType__c 를 응답에 그대로 내려준다")
+        fun register_returnsSecondWorkTypeFromSchedule() {
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, commuteLogSfid = null,
+                accountName = "이마트 만촌점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString(),
+                secondWorkType = "라면"
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // 근무유형(근무/연차) 축과 별개 필드로 나간다 — 앱이 두 값을 혼동하지 않도록.
+            assertThat(result.workType).isEqualTo("근무")
+            assertThat(result.secondWorkType).isEqualTo("라면")
+        }
+
+        @Test
+        @DisplayName("근무유형4 - SecondWorkType__c 가 비면 SF 이관 구 필드(WorkingCategory4__c) 로 fallback")
+        fun register_fallsBackToLegacyWorkingCategory4() {
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, commuteLogSfid = null,
+                accountName = "이마트 만촌점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString(),
+                secondWorkType = null,
+                workingCategory4 = "상온"
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            assertThat(result.secondWorkType).isEqualTo("상온")
         }
 
         @Test
@@ -2791,7 +2852,9 @@ class AttendanceServiceTest {
         accountAbcTypeCode: String? = null,
         accountLatitude: String? = null,
         accountLongitude: String? = null,
-        commuteLogSfid: String? = null
+        commuteLogSfid: String? = null,
+        secondWorkType: String? = null,
+        workingCategory4: String? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             id = id,
@@ -2813,6 +2876,8 @@ class AttendanceServiceTest {
                 )
             },
             commuteLogSfid = commuteLogSfid,
+            secondWorkType = secondWorkType,
+            workingCategory4 = workingCategory4,
             // Spec #789 정합 — 출근 등록 가드는 attendance_log id-FK 기준. commuteLogSfid 채워진 fixture 는 attendance_log 도 함께 set.
             attendanceLog = commuteLogSfid?.let { AttendanceLog(id = 1L) }
         )

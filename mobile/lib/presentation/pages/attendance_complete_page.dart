@@ -19,7 +19,11 @@ class AttendanceCompletePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final workTypeLabel = result.workType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
+    // 근무유형4(상온/라면/만두/냉동/냉장 …) — 서버가 행사마스터 제품유형 / 진열마스터 근무형태4에서
+    // 파생해 내려주는 표시 전용 값이다. 앱에서 값을 판정하지 않고 그대로 출력한다.
+    // 레거시도 온도 구분은 마스터에서 자동 파생하며(SF SecondWorkType__c), 출근등록 시 사용자가
+    // 고르는 UI 는 2024-02-26 폐기됐다. 값이 없으면 뱃지를 표시하지 않는다.
+    final secondWorkType = result.secondWorkType;
     final isAllDone = result.isAllRegistered;
 
     return Scaffold(
@@ -73,27 +77,29 @@ class AttendanceCompletePage extends ConsumerWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
 
-              // 근무유형 뱃지
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.otokiYellow.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  workTypeLabel,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+              // 근무유형4 뱃지 (값이 있을 때만)
+              if (secondWorkType != null && secondWorkType.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.otokiYellow.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    secondWorkType,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: 24),
 
               // 등록 현황

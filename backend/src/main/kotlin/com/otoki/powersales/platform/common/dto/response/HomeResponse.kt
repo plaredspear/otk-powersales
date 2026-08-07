@@ -51,7 +51,8 @@ data class HomeResponse(
          */
         val workType: String?,
         /**
-         * 근무유형4 = 레거시 `workingcategory4__c` (SF SecondWorkType__c: 상온/냉동/냉장/라면/만두…).
+         * 근무유형4 = SF `SecondWorkType__c` (상온/냉동/냉장/라면/만두…). 행사마스터 제품유형
+         * (`Promotion.Category1__c` = 대표제품 보관방법) 에서 파생되어 확정 시 일정에 복사된다.
          *
          * 오늘의 등록 현황 팝업(home.jsp `#popPlace3`)에서 등록 완료 행에만
          * "완료 (상온)" 처럼 덧붙는 값이다. 레거시 `selectDisplayAccList` 는 이

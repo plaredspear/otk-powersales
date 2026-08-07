@@ -398,6 +398,20 @@ class TeamMemberSchedule(
     val secondWorkTypeText: String?
         get() = attendanceLog?.secondWorkType?.displayName
 
+    /**
+     * 근무유형4 표시값 (상온/라면/만두/냉동/냉장 …) — 홈·출근 화면 공용.
+     *
+     * 정본은 [secondWorkType] (SF `SecondWorkType__c`). 행사는 행사마스터 제품유형(`Promotion.Category1__c`),
+     * 진열은 진열마스터 근무형태4(`DisplayWorkSchedule.typeOfWork4`) 에서 복사된다.
+     *
+     * [workingCategory4] 는 SF 가 2024-03-04 필드 교체 이후 더 이상 쓰지 않는 구 필드지만(레거시 Heroku 화면은
+     * 이 구 필드를 계속 읽어 최근 데이터에서 값이 비어 보였다), 그 이전 SF 이관 row 에는 값이 남아 있어
+     * fallback 으로만 참조한다.
+     */
+    val secondWorkTypeLabel: String?
+        get() = secondWorkType?.takeIf { it.isNotBlank() }
+            ?: workingCategory4?.takeIf { it.isNotBlank() }
+
     /** SF formula `isworkreport__c` 동등 — 출퇴근 로그 존재 시 "근무등록", 부재 시 빈 문자열. */
     val isWorkReport: String
         get() = if (attendanceLog != null) "근무등록" else ""
@@ -412,6 +426,7 @@ class TeamMemberSchedule(
         workingCategory1: WorkingCategory1,
         workingCategory3: WorkingCategory3,
         workingCategory4: String?,
+        secondWorkType: String?,
         promotionEmployee: PromotionEmployee
     ) {
         // 실제 변경분만 대입한다. bytecode dirty tracking(Hibernate 7 강제 활성) 은 setter 호출
@@ -426,6 +441,7 @@ class TeamMemberSchedule(
         if (this.workingCategory1 != workingCategory1) this.workingCategory1 = workingCategory1
         if (this.workingCategory3 != workingCategory3) this.workingCategory3 = workingCategory3
         if (this.workingCategory4 != workingCategory4) this.workingCategory4 = workingCategory4
+        if (this.secondWorkType != secondWorkType) this.secondWorkType = secondWorkType
         if (this.promotionEmployee?.id != promotionEmployee.id) this.promotionEmployee = promotionEmployee
     }
 }

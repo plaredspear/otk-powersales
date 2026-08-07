@@ -104,6 +104,14 @@ class PromotionSchedulesUpsertHelper(
         val newScheduleCount = employees.count { existingTeamMemberSchedulesByPeId[it.id] == null }
         val nameIterator = teamMemberScheduleNameGenerator.nextBatch(newScheduleCount).iterator()
 
+        // 근무유형4 = 행사마스터 제품유형 — 레거시 formula chain
+        // `Product.StoreCondition__c` → `Promotion.Category1__c` → `PromotionEmployee.WorkType4__c` →
+        // `TeamMemberSchedule.SecondWorkType__c` (PromotionToScheduleQuickActionController.cls:47) 동등.
+        // 값 도메인은 상온/라면/만두/냉동/냉장 (SF Flow `PSCUpdate` 가 제품마스터 보관방법에서 파생).
+        // 담당자가 직접 고르는 `DKRetail__ProductType__c`(= promotion.productType, 행사명 prefix) 가 아니라
+        // 대표제품에서 파생되는 `Category1__c` 가 일정으로 전파되는 값이다.
+        val secondWorkType = promotion.category1
+
         val teamMemberSchedulesToSave = mutableListOf<TeamMemberSchedule>()
         for (pe in employees) {
             val existing = existingTeamMemberSchedulesByPeId[pe.id]
@@ -117,7 +125,10 @@ class PromotionSchedulesUpsertHelper(
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
                     workingCategory3 = pe.workType3!!,
+                    // 레거시 SF 도 `WorkingCategory4__c` 에는 쓰지 않는다 (IF_REST_MOBILE_WorkReport.cls:114 주석,
+                    // 2024-03-04 필드 교체 이후 write 경로 0건) — null 유지.
                     workingCategory4 = null,
+                    secondWorkType = secondWorkType,
                     promotionEmployee = pe
                 )
                 teamMemberSchedulesToSave.add(existing)
@@ -131,6 +142,7 @@ class PromotionSchedulesUpsertHelper(
                     workingCategory1 = pe.workType1!!,
                     workingCategory3 = pe.workType3!!,
                     workingCategory4 = null,
+                    secondWorkType = secondWorkType,
                     promotionEmployee = pe,
                     ownerUser = empEntity.costCenterCode?.let { ownerByCostCenterCode[it] }
                 )

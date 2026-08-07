@@ -4,7 +4,16 @@
 class AttendanceResult {
   final int scheduleId;
   final String accountName;
-  final String workType;
+
+  /// 근무유형(근무/연차/대휴) — 서버가 표시명을 그대로 내려준다.
+  final String? workType;
+
+  /// 근무유형4 표시값(상온/라면/만두/냉동/냉장 …).
+  ///
+  /// 행사는 행사마스터 제품유형, 진열은 진열마스터 근무형태4에서 서버가 파생한다.
+  /// 사용자가 고르는 값이 아니며, 값이 없으면 표시하지 않는다.
+  final String? secondWorkType;
+
   final double distanceKm;
   final int totalCount;
   final int registeredCount;
@@ -12,7 +21,8 @@ class AttendanceResult {
   const AttendanceResult({
     required this.scheduleId,
     required this.accountName,
-    required this.workType,
+    this.workType,
+    this.secondWorkType,
     required this.distanceKm,
     required this.totalCount,
     required this.registeredCount,
@@ -22,6 +32,7 @@ class AttendanceResult {
     int? scheduleId,
     String? accountName,
     String? workType,
+    String? secondWorkType,
     double? distanceKm,
     int? totalCount,
     int? registeredCount,
@@ -30,6 +41,7 @@ class AttendanceResult {
       scheduleId: scheduleId ?? this.scheduleId,
       accountName: accountName ?? this.accountName,
       workType: workType ?? this.workType,
+      secondWorkType: secondWorkType ?? this.secondWorkType,
       distanceKm: distanceKm ?? this.distanceKm,
       totalCount: totalCount ?? this.totalCount,
       registeredCount: registeredCount ?? this.registeredCount,
@@ -41,6 +53,7 @@ class AttendanceResult {
       'scheduleId': scheduleId,
       'accountName': accountName,
       'workType': workType,
+      'secondWorkType': secondWorkType,
       'distanceKm': distanceKm,
       'totalCount': totalCount,
       'registeredCount': registeredCount,
@@ -51,7 +64,8 @@ class AttendanceResult {
     return AttendanceResult(
       scheduleId: json['scheduleId'] as int,
       accountName: json['accountName'] as String,
-      workType: json['workType'] as String,
+      workType: json['workType'] as String?,
+      secondWorkType: json['secondWorkType'] as String?,
       distanceKm: (json['distanceKm'] as num).toDouble(),
       totalCount: json['totalCount'] as int,
       registeredCount: json['registeredCount'] as int,
@@ -71,6 +85,7 @@ class AttendanceResult {
         other.scheduleId == scheduleId &&
         other.accountName == accountName &&
         other.workType == workType &&
+        other.secondWorkType == secondWorkType &&
         other.distanceKm == distanceKm &&
         other.totalCount == totalCount &&
         other.registeredCount == registeredCount;
@@ -82,6 +97,7 @@ class AttendanceResult {
       scheduleId,
       accountName,
       workType,
+      secondWorkType,
       distanceKm,
       totalCount,
       registeredCount,
@@ -92,6 +108,7 @@ class AttendanceResult {
   String toString() {
     return 'AttendanceResult(scheduleId: $scheduleId, '
         'accountName: $accountName, workType: $workType, '
+        'secondWorkType: $secondWorkType, '
         'distanceKm: $distanceKm, totalCount: $totalCount, '
         'registeredCount: $registeredCount)';
   }
