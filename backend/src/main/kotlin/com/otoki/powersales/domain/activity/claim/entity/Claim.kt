@@ -349,9 +349,18 @@ class Claim(
      *
      * SF 상 텍스트(10) 자유값이라 코스모스가 보내는 원문을 그대로 노출하고, 회신 전(null/공백) 에는
      * [ACTION_STATUS_UNCONFIRMED] 로 채운다 — 물류클레임 조치상태 picklist 기본값과 같은 어휘.
+     *
+     * 예외로 **SF 전송실패([sfSendStatus] = SEND_FAILED) 는 조치상태보다 우선**한다. 이 건은 SF 에
+     * 올라가지 못해 코스모스 조치가 시작될 수 없으므로 "미확인" 으로 보이면 처리 대기 중으로 오인된다.
+     * 재전송(web admin) 으로 SENT 가 되면 다시 조치상태 축으로 돌아온다. SF origin 마이그레이션 건은
+     * sfSendStatus 가 null 이라 본 분기에 걸리지 않는다.
      */
-    fun actionStatusLabel(): String =
-        actionStatus?.takeIf { it.isNotBlank() } ?: ACTION_STATUS_UNCONFIRMED
+    fun actionStatusLabel(): String {
+        if (sfSendStatus == ClaimSfSendStatus.SEND_FAILED) {
+            return ClaimSfSendStatus.SEND_FAILED.displayName
+        }
+        return actionStatus?.takeIf { it.isNotBlank() } ?: ACTION_STATUS_UNCONFIRMED
+    }
 
     companion object {
         /** 코스모스 조치상태 미회신 시 표시값 (SF `DKRetail__Proposal__c.ActionStatus__c` 기본값과 동일 어휘). */

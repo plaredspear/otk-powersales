@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
@@ -83,6 +84,31 @@ class ClaimQueryServiceTest {
 
             assertThat(result[0].actionStatus).isEqualTo("처리완료")
             assertThat(result[0].actionStatusLabel).isEqualTo("처리완료")
+        }
+
+        @Test
+        @DisplayName("SF 전송실패 건은 조치상태보다 전송실패를 우선 표시한다")
+        fun getClaims_actionStatusLabel_sfSendFailedWins() {
+            // SF 에 올라가지 못한 건은 코스모스 조치가 시작될 수 없어 "미확인" 으로 보이면 대기 중으로 오인된다.
+            val claim = createClaim().apply { sfSendStatus = ClaimSfSendStatus.SEND_FAILED }
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns listOf(claim)
+
+            val result = claimQueryService.getClaims(1L, null, null, null)
+
+            assertThat(result[0].actionStatusLabel).isEqualTo("전송실패")
+        }
+
+        @Test
+        @DisplayName("재전송으로 SF 전송이 성공하면 다시 조치상태 축으로 돌아온다")
+        fun getClaims_actionStatusLabel_afterResend() {
+            val claim = createClaim().apply { sfSendStatus = ClaimSfSendStatus.SENT }
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns listOf(claim)
+
+            val result = claimQueryService.getClaims(1L, null, null, null)
+
+            assertThat(result[0].actionStatusLabel).isEqualTo("미확인")
         }
 
         @Test
