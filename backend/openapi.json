@@ -13804,6 +13804,9 @@
           "actionStatus" : {
             "type" : [ "string", "null" ]
           },
+          "actionStatusLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "categoryLabel" : {
             "type" : [ "string", "null" ]
           },
@@ -14073,6 +14076,12 @@
       "ClaimListItemResponse" : {
         "properties" : {
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatusLabel" : {
             "type" : [ "string", "null" ]
           },
           "categoryLabel" : {

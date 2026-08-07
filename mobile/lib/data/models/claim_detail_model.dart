@@ -19,9 +19,9 @@ class ClaimDetailModel {
   final String? subcategoryLabel;
   final num? defectQuantity;
   final bool? sampleCollectionFlag;
-  // status/statusLabel : 알라딘 DKRetail__Status__c (알라딘→코스모스 전송상태) — 표시 전용.
-  final String status;
-  final String statusLabel;
+  /// 코스모스 조치상태 표시 문구 (미회신이면 서버가 '미확인' 을 채운다).
+  /// 알라딘 DKRetail__Status__c(전송상태) 는 신규 시스템에서 전이되지 않아 화면에 쓰지 않는다.
+  final String actionStatusLabel;
   // sfSendStatus/sfSendStatusLabel : 신규→알라딘 전송상태. 알라딘 이관(마이그레이션) 건은 null.
   final String? sfSendStatus;
   final String? sfSendStatusLabel;
@@ -68,8 +68,7 @@ class ClaimDetailModel {
     this.subcategoryLabel,
     this.defectQuantity,
     this.sampleCollectionFlag,
-    required this.status,
-    required this.statusLabel,
+    required this.actionStatusLabel,
     this.sfSendStatus,
     this.sfSendStatusLabel,
     this.customerDeliveryDate,
@@ -113,8 +112,8 @@ class ClaimDetailModel {
       subcategoryLabel: json['subcategoryLabel'] as String?,
       defectQuantity: json['defectQuantity'] as num?,
       sampleCollectionFlag: json['sampleCollectionFlag'] as bool?,
-      status: json['status'] as String,
-      statusLabel: json['statusLabel'] as String,
+      // 구버전 서버 응답 대비 fallback — 서버가 채워 보내는 것이 정상 경로.
+      actionStatusLabel: json['actionStatusLabel'] as String? ?? '미확인',
       sfSendStatus: json['sfSendStatus'] as String?,
       sfSendStatusLabel: json['sfSendStatusLabel'] as String?,
       customerDeliveryDate: json['customerDeliveryDate'] as String?,
@@ -163,8 +162,7 @@ class ClaimDetailModel {
         subcategoryLabel: subcategoryLabel,
         defectQuantity: defectQuantity?.toInt(),
         sampleCollectionFlag: sampleCollectionFlag,
-        status: status,
-        statusLabel: statusLabel,
+        actionStatusLabel: actionStatusLabel,
         sfSendStatus: sfSendStatus,
         sfSendStatusLabel: sfSendStatusLabel,
         customerDeliveryDate: _parseDate(customerDeliveryDate),

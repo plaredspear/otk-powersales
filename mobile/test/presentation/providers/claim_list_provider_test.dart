@@ -151,8 +151,7 @@ List<ClaimListItem> _buildItems(int count) => List.generate(
         claimId: i + 1,
         accountName: '거래처$i',
         productName: '제품$i',
-        status: 'SENT',
-        statusLabel: '전송완료',
+        actionStatusLabel: '조치중',
         createdAt: DateTime(2026, 6, 1),
       ),
     );
@@ -165,8 +164,7 @@ final _sampleItem1 = ClaimListItem(
   categoryLabel: '포장불량',
   subcategoryLabel: '누수/누유',
   defectQuantity: 3,
-  status: 'SUBMITTED',
-  statusLabel: '접수',
+  actionStatusLabel: '미확인',
   createdAt: DateTime(2026, 4, 8, 10, 30),
 );
 
@@ -178,7 +176,6 @@ final _sampleItem2 = ClaimListItem(
   categoryLabel: '이물혼입',
   subcategoryLabel: '플라스틱류',
   defectQuantity: 1,
-  status: 'RESOLVED',
-  statusLabel: '처리완료',
+  actionStatusLabel: '처리완료',
   createdAt: DateTime(2026, 4, 5, 14, 0),
 );

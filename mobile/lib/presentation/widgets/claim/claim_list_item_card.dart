@@ -74,10 +74,7 @@ class ClaimListItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        ClaimStatusBadge(
-          status: item.status,
-          statusLabel: item.statusLabel,
-        ),
+        ClaimStatusBadge(label: item.actionStatusLabel),
       ],
     );
   }

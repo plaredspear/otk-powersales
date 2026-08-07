@@ -19,22 +19,17 @@ import com.fasterxml.jackson.annotation.JsonValue
  *
  * **[displayName] 은 저장/전송값이라 불변**: DB 컬럼(`claim.status`)에 이 문자열이 그대로 들어가고
  * SF `DKRetail__Status__c` 는 restricted picklist (임시저장/전송완료/전송실패) 라 다른 값을 보내면
- * outbound DML 이 거부된다. 화면 문구를 바꿔야 하면 [mobileLabel] 처럼 표시 전용 라벨을 더한다.
+ * outbound DML 이 거부된다.
+ *
+ * **모바일 화면에는 이 축을 표시하지 않는다**: 신규 시스템에는 DRAFT 를 벗어나는 전이 경로가 없어
+ * (전이는 SF `SendClaimController`/`ClaimTriggerHandler` 안에서만 일어나고 마스터 sync 는 조치 필드만
+ * 가져온다) 앱 등록분은 영구히 "임시저장" 으로 남는다. 사원 화면 상태 표시는 실제로 갱신되는
+ * `Claim.actionStatus` (코스모스 조치상태) 축을 쓴다 — [com.otoki.powersales.domain.activity.claim.entity.Claim.actionStatusLabel].
  */
 enum class ClaimStatus(
-    val displayName: String,
-    /**
-     * 모바일(영업사원) 화면 표시 라벨. 기본은 [displayName] 과 동일하고, 사원 관점에서 오해를 부르는
-     * 값만 따로 지정한다.
-     *
-     * DRAFT: SF 원본은 "임시저장"(= 코스모스 미전송) 이지만, 사원에게는 ① 이미 접수된 클레임이고
-     * ② 클레임 등록 화면의 진짜 임시저장(`claim_draft` 이어쓰기) 과 같은 단어라 혼동을 준다.
-     * 그래서 사원 화면에서만 "조치중" 으로 표시한다. 웹 관리자는 재전송 판단에 전송상태 축이
-     * 필요하므로 [displayName] 기준 문구를 그대로 쓴다.
-     */
-    val mobileLabel: String = displayName
+    val displayName: String
 ) {
-    DRAFT("임시저장", mobileLabel = "조치중"),
+    DRAFT("임시저장"),
     SENT("전송완료"),
     SEND_FAILED("전송실패");
 

@@ -32,7 +32,7 @@ void main() {
         await notifier.loadDetail(1);
         expect(notifier.state.detail, isNotNull);
         expect(notifier.state.detail!.claimId, 1);
-        expect(notifier.state.detail!.status, 'SUBMITTED');
+        expect(notifier.state.detail!.actionStatusLabel, '미확인');
         expect(notifier.state.detail!.photos.length, 1);
         expect(notifier.state.isLoading, false);
       });
@@ -108,8 +108,7 @@ final _sampleDetail = ClaimDetail(
   purchaseAmount: 3500,
   purchaseMethodName: '개인카드',
   requestTypeName: '교환',
-  status: 'SUBMITTED',
-  statusLabel: '접수',
+  actionStatusLabel: '미확인',
   createdAt: DateTime(2026, 4, 8, 10, 30),
   photos: [
     const ClaimPhoto(

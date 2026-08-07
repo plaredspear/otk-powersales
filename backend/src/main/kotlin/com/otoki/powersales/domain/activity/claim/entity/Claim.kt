@@ -340,7 +340,23 @@ class Claim(
     var sfSendAttemptCount: Int = 0
 ) : BaseEntity() {
 
+    /**
+     * 모바일 클레임 목록/상세의 상태 표시 문구.
+     *
+     * 표시 축은 전송상태(status, `DKRetail__Status__c`) 가 아니라 **코스모스 조치상태**([actionStatus]) 다.
+     * status 는 신규 시스템에 전이 경로가 없어 앱 등록분이 영구히 "임시저장" 으로 남는 반면, actionStatus 는
+     * `ClaimMasterSyncBatch` (매시 정각, SF `IF_SendClaimToPWS` pull) 로 실제 처리 진행이 반영된다.
+     *
+     * SF 상 텍스트(10) 자유값이라 코스모스가 보내는 원문을 그대로 노출하고, 회신 전(null/공백) 에는
+     * [ACTION_STATUS_UNCONFIRMED] 로 채운다 — 물류클레임 조치상태 picklist 기본값과 같은 어휘.
+     */
+    fun actionStatusLabel(): String =
+        actionStatus?.takeIf { it.isNotBlank() } ?: ACTION_STATUS_UNCONFIRMED
+
     companion object {
+        /** 코스모스 조치상태 미회신 시 표시값 (SF `DKRetail__Proposal__c.ActionStatus__c` 기본값과 동일 어휘). */
+        const val ACTION_STATUS_UNCONFIRMED = "미확인"
+
         /**
          * 신규 등록용 Claim 생성 — web ([com.otoki.powersales.domain.activity.claim.service.AdminClaimCreateService]) ·
          * mobile ([com.otoki.powersales.domain.activity.claim.service.MobileClaimService]) 공용 factory.

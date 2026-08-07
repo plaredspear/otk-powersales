@@ -66,8 +66,23 @@ class ClaimQueryServiceTest {
             assertThat(result).hasSize(1)
             assertThat(result[0].claimId).isEqualTo(1L)
             assertThat(result[0].status).isEqualTo("DRAFT")
-            // 사원 화면 문구 — SF 원본 "임시저장" 이 아니라 ClaimStatus.mobileLabel.
-            assertThat(result[0].statusLabel).isEqualTo("조치중")
+            assertThat(result[0].statusLabel).isEqualTo("임시저장")
+            // 화면 표시 축은 코스모스 조치상태 — 회신 전이라 "미확인".
+            assertThat(result[0].actionStatusLabel).isEqualTo("미확인")
+        }
+
+        @Test
+        @DisplayName("코스모스 조치상태가 회신되면 그 원문이 화면 표시 문구가 된다")
+        fun getClaims_actionStatusLabel_usesCosmosValue() {
+            // SF DKRetail__ActionStatus__c 는 picklist 가 아닌 텍스트(10) 라 코스모스 회신 원문을 그대로 쓴다.
+            val claim = createClaim().apply { actionStatus = "처리완료" }
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns listOf(claim)
+
+            val result = claimQueryService.getClaims(1L, null, null, null)
+
+            assertThat(result[0].actionStatus).isEqualTo("처리완료")
+            assertThat(result[0].actionStatusLabel).isEqualTo("처리완료")
         }
 
         @Test
@@ -174,7 +189,8 @@ class ClaimQueryServiceTest {
 
             assertThat(result.claimId).isEqualTo(1L)
             assertThat(result.status).isEqualTo("DRAFT")
-            assertThat(result.statusLabel).isEqualTo("조치중")
+            assertThat(result.statusLabel).isEqualTo("임시저장")
+            assertThat(result.actionStatusLabel).isEqualTo("미확인")
             assertThat(result.dateType).isEqualTo("EXPIRY_DATE")
             assertThat(result.dateTypeLabel).isEqualTo("유통기한")
             assertThat(result.photos).hasSize(1)

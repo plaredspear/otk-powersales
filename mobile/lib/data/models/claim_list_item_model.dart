@@ -11,8 +11,8 @@ class ClaimListItemModel {
   final String? subcategoryLabel;
   final num? defectQuantity;
   final String? defectDescription;
-  final String status;
-  final String statusLabel;
+  /// 코스모스 조치상태 표시 문구 (서버가 미회신이면 '미확인' 을 채워 내려준다).
+  final String actionStatusLabel;
   final String? date;
   final DateTime createdAt;
 
@@ -26,8 +26,7 @@ class ClaimListItemModel {
     this.subcategoryLabel,
     this.defectQuantity,
     this.defectDescription,
-    required this.status,
-    required this.statusLabel,
+    required this.actionStatusLabel,
     this.date,
     required this.createdAt,
   });
@@ -43,8 +42,8 @@ class ClaimListItemModel {
       subcategoryLabel: json['subcategoryLabel'] as String?,
       defectQuantity: json['defectQuantity'] as num?,
       defectDescription: json['defectDescription'] as String?,
-      status: json['status'] as String,
-      statusLabel: json['statusLabel'] as String,
+      // 구버전 서버 응답 대비 fallback — 서버가 채워 보내는 것이 정상 경로.
+      actionStatusLabel: json['actionStatusLabel'] as String? ?? '미확인',
       date: json['date'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -60,8 +59,7 @@ class ClaimListItemModel {
         subcategoryLabel: subcategoryLabel,
         defectQuantity: defectQuantity?.toInt(),
         defectDescription: defectDescription,
-        status: status,
-        statusLabel: statusLabel,
+        actionStatusLabel: actionStatusLabel,
         date: date != null ? DateTime.tryParse(date!) : null,
         createdAt: createdAt,
       );
