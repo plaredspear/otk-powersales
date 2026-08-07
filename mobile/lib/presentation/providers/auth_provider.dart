@@ -10,6 +10,7 @@ import '../../core/session/session_reset_controller.dart';
 import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
+import '../../data/datasources/token_refresh_coordinator.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auto_login_usecase.dart';
@@ -156,6 +157,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// token 의 유효기간(ON=60일 장수명 / OFF=7일 기본)만 결정하며, 그 만료 판단은 서버가
   /// refresh 응답의 성공/실패로 내린다. Refresh Token 이 없으면(로그인 이력 없음/로그아웃)
   /// 로그인 화면으로 떨어진다.
+  ///
+  /// 실패 처리는 **서버가 401 로 세션 무효를 확정한 경우에만** 토큰을 폐기한다. 네트워크
+  /// 오류/타임아웃/5xx 로 서버에 닿지 못한 것은 세션 만료가 아니므로 토큰을 보존한다.
+  /// 회전 자체는 [TokenRefreshCoordinator] 가 인터셉터의 401 자동 갱신과 단일화한다.
   Future<void> tryAutoLogin() async {
     try {
       final refreshToken = await _localDataSource.getRefreshToken();
@@ -188,10 +193,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // 백그라운드 전환 등으로 요청이 취소된 경우 — 인증 실패가 아니므로 토큰을
       // 삭제하지 않는다. 재개 시 다시 자동 로그인을 시도할 수 있어야 한다.
       if (isRequestCancelled(e)) return;
-      // 자동 로그인 실패 → 토큰 삭제 → 로그인 화면
-      await _localDataSource.clearTokens();
+
+      // 세션 무효(401)가 확정된 경우에만 토큰을 폐기한다.
+      //
+      // 구 구현은 모든 예외에서 clearTokens() 했다. 그 탓에 앱 시작 순간 통신이 잠깐
+      // 불안정하거나(터널/엘리베이터/기내모드 해제 직후) 서버가 5xx 를 내면, 멀쩡히 살아
+      // 있는 refresh token 이 지워져 **다음 실행에도 복원 불가** — 사용자에겐 "자동 로그인이
+      // 계속 풀린다" 로 보인다. 서버에 닿지 못한 것은 세션 만료가 아니므로 토큰을 보존하고,
+      // 다음 실행(또는 사용자의 수동 로그인)에서 그대로 복원되게 한다.
+      final sessionInvalid = isSessionInvalidError(e);
+      if (sessionInvalid) {
+        await _localDataSource.clearTokens();
+      }
       if (!mounted) return;
-      state = state.toUnauthenticated();
+      state = sessionInvalid
+          ? state.toUnauthenticated()
+          // 일시적 실패는 사유를 알려 준다 — 안내가 없으면 사용자는 세션이 만료된 줄 알고
+          // 재로그인을 시도한다. 다음 로그인 시도(toLoading)에서 메시지는 초기화된다.
+          : state.toUnauthenticated().copyWith(errorMessage: extractErrorMessage(e));
     }
   }
 
@@ -386,6 +405,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // 토큰 삭제
     await _localDataSource.clearTokens();
     await _localDataSource.setAutoLogin(false);
+    // 폐기된 세션의 회전 캐시를 프로세스에 남겨 두지 않는다(코디네이터는 프로세스 싱글턴).
+    TokenRefreshCoordinator.instance.reset();
 
     // 전역 상태 초기화 — 루트 ProviderScope 를 재생성해 모든 Provider(도메인 캐시 포함)를
     // 폐기한다. 이를 통해 다른 계정으로 재로그인 시 이전 사용자의 잔여 데이터가 노출되지 않는다.

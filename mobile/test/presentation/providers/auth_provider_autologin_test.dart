@@ -113,6 +113,9 @@ class _MockAuthRepository implements AuthRepository {
   /// refreshToken 이 반환할 토큰(주입). null 이면 UnimplementedError.
   AuthToken? refreshResult;
 
+  /// refreshToken 이 던질 예외(주입). 지정하면 [refreshResult] 보다 우선한다.
+  Object? refreshError;
+
   /// getMe 가 반환할 사용자(주입). null 이면 UnimplementedError.
   User? meResult;
 
@@ -128,6 +131,8 @@ class _MockAuthRepository implements AuthRepository {
   Future<AuthToken> refreshToken(String refreshToken) async {
     refreshCalled = true;
     lastRefreshToken = refreshToken;
+    final error = refreshError;
+    if (error != null) throw error;
     return refreshResult ?? (throw UnimplementedError());
   }
 
@@ -309,6 +314,72 @@ void main() {
 
       expect(repository.refreshCalled, isFalse);
       expect(notifier.state.isAuthenticated, isFalse);
+    });
+
+    test('네트워크 오류로 실패하면 refresh token 을 보존한다 (다음 실행에서 복원 가능)',
+        () async {
+      await localDataSource.saveRefreshToken('stored-refresh');
+      repository.refreshError = DioException.connectionError(
+        requestOptions: RequestOptions(path: '/auth/refresh'),
+        reason: 'network down',
+      );
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      // 서버에 닿지 못한 것은 세션 만료가 아니다 — 토큰을 지우면 통신이 잠깐 끊겼을 뿐인
+      // 사용자가 영구 로그아웃되어 "자동 로그인이 계속 풀린다".
+      expect(await localDataSource.getRefreshToken(), 'stored-refresh');
+      expect(notifier.state.isAuthenticated, isFalse);
+      // 세션 만료가 아니라 통신 문제임을 로그인 화면에서 알린다.
+      expect(notifier.state.errorMessage, isNotNull);
+    });
+
+    test('서버 5xx 로 실패해도 refresh token 을 보존한다', () async {
+      await localDataSource.saveRefreshToken('stored-refresh');
+      final requestOptions = RequestOptions(path: '/auth/refresh');
+      repository.refreshError = DioException.badResponse(
+        statusCode: 503,
+        requestOptions: requestOptions,
+        response: Response(requestOptions: requestOptions, statusCode: 503),
+      );
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      expect(await localDataSource.getRefreshToken(), 'stored-refresh');
+      expect(notifier.state.isAuthenticated, isFalse);
+    });
+
+    test('서버가 401 로 세션 무효를 확정하면 토큰을 폐기한다', () async {
+      await localDataSource.saveRefreshToken('stored-refresh');
+      final requestOptions = RequestOptions(path: '/auth/refresh');
+      repository.refreshError = DioException.badResponse(
+        statusCode: 401,
+        requestOptions: requestOptions,
+        response: Response(requestOptions: requestOptions, statusCode: 401),
+      );
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      // 만료 / 재사용 탐지 / 단말 회수 — 재로그인 외에 방법이 없으므로 토큰을 남기지 않는다.
+      expect(await localDataSource.getRefreshToken(), isNull);
+      expect(notifier.state.isAuthenticated, isFalse);
+    });
+
+    test('요청 취소(백그라운드 전환)는 토큰을 보존하고 상태를 바꾸지 않는다', () async {
+      await localDataSource.saveRefreshToken('stored-refresh');
+      repository.refreshError = DioException.requestCancelled(
+        requestOptions: RequestOptions(path: '/auth/refresh'),
+        reason: 'app lifecycle',
+      );
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      expect(await localDataSource.getRefreshToken(), 'stored-refresh');
+      expect(notifier.state.errorMessage, isNull);
     });
   });
 }

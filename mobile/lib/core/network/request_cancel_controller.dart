@@ -40,6 +40,18 @@ class RequestCancelController {
 /// 앱 전역 단일 인스턴스. main 의 lifecycle 옵저버에서 [cancelAll] 을 호출한다.
 final requestCancelController = RequestCancelController();
 
+/// 생명주기 일괄 취소([RequestCancelController.cancelAll])에서 **제외**되는 전용 취소 토큰.
+///
+/// "서버에서는 이미 반영됐는데 응답만 못 받으면 복구 불가" 인 요청에 붙인다. 현재 유일한
+/// 대상은 refresh token 회전이다 — 서버는 refresh token 을 1회용으로 소비(회전)하므로,
+/// 백그라운드 전환으로 응답을 놓치면 단말에는 **이미 폐기된 옛 token** 만 남는다. 다음 갱신에서
+/// 그 token 을 보내면 서버가 재사용(탈취)으로 판정해 token family 전체를 무효화하고, 사용자는
+/// 아무 잘못 없이 강제 로그아웃된다. 이 토큰은 절대 cancel 하지 않으므로, 앱이 백그라운드로
+/// 가도 회전 응답을 끝까지 수신해 새 token 페어를 저장할 수 있다.
+///
+/// 일반 조회 요청에는 쓰지 말 것 — 취소되지 않아 timeout 까지 매달린다.
+final CancelToken lifecycleExemptCancelToken = CancelToken();
+
 /// 취소된 요청 여부 판별 — 취소는 정상 흐름이므로 에러 로그/상태 오염에서 제외하는 데 쓴다.
 bool isRequestCancelled(Object error) {
   return error is DioException && CancelToken.isCancel(error);

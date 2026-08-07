@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../core/services/app_version_fields.dart';
 import 'auth_interceptor.dart';
+import 'token_refresh_coordinator.dart';
 import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
@@ -38,23 +39,15 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<AuthTokenModel> refreshToken(String refreshToken) async {
-    final response = await _dio.post(
-      '/api/v1/mobile/auth/refresh',
-      data: {
-        'refreshToken': refreshToken,
-        // 현재 사용 중인 앱 버전 보고 (서버가 사용자별 현재 버전 기록).
-        ...await appVersionFields(),
-      },
-      // 명시적 자동 로그인의 refresh 실패는 호출측(tryAutoLogin)이 단독 처리한다.
-      // 인터셉터가 401 을 가로채 _forceLogout(세션 재생성)하면 로그인 화면이 두 번
-      // 쌓이므로, 이 요청은 인터셉터의 강제 로그아웃 대상에서 제외한다.
-      options: Options(
-        extra: {AuthInterceptor.skipAuthLogoutExtraKey: true},
-      ),
+    // 회전은 [TokenRefreshCoordinator] 가 단일화한다 — 세션 복원(tryAutoLogin)과 인터셉터의
+    // 401 자동 갱신이 같은 refresh token 으로 동시에 회전하면, 진 쪽이 서버에서 재사용(탈취)
+    // 으로 판정되어 token family 가 통째로 무효화된다. 요청에 붙는 강제 로그아웃 우회 표식과
+    // 생명주기 취소 면제도 코디네이터가 함께 담당한다.
+    final data = await TokenRefreshCoordinator.instance.refresh(
+      dio: _dio,
+      refreshToken: refreshToken,
     );
-    return AuthTokenModel.fromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
+    return AuthTokenModel.fromJson(data);
   }
 
   @override

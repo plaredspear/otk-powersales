@@ -113,6 +113,22 @@ bool isInconclusiveError(dynamic e) {
   }
 }
 
+/// 서버가 "이 세션은 더 이상 유효하지 않다" 고 **확정한** 오류인지.
+///
+/// 판정 기준은 401 응답 하나뿐이다 — 만료 / refresh 재사용 탐지(family revoke) /
+/// 단말 회수(DEVICE_REVOKED) 가 모두 401 로 내려온다.
+///
+/// 네트워크 오류·타임아웃·5xx 는 **서버 판정이 아니라 도달 실패**이므로 여기서 false 다.
+/// 이 구분이 없으면 통신이 잠깐 끊긴 사용자의 refresh token 을 지워 영구 로그아웃시키게
+/// 된다(자동 로그인이 계속 풀리는 원인). 세션 무효가 확정된 경우에만 토큰을 폐기한다.
+///
+/// 403 은 세션 무효가 아니다 — GPS 동의 필요 / 강제 비밀번호 변경처럼 세션은 살아 있고
+/// 후속 절차만 요구하는 상태라, 인터셉터가 별도 화면 전환으로 처리한다.
+bool isSessionInvalidError(dynamic e) {
+  if (e is! DioException) return false;
+  return e.response?.statusCode == 401;
+}
+
 /// API 에러 응답에서 부가 정보(`error.details`)를 추출합니다.
 ///
 /// 백엔드가 라인별 위반 목록처럼 구조화된 사유를 담아 주는 경우

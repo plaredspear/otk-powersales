@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/session/session_reset_controller.dart';
 import 'package:mobile/data/datasources/auth_interceptor.dart';
 import 'package:mobile/data/datasources/auth_local_datasource.dart';
+import 'package:mobile/data/datasources/token_refresh_coordinator.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,9 @@ void main() {
   late List<RequestOptions> capturedRequests;
 
   setUp(() {
+    // 회전 코디네이터는 프로세스 싱글턴이라 테스트 간 소비 캐시가 남는다 — 격리를 위해 초기화.
+    TokenRefreshCoordinator.instance.reset();
+
     fakeLocalDataSource = FakeAuthLocalDataSource();
     dio = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
 
@@ -312,6 +316,87 @@ void main() {
     });
   });
 
+  group('일시적 실패 가드 (네트워크/서버 장애)', () {
+    test('갱신이 네트워크 오류로 실패하면 로그아웃하지 않고 토큰을 보존한다', () async {
+      var forceLogoutCalls = 0;
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'liveAccess'
+        ..refreshToken = 'liveRefresh';
+      d.interceptors.add(AuthInterceptor(
+        localDataSource: localDS,
+        dio: d,
+        onForceLogout: () async => forceLogoutCalls++,
+      ));
+      d.httpClientAdapter = _Refresh401ProtectedAdapter(
+        refreshFailure: (options) => DioException.connectionError(
+          requestOptions: options,
+          reason: 'network down',
+        ),
+      );
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        // 원 401 이 그대로 전파되어야 한다(호출측이 재시도/에러 표시).
+        expect(e.response?.statusCode, 401);
+      }
+
+      // 서버에 닿지 못한 것은 세션 만료가 아니다 — 지우면 통신 불안정이 곧 영구 로그아웃이 된다.
+      expect(forceLogoutCalls, 0);
+      expect(localDS.accessToken, 'liveAccess');
+      expect(localDS.refreshToken, 'liveRefresh');
+    });
+
+    test('갱신이 5xx 로 실패하면 로그아웃하지 않고 토큰을 보존한다', () async {
+      var forceLogoutCalls = 0;
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'liveAccess'
+        ..refreshToken = 'liveRefresh';
+      d.interceptors.add(AuthInterceptor(
+        localDataSource: localDS,
+        dio: d,
+        onForceLogout: () async => forceLogoutCalls++,
+      ));
+      d.httpClientAdapter = _Refresh401ProtectedAdapter(refreshStatus: 503);
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (_) {
+        // 에러 전파 자체는 정상.
+      }
+
+      expect(forceLogoutCalls, 0);
+      expect(localDS.refreshToken, 'liveRefresh');
+    });
+
+    test('갱신이 401 이면 세션 만료로 확정해 강제 로그아웃한다', () async {
+      var forceLogoutCalls = 0;
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'staleAccess'
+        ..refreshToken = 'staleRefresh';
+      d.interceptors.add(AuthInterceptor(
+        localDataSource: localDS,
+        dio: d,
+        onForceLogout: () async => forceLogoutCalls++,
+      ));
+      d.httpClientAdapter = _Refresh401ProtectedAdapter(refreshStatus: 401);
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (_) {}
+
+      // 서버가 무효를 확정한 경우는 그대로 로그아웃되어야 한다(일시적 실패 가드가 삼키면 안 됨).
+      expect(forceLogoutCalls, 1);
+      expect(localDS.refreshToken, isNull);
+    });
+  });
+
   group('취소된 요청 가드 (백그라운드 전환)', () {
     test('취소 에러는 토큰 갱신/로그아웃 없이 그대로 전파한다(토큰 보존)', () async {
       // 응답 대신 즉시 취소 에러를 방출하는 어댑터 — 백그라운드 cancelAll 을 모사.
@@ -583,6 +668,50 @@ class _CancelAdapter implements HttpClientAdapter {
     throw DioException.requestCancelled(
       requestOptions: options,
       reason: 'app lifecycle',
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 보호 자원은 401 로, `/auth/refresh` 는 지정한 방식(예외 또는 상태코드)으로 실패시키는 어댑터.
+/// "액세스 토큰은 만료됐는데 갱신도 실패" 상황에서 실패 유형별 처리를 구분 검증한다.
+class _Refresh401ProtectedAdapter implements HttpClientAdapter {
+  /// refresh 요청에 던질 예외 생성기(네트워크 오류 재현). null 이면 [refreshStatus] 로 응답.
+  final DioException Function(RequestOptions options)? refreshFailure;
+
+  /// refresh 응답 상태코드 (예: 503, 401).
+  final int refreshStatus;
+
+  _Refresh401ProtectedAdapter({
+    this.refreshFailure,
+    this.refreshStatus = 500,
+  });
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.path.contains('/auth/refresh')) {
+      final failure = refreshFailure;
+      if (failure != null) throw failure(options);
+      return ResponseBody.fromString(
+        '{"success":false,"data":null,"error":{"code":"ERROR","message":"실패"}}',
+        refreshStatus,
+        headers: {
+          'content-type': ['application/json; charset=utf-8'],
+        },
+      );
+    }
+    return ResponseBody.fromString(
+      '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
+      401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
     );
   }
 

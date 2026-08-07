@@ -6,9 +6,10 @@ import 'package:dio/dio.dart';
 import '../../app_router.dart';
 import '../../core/navigation/navigator_key.dart';
 import '../../core/network/request_cancel_controller.dart';
-import '../../core/services/app_version_fields.dart';
 import '../../core/session/session_reset_controller.dart';
+import '../../core/utils/error_utils.dart';
 import 'auth_local_datasource.dart';
+import 'token_refresh_coordinator.dart';
 
 /// 인증 Dio Interceptor
 ///
@@ -19,10 +20,6 @@ import 'auth_local_datasource.dart';
 class AuthInterceptor extends Interceptor {
   final AuthLocalDataSource _localDataSource;
   final Dio _dio;
-
-  /// 토큰 갱신 중복 방지용
-  bool _isRefreshing = false;
-  Completer<String?>? _refreshCompleter;
 
   /// 401 → 토큰 갱신 후 재시도된 요청 표식 (무한 루프 방지)
   static const String _retriedKey = '__auth_retried__';
@@ -125,7 +122,9 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    // 이미 refresh 요청 자체가 401이면 로그아웃
+    // refresh 요청 자체의 401 = 세션 만료. 다만 [TokenRefreshCoordinator] 경유 회전에는
+    // skip 표식이 붙어 onError 앞단에서 이미 전파되므로 여기 도달하지 않는다 — 표식 없이
+    // refresh 를 직접 호출하는 경로가 생겼을 때를 위한 방어다.
     if (err.requestOptions.path.contains('/auth/refresh')) {
       await _forceLogout(reason: LogoutReason.sessionExpired);
       return handler.next(err);
@@ -148,12 +147,18 @@ class AuthInterceptor extends Interceptor {
     }
 
     try {
-      final newToken = await _refreshAccessToken();
+      final outcome = await _refreshAccessToken();
+      final newToken = outcome.accessToken;
       if (newToken == null) {
         // 갱신을 대기하던 동시 요청이 그 사이 취소됐으면(백그라운드 전환) 로그아웃하지
         // 않는다. 갱신 주도 요청의 취소는 _refreshAccessToken 이 rethrow 해 아래
         // catch 에서 처리되고, 대기 요청은 여기서 자신의 취소 여부로 가드한다.
         if (err.requestOptions.cancelToken?.isCancelled == true) {
+          return handler.next(err);
+        }
+        // 서버에 닿지 못한 실패(네트워크/타임아웃/5xx)는 세션 만료가 아니다. 토큰을 보존한
+        // 채 원 에러만 전파해, 통신이 잠깐 끊겼을 뿐인 사용자가 로그아웃되지 않게 한다.
+        if (outcome.transient) {
           return handler.next(err);
         }
         await _forceLogout(reason: LogoutReason.sessionExpired);
@@ -172,38 +177,34 @@ class AuthInterceptor extends Interceptor {
       if (isRequestCancelled(e)) {
         return handler.next(err);
       }
+      // 재시도가 네트워크 오류/5xx 로 실패한 것도 세션 만료가 아니다 — 갱신은 이미 성공해
+      // 새 토큰이 저장돼 있으므로, 지우지 말고 다음 요청에서 그대로 쓰게 한다.
+      if (!isSessionInvalidError(e)) {
+        return handler.next(err);
+      }
       await _forceLogout(reason: LogoutReason.sessionExpired);
       handler.next(err);
     }
   }
 
-  /// 토큰 갱신 (동시 요청 시 1회만 수행)
-  Future<String?> _refreshAccessToken() async {
-    if (_isRefreshing) {
-      // 다른 요청이 이미 갱신 중 → 완료 대기
-      return _refreshCompleter?.future;
+  /// 토큰 갱신.
+  ///
+  /// 실제 회전은 [TokenRefreshCoordinator] 가 수행한다 — 인터셉터 안의 동시 401 뿐 아니라
+  /// 콜드스타트 세션 복원(`AuthNotifier.tryAutoLogin`)과도 회전을 공유해야 하기 때문이다.
+  /// 인터셉터 자체 락으로는 그 교차 경로를 막을 수 없어, 같은 refresh token 이 두 번 나가
+  /// 재사용 탐지(family revoke)로 세션이 끊기는 사고가 났다.
+  Future<_RefreshOutcome> _refreshAccessToken() async {
+    final refreshToken = await _localDataSource.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return const _RefreshOutcome.sessionInvalid();
     }
 
-    _isRefreshing = true;
-    _refreshCompleter = Completer<String?>();
-
     try {
-      final refreshToken = await _localDataSource.getRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) {
-        _refreshCompleter!.complete(null);
-        return null;
-      }
-
-      final response = await _dio.post(
-        '/api/v1/mobile/auth/refresh',
-        data: {
-          'refreshToken': refreshToken,
-          // 현재 사용 중인 앱 버전 보고 (자동 리프레시로 현재 버전 최신화).
-          ...await appVersionFields(),
-        },
+      final data = await TokenRefreshCoordinator.instance.refresh(
+        dio: _dio,
+        refreshToken: refreshToken,
       );
 
-      final data = response.data['data'] as Map<String, dynamic>;
       final newAccessToken = data['accessToken'] as String;
       // 서버는 refresh 마다 refresh token 을 회전(이전 token 즉시 폐기 + 재사용 탐지)하며
       // 응답에 항상 새 refresh token 을 포함한다(TokenResponse.refreshToken 은 non-null).
@@ -214,20 +215,18 @@ class AuthInterceptor extends Interceptor {
       await _localDataSource.saveAccessToken(newAccessToken);
       await _localDataSource.saveRefreshToken(newRefreshToken);
 
-      _refreshCompleter!.complete(newAccessToken);
-      return newAccessToken;
+      return _RefreshOutcome.success(newAccessToken);
     } catch (e) {
-      // 갱신 요청 자체가 취소된 경우(백그라운드 전환) — null(인증 실패)로 환원하면
-      // 호출자가 _forceLogout 으로 빠진다. 취소는 실패가 아니므로 예외를 전파해
-      // _handle401 의 취소 가드가 토큰을 보존하도록 한다. 대기 중인 동시 요청은
-      // null 로 완료시켜 각자 자신의 취소 경로를 타게 한다.
-      _refreshCompleter!.complete(null);
+      // 갱신 요청이 취소된 경우 — 실패로 환원하면 호출자가 _forceLogout 으로 빠진다.
+      // 취소는 실패가 아니므로 예외를 전파해 _handle401 의 취소 가드가 토큰을 보존하게 한다.
       if (isRequestCancelled(e)) {
         rethrow;
       }
-      return null;
-    } finally {
-      _isRefreshing = false;
+      // 401 만 세션 무효 확정. 그 외(네트워크/타임아웃/5xx/파싱)는 서버 판정이 아니므로
+      // 토큰을 보존해야 한다 — 여기서 로그아웃시키면 통신 불안정이 곧 강제 재로그인이 된다.
+      return isSessionInvalidError(e)
+          ? const _RefreshOutcome.sessionInvalid()
+          : const _RefreshOutcome.transientFailure();
     }
   }
 
@@ -315,7 +314,34 @@ class AuthInterceptor extends Interceptor {
     if (_forcedLogout) return;
     _forcedLogout = true;
     await _localDataSource.clearTokens();
+    // 폐기된 세션의 회전 캐시를 프로세스에 남겨 두지 않는다.
+    TokenRefreshCoordinator.instance.reset();
     unawaited(_onForceLogout?.call() ?? Future<void>.value());
     SessionResetController.instance.requestReset(reason: reason);
   }
+}
+
+/// 토큰 갱신 시도 결과.
+///
+/// 실패를 한 가지로 뭉뚱그리면(구 구현의 `null` 반환) 네트워크 장애까지 세션 만료로 처리돼
+/// 강제 로그아웃된다. "서버가 401 로 무효를 확정" 과 "서버에 닿지 못함" 을 구분해,
+/// 후자는 토큰을 보존한 채 원 에러만 전파한다.
+class _RefreshOutcome {
+  /// 갱신된 access token. 실패면 null.
+  final String? accessToken;
+
+  /// 세션 무효가 아니라 일시적 실패(네트워크/타임아웃/5xx)인지.
+  final bool transient;
+
+  const _RefreshOutcome.success(String this.accessToken) : transient = false;
+
+  /// 서버가 401 로 세션 무효를 확정 — 재로그인 필요.
+  const _RefreshOutcome.sessionInvalid()
+      : accessToken = null,
+        transient = false;
+
+  /// 서버 판정 없이 실패 — 토큰 보존.
+  const _RefreshOutcome.transientFailure()
+      : accessToken = null,
+        transient = true;
 }
