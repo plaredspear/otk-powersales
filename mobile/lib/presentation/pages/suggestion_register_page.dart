@@ -172,16 +172,15 @@ class _SuggestionRegisterPageState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SuggestionCategorySelector(
-                      selectedCategory: state.form.category,
-                      onCategoryChanged: notifier.changeCategory,
-                      categories: widget.isProposalEntry
-                          ? const [
-                              SuggestionCategory.newProduct,
-                              SuggestionCategory.existingProduct,
-                            ]
-                          : const [SuggestionCategory.logisticsClaim],
-                    ),
+                    // 선택지가 2개 이상일 때만 노출한다. 물류 클레임 등록 진입은
+                    // 분류가 '물류 클레임' 하나뿐이라 UI 를 감추고 진입 시
+                    // reset(category:) 로 선택된 값을 그대로 전송한다.
+                    if (_selectableCategories.length > 1)
+                      SuggestionCategorySelector(
+                        selectedCategory: state.form.category,
+                        onCategoryChanged: notifier.changeCategory,
+                        categories: _selectableCategories,
+                      ),
                     ..._buildCategoryFields(state, notifier),
                     const SizedBox(height: 24),
                   ],
@@ -191,6 +190,15 @@ class _SuggestionRegisterPageState
       bottomNavigationBar: _buildBottomBar(context, state, notifier),
     );
   }
+
+  /// 진입점별 선택 가능한 분류 목록.
+  /// 물류 클레임 등록은 1개뿐이라 선택 UI 없이 고정 전송된다.
+  List<SuggestionCategory> get _selectableCategories => widget.isProposalEntry
+      ? const [
+          SuggestionCategory.newProduct,
+          SuggestionCategory.existingProduct,
+        ]
+      : const [SuggestionCategory.logisticsClaim];
 
   /// 카테고리별 분기 필드 — 레거시 필드 순서 정합
   List<Widget> _buildCategoryFields(
