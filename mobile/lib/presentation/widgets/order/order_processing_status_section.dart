@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/quantity_display.dart';
 import '../../../domain/entities/order_detail.dart';
 
 class OrderProcessingStatusSection extends StatelessWidget {
@@ -156,7 +157,8 @@ class OrderProcessingStatusSection extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              item.deliveredQuantity,
+              // "0 BOX" 등 0 수량은 미표시 (빈 문자열 → 열만 비어 보임).
+              hideZeroQuantity(item.deliveredQuantity),
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),

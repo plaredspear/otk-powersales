@@ -4,6 +4,7 @@ import 'package:mobile/domain/entities/order_detail.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/quantity_display.dart';
 
 /// 거래처별 주문 제품 테이블
 ///
@@ -129,7 +130,8 @@ class ClientOrderItemTable extends StatelessWidget {
                         SizedBox(
                           width: 80,
                           child: Text(
-                            item.deliveredQuantity,
+                            // "0 BOX" 등 0 수량은 미표시 (빈 문자열 → 열만 비어 보임).
+                            hideZeroQuantity(item.deliveredQuantity),
                             style: AppTypography.bodyMedium,
                             textAlign: TextAlign.center,
                           ),

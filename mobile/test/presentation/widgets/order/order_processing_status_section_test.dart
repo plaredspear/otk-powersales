@@ -61,4 +61,23 @@ void main() {
       expect(find.text('배송완료'), findsNothing);
     });
   });
+
+  group('OrderProcessingStatusSection - 납품수량 표기', () {
+    ProcessingItem itemWithQuantity(String quantity) => ProcessingItem(
+          productCode: 'P001',
+          productName: '진라면 매운맛',
+          deliveredQuantity: quantity,
+          deliveryStatus: OrderDeliveryStatus.shipping,
+        );
+
+    testWidgets('0 수량은 미표시', (tester) async {
+      await tester.pumpWidget(buildSection([itemWithQuantity('0 BOX')]));
+      expect(find.text('0 BOX'), findsNothing);
+    });
+
+    testWidgets('0 아닌 수량은 그대로 표시', (tester) async {
+      await tester.pumpWidget(buildSection([itemWithQuantity('10 BOX (300 EA)')]));
+      expect(find.text('10 BOX (300 EA)'), findsOneWidget);
+    });
+  });
 }

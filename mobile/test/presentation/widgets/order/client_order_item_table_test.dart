@@ -35,6 +35,14 @@ void main() {
       expect(find.text('배송수량: 0 BOX (0 EA)'), findsNWidgets(2));
     });
 
+    testWidgets('납품수량 "0 BOX" 는 미표시, 0 아닌 값만 표시', (tester) async {
+      await tester.pumpWidget(buildTable(items: _items4));
+
+      expect(find.text('0 BOX'), findsNothing);
+      expect(find.text('5 BOX'), findsOneWidget);
+      expect(find.text('10 BOX'), findsOneWidget);
+    });
+
     testWidgets('SHIPPING/DELIVERED 만 onItemTap 활성', (tester) async {
       final tapped = <String>[];
       await tester.pumpWidget(buildTable(

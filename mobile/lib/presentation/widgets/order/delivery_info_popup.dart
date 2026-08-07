@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/quantity_display.dart';
 import '../../../domain/entities/order_detail.dart';
 
 class DeliveryInfoPopup extends StatelessWidget {
@@ -80,8 +81,11 @@ class DeliveryInfoPopup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoRow('품목', '${processingItem.productName} (${processingItem.productCode})'),
-          SizedBox(height: AppSpacing.md),
-          _buildInfoRow('납품 수량', processingItem.deliveredQuantity),
+          // 납품수량 — "0 BOX" 등 0 수량이면 행 자체를 생략 (목록 표기와 동일 기준).
+          if (hideZeroQuantity(processingItem.deliveredQuantity).isNotEmpty) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('납품 수량', processingItem.deliveredQuantity),
+          ],
           // 배송수량 — 거래처주문 상세에서만 병기 (실제 출하량 "N BOX (M EA)").
           if (shippedQuantity != null) ...[
             SizedBox(height: AppSpacing.md),
