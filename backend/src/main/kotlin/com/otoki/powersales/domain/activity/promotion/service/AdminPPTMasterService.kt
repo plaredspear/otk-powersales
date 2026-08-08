@@ -287,24 +287,27 @@ class AdminPPTMasterService(
         )
     }
 
+    /**
+     * 전문행사조 마스터 삭제 — **마스터 row 만 제거하고 사원 / 근무일정 / 이력에는 손대지 않는다.**
+     *
+     * 레거시 매핑: `PPTMasterTrigger` (before delete) → `PPTMasterTriggerHandler.beforeDelete()` — UC.
+     * 레거시 동등성: 해당 핸들러는 **빈 메서드**이고 after delete 는 트리거에 등록조차 되어 있지 않다.
+     * 마스터를 삭제하는 Apex 도 없어(SF 표준 레코드 삭제만 존재) 삭제는 부수 효과가 전혀 없다:
+     * - 사원 `ProfessionalPromotionTeam__c` 는 **직전 값 그대로 유지**된다. `Batch_PPTMaster1` 은 유효
+     *   마스터가 있는 사원에게 값을 밀어넣기만 하고 마스터가 사라진 사원을 비우지 않으므로, 새 마스터가
+     *   생기거나 수기 편집하기 전까지 값이 남는다. (마스터 없이 사원 조를 유지하는 운영 형태가 존재.)
+     * - 사원 값이 안 바뀌므로 `EmployeeTrigger` 의 이력 기록(`ProfessionalPromotionTeamHistory`)도 돌지 않고,
+     *   미래 근무일정 삭제도 일어나지 않는다.
+     * - 이력 오브젝트에는 마스터 참조 필드 자체가 없어 기존 이력 행은 무영향이다. 신규는 이력에 원인 마스터
+     *   FK 를 두었으므로 `ON DELETE SET NULL` 로 행을 보존하고 참조만 끊는다
+     *   (`V202606281620__add_ppt_master_fk_to_history.sql`).
+     *
+     * 만료(종료일 도래)로 인한 사원 해제는 별개 경로다 — `Batch_PPTMaster2` 정합의 `expireMasters` 가 담당한다.
+     */
     @Transactional
     fun deleteMaster(id: Long) {
         val master = findMasterById(id)
-        val employeeId = master.employeeId
-
         pptMasterRepository.delete(master)
-
-        // employee_id 미매핑 row 는 employee 후처리 스킵
-        if (employeeId == null) return
-
-        // 다른 유효 마스터가 없으면 미배정(null)으로 복귀
-        val remainingValid = pptMasterRepository.findValidMastersByEmployeeId(employeeId, LocalDate.now())
-        if (remainingValid.isEmpty()) {
-            val employee = employeeRepository.findById(employeeId).orElse(null)
-            if (employee != null) {
-                updateEmployeeTeam(employee, null)
-            }
-        }
     }
 
     fun getHistory(masterId: Long, pageable: Pageable): PPTMasterHistoryListResponse {
@@ -741,8 +744,9 @@ class AdminPPTMasterService(
 
     /**
      * @param masterId 변경을 유발한 전문행사조 마스터 id. 원인 마스터를 특정할 수 있는 경로
-     *   (생성/수정/확정/sync/만료)는 마스터 id 를 넘기고, 삭제로 인한 해제 경로는 마스터가
-     *   이미 제거되었으므로 `null` 을 넘긴다.
+     *   (생성/수정/확정/sync)는 마스터 id 를 넘기고, 만료 해제 경로(`PPTMasterBatchService.expireMasters`)는
+     *   `null` 을 넘긴다. 마스터 삭제는 사원을 건드리지 않으므로 본 메서드를 호출하지 않는다
+     *   ([deleteMaster] KDoc 참조).
      */
     internal fun updateEmployeeTeam(
         employee: Employee,

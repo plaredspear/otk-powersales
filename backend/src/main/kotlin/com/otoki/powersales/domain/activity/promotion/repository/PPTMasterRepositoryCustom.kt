@@ -59,8 +59,6 @@ interface PPTMasterRepositoryCustom {
         excludeId: Long?
     ): List<ProfessionalPromotionTeamMaster>
 
-    fun findValidMastersByEmployeeId(employeeId: Long, today: LocalDate): List<ProfessionalPromotionTeamMaster>
-
     fun findSapOutboundTargets(monthFirstDay: LocalDate, monthLastDay: LocalDate): List<ProfessionalPromotionTeamMaster>
 
     /**

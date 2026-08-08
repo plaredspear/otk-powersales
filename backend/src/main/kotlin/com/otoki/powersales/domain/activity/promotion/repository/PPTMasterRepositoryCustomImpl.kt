@@ -219,18 +219,6 @@ class PPTMasterRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findValidMastersByEmployeeId(employeeId: Long, today: LocalDate): List<ProfessionalPromotionTeamMaster> {
-        return queryFactory
-            .selectFrom(professionalPromotionTeamMaster)
-            .where(
-                professionalPromotionTeamMaster.employeeId.eq(employeeId),
-                professionalPromotionTeamMaster.startDate.loe(today),
-                professionalPromotionTeamMaster.endDate.isNull
-                    .or(professionalPromotionTeamMaster.endDate.goe(today))
-            )
-            .fetch()
-    }
-
     /**
      * 전문행사조 마스터 SAP 송신 대상 조회 (Spec #765 — UC-15).
      *

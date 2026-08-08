@@ -41,8 +41,9 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
-    // 변경을 유발한 전문행사조 마스터 FK. 생성/수정/확정/sync/만료 경로는 채우고,
-    // 삭제로 인한 해제 경로는 마스터가 이미 제거되므로 null (DB FK ON DELETE SET NULL 로 보호).
+    // 변경을 유발한 전문행사조 마스터 FK. 생성/수정/확정/sync 경로는 채우고, 만료 해제 경로는 null.
+    // 마스터가 삭제되면 DB FK 의 ON DELETE SET NULL 로 이력 행은 보존한 채 참조만 끊는다
+    // (레거시 SF 이력 오브젝트에는 마스터 참조 필드 자체가 없어 삭제 영향이 없다 — 동등).
     @FieldName("전문행사조마스터ID")
     @Column(name = "professional_promotion_team_master_id")
     val masterId: Long? = null,

@@ -643,38 +643,37 @@ class AdminPPTMasterServiceTest {
     inner class DeleteMasterTests {
 
         @Test
-        @DisplayName("성공 - 다른 유효 마스터 없음 -> 사원 미배정(null)으로 복귀")
-        fun deleteMaster_revertToDefault() {
+        @DisplayName("성공 - 마스터만 삭제하고 사원 전문행사조는 직전 값 유지 (legacy beforeDelete 는 빈 메서드)")
+        fun deleteMaster_keepsEmployeeTeam() {
             val master = createMaster()
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             every { pptMasterRepository.findById(1L) } returns Optional.of(master)
-            every { pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()) } returns emptyList()
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
-            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
-            stubTeamMemberScheduleDelete()
 
             service.deleteMaster(1L)
 
             verify { pptMasterRepository.delete(master) }
-            assertThat(employee.professionalPromotionTeam).isNull()
+            assertThat(employee.professionalPromotionTeam)
+                .isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+            verify(exactly = 0) { employeeRepository.save(any()) }
         }
 
         @Test
-        @DisplayName("성공 - 다른 유효 마스터 존재 -> 사원 변경 없음")
-        fun deleteMaster_otherMastersExist() {
+        @DisplayName("성공 - 잔여 유효 마스터 조회 / 미래 근무일정 삭제 / 이력 기록 모두 발생하지 않음")
+        fun deleteMaster_hasNoSideEffects() {
             val master = createMaster(id = 1L)
-            val otherMaster = createMaster(id = 2L, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
 
             every { pptMasterRepository.findById(1L) } returns Optional.of(master)
-            every {
-                pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now())
-            } returns listOf(otherMaster)
 
             service.deleteMaster(1L)
 
             verify { pptMasterRepository.delete(master) }
+            verify(exactly = 0) { employeeRepository.findById(any()) }
             verify(exactly = 0) { employeeRepository.save(any()) }
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(any(), any())
+            }
+            verify(exactly = 0) { pptHistoryRepository.save(any()) }
         }
 
         @Test
@@ -1123,7 +1122,6 @@ class AdminPPTMasterServiceTest {
 
             // 잔여 유효 마스터 조회 없이 무조건 해제 (레거시 동작) — sync 배치가 익일 재정합.
             assertThat(employee.professionalPromotionTeam).isNull()
-            verify(exactly = 0) { pptMasterRepository.findValidMastersByEmployeeId(any(), any()) }
         }
     }
 
@@ -1224,21 +1222,17 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 마스터 삭제 시 일반 복귀 → 미래 근무일정 삭제 호출됨")
-        fun deleteMaster_revertToDefault_deletesFutureSchedules() {
-            val today = LocalDate.now()
+        @DisplayName("성공 - 마스터 삭제는 사원을 건드리지 않으므로 미래 근무일정도 삭제하지 않음 (legacy 정합)")
+        fun deleteMaster_doesNotDeleteFutureSchedules() {
             val master = createMaster()
-            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             every { pptMasterRepository.findById(1L) } returns Optional.of(master)
-            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns emptyList()
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
-            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
-            stubTeamMemberScheduleDelete()
 
             service.deleteMaster(1L)
 
-            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(any(), any())
+            }
         }
 
         @Test
@@ -1641,15 +1635,12 @@ class AdminPPTMasterServiceTest {
         @DisplayName("deleteMaster 해제 -> 이력 자체 미기록")
         fun deleteMaster_noHistory() {
             val master = createMaster()
-            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             every { pptMasterRepository.findById(1L) } returns Optional.of(master)
-            every { pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()) } returns emptyList()
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
-            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
-            stubTeamMemberScheduleDelete()
 
             service.deleteMaster(1L)
 
+            // 레거시 이력은 EmployeeTrigger 가 사원 값 변경 시에만 기록한다.
+            // 마스터 삭제는 사원을 건드리지 않으므로 이력 행이 생기지 않는다.
             verify(exactly = 0) { pptHistoryRepository.save(any()) }
         }
     }
