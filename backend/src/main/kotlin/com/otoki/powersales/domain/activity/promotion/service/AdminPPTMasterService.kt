@@ -173,7 +173,7 @@ class AdminPPTMasterService(
     /**
      * 전문행사조 마스터 생성.
      *
-     * 기간 검증 → 중복 검증(동일 사원 + 동일 거래처 + 동일 teamType) → **다른** teamType 의 현재 유효
+     * 기간 검증 → 중복 검증(레거시 dup SOQL 정합 — [validateNoDuplicate]) → **다른** teamType 의 현재 유효
      * (확정 + 시작일 도래 + 종료일 없음) 마스터 자동 종료(신규 시작일 -1일) 후 insert.
      * 확정=true + 시작일=오늘이면 사원의 전문행사조를 즉시 갱신하고 미래 근무일정 삭제 + 이력 insert
      * (`updateEmployeeTeam`).
@@ -228,7 +228,8 @@ class AdminPPTMasterService(
     /**
      * 전문행사조 마스터 수정.
      *
-     * 중복 검증 + 동일 사원의 다른 teamType 유효 마스터 자동 종료(신규 시작일 -1일) 후 마스터 update.
+     * 중복 검증(매 수정마다 수행 — 레거시 beforeUpdate 정합) + 동일 사원의 다른 teamType 유효 마스터
+     * 자동 종료(신규 시작일 -1일) 후 마스터 update.
      * 확정=true + 시작일=오늘이면 직원의 전문행사조를 즉시 갱신하고 미래 일정 삭제 + 이력 insert.
      *
      * 자동 종료는 **다른 teamType** 만 대상이므로, 같은 조로 배정된 다른 거래처 마스터는 수정 시에도 유지된다
@@ -245,16 +246,15 @@ class AdminPPTMasterService(
 
         validateDateRange(request.startDate, request.endDate)
 
-        // teamType 변경 시 중복 검증
-        if (master.teamType != request.teamType || master.accountId != request.accountId) {
-            validateNoDuplicate(
-                request.employeeId,
-                request.accountId,
-                request.teamType,
-                request.startDate,
-                id
-            )
-        }
+        // 중복 검증 — 레거시 beforeUpdate 도 ChangeToNormal 을 무조건 태우므로 teamType/거래처 변경 여부와
+        // 무관하게 매 수정마다 수행한다 (자기 자신은 `Id != :obj.Id` 로 제외).
+        validateNoDuplicate(
+            request.employeeId,
+            request.accountId,
+            request.teamType,
+            request.startDate,
+            id
+        )
 
         // 동일 사원의 다른 teamType 유효 마스터 자동 종료 (본 레코드 자신은 제외)
         autoTerminateExistingMasters(request.employeeId, request.startDate, request.teamType, excludeId = id)
@@ -553,7 +553,7 @@ class AdminPPTMasterService(
      * 엑셀 업로드 항목 일괄 등록.
      *
      * 전량 재검증(실패 1건이라도 있으면 [PPTMasterBulkValidationFailedException]) 후 행 단위로
-     * 중복(동일 사원 + 거래처 + teamType 유효 마스터) 스킵 → 다른 teamType 유효 마스터 자동 종료 → insert.
+     * 중복(레거시 dup SOQL 정합 — [validateNoDuplicate]) 스킵 → 다른 teamType 유효 마스터 자동 종료 → insert.
      * 단건 등록과 동일하게 **같은 teamType 은 거래처가 달라도 자동 종료 대상이 아니므로**, 한 파일에
      * 사원 A × 거래처1·2·3 (같은 조) 을 넣으면 3건이 모두 유효하게 남는다.
      * 벌크는 `isConfirmed = false` 로 적재하므로 사원 전문행사조 즉시 반영(`updateEmployeeTeam`) 은 없다 —
@@ -564,9 +564,9 @@ class AdminPPTMasterService(
      * 형제 행을 보지 못하는 레거시 before-insert SOQL 과 결과가 같다.
      *
      * 레거시 매핑: `UplExcelBtnPPTMasterController` (엑셀 업로드) → `PPTMasterTriggerHandler.ChangeToNormal` — UC-10.
-     * 레거시 차이: 중복 스킵 판정(동일 사원 + 거래처 + 조 + 기간 겹침)은 신규 추가분이다. 레거시 dup 검증은
-     * `EndDate__c <= :신규 StartDate__c` 조건 탓에 사실상 동작하지 않아(`DuplicatedValid` 도 주석 처리됨)
-     * 같은 파일의 동일 행을 그대로 2건 적재했다 — 신규는 스펙 #386 결정에 따라 중복 적재를 막는다.
+     * 레거시 차이: dup 판정 조건은 레거시와 동일하되, 레거시가 `addError` 로 업로드 전체를 실패시키는 자리에서
+     * 신규는 해당 행만 스킵하고 나머지를 적재한다. 판정 조건이 레거시 정합이라 **종료일 없는 동일 거래처 +
+     * 동일 조 마스터는 중복으로 보지 않으므로**, 같은 파일의 동일 행 2건은 레거시와 마찬가지로 2건 적재된다.
      */
     @Transactional
     fun confirmBulk(request: PPTMasterBulkValidateRequest): BulkConfirmResponse {
@@ -586,9 +586,10 @@ class AdminPPTMasterService(
             val employee = employeeMap[item.employeeCode]!!
             val account = accountMap[item.accountCode]!!
 
-            // 중복 검증 (생성 규칙 5번)
-            val duplicates = pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(
-                employee.id, account.id, item.teamType, item.startDate
+            // 중복 검증 — 단건 등록과 동일한 레거시 dup 조건 (`validateNoDuplicate` KDoc 참조).
+            // 레거시는 에러(addError)로 행 전체를 실패시키지만, 벌크는 해당 행만 스킵한다.
+            val duplicates = pptMasterRepository.findLegacyDuplicateMasters(
+                employee.id, account.id, item.teamType, item.startDate, LocalDate.now(), null
             )
             if (duplicates.isNotEmpty()) continue
 
@@ -683,11 +684,19 @@ class AdminPPTMasterService(
         if (endDate != null && startDate.isAfter(endDate)) throw PPTMasterInvalidDateRangeException()
     }
 
+    /**
+     * 중복 등록 검증 — 레거시 `PPTMasterTriggerHandler.ChangeToNormal` 의 dup 검증 SOQL 정합.
+     *
+     * 판정 조건은 [PPTMasterRepositoryCustom.findLegacyDuplicateMasters] 참조. 레거시가
+     * `EndDate__c <= :신규 시작일` 을 AND 로 걸어 **종료일 없는(진행 중) 동일 거래처 + 동일 조 마스터는
+     * 중복으로 보지 않으므로**, 신규도 같은 거래처에 같은 조를 중복 등록하는 것을 막지 않는다.
+     * (기간 겹침 기준으로 차단하던 스펙 #386 P1-B 생성 규칙 5번은 레거시 실동작과 달라 철회.)
+     */
     private fun validateNoDuplicate(
         employeeId: Long, accountId: Long, teamType: ProfessionalPromotionTeamType, startDate: LocalDate, excludeId: Long? = null
     ) {
-        val duplicates = pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(
-            employeeId, accountId, teamType, startDate, excludeId
+        val duplicates = pptMasterRepository.findLegacyDuplicateMasters(
+            employeeId, accountId, teamType, startDate, LocalDate.now(), excludeId
         )
         if (duplicates.isNotEmpty()) throw PPTMasterDuplicateException()
     }

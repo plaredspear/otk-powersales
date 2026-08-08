@@ -175,21 +175,40 @@ class PPTMasterRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findValidMastersByEmployeeIdAndTeamType(
+    /**
+     * 레거시 `PPTMasterTriggerHandler.ChangeToNormal` dup 검증 SOQL 정합 (인터페이스 KDoc 참조).
+     *
+     * 세 술어의 결합 결과가 곧 레거시 동작이다:
+     * - `ValidData__c = '유효'` → `isConfirmed = true AND startDate <= today AND (endDate >= today OR endDate IS NULL)`
+     * - `EndDate__c <= :신규 시작일` → `endDate <= newStartDate`
+     *
+     * SOQL 은 `<=` 비교에서 null 필드를 매칭하지 않으므로 **종료일이 없는(진행 중) 마스터는 대상에서 빠진다**.
+     * SQL 3-valued logic 도 동일하게 `endDate <= :date` 가 NULL 행을 배제하므로, `endDate.goe(today)` +
+     * `endDate.loe(newStartDate)` 만 걸면 별도 null 분기 없이 레거시와 같은 집합이 나온다
+     * (= `ValidData__c` 의 `EndDate__c = null` 갈래는 `EndDate__c <= StartDate__c` 와 AND 되며 소거).
+     *
+     * 즉 실제 매칭 구간은 `today <= endDate <= newStartDate` 로, 레거시에서 중복 에러가 나는 범위는
+     * "곧 종료될 예정인 동일 거래처 + 동일 조 마스터" 뿐이다. 같은 거래처 + 같은 조라도 종료일이 없으면
+     * 레거시는 등록을 막지 않았고(자동 종료도 같은 조는 비켜감), 신규도 동일하게 허용한다.
+     */
+    override fun findLegacyDuplicateMasters(
         employeeId: Long,
         accountId: Long,
         teamType: ProfessionalPromotionTeamType,
-        startDate: LocalDate,
+        newStartDate: LocalDate,
+        today: LocalDate,
         excludeId: Long?
     ): List<ProfessionalPromotionTeamMaster> {
         val builder = BooleanBuilder()
         builder.and(professionalPromotionTeamMaster.employeeId.eq(employeeId))
         builder.and(professionalPromotionTeamMaster.accountId.eq(accountId))
         builder.and(professionalPromotionTeamMaster.teamType.eq(teamType))
-        builder.and(
-            professionalPromotionTeamMaster.endDate.isNull
-                .or(professionalPromotionTeamMaster.endDate.goe(startDate))
-        )
+        // ValidData__c = '유효'
+        builder.and(professionalPromotionTeamMaster.isConfirmed.isTrue)
+        builder.and(professionalPromotionTeamMaster.startDate.loe(today))
+        builder.and(professionalPromotionTeamMaster.endDate.goe(today))
+        // EndDate__c <= :obj.StartDate__c
+        builder.and(professionalPromotionTeamMaster.endDate.loe(newStartDate))
         if (excludeId != null) {
             builder.and(professionalPromotionTeamMaster.id.ne(excludeId))
         }

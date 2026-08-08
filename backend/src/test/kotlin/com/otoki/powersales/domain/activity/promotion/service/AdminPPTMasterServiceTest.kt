@@ -193,7 +193,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -216,7 +216,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every { pptMasterRepository.getNextNameSeq() } returns 921L
@@ -243,7 +243,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -272,7 +272,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingMaster)
             every {
@@ -298,7 +298,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(2) } returns Optional.of(createAccount(id = 2, externalKey = "SAP002"))
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingAccount1)
             every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
@@ -326,7 +326,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(3) } returns Optional.of(createAccount(id = 3, externalKey = "SAP003"))
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every {
                 pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
@@ -354,7 +354,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(unconfirmed)
             every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
@@ -378,7 +378,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(scheduled)
             every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
@@ -439,7 +439,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns listOf(createMaster())
 
             assertThatThrownBy { service.createMaster(request) }
@@ -463,7 +463,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -488,7 +488,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(2) } returns Optional.of(newAccount)
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -516,7 +516,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(2L) } returns Optional.of(newEmployee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(2L) } returns emptyList()
             every {
@@ -547,7 +547,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every {
                 pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
@@ -580,7 +580,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every {
                 pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
@@ -606,11 +606,35 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { accountRepository.findById(2) } returns Optional.of(newAccount)
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns listOf(createMaster(id = 2L, accountId = 2))
 
             assertThatThrownBy { service.updateMaster(1L, request) }
                 .isInstanceOf(PPTMasterDuplicateException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - teamType/거래처 미변경(시작일만 변경)이라도 중복 검증 수행 (legacy beforeUpdate 는 ChangeToNormal 무조건 실행)")
+        fun updateMaster_runsDuplicateCheckEvenWhenKeysUnchanged() {
+            val master = createMaster(accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = LocalDate.of(2026, 4, 10), isConfirmed = false
+            )
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
+            } returns listOf(createMaster(id = 2L, accountId = 1))
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterDuplicateException::class.java)
+
+            // 자기 자신은 excludeId 로 제외하고 조회한다 (legacy `Id != :obj.Id`)
+            verify {
+                pptMasterRepository.findLegacyDuplicateMasters(1L, 1L, ProfessionalPromotionTeamType.RAMEN_SALE, LocalDate.of(2026, 4, 10), any(), 1L)
+            }
         }
     }
 
@@ -866,7 +890,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp1, emp2)
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(any()) } returns emptyList()
             // 두 건 채번: PM0000921, PM0000922
@@ -904,7 +928,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every { accountRepository.findByExternalKeyIn(any()) } returns accounts
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingSameTeam)
             every { pptMasterRepository.getNextNameSeq() } returnsMany listOf(1L, 2L, 3L)
@@ -936,7 +960,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every { accountRepository.findByExternalKeyIn(any()) } returns accounts
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             val saved = mutableListOf<ProfessionalPromotionTeamMaster>()
             // 실제 JPA 는 조회 직전 flush 되어 같은 트랜잭션의 앞 행이 보인다 — 그 가시성을 재현
@@ -1119,7 +1143,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -1148,7 +1172,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -1181,7 +1205,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             every {
@@ -1539,7 +1563,7 @@ class AdminPPTMasterServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { accountRepository.findById(1) } returns Optional.of(createAccount())
             every {
-                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
             } returns emptyList()
             every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
             // 저장된 마스터에 id=42 부여 (채번 대신 직접 set)

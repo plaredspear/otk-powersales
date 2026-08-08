@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.promotion.repository
 
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.assertj.core.api.Assertions.assertThat
@@ -269,5 +270,112 @@ class PPTMasterRepositoryCustomImplTest {
             .containsExactly(active.id)
         assertThat(searchByEmploymentStatus("퇴직").content.map { it.master.id })
             .containsExactly(dismissed.id)
+    }
+
+    // --- findLegacyDuplicateMasters (legacy ChangeToNormal dup SOQL 정합) ---
+
+    private fun persistAccount(externalKey: String): Account =
+        em.persistAndFlush(Account(name = "테스트거래처-$externalKey", externalKey = externalKey))
+
+    private fun persistDup(
+        employeeId: Long,
+        accountId: Long,
+        teamType: ProfessionalPromotionTeamType,
+        startDate: LocalDate,
+        endDate: LocalDate?,
+        isConfirmed: Boolean = true,
+    ): ProfessionalPromotionTeamMaster =
+        em.persistAndFlush(
+            ProfessionalPromotionTeamMaster(
+                employeeId = employeeId,
+                accountId = accountId,
+                teamType = teamType,
+                startDate = startDate,
+                endDate = endDate,
+                isConfirmed = isConfirmed,
+            ),
+        )
+
+    private fun findDup(
+        employeeId: Long,
+        accountId: Long,
+        newStartDate: LocalDate,
+        excludeId: Long? = null,
+        teamType: ProfessionalPromotionTeamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+    ) = repository.findLegacyDuplicateMasters(
+        employeeId = employeeId,
+        accountId = accountId,
+        teamType = teamType,
+        newStartDate = newStartDate,
+        today = today,
+        excludeId = excludeId,
+    )
+
+    @Test
+    @DisplayName("findLegacyDuplicateMasters - 종료일 없는 동일 거래처+동일 조 마스터는 중복이 아니다 (legacy `EndDate__c <= :StartDate__c` 는 null 미매칭)")
+    fun findLegacyDuplicateMasters_excludesOpenEndedMaster() {
+        val emp = persistEmployee("재직")
+        val acc = persistAccount("DUP001")
+        // 확정 + 시작일 도래 + 종료일 없음 = 현재 진행 중인 동일 거래처/동일 조 마스터
+        persistDup(emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), null)
+        em.clear()
+
+        assertThat(findDup(emp.id, acc.id, newStartDate = today.plusDays(1))).isEmpty()
+    }
+
+    @Test
+    @DisplayName("findLegacyDuplicateMasters - 종료일이 today ~ 신규 시작일 구간이면 중복 (legacy 매칭 구간)")
+    fun findLegacyDuplicateMasters_matchesEndDateWithinWindow() {
+        val emp = persistEmployee("재직")
+        val acc = persistAccount("DUP002")
+        val inWindow = persistDup(
+            emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), today.plusDays(3),
+        )
+        em.clear()
+
+        assertThat(findDup(emp.id, acc.id, newStartDate = today.plusDays(5)).map { it.id })
+            .containsExactly(inWindow.id)
+    }
+
+    @Test
+    @DisplayName("findLegacyDuplicateMasters - 종료일이 신규 시작일보다 뒤면 중복 아님 (기간이 겹쳐도 통과)")
+    fun findLegacyDuplicateMasters_excludesEndDateAfterNewStart() {
+        val emp = persistEmployee("재직")
+        val acc = persistAccount("DUP003")
+        persistDup(emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), today.plusDays(30))
+        em.clear()
+
+        assertThat(findDup(emp.id, acc.id, newStartDate = today.plusDays(5))).isEmpty()
+    }
+
+    @Test
+    @DisplayName("findLegacyDuplicateMasters - 미확정 / 시작일 미도래 / 다른 거래처 / 다른 조는 모두 제외 (ValidData__c='유효' + 거래처·조 일치 조건)")
+    fun findLegacyDuplicateMasters_excludesNonValidAndOtherKeys() {
+        val emp = persistEmployee("재직")
+        val acc = persistAccount("DUP004")
+        val otherAcc = persistAccount("DUP005")
+        val newStart = today.plusDays(5)
+        // 종료일은 매칭 구간이지만 각각 미확정 / 예정(시작일 미도래) / 다른 거래처 / 다른 조
+        persistDup(emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), today.plusDays(3), isConfirmed = false)
+        persistDup(emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.plusDays(1), today.plusDays(3))
+        persistDup(emp.id, otherAcc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), today.plusDays(3))
+        persistDup(emp.id, acc.id, ProfessionalPromotionTeamType.CURRY_PROMOTION, today.minusDays(10), today.plusDays(3))
+        em.clear()
+
+        assertThat(findDup(emp.id, acc.id, newStartDate = newStart)).isEmpty()
+    }
+
+    @Test
+    @DisplayName("findLegacyDuplicateMasters - excludeId(자기 자신)는 제외 (legacy `Id != :obj.Id`)")
+    fun findLegacyDuplicateMasters_excludesSelf() {
+        val emp = persistEmployee("재직")
+        val acc = persistAccount("DUP006")
+        val self = persistDup(
+            emp.id, acc.id, ProfessionalPromotionTeamType.RAMEN_SALE, today.minusDays(10), today.plusDays(3),
+        )
+        em.clear()
+
+        assertThat(findDup(emp.id, acc.id, newStartDate = today.plusDays(5))).isNotEmpty()
+        assertThat(findDup(emp.id, acc.id, newStartDate = today.plusDays(5), excludeId = self.id)).isEmpty()
     }
 }

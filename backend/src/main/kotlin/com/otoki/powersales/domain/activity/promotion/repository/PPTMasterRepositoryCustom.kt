@@ -34,12 +34,29 @@ interface PPTMasterRepositoryCustom {
 
     fun findExpiringMasters(today: LocalDate): List<ProfessionalPromotionTeamMaster>
 
-    fun findValidMastersByEmployeeIdAndTeamType(
+    /**
+     * 전문행사조 마스터 중복 등록 검증 대상 조회 — 레거시 `PPTMasterTriggerHandler.ChangeToNormal` 의
+     * dup 검증 SOQL 과 **1:1 동일 조건**.
+     *
+     * ```
+     * WHERE EmployeeNumber__c = :사번
+     *   AND ValidData__c IN ('유효')
+     *   AND Id != :obj.Id
+     *   AND (Account__c = :거래처 AND ProfessionalPromotionTeam__c = :조)
+     *   AND EndDate__c <= :obj.StartDate__c
+     * ```
+     *
+     * @param newStartDate 등록/수정하려는 마스터의 시작일 (`obj.StartDate__c`).
+     * @param today `ValidData__c` 수식의 `TODAY()`.
+     * @param excludeId 자기 자신 제외 (`Id != :obj.Id`). insert 시엔 `null`(SOQL 의 `Id != null` 은 전건 매칭).
+     */
+    fun findLegacyDuplicateMasters(
         employeeId: Long,
         accountId: Long,
         teamType: ProfessionalPromotionTeamType,
-        startDate: LocalDate,
-        excludeId: Long? = null
+        newStartDate: LocalDate,
+        today: LocalDate,
+        excludeId: Long?
     ): List<ProfessionalPromotionTeamMaster>
 
     fun findValidMastersByEmployeeId(employeeId: Long, today: LocalDate): List<ProfessionalPromotionTeamMaster>
