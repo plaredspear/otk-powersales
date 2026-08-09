@@ -175,3 +175,25 @@ export async function runHerokuEducationCategoryRemap(): Promise<HerokuPasswordH
   }
   return res.data.data;
 }
+
+/**
+ * Redis 정리 — PK 재부여로 오염되는 캐시/키를 비운다 (Stage 2 마지막 substep).
+ *
+ * Redis 캐시 다수가 `employee.id` / 조직 PK 를 키로 쓰므로, DB reset 후 재적재로 PK 가 재부여되면
+ * 이전 사원의 캐시가 새 사원에게 붙는다. Spring Cache 전량 + PK 키 패턴(`active_device:*` /
+ * `schedule:upload:*`) 을 삭제한다.
+ *
+ * 운영 토글(`scheduled-job:enabled:*` / `sap:inbound:enabled:*` / `feature_toggle:*` /
+ * `branch_scope:mode`) 과 진행 상태(`migration:progress:*`) 는 보존한다 — FLUSHDB 를 쓰지 않는 이유.
+ *
+ * 적재가 **끝난 뒤** 실행해야 한다. 결과는 substep 결과 표(대상별 삭제 key 수)로 돌아온다.
+ */
+export async function runHerokuRedisReset(): Promise<HerokuPasswordHashResponse> {
+  const res = await client.post<ApiResponse<HerokuPasswordHashResponse>>(
+    '/api/v1/admin/heroku-migration/stage2/redis-reset',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Redis 정리에 실패했습니다');
+  }
+  return res.data.data;
+}

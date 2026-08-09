@@ -1,6 +1,7 @@
 package com.otoki.powersales._migration.heroku.controller
 
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales._migration.common.MigrationRedisResetService
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveProgress
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveService
 import com.otoki.powersales._migration.heroku.service.HerokuMigrationStage2Service
@@ -8,9 +9,11 @@ import com.otoki.powersales._migration.sf.dto.SfFkResolveProgressResponse
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.service.SfFkResolveProgress
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2FkService
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -42,6 +45,7 @@ class HerokuMigrationStage2Controller(
     private val sfFkService: SfMigrationStage2FkService,
     private val sfFkProgress: SfFkResolveProgress,
     private val stage2Service: HerokuMigrationStage2Service,
+    private val redisResetService: MigrationRedisResetService,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -149,6 +153,25 @@ class HerokuMigrationStage2Controller(
     @PostMapping("/api/v1/admin/heroku-migration/stage2/education-category")
     fun runEducationCategoryRemap(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = stage2Service.runEducationCategoryRemap()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * Redis 정리 — PK 재부여로 오염되는 캐시/키를 비운다 ([MigrationRedisResetService]).
+     *
+     * **Stage 2 의 마지막 substep**. 적재가 끝난 뒤 실행해야 한다 — 적재 중 실행하면 살아 있는
+     * 앱 트래픽이 구 데이터로 캐시를 다시 채운다. password / education-category 와 동일하게
+     * 동기 실행 + 멱등 (재실행하면 0 건).
+     *
+     * 운영 토글(`scheduled-job:enabled:*` / `sap:inbound:enabled:*` / `feature_toggle:*` /
+     * `branch_scope:mode`) 과 실행 중인 진행 상태(`migration:progress:*`) 는 보존한다 —
+     * 이유는 서비스 클래스 주석 참조.
+     */
+    @PostMapping("/api/v1/admin/heroku-migration/stage2/redis-reset")
+    fun runRedisReset(
+        @AuthenticationPrincipal principal: WebUserPrincipal?,
+    ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = redisResetService.run(principal?.employeeCode ?: "migration")
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

@@ -20,6 +20,7 @@ import {
   useHerokuSfidFkResolveProgress,
   useRunHerokuEducationCategoryRemap,
   useRunHerokuPasswordHash,
+  useRunHerokuRedisReset,
   useStartHerokuFkResolve,
   useStartHerokuSfidFkResolve,
 } from '@/hooks/admin/useHerokuMigration';
@@ -471,6 +472,101 @@ function HerokuEducationCategoryCard() {
   );
 }
 
+/**
+ * Redis 정리 카드 (Stage 2 마지막 substep).
+ *
+ * PK 재부여로 오염되는 캐시/키만 지우고 운영 토글은 보존한다 — FLUSHDB 를 쓰지 않는 이유는
+ * backend `MigrationRedisResetService` 주석 참조. 적재가 끝난 뒤 실행해야 한다.
+ */
+function HerokuRedisResetCard() {
+  const runMutation = useRunHerokuRedisReset();
+
+  const result = runMutation.data;
+  const error = runMutation.error as Error | null;
+  const pending = runMutation.isPending;
+
+  return (
+    <Card title="Redis 정리 — 캐시 / PK 키 무효화" style={{ marginTop: 24 }}>
+      <Paragraph type="secondary">
+        Redis 캐시 다수가 <Text code>employee.id</Text> / 조직 PK 를 키로 쓴다. DB reset 후
+        재적재로 PK 가 재부여되면 <Text strong>이전 사원의 캐시가 새 사원에게 그대로 붙는다</Text>{' '}
+        (권한 / 조직 범위 오염). TTL 만료를 기다리지 않고 컷오버 시 명시적으로 비운다.
+        <br />
+        지우는 대상: Spring Cache 전량(<Text code>&lt;cacheName&gt;::*</Text>) +{' '}
+        <Text code>active_device:*</Text> + <Text code>schedule:upload:*</Text>.
+        <br />
+        <Text strong>보존</Text>: 운영자가 손으로 바꿔 둔 런타임 토글(<Text code>scheduled-job:enabled:*</Text>{' '}
+        / <Text code>sap:inbound:enabled:*</Text> / <Text code>feature_toggle:*</Text> /{' '}
+        <Text code>branch_scope:mode</Text>) 과 진행 상태(<Text code>migration:progress:*</Text>).
+        그래서 <Text code>FLUSHDB</Text> 대신 대상을 열거해 삭제한다 — 전체 삭제는 꺼 둔 배치가
+        다시 켜지는 식의 조용한 동작 변경을 만든다.
+        <br />
+        <Text strong>적재가 모두 끝난 뒤 실행할 것.</Text> 적재 중 실행하면 살아 있는 앱 트래픽이
+        구 데이터로 캐시를 다시 채운다. 재실행해도 안전하다 (이미 비어 있으면 0 건).
+      </Paragraph>
+
+      <Space>
+        <Button
+          danger
+          type="primary"
+          loading={pending}
+          disabled={pending}
+          onClick={() => {
+            runMutation.mutate();
+          }}
+        >
+          실행
+        </Button>
+      </Space>
+
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginTop: 12 }}
+          message="Redis 정리 실패"
+          description={error.message}
+          closable
+          onClose={() => {
+            runMutation.reset();
+          }}
+        />
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+            <Descriptions.Item label="substep">
+              <Text code>{result.substep}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="삭제 key">
+              {result.totalRowsAffected.toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+          <ResizableTable<HerokuPasswordHashSubstepResult>
+            style={{ marginTop: 12 }}
+            size="small"
+            rowKey="label"
+            pagination={false}
+            columns={[
+              { title: '대상', dataIndex: 'label', key: 'label' },
+              {
+                title: '삭제 key',
+                dataIndex: 'rowsAffected',
+                key: 'rowsAffected',
+                width: 160,
+                align: 'right',
+                render: (v: number) => v.toLocaleString(),
+              },
+            ]}
+            dataSource={result.results}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const tableColumns: ColumnsType<HerokuFkTableResult> = [
   {
     title: '테이블',
@@ -683,6 +779,8 @@ export default function HerokuMigrationPage() {
       <HerokuPasswordHashCard />
 
       <HerokuEducationCategoryCard />
+
+      <HerokuRedisResetCard />
     </div>
   );
 }

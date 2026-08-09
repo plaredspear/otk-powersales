@@ -5,6 +5,7 @@ import {
   getHerokuSfidFkResolveProgress,
   runHerokuEducationCategoryRemap,
   runHerokuPasswordHash,
+  runHerokuRedisReset,
   startHerokuFkResolve,
   startHerokuSfidFkResolve,
   type HerokuFkResolveProgress,
@@ -106,5 +107,18 @@ export function useRunHerokuPasswordHash() {
 export function useRunHerokuEducationCategoryRemap() {
   return useMutation<HerokuPasswordHashResponse>({
     mutationFn: runHerokuEducationCategoryRemap,
+  });
+}
+
+/**
+ * Redis 정리 Mutation 훅 (Stage 2 마지막 substep).
+ *
+ * 다른 substep 과 달리 **이 앱의 캐시 자체를 비우는** 작업이라, 화면에 떠 있는 다른 Query 의
+ * 서버 응답도 바뀔 수 있다. 다만 마이그레이션 페이지는 1회성 도구 화면이고 여기서 무효화할
+ * 대상이 마땅치 않아, 다른 substep 과 동일하게 결과를 mutation data 로만 표시한다.
+ */
+export function useRunHerokuRedisReset() {
+  return useMutation<HerokuPasswordHashResponse>({
+    mutationFn: runHerokuRedisReset,
   });
 }
