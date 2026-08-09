@@ -33292,6 +33292,24 @@
         "tags" : [ "heroku-migration-stage-2-controller" ]
       }
     },
+    "/api/v1/admin/heroku-migration/stage2/redis-reset" : {
+      "post" : {
+        "operationId" : "runRedisReset",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/heroku-migration/stage2/sfid-fk" : {
       "post" : {
         "operationId" : "runSfidFkResolve",
