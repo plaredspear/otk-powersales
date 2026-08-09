@@ -605,8 +605,9 @@ class JwtTokenProviderTest {
          * 지정한 시각에 발급된 것으로 서명된 토큰.
          *
          * 컷오프를 미래로 잡아 "지금 발급 = 컷오프 이전" 을 만드는 편법은 쓸 수 없다 —
-         * 미래 컷오프는 기동 실패 대상이기 때문이다([futureValue_failsFast]).
-         * 만료가 아니라 컷오프로 탈락하는지 보려면 [ttlMinutes] 를 넉넉히 준다.
+         * 미래 컷오프는 활성화 게이트에 막혀 판정 자체가 일어나지 않기 때문이다
+         * ([futureCutoff_isScheduledAndInert]). 만료가 아니라 컷오프로 탈락하는지 보려면
+         * [ttlMinutes] 를 넉넉히 준다.
          */
         private fun tokenIssuedAt(issuedAt: LocalDateTime, ttlMinutes: Long = 60): String {
             val issued = Date.from(issuedAt.atZone(TimeZones.SEOUL_ZONE).toInstant())
@@ -732,11 +733,22 @@ class JwtTokenProviderTest {
         }
 
         @Test
-        @DisplayName("미래 시각은 기동을 실패시킨다 — 재로그인한 새 토큰까지 거부되어 로그인 루프가 된다")
-        fun futureValue_failsFast() {
-            assertThrows(IllegalStateException::class.java) {
-                providerWithCutoff(kstOffsetDays(1))
-            }
+        @DisplayName("미래 시각은 예약 — 도래 전에는 아무 토큰도 거부하지 않는다 (로그인 루프 방지)")
+        fun futureCutoff_isScheduledAndInert() {
+            // Given: 컷오프가 1일 뒤 (컷오버 시각을 미리 배포해 둔 상태)
+            val provider = providerWithCutoff(kstOffsetDays(1))
+            val old = tokenIssuedAt(
+                LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(2),
+                ttlMinutes = 60 * 24 * 30
+            )
+            val fresh = provider.createAccessToken(1L, AppAuthority.WOMAN)
+
+            // Then: 도래 전에는 구 토큰도, 방금 로그인한 토큰도 그대로 통과한다.
+            // (여기서 fresh 를 거부하면 로그인 200 → 다음 요청 401 로 재로그인이 무한 반복된다)
+            assertFalse(provider.isIssuedBeforeCutoff(old))
+            assertTrue(provider.validateToken(old))
+            assertFalse(provider.isIssuedBeforeCutoff(fresh))
+            assertTrue(provider.validateToken(fresh))
         }
     }
 

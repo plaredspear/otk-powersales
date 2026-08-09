@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import java.util.*
@@ -59,6 +60,13 @@ class JwtTokenProvider(
      * 다중 인스턴스(EB) 에서 기동 시각을 쓰면 인스턴스마다 컷오프가 어긋나고, 이후 재기동·오토스케일
      * 마다 전원이 다시 로그아웃된다. 명시 시각은 몇 번을 재기동해도 결과가 같다(멱등).
      *
+     * ## 미래 시각 = 예약 (활성화 게이트)
+     *
+     * 컷오프 시각이 아직 오지 않았으면 판정 자체를 하지 않는다([isBeforeCutoff]). 이 게이트가 없으면
+     * 미래 컷오프는 **재로그인으로 받은 새 토큰까지** 거부한다 — 그 토큰의 `iat` 역시 컷오프 이전이라
+     * 로그인 200 → 다음 요청 401 → 강제 로그아웃이 그 시각까지 무한 반복된다. 게이트가 있으면
+     * 컷오버 시각을 미리 배포해 두고, 그 시각이 지나는 순간 이전 세션만 일괄 종료시킬 수 있다.
+     *
      * ## 적용 범위 — 모바일 전용
      *
      * 본 클래스는 모바일 인증 전용이며 웹 admin 은 별도 인프라(`WebJwtService` /
@@ -66,10 +74,23 @@ class JwtTokenProvider(
      *
      * ## 운영 절차
      *
-     * 마이그레이션 컷오버 완료 후 `JWT_MIN_ISSUED_AT` 에 컷오버 시각(KST)을 넣고 재기동한다.
+     * 컷오버 시각(KST)을 프로파일 설정 또는 `JWT_MIN_ISSUED_AT` 에 넣고 배포한다. 그 시각 전에
+     * 떠 있어도 무해하며(예약 상태), 시각이 지나면 이전 세션이 일괄 종료된다.
      * 형식 오류면 기동을 실패시킨다 — 조용히 미적용된 채 뜨면 무효화가 안 된 사실을 아무도 모른다.
      */
     private val minIssuedAtMillis: Long = parseMinIssuedAt(minIssuedAt)
+
+    init {
+        if (minIssuedAtMillis > 0) {
+            // 컷오버 당일 "설정이 먹었는지" 를 로그 한 줄로 확인할 수 있어야 한다.
+            val state = if (minIssuedAtMillis <= System.currentTimeMillis()) "활성" else "예약(미도래)"
+            log.info(
+                "모바일 세션 발급시각 컷오프 {} — 이 시각 이전 발급 토큰 거부: {}",
+                state,
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(minIssuedAtMillis), TimeZones.SEOUL_ZONE)
+            )
+        }
+    }
 
     /**
      * Mobile (Employee 기반) Access Token 생성.
@@ -191,9 +212,13 @@ class JwtTokenProvider(
     /**
      * `iat` 가 컷오프 이전인지. `iat` 부재는 **이전으로 간주**한다 —
      * 현재 발급 경로는 모두 `iat` 를 심으므로, 없는 토큰은 컷오프 이후 발급이 아님이 확실하다.
+     *
+     * 컷오프 시각이 아직 오지 않았으면(예약 상태) 판정하지 않는다 — 이유는 [minIssuedAtMillis] 의
+     * "미래 시각 = 예약" 절 참조 (게이트가 없으면 재로그인이 곧바로 무효화되어 로그인 루프가 된다).
      */
     private fun isBeforeCutoff(issuedAt: Date?): Boolean {
         if (minIssuedAtMillis == 0L) return false
+        if (System.currentTimeMillis() < minIssuedAtMillis) return false
         return issuedAt == null || issuedAt.time < minIssuedAtMillis
     }
 
@@ -433,19 +458,14 @@ class JwtTokenProvider(
          * 반면 형식 자체가 깨진 값은 기동 실패로 처리한다. 무시하고 뜨면 "무효화했다고 믿는데
          * 실제로는 전 사용자 세션이 그대로" 인 상태가 되며, 이 설정을 켜는 시점에는 그 오해가 곧 사고다.
          *
-         * ## 미래 시각을 거부하는 이유 — 로그인 루프
-         *
-         * 컷오프가 미래면 **재로그인으로 받은 새 토큰도 컷오프 이전 발급**이라 즉시 거부된다.
-         * 로그인 API 는 200 을 주는데 다음 요청이 401 → 강제 로그아웃 → 재로그인 무한 반복이 되고,
-         * 그 시각이 될 때까지 아무도 앱을 쓸 수 없다. "22:00 에 전원 로그아웃되도록 미리 걸어 두자" 는
-         * 예약 무효화 용도로 읽히기 쉬운데, 실제로는 예약이 아니라 그 순간부터 앱 전면 장애다.
-         * 컷오프는 **이미 지난 시각**(= 마이그레이션 컷오버 완료 시각)으로만 설정한다.
+         * 미래 시각은 허용한다 — 컷오버 시각을 미리 배포해 두는 **예약** 용도이며, 그 시각까지는
+         * 활성화 게이트가 판정을 막는다 ([minIssuedAtMillis] 의 "미래 시각 = 예약" 절 참조).
          */
         private fun parseMinIssuedAt(raw: String): Long {
             val value = raw.trim()
             if (value.isEmpty()) return 0L
             val normalized = value.replaceFirst(' ', 'T')
-            val millis = try {
+            return try {
                 LocalDateTime.parse(normalized)
                     .atZone(TimeZones.SEOUL_ZONE).toInstant().toEpochMilli()
             } catch (e: DateTimeParseException) {
@@ -454,11 +474,6 @@ class JwtTokenProvider(
                     e
                 )
             }
-            check(millis <= System.currentTimeMillis()) {
-                "jwt.min-issued-at 은 미래 시각일 수 없습니다: '$raw' — 그 시각까지 재로그인한 토큰도 함께 거부되어 " +
-                    "로그인 루프(앱 전면 장애)가 된다. 마이그레이션 컷오버가 끝난 시각을 넣고 재기동할 것"
-            }
-            return millis
         }
     }
 }

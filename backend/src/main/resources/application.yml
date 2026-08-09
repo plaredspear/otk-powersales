@@ -109,8 +109,8 @@ jwt:
   #   잔존 토큰이 다른 사원으로 인증될 수 있다. 컷오버 완료 후 그 시각을 넣고 재기동한다.
   #   형식: KST local datetime — 2026-08-15T02:00:00 / 2026-08-15 02:00:00 둘 다 허용.
   #   빈 값(기본) = 비활성. 형식 오류면 기동 실패한다 (조용한 미적용 = 무효화된 줄 알았는데
-  #   아닌 상태 방지). **미래 시각도 기동 실패** — 그 시각까지는 재로그인한 새 토큰마저 거부되어
-  #   로그인 루프(앱 전면 장애)가 된다. 반드시 컷오버가 끝난 "지난 시각" 을 넣는다.
+  #   아닌 상태 방지). 미래 시각은 **예약** — 그 시각까지는 판정하지 않다가 지나는 순간
+  #   활성화된다. 실제 값은 dev/prod 프로파일 파일에 둔다 (base 는 비활성 기본만).
   secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
   expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
