@@ -114,7 +114,7 @@ app:
   sap:
     outbox:
       enabled: true
-    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매시간 23분).
     outbound:
       team-member-schedule:
         enabled: true

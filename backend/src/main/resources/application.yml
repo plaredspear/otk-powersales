@@ -370,8 +370,11 @@ app:
         cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 23 * * *}
         page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
       ppt-master:
-        # 매일 정오 12:00 KST 1회 (SF CronTrigger "전문행사조 SAP 송신 배치" `0 0 12 ? * 1-7` Asia/Seoul 운영 실측 정합)
-        cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 0 12 * * *}
+        # 매시간 23분 KST (SF CronTrigger `IF_REST_SAP_PPTMToSAP` `0 23 * * * ?` Asia/Seoul 운영 실측 정합).
+        # 레거시는 동일 Apex(IF_REST_SAP_PPTMToSAP.cls)를 표시명만 달리해 복수 등록 — "전문행사조 SAP 송신 배치"
+        # (매일 12:00) 와 처리 내용이 완전히 동일하고, 실제 가동 중인 매시간 등록에 맞춘다.
+        # 배치가 stateless 전건 재조회 방식이라 주기를 높여도 멱등 (증분 전송 아님).
+        cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 23 * * * *}
         page-size: ${APP_SAP_OUTBOUND_PPT_MASTER_PAGE_SIZE:100}
 
   # ---------------------------------------------------------------------------
