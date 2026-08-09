@@ -72,10 +72,16 @@ class JwtTokenProvider(
      * 본 클래스는 모바일 인증 전용이며 웹 admin 은 별도 인프라(`WebJwtService` /
      * `WebJwtAuthenticationFilter`) 를 쓴다. 따라서 컷오프는 **모바일 세션만** 끊는다.
      *
-     * ## 운영 절차
+     * ## 운영 절차 — 컷오프 시각은 반드시 "배포 완료 이후" 여야 한다
      *
-     * 컷오버 시각(KST)을 프로파일 설정 또는 `JWT_MIN_ISSUED_AT` 에 넣고 배포한다. 그 시각 전에
-     * 떠 있어도 무해하며(예약 상태), 시각이 지나면 이전 세션이 일괄 종료된다.
+     * 컷오버 시각(KST)을 프로파일 설정 또는 `JWT_MIN_ISSUED_AT` 에 넣고, **그 시각이 오기 전에**
+     * 배포를 끝낸다. 그 시각 전에 떠 있어도 무해하며(예약 상태), 시각이 지나면 이전 세션이 일괄 종료된다.
+     *
+     * 반대로 이미 지난 시각을 넣고 나중에 배포하면 **컷오프~배포 사이에 구버전 코드가 발급한 토큰이
+     * 그대로 살아남는다** — 컷오프는 배포 전 트래픽을 소급 차단할 수 없기 때문이다. access 1h 갱신과
+     * refresh 회전이 계속 도는 서비스에서는 이 구간의 세션이 사실상 전부 살아남아, "설정했는데 아무도
+     * 로그아웃되지 않는다" 로 나타난다. 기동 로그가 이 상태를 함께 남긴다(위 init 블록).
+     *
      * 형식 오류면 기동을 실패시킨다 — 조용히 미적용된 채 뜨면 무효화가 안 된 사실을 아무도 모른다.
      */
     private val minIssuedAtMillis: Long = parseMinIssuedAt(minIssuedAt)
@@ -83,12 +89,21 @@ class JwtTokenProvider(
     init {
         if (minIssuedAtMillis > 0) {
             // 컷오버 당일 "설정이 먹었는지" 를 로그 한 줄로 확인할 수 있어야 한다.
-            val state = if (minIssuedAtMillis <= System.currentTimeMillis()) "활성" else "예약(미도래)"
-            log.info(
-                "모바일 세션 발급시각 컷오프 {} — 이 시각 이전 발급 토큰 거부: {}",
-                state,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(minIssuedAtMillis), TimeZones.SEOUL_ZONE)
-            )
+            val now = System.currentTimeMillis()
+            val cutoff = LocalDateTime.ofInstant(Instant.ofEpochMilli(minIssuedAtMillis), TimeZones.SEOUL_ZONE)
+            if (minIssuedAtMillis > now) {
+                log.info("모바일 세션 발급시각 컷오프 예약(미도래) — {} 이전 발급 토큰 거부 예정", cutoff)
+            } else {
+                // 컷오프가 기동보다 앞서면 그 사이 구버전 코드가 발급한 토큰은 살아남는다 —
+                // "설정했는데 아무도 로그아웃되지 않는" 사고의 유일한 원인이라 기동 시각을 함께 남긴다.
+                log.info(
+                    "모바일 세션 발급시각 컷오프 활성 — {} 이전 발급 토큰 거부. " +
+                        "본 인스턴스 기동은 {} 이므로, 그 사이 발급/갱신된 토큰은 무효화 대상이 아니다 " +
+                        "(전원 무효화가 목적이면 컷오프를 배포 완료 이후 시각으로 잡을 것)",
+                    cutoff,
+                    LocalDateTime.now(TimeZones.SEOUL_ZONE)
+                )
+            }
         }
     }
 
