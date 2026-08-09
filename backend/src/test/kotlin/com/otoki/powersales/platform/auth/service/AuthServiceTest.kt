@@ -27,6 +27,7 @@ import com.otoki.powersales.platform.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.platform.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.platform.auth.exception.InvalidTokenException
 import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
+import com.otoki.powersales.platform.auth.exception.SessionInvalidatedException
 import com.otoki.powersales.platform.auth.exception.TermsNotFoundException
 import com.otoki.powersales.platform.auth.exception.TokenReuseDetectedException
 import io.mockk.every
@@ -70,6 +71,12 @@ class AuthServiceTest {
         passwordPolicyValidator,
         activeDeviceStore,
     )
+
+    init {
+        // 발급시각 컷오프는 기본 비활성(운영에서도 마이그레이션 컷오버에만 켠다).
+        // 컷오프가 켜진 경우는 refreshAccessToken_sessionInvalidated 가 개별로 덮어쓴다.
+        every { jwtTokenProvider.isIssuedBeforeCutoff(any()) } returns false
+    }
 
     // ========== Login Tests ==========
 
@@ -432,6 +439,23 @@ class AuthServiceTest {
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
                 .isInstanceOf(InvalidTokenException::class.java)
+        }
+
+        @Test
+        @DisplayName("컷오프 이전 발급 - SessionInvalidatedException (INVALID_TOKEN 과 구분해 재로그인 안내)")
+        fun refreshAccessToken_sessionInvalidated() {
+            // Given: 마이그레이션 컷오버로 발급시각 컷오프가 켜진 상태
+            val refreshToken = "pre_migration_refresh_token"
+            val request = RefreshTokenRequest(refreshToken)
+
+            every { jwtTokenProvider.isIssuedBeforeCutoff(refreshToken) } returns true
+
+            // When & Then
+            assertThatThrownBy { authService.refreshAccessToken(request) }
+                .isInstanceOf(SessionInvalidatedException::class.java)
+
+            // 컷오프에서 즉시 차단 — 회전(consume)까지 가지 않는다
+            verify(exactly = 0) { jwtTokenProvider.consumeRefreshToken(any()) }
         }
 
         @Test

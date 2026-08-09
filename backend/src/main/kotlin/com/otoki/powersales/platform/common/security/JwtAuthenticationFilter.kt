@@ -57,6 +57,11 @@ class JwtAuthenticationFilter(
                         SecurityContextHolder.getContext().authentication = authentication
                     }
                 }
+            } else if (jwtTokenProvider.isIssuedBeforeCutoff(token)) {
+                // 발급시각 컷오프 이전 토큰 → 재로그인 안내. 만료 판정보다 앞에 둔다 —
+                // 컷오프 이전이면 만료 여부와 무관하게 갱신이 불가능하므로, TOKEN_EXPIRED 로
+                // 안내하면 앱이 무의미한 refresh 를 한 번 더 왕복한 뒤에야 로그아웃된다.
+                request.setAttribute("jwt.sessionInvalidated", true)
             } else if (jwtTokenProvider.isTokenExpired(token)) {
                 request.setAttribute("jwt.expired", true)
             }

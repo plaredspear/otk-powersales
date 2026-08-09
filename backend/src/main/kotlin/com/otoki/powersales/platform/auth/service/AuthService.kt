@@ -31,6 +31,7 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.platform.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.platform.auth.exception.InvalidTokenException
+import com.otoki.powersales.platform.auth.exception.SessionInvalidatedException
 import com.otoki.powersales.platform.auth.exception.TermsNotFoundException
 import com.otoki.powersales.platform.auth.exception.TokenReuseDetectedException
 import com.otoki.powersales.platform.common.dto.response.GpsConsentRecordResponse
@@ -262,6 +263,13 @@ class AuthService(
      */
     @Transactional
     fun refreshAccessToken(request: RefreshTokenRequest): TokenResponse {
+        // 0. 발급시각 컷오프 이전 토큰 → 재로그인 확정. validateToken 도 동일하게 거부하지만,
+        //    INVALID_TOKEN 으로 뭉개면 앱이 "세션 만료" 안내를 띄운다. 마이그레이션 직후에는
+        //    사유를 정확히 알려야 사용자가 장애로 오인하지 않는다.
+        if (jwtTokenProvider.isIssuedBeforeCutoff(request.refreshToken)) {
+            throw SessionInvalidatedException()
+        }
+
         // 1. JWT 서명/만료 검증
         if (!jwtTokenProvider.validateToken(request.refreshToken)) {
             throw InvalidTokenException()

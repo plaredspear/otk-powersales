@@ -83,6 +83,38 @@ class JwtAuthenticationEntryPointTest {
         }
 
         @Test
+        @DisplayName("발급시각 컷오프 - 401 + SESSION_INVALIDATED")
+        fun commence_sessionInvalidated_returnsSessionInvalidated() {
+            // Given
+            request.setAttribute("jwt.sessionInvalidated", true)
+
+            // When
+            entryPoint.commence(request, response, AuthenticationCredentialsNotFoundException("test"))
+
+            // Then
+            assertThat(response.status).isEqualTo(401)
+            val body = objectMapper.readTree(response.contentAsString)
+            assertThat(body.get("error").get("code").asString()).isEqualTo("SESSION_INVALIDATED")
+            assertThat(body.get("error").get("message").asString())
+                .isEqualTo("시스템 데이터 정비로 다시 로그인이 필요합니다")
+        }
+
+        @Test
+        @DisplayName("컷오프 + 만료 동시 - 컷오프가 우선 (갱신으로 회복 불가하므로)")
+        fun commence_sessionInvalidatedTakesPrecedenceOverExpired() {
+            // Given
+            request.setAttribute("jwt.sessionInvalidated", true)
+            request.setAttribute("jwt.expired", true)
+
+            // When
+            entryPoint.commence(request, response, AuthenticationCredentialsNotFoundException("test"))
+
+            // Then
+            val body = objectMapper.readTree(response.contentAsString)
+            assertThat(body.get("error").get("code").asString()).isEqualTo("SESSION_INVALIDATED")
+        }
+
+        @Test
         @DisplayName("응답 body에 timestamp 포함")
         fun commence_responseContainsTimestamp() {
             // When

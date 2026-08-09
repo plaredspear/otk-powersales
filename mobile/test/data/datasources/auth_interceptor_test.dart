@@ -292,6 +292,36 @@ void main() {
     });
   });
 
+  group('서버 세션 일괄 무효화 (SESSION_INVALIDATED)', () {
+    test('갱신 시도 없이 즉시 강제 로그아웃하고 사유를 sessionInvalidated 로 남긴다', () async {
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'oldToken'
+        ..refreshToken = 'refreshTok';
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      final adapter = _SessionInvalidated401Adapter();
+      d.httpClientAdapter = adapter;
+
+      SessionResetController.instance.consumeReason();
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 401);
+      }
+
+      // 컷오프는 refresh token 도 함께 무효화하므로 갱신 왕복은 낭비다 — 원요청 1회로 끝나야 한다.
+      expect(adapter.callCount, 1);
+      expect(localDS.accessToken, isNull);
+      expect(localDS.refreshToken, isNull);
+      expect(
+        SessionResetController.instance.consumeReason(),
+        LogoutReason.sessionInvalidated,
+      );
+    });
+  });
+
   group('로그인 이력 없음 (신규 설치)', () {
     test('refresh token 이 없으면 401 을 세션 만료로 처리하지 않고 그대로 전파한다', () async {
       // 첫 설치 후 로그인 전: access/refresh token 이 모두 없다.
@@ -636,6 +666,31 @@ class _Refresh200ThenRetryOkAdapter implements HttpClientAdapter {
 
 /// 모든 요청에 401 로 응답하는 어댑터. 로그인 전(무인증) 요청이 인증 필요 엔드포인트에서
 /// 401 을 받는 상황을 모사한다.
+/// 서버가 발급시각 컷오프로 세션을 일괄 무효화한 상태 (마이그레이션 컷오버 직후).
+class _SessionInvalidated401Adapter implements HttpClientAdapter {
+  int callCount = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    callCount++;
+    return ResponseBody.fromString(
+      '{"success":false,"data":null,'
+      '"error":{"code":"SESSION_INVALIDATED","message":"시스템 데이터 정비로 다시 로그인이 필요합니다"}}',
+      401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 class _Always401Adapter implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(

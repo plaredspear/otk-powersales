@@ -206,7 +206,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _localDataSource.clearTokens();
       }
       if (!mounted) return;
-      state = sessionInvalid
+      // 서버 데이터 정비로 세션이 일괄 무효화된 경우(SESSION_INVALIDATED)는 사유를 남긴다.
+      // 이 경로는 콜드스타트 복원이라 인터셉터의 강제 로그아웃 안내를 타지 않는다 —
+      // 안내가 없으면 자동 로그인이 이유 없이 풀린 것처럼 보인다.
+      final invalidatedByServer =
+          sessionInvalid && extractErrorCode(e) == 'SESSION_INVALIDATED';
+      state = sessionInvalid && !invalidatedByServer
           ? state.toUnauthenticated()
           // 일시적 실패는 사유를 알려 준다 — 안내가 없으면 사용자는 세션이 만료된 줄 알고
           // 재로그인을 시도한다. 다음 로그인 시도(toLoading)에서 메시지는 초기화된다.

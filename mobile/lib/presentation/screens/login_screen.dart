@@ -63,31 +63,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   /// 강제 로그아웃 사유 안내.
   /// - [LogoutReason.deviceRevoked]: 다른 기기 로그인 → 명확한 다이얼로그(확인 필요)
+  /// - [LogoutReason.sessionInvalidated]: 서버 데이터 정비 → 명확한 다이얼로그(확인 필요)
   /// - [LogoutReason.sessionExpired]: 세션 만료 → 가벼운 SnackBar
   void _showLogoutReason(LogoutReason reason) {
     switch (reason) {
       case LogoutReason.deviceRevoked:
-        showDialog<void>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text('로그아웃 안내', style: AppTypography.headlineSmall),
-            content: Text(
-              '다른 기기에서 로그인되어 현재 기기에서 로그아웃되었습니다.\n'
-              '본인이 맞다면 다시 로그인해 주세요.',
-              style: AppTypography.bodyMedium,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(
-                  '확인',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: AppColors.secondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        _showLogoutDialog(
+          '다른 기기에서 로그인되어 현재 기기에서 로그아웃되었습니다.\n'
+          '본인이 맞다면 다시 로그인해 주세요.',
+        );
+      case LogoutReason.sessionInvalidated:
+        // 전 사용자 일괄 무효화라 사용자 잘못이 아님을 분명히 한다 — SnackBar 로 흘리면
+        // 자리를 비운 사이 사라져, 사용자는 이유 없이 로그아웃된 것으로 받아들인다.
+        _showLogoutDialog(
+          '시스템 데이터 정비로 로그아웃되었습니다.\n'
+          '다시 로그인해 주세요.',
         );
       case LogoutReason.sessionExpired:
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,6 +92,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
     }
+  }
+
+  /// 확인이 필요한 강제 로그아웃 사유용 다이얼로그.
+  void _showLogoutDialog(String message) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('로그아웃 안내', style: AppTypography.headlineSmall),
+        content: Text(message, style: AppTypography.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              '확인',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 입력값이 비었는지 여부에 따라 각 필드의 clear 버튼을 표시/숨김 처리한다.

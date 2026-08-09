@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.common.security
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.token.RefreshTokenStore
 import com.otoki.powersales.platform.common.security.JwtTokenProvider
+import com.otoki.powersales.platform.common.util.TimeZones
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -14,6 +15,7 @@ import org.springframework.data.redis.RedisConnectionFailureException
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * JwtTokenProvider 테스트
@@ -576,6 +578,98 @@ class JwtTokenProviderTest {
 
             // Then
             assertEquals(userId, extracted)
+        }
+    }
+
+    @Nested
+    @DisplayName("발급시각 컷오프 (jwt.min-issued-at) — 마이그레이션 후 전원 강제 재로그인")
+    inner class MinIssuedAtTests {
+
+        private fun providerWithCutoff(minIssuedAt: String) = JwtTokenProvider(
+            secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
+            accessExpiration = 3600000,
+            refreshExpiration = 604800000,
+            refreshExpirationLong = 5184000000,
+            minIssuedAt = minIssuedAt,
+            redisTemplate = redisTemplate,
+            refreshTokenStore = refreshTokenStore
+        )
+
+        private fun kstOffsetDays(days: Long): String =
+            LocalDateTime.now(TimeZones.SEOUL_ZONE).plusDays(days).toString()
+
+        @Test
+        @DisplayName("미설정(기본)이면 컷오프가 적용되지 않는다")
+        fun disabled_byDefault() {
+            // Given: 기본 provider (min-issued-at 미지정)
+            val token = jwtTokenProvider.createAccessToken(1L, AppAuthority.WOMAN)
+
+            // Then
+            assertFalse(jwtTokenProvider.isIssuedBeforeCutoff(token))
+            assertTrue(jwtTokenProvider.validateToken(token))
+        }
+
+        @Test
+        @DisplayName("컷오프 이전에 발급된 access token 은 서명이 유효해도 거부된다")
+        fun accessTokenIssuedBeforeCutoff_isRejected() {
+            // Given: 컷오프가 미래 → 지금 발급한 토큰은 모두 '이전 발급'
+            val provider = providerWithCutoff(kstOffsetDays(1))
+            val token = provider.createAccessToken(1L, AppAuthority.WOMAN)
+
+            // Then
+            assertTrue(provider.isIssuedBeforeCutoff(token))
+            assertFalse(provider.validateToken(token))
+        }
+
+        @Test
+        @DisplayName("컷오프 이전에 발급된 refresh token 도 거부된다 (갱신으로 세션이 살아남지 못한다)")
+        fun refreshTokenIssuedBeforeCutoff_isRejected() {
+            // Given
+            val provider = providerWithCutoff(kstOffsetDays(1))
+            val token = provider.createRefreshToken(1L, "family-1", "token-1")
+
+            // Then
+            assertTrue(provider.isIssuedBeforeCutoff(token))
+            assertFalse(provider.validateToken(token))
+        }
+
+        @Test
+        @DisplayName("컷오프 이후에 발급된 토큰(=재로그인 세션)은 정상 통과한다")
+        fun tokenIssuedAfterCutoff_isAccepted() {
+            // Given: 컷오프가 과거 → 지금 발급한 토큰은 '이후 발급'
+            val provider = providerWithCutoff(kstOffsetDays(-1))
+            val token = provider.createAccessToken(1L, AppAuthority.WOMAN)
+
+            // Then
+            assertFalse(provider.isIssuedBeforeCutoff(token))
+            assertTrue(provider.validateToken(token))
+        }
+
+        @Test
+        @DisplayName("서명이 위조된 토큰은 컷오프 사유로 분류하지 않는다")
+        fun forgedToken_isNotClassifiedAsCutoff() {
+            // Given: 다른 secret 으로 서명된 토큰
+            val foreign = JwtTokenProvider(
+                secret = "another-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-alg",
+                accessExpiration = 3600000,
+                refreshExpiration = 604800000,
+                refreshExpirationLong = 5184000000,
+                redisTemplate = redisTemplate,
+                refreshTokenStore = refreshTokenStore
+            ).createAccessToken(1L, AppAuthority.WOMAN)
+            val provider = providerWithCutoff(kstOffsetDays(1))
+
+            // Then: 컷오프가 아니라 서명 검증에서 탈락해야 한다
+            assertFalse(provider.isIssuedBeforeCutoff(foreign))
+            assertFalse(provider.validateToken(foreign))
+        }
+
+        @Test
+        @DisplayName("형식이 잘못된 설정값은 기동을 실패시킨다 (조용한 미적용 방지)")
+        fun malformedValue_failsFast() {
+            assertThrows(IllegalStateException::class.java) {
+                providerWithCutoff("2026-08-15 02:00:00")
+            }
         }
     }
 }

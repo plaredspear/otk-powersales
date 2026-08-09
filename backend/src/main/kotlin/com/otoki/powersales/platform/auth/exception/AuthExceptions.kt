@@ -71,6 +71,22 @@ class InvalidTokenException : BusinessException(
 )
 
 /**
+ * 발급시각 컷오프(`jwt.min-issued-at`) 이전에 발급된 토큰.
+ *
+ * 데이터 마이그레이션으로 `employee.id` 가 재부여되면 구 id 를 각인한 토큰은 다른 사원으로
+ * 인증될 수 있어 일괄 무효화한다
+ * ([com.otoki.powersales.platform.common.security.JwtTokenProvider] 참조).
+ *
+ * [InvalidTokenException] 과 코드를 나누는 이유는 앱의 안내 때문이다 — "유효하지 않은 토큰"은
+ * 사용자에게 장애로 읽히지만, 이 상황의 정답은 그냥 다시 로그인하는 것이다.
+ */
+class SessionInvalidatedException : BusinessException(
+    errorCode = "SESSION_INVALIDATED",
+    message = "시스템 데이터 정비로 다시 로그인이 필요합니다",
+    httpStatus = HttpStatus.UNAUTHORIZED
+)
+
+/**
  * 사원 없음
  */
 class EmployeeNotFoundException : BusinessException(

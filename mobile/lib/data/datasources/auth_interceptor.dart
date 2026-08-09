@@ -115,10 +115,19 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    final errorCode = _errorCode(err.response?.data);
+
     // 단말 회수/교체(DEVICE_REVOKED): 다른 기기에서 로그인되어 현재 단말이 차단됨.
     // refresh 토큰도 서버에서 무효화됐으므로 갱신 시도 없이 즉시 강제 로그아웃.
-    if (_errorCode(err.response?.data) == 'DEVICE_REVOKED') {
+    if (errorCode == 'DEVICE_REVOKED') {
       await _forceLogout(reason: LogoutReason.deviceRevoked);
+      return handler.next(err);
+    }
+
+    // 서버 데이터 정비로 발급시각 컷오프 이전 토큰이 일괄 무효화됨(SESSION_INVALIDATED).
+    // refresh 토큰도 같은 컷오프에 걸리므로 갱신 시도 없이 즉시 강제 로그아웃한다.
+    if (errorCode == 'SESSION_INVALIDATED') {
+      await _forceLogout(reason: LogoutReason.sessionInvalidated);
       return handler.next(err);
     }
 

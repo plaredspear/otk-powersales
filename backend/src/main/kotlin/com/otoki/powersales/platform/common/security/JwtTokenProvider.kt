@@ -2,6 +2,7 @@ package com.otoki.powersales.platform.common.security
 
 import com.otoki.powersales.platform.auth.token.RefreshTokenAudience
 import com.otoki.powersales.platform.auth.token.RefreshTokenStore
+import com.otoki.powersales.platform.common.util.TimeZones
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
@@ -13,6 +14,8 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeParseException
 import java.util.*
 import javax.crypto.SecretKey
 
@@ -25,6 +28,11 @@ class JwtTokenProvider(
     @Value("\${jwt.expiration}") private val accessExpiration: Long,
     @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long,
     @Value("\${jwt.refresh-expiration-long}") private val refreshExpirationLong: Long,
+    /**
+     * 발급시각 컷오프 — KST ISO-8601 local datetime (예: `2026-08-15T02:00:00`). 빈 값이면 비활성.
+     * 의미와 운영 절차는 [minIssuedAtMillis] KDoc 참조.
+     */
+    @Value("\${jwt.min-issued-at:}") private val minIssuedAt: String = "",
     /** access token 블랙리스트 전용 — refresh 계열은 [refreshTokenStore] (DB SoT) 가 담당한다. */
     private val redisTemplate: RedisTemplate<String, String>,
     private val refreshTokenStore: RefreshTokenStore,
@@ -35,6 +43,33 @@ class JwtTokenProvider(
     private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
+
+    /**
+     * 이 시각(epoch millis) 이전에 발급된 토큰을 전부 무효로 본다. `0` = 컷오프 비활성.
+     *
+     * ## 왜 필요한가 — 데이터 마이그레이션 후 전원 강제 재로그인
+     *
+     * JWT subject 는 `employee.id` 다. 마이그레이션으로 PK 가 재부여되면 잔존 토큰이 **다른 사원으로
+     * 인증될 수 있어**, 만료를 기다리는(access 최대 1h, refresh 최대 60일) 방식으로는 부족하다.
+     * refresh token 삭제나 단말 초기화도 access token 잔여 TTL / 단말 검증 면제 사번 구멍이 남는다.
+     * 컷오프는 서명·만료와 같은 층에서 로컬 판정하므로 그 구멍이 없다.
+     *
+     * ## 왜 "기동 시각" 이 아니라 명시적 시각인가
+     *
+     * 다중 인스턴스(EB) 에서 기동 시각을 쓰면 인스턴스마다 컷오프가 어긋나고, 이후 재기동·오토스케일
+     * 마다 전원이 다시 로그아웃된다. 명시 시각은 몇 번을 재기동해도 결과가 같다(멱등).
+     *
+     * ## 적용 범위 — 모바일 전용
+     *
+     * 본 클래스는 모바일 인증 전용이며 웹 admin 은 별도 인프라(`WebJwtService` /
+     * `WebJwtAuthenticationFilter`) 를 쓴다. 따라서 컷오프는 **모바일 세션만** 끊는다.
+     *
+     * ## 운영 절차
+     *
+     * 마이그레이션 컷오버 완료 후 `JWT_MIN_ISSUED_AT` 에 컷오버 시각(KST)을 넣고 재기동한다.
+     * 형식 오류면 기동을 실패시킨다 — 조용히 미적용된 채 뜨면 무효화가 안 된 사실을 아무도 모른다.
+     */
+    private val minIssuedAtMillis: Long = parseMinIssuedAt(minIssuedAt)
 
     /**
      * Mobile (Employee 기반) Access Token 생성.
@@ -111,21 +146,55 @@ class JwtTokenProvider(
         if (longLived) refreshExpirationLong else refreshExpiration
 
     /**
-     * 토큰 검증 (서명, 만료, 블랙리스트 확인).
+     * 토큰 검증 (서명, 만료, 발급시각 컷오프, 블랙리스트 확인).
      *
-     * 판정 순서는 **로컬 검증(서명/만료) 먼저, 블랙리스트(Redis) 나중**이다.
+     * 판정 순서는 **로컬 검증(서명/만료/컷오프) 먼저, 블랙리스트(Redis) 나중**이다.
      * 위조/만료 토큰은 Redis 를 건드리지 않고 탈락하므로, 무인증 트래픽이 Redis 부하로 번지지 않는다.
      */
     fun validateToken(token: String): Boolean {
         return try {
             val claims = parseClaims(token)
             if (claims.expiration.before(Date())) return false
+            if (isBeforeCutoff(claims.issuedAt)) return false
             !isBlacklisted(token)
         } catch (e: ExpiredJwtException) {
             false
         } catch (e: Exception) {
             false
         }
+    }
+
+    /**
+     * 발급시각 컷오프([minIssuedAtMillis]) 이전에 발급된 토큰인지 — **거부 사유 구분 전용**.
+     *
+     * [validateToken] 이 이미 컷오프를 반영하므로 인증 판정에는 쓰지 않는다. 호출부는 이 값으로
+     * 401 응답의 에러 코드를 `SESSION_INVALIDATED` 로 분기해, 앱이 "세션 만료"(재갱신 시도) 대신
+     * **즉시 재로그인 안내**로 처리하게 한다. 사유가 뭉개지면 사용자는 갱신 실패를 통신 장애로
+     * 오해하고, 앱은 무의미한 refresh 왕복을 한 번 더 한다.
+     *
+     * 만료 토큰도 판정 대상이다 — 컷오프 이전 발급이면 만료 여부와 무관하게 재로그인이 정답이며,
+     * jjwt 의 [ExpiredJwtException] 은 검증된 claims 를 함께 실어 주므로 `iat` 를 그대로 읽는다.
+     * 서명 위조/파싱 불가는 `false` 를 반환한다 (컷오프와 무관한 거부이며 [validateToken] 이 막는다).
+     */
+    fun isIssuedBeforeCutoff(token: String): Boolean {
+        if (minIssuedAtMillis == 0L) return false
+        val issuedAt = try {
+            parseClaims(token).issuedAt
+        } catch (e: ExpiredJwtException) {
+            e.claims.issuedAt
+        } catch (e: Exception) {
+            return false
+        }
+        return isBeforeCutoff(issuedAt)
+    }
+
+    /**
+     * `iat` 가 컷오프 이전인지. `iat` 부재는 **이전으로 간주**한다 —
+     * 현재 발급 경로는 모두 `iat` 를 심으므로, 없는 토큰은 컷오프 이후 발급이 아님이 확실하다.
+     */
+    private fun isBeforeCutoff(issuedAt: Date?): Boolean {
+        if (minIssuedAtMillis == 0L) return false
+        return issuedAt == null || issuedAt.time < minIssuedAtMillis
     }
 
     /**
@@ -353,5 +422,25 @@ class JwtTokenProvider(
 
         /** Spec #760 — Mobile 토큰 audience claim 값. */
         const val AUDIENCE_MOBILE = "mobile"
+
+        /**
+         * `jwt.min-issued-at` 파싱 — KST local datetime → epoch millis. 빈 값이면 `0`(비활성).
+         *
+         * 형식 오류는 기동 실패로 처리한다. 무시하고 뜨면 "무효화했다고 믿는데 실제로는 전 사용자
+         * 세션이 그대로" 인 상태가 되며, 이 설정을 켜는 시점(마이그레이션 컷오버)에는 그 오해가
+         * 곧 사고다.
+         */
+        private fun parseMinIssuedAt(raw: String): Long {
+            val value = raw.trim()
+            if (value.isEmpty()) return 0L
+            return try {
+                LocalDateTime.parse(value).atZone(TimeZones.SEOUL_ZONE).toInstant().toEpochMilli()
+            } catch (e: DateTimeParseException) {
+                throw IllegalStateException(
+                    "jwt.min-issued-at 형식 오류: '$raw' — KST 기준 ISO-8601 local datetime 이어야 합니다 (예: 2026-08-15T02:00:00)",
+                    e
+                )
+            }
+        }
     }
 }
