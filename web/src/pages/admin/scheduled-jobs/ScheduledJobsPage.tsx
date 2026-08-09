@@ -106,7 +106,7 @@ const JOB_SCHEDULES: Record<string, string> = {
   'sap-outbox-worker': '기본 30초 주기',
   'scheduledJobRun.cleanup': '매일 04시',
   'orora-daily-sales-materialize-batch': '기본 매일 04:30',
-  'orora-monthly-sales-materialize-batch': '기본 매주 목요일 + 매월 3일 05시 (전월 재적재)',
+  'orora-monthly-sales-materialize-batch': '매월 9일 12시 (전월분)',
   'erpOrder.retention': '기본 매주 일요일 04시',
   'sf-claim-resend': '기본 매시간 50분',
 };
@@ -1312,7 +1312,9 @@ export default function ScheduledJobsPage() {
         tabPosition="left"
         style={{ marginTop: 24 }}
         // 세로 탭이 잡 수만큼 길어져 화면을 넘어가므로, 탭 바 영역만 스크롤되도록 높이를 제한한다.
-        tabBarStyle={{ maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}
+        // textAlign: antd 세로 탭의 기본 우측 정렬을 해제 — 주기 문구 길이가 잡마다 달라
+        // 우측 정렬 시 잡 이름의 시작 위치가 행마다 어긋나 보인다.
+        tabBarStyle={{ maxHeight: 'calc(100vh - 240px)', overflowY: 'auto', textAlign: 'left' }}
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabItems}
