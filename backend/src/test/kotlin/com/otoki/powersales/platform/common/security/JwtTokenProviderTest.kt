@@ -13,9 +13,12 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.springframework.data.redis.RedisConnectionFailureException
 import org.springframework.data.redis.core.RedisTemplate
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.security.Keys
 import org.springframework.data.redis.core.ValueOperations
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.Date
 
 /**
  * JwtTokenProvider 테스트
@@ -586,7 +589,7 @@ class JwtTokenProviderTest {
     inner class MinIssuedAtTests {
 
         private fun providerWithCutoff(minIssuedAt: String) = JwtTokenProvider(
-            secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
+            secret = TEST_SECRET,
             accessExpiration = 3600000,
             refreshExpiration = 604800000,
             refreshExpirationLong = 5184000000,
@@ -597,6 +600,25 @@ class JwtTokenProviderTest {
 
         private fun kstOffsetDays(days: Long): String =
             LocalDateTime.now(TimeZones.SEOUL_ZONE).plusDays(days).toString()
+
+        /**
+         * 지정한 시각에 발급된 것으로 서명된 토큰.
+         *
+         * 컷오프를 미래로 잡아 "지금 발급 = 컷오프 이전" 을 만드는 편법은 쓸 수 없다 —
+         * 미래 컷오프는 기동 실패 대상이기 때문이다([futureValue_failsFast]).
+         * 만료가 아니라 컷오프로 탈락하는지 보려면 [ttlMinutes] 를 넉넉히 준다.
+         */
+        private fun tokenIssuedAt(issuedAt: LocalDateTime, ttlMinutes: Long = 60): String {
+            val issued = Date.from(issuedAt.atZone(TimeZones.SEOUL_ZONE).toInstant())
+            return Jwts.builder()
+                .subject("1")
+                .claim("type", "access")
+                .claim("audience", JwtTokenProvider.AUDIENCE_MOBILE)
+                .issuedAt(issued)
+                .expiration(Date(issued.time + ttlMinutes * 60_000))
+                .signWith(Keys.hmacShaKeyFor(TEST_SECRET.toByteArray()))
+                .compact()
+        }
 
         @Test
         @DisplayName("미설정(기본)이면 컷오프가 적용되지 않는다")
@@ -610,11 +632,14 @@ class JwtTokenProviderTest {
         }
 
         @Test
-        @DisplayName("컷오프 이전에 발급된 access token 은 서명이 유효해도 거부된다")
-        fun accessTokenIssuedBeforeCutoff_isRejected() {
-            // Given: 컷오프가 미래 → 지금 발급한 토큰은 모두 '이전 발급'
-            val provider = providerWithCutoff(kstOffsetDays(1))
-            val token = provider.createAccessToken(1L, AppAuthority.WOMAN)
+        @DisplayName("컷오프 이전에 발급된 토큰은 서명이 유효하고 만료 전이어도 거부된다")
+        fun tokenIssuedBeforeCutoff_isRejected() {
+            // Given: 컷오프는 1일 전, 토큰은 2일 전 발급 (만료가 아니라 컷오프로 탈락해야 함)
+            val provider = providerWithCutoff(kstOffsetDays(-1))
+            val token = tokenIssuedAt(
+                LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(2),
+                ttlMinutes = 60 * 24 * 30
+            )
 
             // Then
             assertTrue(provider.isIssuedBeforeCutoff(token))
@@ -622,13 +647,13 @@ class JwtTokenProviderTest {
         }
 
         @Test
-        @DisplayName("컷오프 이전에 발급된 refresh token 도 거부된다 (갱신으로 세션이 살아남지 못한다)")
-        fun refreshTokenIssuedBeforeCutoff_isRejected() {
-            // Given
-            val provider = providerWithCutoff(kstOffsetDays(1))
-            val token = provider.createRefreshToken(1L, "family-1", "token-1")
+        @DisplayName("컷오프 이전에 발급됐고 이미 만료된 토큰도 컷오프로 분류한다 (재로그인 안내가 정확)")
+        fun expiredTokenIssuedBeforeCutoff_isClassifiedAsCutoff() {
+            // Given: 2일 전 발급 + 1시간 TTL → 이미 만료
+            val provider = providerWithCutoff(kstOffsetDays(-1))
+            val token = tokenIssuedAt(LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(2))
 
-            // Then
+            // Then: 만료 예외에서도 iat 를 읽어 컷오프로 판정한다
             assertTrue(provider.isIssuedBeforeCutoff(token))
             assertFalse(provider.validateToken(token))
         }
@@ -646,6 +671,23 @@ class JwtTokenProviderTest {
         }
 
         @Test
+        @DisplayName("refresh token 도 동일하게 컷오프 대상 (갱신으로 세션이 살아남지 못한다)")
+        fun refreshTokenIsSubjectToCutoff() {
+            // Given: 컷오프 이후 발급된 refresh 는 통과
+            val provider = providerWithCutoff(kstOffsetDays(-1))
+            val fresh = provider.createRefreshToken(1L, "family-1", "token-1")
+            assertFalse(provider.isIssuedBeforeCutoff(fresh))
+
+            // Then: 컷오프 이전 발급분은 거부 (type 무관하게 iat 기준)
+            val old = tokenIssuedAt(
+                LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(2),
+                ttlMinutes = 60 * 24 * 30
+            )
+            assertTrue(provider.isIssuedBeforeCutoff(old))
+            assertFalse(provider.validateToken(old))
+        }
+
+        @Test
         @DisplayName("서명이 위조된 토큰은 컷오프 사유로 분류하지 않는다")
         fun forgedToken_isNotClassifiedAsCutoff() {
             // Given: 다른 secret 으로 서명된 토큰
@@ -657,7 +699,7 @@ class JwtTokenProviderTest {
                 redisTemplate = redisTemplate,
                 refreshTokenStore = refreshTokenStore
             ).createAccessToken(1L, AppAuthority.WOMAN)
-            val provider = providerWithCutoff(kstOffsetDays(1))
+            val provider = providerWithCutoff(kstOffsetDays(-1))
 
             // Then: 컷오프가 아니라 서명 검증에서 탈락해야 한다
             assertFalse(provider.isIssuedBeforeCutoff(foreign))
@@ -665,11 +707,41 @@ class JwtTokenProviderTest {
         }
 
         @Test
+        @DisplayName("날짜/시각 구분자는 T 와 공백을 모두 허용한다 (컷오버 당일 표기 차이로 배포가 막히지 않도록)")
+        fun spaceSeparator_isAccepted() {
+            // Given: 같은 시각을 두 표기로 설정
+            val kst = LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(1).withNano(0)
+            val withT = providerWithCutoff(kst.toString())
+            val withSpace = providerWithCutoff(kst.toString().replace('T', ' '))
+            val token = tokenIssuedAt(
+                LocalDateTime.now(TimeZones.SEOUL_ZONE).minusDays(2),
+                ttlMinutes = 60 * 24 * 30
+            )
+
+            // Then: 판정 결과가 같다
+            assertTrue(withT.isIssuedBeforeCutoff(token))
+            assertTrue(withSpace.isIssuedBeforeCutoff(token))
+        }
+
+        @Test
         @DisplayName("형식이 잘못된 설정값은 기동을 실패시킨다 (조용한 미적용 방지)")
         fun malformedValue_failsFast() {
             assertThrows(IllegalStateException::class.java) {
-                providerWithCutoff("2026-08-15 02:00:00")
+                providerWithCutoff("2026/08/15 02:00")
             }
         }
+
+        @Test
+        @DisplayName("미래 시각은 기동을 실패시킨다 — 재로그인한 새 토큰까지 거부되어 로그인 루프가 된다")
+        fun futureValue_failsFast() {
+            assertThrows(IllegalStateException::class.java) {
+                providerWithCutoff(kstOffsetDays(1))
+            }
+        }
+    }
+
+    companion object {
+        private const val TEST_SECRET =
+            "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm"
     }
 }

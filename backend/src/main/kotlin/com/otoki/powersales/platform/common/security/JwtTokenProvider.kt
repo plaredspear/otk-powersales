@@ -426,21 +426,39 @@ class JwtTokenProvider(
         /**
          * `jwt.min-issued-at` 파싱 — KST local datetime → epoch millis. 빈 값이면 `0`(비활성).
          *
-         * 형식 오류는 기동 실패로 처리한다. 무시하고 뜨면 "무효화했다고 믿는데 실제로는 전 사용자
-         * 세션이 그대로" 인 상태가 되며, 이 설정을 켜는 시점(마이그레이션 컷오버)에는 그 오해가
-         * 곧 사고다.
+         * 날짜와 시각 사이 구분자는 `T` 와 공백 둘 다 받는다. 이 값은 사람이 컷오버 당일 손으로
+         * 넣는 운영 파라미터이고, `2026-08-15 02:00:00` 은 누구나 쓰는 표기다. 그걸 기동 실패로
+         * 되받으면 하필 컷오버 한복판에서 배포가 막힌다.
+         *
+         * 반면 형식 자체가 깨진 값은 기동 실패로 처리한다. 무시하고 뜨면 "무효화했다고 믿는데
+         * 실제로는 전 사용자 세션이 그대로" 인 상태가 되며, 이 설정을 켜는 시점에는 그 오해가 곧 사고다.
+         *
+         * ## 미래 시각을 거부하는 이유 — 로그인 루프
+         *
+         * 컷오프가 미래면 **재로그인으로 받은 새 토큰도 컷오프 이전 발급**이라 즉시 거부된다.
+         * 로그인 API 는 200 을 주는데 다음 요청이 401 → 강제 로그아웃 → 재로그인 무한 반복이 되고,
+         * 그 시각이 될 때까지 아무도 앱을 쓸 수 없다. "22:00 에 전원 로그아웃되도록 미리 걸어 두자" 는
+         * 예약 무효화 용도로 읽히기 쉬운데, 실제로는 예약이 아니라 그 순간부터 앱 전면 장애다.
+         * 컷오프는 **이미 지난 시각**(= 마이그레이션 컷오버 완료 시각)으로만 설정한다.
          */
         private fun parseMinIssuedAt(raw: String): Long {
             val value = raw.trim()
             if (value.isEmpty()) return 0L
-            return try {
-                LocalDateTime.parse(value).atZone(TimeZones.SEOUL_ZONE).toInstant().toEpochMilli()
+            val normalized = value.replaceFirst(' ', 'T')
+            val millis = try {
+                LocalDateTime.parse(normalized)
+                    .atZone(TimeZones.SEOUL_ZONE).toInstant().toEpochMilli()
             } catch (e: DateTimeParseException) {
                 throw IllegalStateException(
                     "jwt.min-issued-at 형식 오류: '$raw' — KST 기준 ISO-8601 local datetime 이어야 합니다 (예: 2026-08-15T02:00:00)",
                     e
                 )
             }
+            check(millis <= System.currentTimeMillis()) {
+                "jwt.min-issued-at 은 미래 시각일 수 없습니다: '$raw' — 그 시각까지 재로그인한 토큰도 함께 거부되어 " +
+                    "로그인 루프(앱 전면 장애)가 된다. 마이그레이션 컷오버가 끝난 시각을 넣고 재기동할 것"
+            }
+            return millis
         }
     }
 }
