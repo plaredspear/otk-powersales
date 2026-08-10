@@ -1,13 +1,16 @@
 /*
  * 공지 본문(에디터 산출 HTML) 을 web 에서 렌더할 때의 공통 보정.
  *
- * Quill 은 빈 줄을 `<p><br></p>` 로 내보낸다. 이 빈 문단에 <p> 기본 margin(1em 0)이 걸리면
- * 인접 문단과 마진이 collapse 되어, 빈 줄을 여러 개 넣어도 간격이 한 칸으로 합쳐진다.
- * 빈 문단에 한해 margin 을 0 + min-height 를 1em 으로 두면 문단 높이가 collapse 없이 누적되어
- * 작성자가 넣은 개수만큼 줄바꿈이 보존된다 (일반 문단의 문단 간격은 그대로).
+ * Quill 이 내보내는 빈 줄은 `<p></p>` (실제 DB 저장 형태) 와 `<p><br></p>` 두 가지다.
+ * 이 빈 문단에 <p> 기본 margin(1em 0)이 걸리면 인접 문단과 마진이 collapse 되어,
+ * 빈 줄을 여러 개 넣어도 간격이 한 칸으로 합쳐진다. 빈 문단에 한해 margin 을 0 +
+ * min-height 를 1em 으로 두면 문단 높이가 collapse 없이 누적되어 작성자가 넣은 개수만큼
+ * 줄바꿈이 보존된다 (일반 문단의 문단 간격은 그대로).
+ * 아래 두 셀렉터가 각각 `<p></p>` 와 `<p><br></p>` 를 담당하므로 둘 다 있어야 한다.
  *
- * 값 1em 은 모바일 렌더러(flutter_widget_from_html_core) 의
- * "paragraph with <BR /> only" 특수 처리(HeightPlaceholder 1em)와 동일하게 맞춘 것이다.
+ * 값 1em 은 모바일 렌더러가 빈 줄에 쓰는 높이(kNoticeBlankLineHeight)와 맞춘 것이다.
+ * 모바일은 CSS 가 없어 notice_content_html.dart 의 customWidgetBuilder 가 빈 문단을
+ * SizedBox 로 직접 렌더한다 — 빈 줄 형태를 늘리거나 바꿀 때 양쪽을 함께 고쳐야 한다.
  * 모바일 미리보기 프레임 전용 스타일은 MobilePreview.css 가 따로 관리한다.
  */
 
