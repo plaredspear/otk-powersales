@@ -119,9 +119,10 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
             child: Text(
               detail.categoryName,
               style: AppTypography.labelSmall.copyWith(
+                // 노란 배경(primaryLight) 위에는 검정, 파란 배경(secondaryLight) 위에는 흰색
                 color: detail.category == NoticeCategory.company
-                    ? AppColors.primary
-                    : AppColors.white,
+                    ? AppColors.onPrimary
+                    : AppColors.onSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),
