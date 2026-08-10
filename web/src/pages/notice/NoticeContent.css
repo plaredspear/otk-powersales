@@ -1,0 +1,23 @@
+/*
+ * 공지 본문(에디터 산출 HTML) 을 web 에서 렌더할 때의 공통 보정.
+ *
+ * Quill 은 빈 줄을 `<p><br></p>` 로 내보낸다. 이 빈 문단에 <p> 기본 margin(1em 0)이 걸리면
+ * 인접 문단과 마진이 collapse 되어, 빈 줄을 여러 개 넣어도 간격이 한 칸으로 합쳐진다.
+ * 빈 문단에 한해 margin 을 0 + min-height 를 1em 으로 두면 문단 높이가 collapse 없이 누적되어
+ * 작성자가 넣은 개수만큼 줄바꿈이 보존된다 (일반 문단의 문단 간격은 그대로).
+ *
+ * 값 1em 은 모바일 렌더러(flutter_widget_from_html_core) 의
+ * "paragraph with <BR /> only" 특수 처리(HeightPlaceholder 1em)와 동일하게 맞춘 것이다.
+ * 모바일 미리보기 프레임 전용 스타일은 MobilePreview.css 가 따로 관리한다.
+ */
+
+/* `:has()` 미지원 브라우저에서 룰 전체가 무시되지 않도록 셀렉터를 분리해 둔다. */
+.notice-content-view p:empty {
+  min-height: 1em;
+  margin: 0;
+}
+
+.notice-content-view p:has(> br:only-child) {
+  min-height: 1em;
+  margin: 0;
+}

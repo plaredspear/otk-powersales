@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Modal, Popover, Space, Spin, Tag, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import DOMPurify from 'dompurify';
+import './NoticeContent.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import {
   useDeleteNotice,
@@ -222,6 +223,7 @@ export default function NoticeDetailPage() {
         (DOMPurify 3.x 는 data-* 를 기본 허용하나 버전/설정 변동 대비). presigned https src 는 기본 허용.
       */}
       <div
+        className="notice-content-view"
         style={{ borderTop: '1px solid #f0f0f0', paddingTop: 24 }}
         dangerouslySetInnerHTML={{
           __html: DOMPurify.sanitize(notice.content || '', { ADD_ATTR: ['data-refid'] }),

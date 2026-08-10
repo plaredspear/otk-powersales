@@ -166,6 +166,21 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
               if (uri == null) return false;
               return launchUrl(uri, mode: LaunchMode.externalApplication);
             },
+            // 작성자가 넣은 빈 줄을 그대로 보존한다.
+            //
+            // 웹 에디터(Quill)는 빈 줄을 `<p><br></p>` 로 내보낸다. HtmlWidget 은 이 형태를 1em 높이로
+            // 살려주지만, <p> 기본 margin(1em 0)이 인접 문단과 collapse 되면서(HeightPlaceholder.mergeWith
+            // 가 max 채택) 빈 줄을 여러 개 넣어도 간격이 한 칸으로 합쳐져 보인다.
+            // 빈 문단에 한해 margin 을 0 으로 두면 문단 자체의 1em 높이가 collapse 없이 누적되어
+            // 넣은 개수만큼 줄바꿈이 표현된다 (일반 문단의 1em 문단 간격은 그대로 유지).
+            customStylesBuilder: (element) {
+              if (element.localName != 'p') return null;
+              final isBlankLine = element.children.length == 1 &&
+                  element.children.first.localName == 'br' &&
+                  element.text.trim().isEmpty;
+              if (!isBlankLine) return null;
+              return {'margin': '0'};
+            },
             customWidgetBuilder: (element) {
               if (element.localName != 'img') return null;
               final src = element.attributes['src'];
