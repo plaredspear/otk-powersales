@@ -417,6 +417,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     isSubmitting: state.isSubmitting,
                     requiredFieldsFilled: state.isReadyForApproval,
                     loanExceeded: state.isLoanExceeded,
+                    pastDeadline: state.isPastDeadline,
+                    zeroQuantityLineCount: state.zeroQuantityLineCount,
                   ),
                 ],
               ),

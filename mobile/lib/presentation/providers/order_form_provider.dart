@@ -630,6 +630,11 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (state.deliveryDate!.isBefore(todayDate)) {
       return '납기일은 오늘 이후여야 합니다.';
     }
+    // (D-2) 주문 마감(납기일 전일 13:50) 경과 — 서버 `ORD_DEADLINE_PASSED` 정합.
+    // 승인요청 버튼은 마감 시 disabled 이지만, 비-UI 호출 방어를 위해 여기서도 차단한다.
+    if (state.isPastDeadline) {
+      return '마감시간이 지났습니다. 납기일 하루 전 13:50까지 주문할 수 있습니다.';
+    }
     // (E) 라인 0개
     if (state.orderDraft.items.isEmpty) {
       return '주문할 제품을 추가해주세요';

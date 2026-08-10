@@ -1,3 +1,4 @@
+import '../../core/utils/order_deadline.dart';
 import '../../data/models/order_form/order_draft_response_model.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/validation_error.dart';
@@ -182,6 +183,18 @@ class OrderFormState {
 
   /// 승인요청 가능한 필수 입력 상태 (거래처/납기일/제품 + 모든 라인 수량 > 0)
   bool get isReadyForApproval => orderDraft.isReadyForApproval;
+
+  /// 선택한 납기일의 주문 마감(= 납기일 전일 13:50)이 지났는지 여부.
+  /// 납기일 미선택이면 아직 판정할 수 없으므로 false (미경과로 간주).
+  bool get isPastDeadline {
+    final delivery = deliveryDate;
+    if (delivery == null) return false;
+    return !OrderDeadline.isWithinDeadline(delivery);
+  }
+
+  /// 총EA 가 0 인 라인 수 — 승인요청 버튼이 미입력 건수를 안내하는 데 쓴다.
+  int get zeroQuantityLineCount =>
+      orderDraft.items.where((e) => e.totalPieces <= 0).length;
 
   /// 유효성 에러가 있는지 여부
   bool get hasValidationErrors => validationErrors.isNotEmpty;
