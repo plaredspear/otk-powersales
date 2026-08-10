@@ -37,6 +37,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.EventScheduleNotF
 import com.otoki.powersales.domain.activity.schedule.exception.DistanceExceededException
 import com.otoki.powersales.domain.activity.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequiredException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.attendance.AttendanceRegistrar
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
@@ -1136,6 +1137,87 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("타인 일정: TMS.employee.id != currentEmployeeId -> TeamMemberScheduleNotFoundException")
+        fun register_scheduleOwnedByOther_throwsNotFound() {
+            // Given — 행사사원이 A -> B 로 교체된 뒤 A 의 앱이 낡은 scheduleId 를 그대로 전송한 상황.
+            // 존재 여부를 응답으로 구분할 수 없도록 403 이 아니라 404 로 막는다.
+            val userId = 1L
+            val otherUserId = 2L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+            val schedule = createTeamMemberSchedule(
+                id = scheduleId,
+                employeeId = otherUserId, // 타인 소유
+                workingDate = today
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(TeamMemberScheduleNotFoundException::class.java)
+
+            // 출근로그가 타인 일정에 적재되지 않아야 한다
+            verify(exactly = 0) { attendanceRegistrar.register(any()) }
+        }
+
+        @Test
+        @DisplayName("과거 일자 일정: TMS.workingDate != 오늘 -> ScheduleDateMismatchException")
+        fun register_schedulePastDate_throwsDateMismatch() {
+            // Given — 앱을 갱신하지 않은 채 어제 목록의 scheduleId 로 등록 시도
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+            val schedule = createTeamMemberSchedule(
+                id = scheduleId,
+                employeeId = userId,
+                workingDate = today.minusDays(1)
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(ScheduleDateMismatchException::class.java)
+
+            verify(exactly = 0) { attendanceRegistrar.register(any()) }
+        }
+
+        @Test
+        @DisplayName("미래 일자 일정: TMS.workingDate != 오늘 -> ScheduleDateMismatchException")
+        fun register_scheduleFutureDate_throwsDateMismatch() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+            val schedule = createTeamMemberSchedule(
+                id = scheduleId,
+                employeeId = userId,
+                workingDate = today.plusDays(1)
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(ScheduleDateMismatchException::class.java)
+
+            verify(exactly = 0) { attendanceRegistrar.register(any()) }
         }
 
         @Test

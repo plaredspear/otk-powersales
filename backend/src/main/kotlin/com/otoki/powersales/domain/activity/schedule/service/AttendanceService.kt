@@ -43,6 +43,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.EventScheduleNotA
 import com.otoki.powersales.domain.activity.schedule.exception.EventScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequiredException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.policy.AbcExemptPolicy
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
@@ -232,7 +233,7 @@ class AttendanceService(
 
         // 2. 스케줄 결정 — scheduleId / displayWorkScheduleId / eventScheduleId 분기
         val resolved = when {
-            scheduleId != null -> resolveByScheduleId(scheduleId)
+            scheduleId != null -> resolveByScheduleId(scheduleId, employee, today)
             displayWorkScheduleId != null -> resolveByDisplayWorkSchedule(displayWorkScheduleId, employee, today)
             else -> resolveByEventSchedule(eventScheduleId!!, employee, today)
         }
@@ -370,18 +371,15 @@ class AttendanceService(
             throw SafetyCheckRequiredException()
         }
 
-        // 스케줄 해석 (진열=마스터 기반 동적 생성, 행사·기배정=scheduleId)
+        // 스케줄 해석 (진열=마스터 기반 동적 생성, 행사·기배정=scheduleId).
+        // 소유자 검증 기준은 요청자가 아니라 대상 여사원 — 타인 스케줄 등록 차단은
+        // resolveByScheduleId 내부 가드가 수행한다.
         val resolved = when {
-            scheduleId != null -> resolveByScheduleId(scheduleId)
+            scheduleId != null -> resolveByScheduleId(scheduleId, targetEmployee, today)
             else -> resolveByDisplayWorkSchedule(displayWorkScheduleId!!, targetEmployee, today)
         }
         val teamMemberSchedule = resolved.schedule
         val displayMaster = resolved.displayMaster
-
-        // scheduleId 분기는 대상 여사원 본인 스케줄인지 확인 (타인 스케줄 등록 차단)
-        if (scheduleId != null && teamMemberSchedule.employee?.id != targetEmployee.id) {
-            throw TeamMemberScheduleNotFoundException()
-        }
 
         // 중복 등록 검증
         if (teamMemberSchedule.attendanceLog != null) {
@@ -495,11 +493,32 @@ class AttendanceService(
     )
 
     /**
-     * 기존 방식: scheduleId로 TeamMemberSchedule 직접 조회
+     * 기존 방식: scheduleId 로 TeamMemberSchedule 직접 조회 + 본인/일자 검증.
+     * 검증 순서: 일정 존재 → 본인 할당 → 일자 일치.
+     *
+     * 모바일이 TMS 출근등록에 쓰는 유일한 경로다(행사 일정도 `source="schedule"` 로 내려와
+     * 이 분기를 탄다 — `eventScheduleId` 는 모바일 미사용). 진열([resolveByDisplayWorkSchedule])·
+     * 행사([resolveByEventSchedule])·대리출근이 모두 갖춘 소유자/일자 가드를 여기에도 맞춘다.
+     *
+     * 소유자 불일치를 403 이 아닌 404 로 돌려주는 것은 대리출근 경로의 기존 처리와 동일하다 —
+     * 타인 일정 id 의 존재 여부를 응답으로 구분할 수 없게 한다.
+     *
+     * 일자는 오늘로 한정한다. 출근등록 대상 목록([getAccountList])이 `workingDate = 오늘` 만
+     * 내려주므로 정상 클라이언트는 영향받지 않고, 앱이 들고 있던 낡은 id 로 과거/미래 일정에
+     * 출근등록되는 것을 막는다.
      */
-    private fun resolveByScheduleId(scheduleId: Long): ResolveResult {
+    private fun resolveByScheduleId(scheduleId: Long, employee: Employee, today: LocalDate): ResolveResult {
         val tms = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamMemberScheduleNotFoundException() }
+
+        if (tms.employee?.id != employee.id) {
+            throw TeamMemberScheduleNotFoundException()
+        }
+
+        if (tms.workingDate != today) {
+            throw ScheduleDateMismatchException()
+        }
+
         return ResolveResult(schedule = tms, newlyCreated = false)
     }
 

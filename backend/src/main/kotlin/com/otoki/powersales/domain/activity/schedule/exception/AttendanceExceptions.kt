@@ -12,6 +12,18 @@ class TeamMemberScheduleNotFoundException : BusinessException(
     httpStatus = HttpStatus.NOT_FOUND
 )
 
+/**
+ * 일정 일자 불일치 — `scheduleId` 분기에서 `team_member_schedule.working_date != 오늘`.
+ *
+ * 출근등록 대상 목록은 오늘 일정만 내려주므로, 앱이 들고 있던 낡은 id 로 과거/미래 일정에
+ * 등록을 시도한 경우에 해당한다. 행사 분기의 `ATT_EVENT_SCHEDULE_DATE_MISMATCH` 와 동일 성격.
+ */
+class ScheduleDateMismatchException : BusinessException(
+    errorCode = "ATT_SCHEDULE_DATE_MISMATCH",
+    message = "오늘 일자의 일정만 출근 등록할 수 있습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
 class AttendanceLogNotFoundException : BusinessException(
     errorCode = "ATTENDANCE_LOG_NOT_FOUND",
     message = "출근 등록을 찾을 수 없습니다",
