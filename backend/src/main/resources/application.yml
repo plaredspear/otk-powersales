@@ -251,7 +251,7 @@ app:
       excluded-employee-codes: "${UUID_CHECK_EXCLUDED:00000009}"
 
   attendance:
-    gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
+    gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:1000}
 
   # ---------------------------------------------------------------------------
   # @Async 후처리 executor (AsyncConfig)
