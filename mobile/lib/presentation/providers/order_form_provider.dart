@@ -817,7 +817,11 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   }
 
   /// 임시저장 등록 (Spec #598 P2-M §2.4).
-  Future<void> saveDraft() async {
+  ///
+  /// 성공 여부를 반환값으로 돌려준다. successMessage 는 SnackBar 표시 후
+  /// 리스너가 즉시 clearSuccess() 로 소비하므로, 호출부가 state 를 다시 읽어
+  /// 성공 판정을 할 수 없다 (이탈 팝업의 임시저장 → 자동 pop 이 동작하지 않던 원인).
+  Future<bool> saveDraft() async {
     state = state.copyWith(
       isSubmitting: true,
       clearError: true,
@@ -830,7 +834,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         isSubmitting: false,
         errorMessage: '거래처를 선택해주세요.',
       );
-      return;
+      return false;
     }
 
     final request = OrderDraftRequestModel(
@@ -861,11 +865,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         draftId: saved.draftId,
         clearError: true,
       );
+      return true;
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _mapDraftSaveError(e),
       );
+      return false;
     }
   }
 

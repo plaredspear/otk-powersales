@@ -175,12 +175,13 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         Navigator.of(context).pop();
       },
       onSaveDraft: () async {
-        await notifier.saveDraft();
+        // 성공/실패 안내 SnackBar 는 listener 가 표시한다.
+        // 성공 여부는 반환값으로 판정 (state 의 successMessage 는 listener 가
+        // 이미 소비했을 수 있어 신뢰할 수 없음). 성공 시에만 화면을 벗어나고,
+        // 실패 시에는 페이지를 유지해 사용자가 재시도할 수 있게 한다.
+        final saved = await notifier.saveDraft();
         if (!mounted) return;
-        // saveDraft 성공/실패 여부는 successMessage/errorMessage 로 listener 가 SnackBar 표시.
-        // 성공 시에는 자동 pop, 실패 시에는 페이지 유지 (사용자 재시도 가능).
-        final latest = ref.read(orderFormProvider);
-        if (latest.successMessage != null) {
+        if (saved) {
           Navigator.of(context).pop();
         }
       },

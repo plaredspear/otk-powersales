@@ -313,8 +313,9 @@ void main() {
           ),
         );
 
-        await notifier.saveDraft();
+        final saved = await notifier.saveDraft();
 
+        expect(saved, isTrue);
         expect(notifier.state.successMessage, '임시저장이 완료되었습니다.');
         expect(notifier.state.draftId, 88);
         expect(formRepo.lastSavedDraftRequest, isNotNull);
@@ -323,7 +324,8 @@ void main() {
       });
 
       test('거래처 미선택 시 거부', () async {
-        await notifier.saveDraft();
+        final saved = await notifier.saveDraft();
+        expect(saved, isFalse);
         expect(notifier.state.errorMessage, '거래처를 선택해주세요.');
       });
 
@@ -337,9 +339,34 @@ void main() {
           ),
         );
 
-        await notifier.saveDraft();
+        final saved = await notifier.saveDraft();
 
+        expect(saved, isFalse);
         expect(notifier.state.errorMessage, '본인 담당 거래처가 아닙니다.');
+      });
+
+      // 이탈 팝업의 "임시저장" → 자동 pop 회귀 방지.
+      // successMessage 는 SnackBar 표시 후 listener 가 clearSuccess() 로 즉시
+      // 소비하므로, 그 뒤 state 를 읽어도 성공 판정을 할 수 없다. 반환값은
+      // 소비 여부와 무관하게 성공을 알려야 한다.
+      test('성공 후 successMessage 가 소비되어도 반환값은 true 를 유지한다', () async {
+        formRepo.orderDraftSavedToReturn = const OrderDraftSavedModel(
+          draftId: 99,
+          savedAt: '2026-05-04T10:00:00Z',
+        );
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            items: [_item('P001')],
+          ),
+        );
+
+        final saved = await notifier.saveDraft();
+        notifier.clearSuccess();
+
+        expect(saved, isTrue);
+        expect(notifier.state.successMessage, isNull);
       });
     });
 
