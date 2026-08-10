@@ -22,6 +22,11 @@ interface StorageService {
 	 * private/ 하위로 업로드하되 uniqueKey 를 호출자가 직접 지정한다. 실제 S3 key = "private/" + uniqueKey.
 	 * 교육 첨부처럼 DB 컬럼 길이 제약(예: file_key length=30)으로 buildKey 의 `uploads/<domain>/<날짜>/<uuid>`
 	 * 형식을 쓸 수 없고 짧은 key 규칙을 도메인이 소유해야 하는 경우에 사용한다.
+	 *
+	 * 유일한 호출처가 교육 첨부([com.otoki.powersales.platform.common.service.FileStorageService.uploadEducationFile])
+	 * 이므로 검증 기준도 교육 기준을 적용한다 — content-type 은 [StorageConstants.EDUCATION_ALLOWED_CONTENT_TYPES]
+	 * (동영상/문서 포함), 크기 상한은 [StorageConstants.EDUCATION_MAX_FILE_BYTES](50MB). 이미지 전용 도메인
+	 * (클레임/공지/현장점검)은 uploadPrivate 를 쓰므로 기존 기준(20MB · 이미지 화이트리스트)이 그대로 유지된다.
 	 */
 	fun uploadPrivateWithKey(uniqueKey: String, bytes: ByteArray, contentType: String): UploadResult
 

@@ -191,6 +191,59 @@ class S3StorageServiceTest {
 
 			assertThat(captured.captured.key()).isEqualTo("private/uploads/claim/2026/01/01/x.jpg")
 		}
+
+		@Test
+		@DisplayName("uploadPrivateWithKey - 교육 첨부는 동영상(video/mp4) 허용")
+		fun uploadPrivateWithKey_allowsVideo() {
+			val captured: CapturingSlot<PutObjectRequest> = slot()
+			every { s3Client.putObject(capture(captured), any<RequestBody>()) } returns
+				PutObjectResponse.builder().build()
+
+			val result = service.uploadPrivateWithKey("education/1700000000000123.mp4", byteArrayOf(1, 2), "video/mp4")
+
+			assertThat(captured.captured.key()).isEqualTo("private/education/1700000000000123.mp4")
+			assertThat(captured.captured.contentType()).isEqualTo("video/mp4")
+			assertThat(result.key).isEqualTo("education/1700000000000123.mp4")
+		}
+
+		@Test
+		@DisplayName("uploadPrivateWithKey - 이미지 상한(20MB) 초과여도 교육 상한(50MB) 이내면 PUT")
+		fun uploadPrivateWithKey_allowsUpToEducationLimit() {
+			val captured: CapturingSlot<PutObjectRequest> = slot()
+			every { s3Client.putObject(capture(captured), any<RequestBody>()) } returns
+				PutObjectResponse.builder().build()
+			val bytes = ByteArray((StorageConstants.MAX_FILE_BYTES + 1).toInt())
+
+			service.uploadPrivateWithKey("education/big.mp4", bytes, "video/mp4")
+
+			assertThat(captured.captured.contentLength()).isEqualTo(bytes.size.toLong())
+		}
+
+		@Test
+		@DisplayName("uploadPrivateWithKey - 교육 상한(50MB) 초과 -> FileTooLargeException")
+		fun uploadPrivateWithKey_exceedsEducationLimit() {
+			val bytes = ByteArray((StorageConstants.EDUCATION_MAX_FILE_BYTES + 1).toInt())
+
+			assertThatThrownBy {
+				service.uploadPrivateWithKey("education/huge.mp4", bytes, "video/mp4")
+			}.isInstanceOf(FileTooLargeException::class.java)
+		}
+
+		@Test
+		@DisplayName("uploadPrivateWithKey - 허용되지 않은 contentType -> UnsupportedMediaTypeException")
+		fun uploadPrivateWithKey_unsupportedContentType() {
+			assertThatThrownBy {
+				service.uploadPrivateWithKey("education/evil.exe", byteArrayOf(1), "application/x-msdownload")
+			}.isInstanceOf(UnsupportedMediaTypeException::class.java)
+		}
+
+		@Test
+		@DisplayName("uploadPrivate - 이미지 전용 도메인에는 동영상이 여전히 차단된다")
+		fun uploadPrivate_stillRejectsVideo() {
+			assertThatThrownBy {
+				service.uploadPrivate("claim", "movie.mp4", byteArrayOf(1), "video/mp4")
+			}.isInstanceOf(UnsupportedMediaTypeException::class.java)
+		}
 	}
 
 	@Nested

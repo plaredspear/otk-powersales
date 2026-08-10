@@ -54,5 +54,34 @@ object StorageConstants {
 		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 		"application/vnd.ms-excel"
 	)
+
+	// 교육 자료 첨부 최대 크기. 첨부가 동영상(APP 매뉴얼 등)까지 포함하므로 이미지 기준(20MB)과 별도 상한을 둔다.
+	// web/mobile 이 안내하는 "개별 50MB 이하" 와 동일 값 (spring.servlet.multipart.max-file-size=512MB 이내).
+	const val EDUCATION_MAX_FILE_BYTES: Long = 50L * 1024 * 1024
+
+	// 교육 자료 첨부 허용 content-type. 다른 도메인(클레임/공지/현장점검)은 이미지 전용이므로
+	// ALLOWED_CONTENT_TYPES 에 동영상/문서를 넣지 않고 교육 전용 집합으로 분리한다.
+	// 확장자 → 파일 유형 코드(f00001 이미지 / f00002 동영상 / f00003 문서) 매핑과 동일 범위를 커버한다
+	// (EducationService.determineFileType). 브라우저/OS 별로 같은 확장자에 다른 MIME 을 실어 보내므로
+	// (예: .wmv → video/x-ms-wmv, .mkv → video/x-matroska) 관용 변형까지 함께 허용한다.
+	val EDUCATION_ALLOWED_CONTENT_TYPES: Set<String> = ALLOWED_CONTENT_TYPES + setOf(
+		// 동영상 (f00002): mp4 / avi / wmv / mkv / mov / m4v
+		"video/mp4",
+		"video/x-m4v",
+		"video/quicktime",
+		"video/x-msvideo",
+		"video/avi",
+		"video/x-ms-wmv",
+		"video/x-matroska",
+		// 문서 (f00003): docx / txt / hwp / pptx (pdf / xlsx 는 ALLOWED_CONTENT_TYPES 에 이미 포함)
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		"application/msword",
+		"text/plain",
+		"application/haansofthwp",
+		"application/x-hwp",
+		"application/vnd.hancom.hwp",
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		"application/vnd.ms-powerpoint"
+	)
 	val DEFAULT_PRESIGN_TTL: Duration = Duration.ofMinutes(5)
 }

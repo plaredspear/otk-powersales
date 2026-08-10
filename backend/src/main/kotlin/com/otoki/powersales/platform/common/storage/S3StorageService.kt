@@ -64,7 +64,13 @@ class S3StorageService(
 	}
 
 	override fun uploadPrivateWithKey(uniqueKey: String, bytes: ByteArray, contentType: String): UploadResult {
-		putObject(StorageConstants.privateKey(uniqueKey), bytes, contentType)
+		putObject(
+			key = StorageConstants.privateKey(uniqueKey),
+			bytes = bytes,
+			contentType = contentType,
+			allowedContentTypes = StorageConstants.EDUCATION_ALLOWED_CONTENT_TYPES,
+			maxBytes = StorageConstants.EDUCATION_MAX_FILE_BYTES
+		)
 		return UploadResult(
 			key = uniqueKey,
 			contentType = contentType,
@@ -139,12 +145,18 @@ class S3StorageService(
 		}
 	}
 
-	private fun putObject(key: String, bytes: ByteArray, contentType: String) {
-		if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) {
+	private fun putObject(
+		key: String,
+		bytes: ByteArray,
+		contentType: String,
+		allowedContentTypes: Set<String> = StorageConstants.ALLOWED_CONTENT_TYPES,
+		maxBytes: Long = StorageConstants.MAX_FILE_BYTES
+	) {
+		if (contentType !in allowedContentTypes) {
 			throw UnsupportedMediaTypeException(contentType)
 		}
-		if (bytes.size.toLong() > StorageConstants.MAX_FILE_BYTES) {
-			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.MAX_FILE_BYTES)
+		if (bytes.size.toLong() > maxBytes) {
+			throw FileTooLargeException(bytes.size.toLong(), maxBytes)
 		}
 
 		val request = PutObjectRequest.builder()

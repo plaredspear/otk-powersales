@@ -55,11 +55,11 @@ class LocalStorageService : StorageService {
 	}
 
 	override fun uploadPrivateWithKey(uniqueKey: String, bytes: ByteArray, contentType: String): UploadResult {
-		if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) {
+		if (contentType !in StorageConstants.EDUCATION_ALLOWED_CONTENT_TYPES) {
 			throw UnsupportedMediaTypeException(contentType)
 		}
-		if (bytes.size.toLong() > StorageConstants.MAX_FILE_BYTES) {
-			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.MAX_FILE_BYTES)
+		if (bytes.size.toLong() > StorageConstants.EDUCATION_MAX_FILE_BYTES) {
+			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.EDUCATION_MAX_FILE_BYTES)
 		}
 
 		store[StorageConstants.privateKey(uniqueKey)] = bytes.copyOf()

@@ -159,4 +159,71 @@ class LocalStorageServiceTest {
 			assertThat(url).isEqualTo("local://uploads/claim/x.jpg")
 		}
 	}
+
+	@Nested
+	@DisplayName("uploadPrivateWithKey - 교육 첨부(동영상/문서 허용)")
+	inner class UploadPrivateWithKeyTests {
+
+		@Test
+		@DisplayName("동영상(video/mp4) 업로드 허용 - 교육 첨부는 f00002 동영상을 지원한다")
+		fun uploadPrivateWithKey_allowsVideo() {
+			val bytes = "movie".toByteArray()
+			val result = storage.uploadPrivateWithKey("education/1700000000000123.mp4", bytes, "video/mp4")
+
+			assertThat(result.key).isEqualTo("education/1700000000000123.mp4")
+			assertThat(storage.downloadPrivate(result.key)).isEqualTo(bytes)
+		}
+
+		@Test
+		@DisplayName("문서(docx/hwp/pptx/txt) 업로드 허용 - 교육 첨부는 f00003 문서를 지원한다")
+		fun uploadPrivateWithKey_allowsDocuments() {
+			val documentTypes = listOf(
+				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				"application/x-hwp",
+				"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+				"text/plain"
+			)
+
+			documentTypes.forEachIndexed { index, contentType ->
+				val result = storage.uploadPrivateWithKey("education/doc$index", byteArrayOf(1), contentType)
+				assertThat(storage.downloadPrivate(result.key)).isEqualTo(byteArrayOf(1))
+			}
+		}
+
+		@Test
+		@DisplayName("허용되지 않은 contentType -> UnsupportedMediaTypeException")
+		fun uploadPrivateWithKey_unsupportedContentType() {
+			assertThatThrownBy {
+				storage.uploadPrivateWithKey("education/evil.exe", byteArrayOf(1), "application/x-msdownload")
+			}.isInstanceOf(UnsupportedMediaTypeException::class.java)
+		}
+
+		@Test
+		@DisplayName("이미지 상한(20MB) 초과여도 교육 상한(50MB) 이내면 허용")
+		fun uploadPrivateWithKey_allowsUpToEducationLimit() {
+			val bytes = ByteArray((StorageConstants.MAX_FILE_BYTES + 1).toInt())
+
+			val result = storage.uploadPrivateWithKey("education/big.mp4", bytes, "video/mp4")
+
+			assertThat(result.sizeBytes).isEqualTo(bytes.size.toLong())
+		}
+
+		@Test
+		@DisplayName("교육 상한(50MB) 초과 -> FileTooLargeException")
+		fun uploadPrivateWithKey_exceedsEducationLimit() {
+			val bytes = ByteArray((StorageConstants.EDUCATION_MAX_FILE_BYTES + 1).toInt())
+
+			assertThatThrownBy {
+				storage.uploadPrivateWithKey("education/huge.mp4", bytes, "video/mp4")
+			}.isInstanceOf(FileTooLargeException::class.java)
+		}
+
+		@Test
+		@DisplayName("이미지 전용 도메인(uploadPrivate)에는 동영상이 여전히 차단된다")
+		fun uploadPrivate_stillRejectsVideo() {
+			assertThatThrownBy {
+				storage.uploadPrivate("claim", "movie.mp4", byteArrayOf(1), "video/mp4")
+			}.isInstanceOf(UnsupportedMediaTypeException::class.java)
+		}
+	}
 }
