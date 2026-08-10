@@ -67,17 +67,24 @@ export async function fetchEducationDetail(id: string): Promise<EducationDetail>
   return res.data.data;
 }
 
+// client 의 기본 헤더가 application/json 이라 FormData 전송 시 반드시 multipart/form-data 로 덮어써야 한다.
+// 누락하면 axios 가 boundary 를 생성하지 않아 본문이 직렬화되지 않고, 서버는 @RequestParam 을 찾지 못해
+// "필수 파라미터 'title' 누락" 으로 거부한다.
 export async function createEducation(formData: FormData): Promise<void> {
-  const res = await client.post<ApiResponse<unknown>>('/api/v1/admin/education/posts', formData);
+  const res = await client.post<ApiResponse<unknown>>('/api/v1/admin/education/posts', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   if (!res.data.success) {
-    throw new Error(res.data.message || '교육 등록에 실패했습니다');
+    throw new Error(res.data.message || res.data.error?.message || '교육 등록에 실패했습니다');
   }
 }
 
 export async function updateEducation(id: string, formData: FormData): Promise<void> {
-  const res = await client.put<ApiResponse<unknown>>(`/api/v1/admin/education/posts/${id}`, formData);
+  const res = await client.put<ApiResponse<unknown>>(`/api/v1/admin/education/posts/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   if (!res.data.success) {
-    throw new Error(res.data.message || '교육 수정에 실패했습니다');
+    throw new Error(res.data.message || res.data.error?.message || '교육 수정에 실패했습니다');
   }
 }
 

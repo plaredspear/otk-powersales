@@ -9,9 +9,24 @@ import { useEducationDetail } from '@/hooks/education/useEducationDetail';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
 import { useCreateEducation, useUpdateEducation } from '@/hooks/education/useEducationMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { isApiErrorBody } from '@/api/types';
 
 const MAX_FILES = 20;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+/**
+ * 등록/수정 실패 시 서버가 준 사유를 그대로 노출한다. 고정 문구만 띄우면 파라미터 누락·파일 용량 초과·
+ * 스토리지 오류가 한 문장으로 뭉개져 원인 파악이 불가능해진다.
+ *
+ * api 레이어(`createEducation`/`updateEducation`)가 `Error` 로 감싸 던지므로 axios 응답 본문과
+ * `Error.message` 두 경로를 모두 확인한다.
+ */
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const body = (err as { response?: { data?: unknown } })?.response?.data;
+  if (isApiErrorBody(body) && body.error?.message) return body.error.message;
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
 
 const QUILL_MODULES = {
   toolbar: [
@@ -98,8 +113,9 @@ export default function EducationFormPage() {
         message.success('교육 자료가 등록되었습니다');
         navigate('/education');
       }
-    } catch {
-      message.error(isEdit ? '교육 자료 수정에 실패했습니다' : '교육 자료 등록에 실패했습니다');
+    } catch (err) {
+      const fallback = isEdit ? '교육 자료 수정에 실패했습니다' : '교육 자료 등록에 실패했습니다';
+      message.error(extractErrorMessage(err, fallback));
     }
   };
 
