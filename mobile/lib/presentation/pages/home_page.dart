@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,14 +35,38 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage>
-    with ThrottledTapMixin {
+    with ThrottledTapMixin, WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // 화면 로드 시 홈 데이터 조회
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(homeProvider.notifier).fetchHomeData();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// 포그라운드 복귀 시 낡은 홈 데이터를 재조회한다.
+  ///
+  /// 홈은 스택 최하단이라 `initState` 가 로그인 직후 1회만 발화하고, `homeProvider` 는
+  /// autoDispose 가 아니라 앱을 켜 둔 동안 상태가 그대로 살아 있다. 이 훅이 없으면
+  /// 웹에서 행사 일정을 확정해도 재로그인 전까지 "일정 없음" 이 계속 보인다.
+  ///
+  /// 잦은 앱 전환마다 요청이 나가지 않도록 재조회 여부는 Notifier 의 stale 판정
+  /// (경과 시간 + 날짜 변경) 에 위임한다. 미인증 상태에서는 호출하지 않는다 —
+  /// 로그아웃 직후 남은 프레임에서 401 을 유발할 수 있다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (!mounted) return;
+    if (!ref.read(authProvider).isAuthenticated) return;
+    unawaited(ref.read(homeProvider.notifier).refreshIfStale());
   }
 
   /// Pull-to-refresh 핸들러
