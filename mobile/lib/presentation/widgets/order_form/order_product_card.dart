@@ -16,6 +16,10 @@ class OrderProductCard extends StatelessWidget {
   final ValueChanged<bool?> onSelectionChanged;
   final Function(double boxes, int pieces) onQuantityChanged;
 
+  /// 승인요청 버튼에서 "수량 미입력" 을 눌러 이 카드로 이동해 온 직후 여부.
+  /// 목록이 길어 어느 줄이 문제인지 찾기 어려우므로, 도착 지점을 잠시 강조한다.
+  final bool highlighted;
+
   const OrderProductCard({
     super.key,
     required this.index,
@@ -23,6 +27,7 @@ class OrderProductCard extends StatelessWidget {
     required this.validationError,
     required this.onSelectionChanged,
     required this.onQuantityChanged,
+    this.highlighted = false,
   });
 
   /// 에러 상세 지표 — 레거시 "최소주문단위 40개 | 공급 0개 | DC 0개" 정합.
@@ -59,13 +64,18 @@ class OrderProductCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      // 강조 중에는 테두리를 굵은 주황으로 — 에러(빨강)와 구분되는 "여기를 보라" 신호.
+      // 값 자체는 유효/무효가 아니라 미입력이므로 에러색을 쓰지 않는다.
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: BorderSide(
-          color: hasError ? AppColors.error : AppColors.border,
-          width: 1,
+          color: highlighted
+              ? AppColors.warning
+              : (hasError ? AppColors.error : AppColors.border),
+          width: highlighted ? 2 : 1,
         ),
       ),
+      color: highlighted ? AppColors.warningLight : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

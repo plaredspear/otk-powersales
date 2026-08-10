@@ -21,6 +21,9 @@ class ProductListSection extends StatefulWidget {
   final VoidCallback onRemoveSelected;
   final Function(String productCode, double boxes, int pieces) onQuantityChanged;
 
+  /// 강조 표시할 제품코드 (승인요청 → "수량 미입력" 탭으로 이동해 온 대상).
+  final String? highlightedProductCode;
+
   const ProductListSection({
     super.key,
     required this.items,
@@ -32,15 +35,24 @@ class ProductListSection extends StatefulWidget {
     required this.onBarcodeScan,
     required this.onRemoveSelected,
     required this.onQuantityChanged,
+    this.highlightedProductCode,
   });
 
   @override
-  State<ProductListSection> createState() => _ProductListSectionState();
+  State<ProductListSection> createState() => ProductListSectionState();
 }
 
-class _ProductListSectionState extends State<ProductListSection> {
+class ProductListSectionState extends State<ProductListSection> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  /// 검색으로 목록이 좁혀져 있으면 대상이 필터에서 빠져 스크롤할 수 없다.
+  /// 이동 전에 검색을 해제해 전체 목록을 복원한다.
+  void clearSearch() {
+    if (_searchQuery.isEmpty) return;
+    _searchController.clear();
+    setState(() => _searchQuery = '');
+  }
 
   /// 툴바 앞(상단 폼 + 제품 헤더)의 스크롤 길이 = 툴바가 상단에 고정되는 지점.
   /// 검색으로 목록이 짧아져도 그 지점을 유지하도록 채움 높이 계산에 쓴다.
@@ -168,10 +180,16 @@ class _ProductListSectionState extends State<ProductListSection> {
                 final item = entry.value;
                 final error = widget.validationErrors[item.productCode];
 
+                final isHighlighted =
+                    widget.highlightedProductCode == item.productCode;
+
                 return OrderProductCard(
+                  // 스크롤 이동 대상을 찾을 수 있도록 제품코드 기반 고정 키를 부여한다.
+                  key: ValueKey('order-product-${item.productCode}'),
                   index: entry.key,
                   item: item,
                   validationError: error,
+                  highlighted: isHighlighted,
                   onSelectionChanged: (selected) {
                     widget.onToggleSelection(item.productCode);
                   },

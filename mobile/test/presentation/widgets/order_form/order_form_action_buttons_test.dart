@@ -10,6 +10,7 @@ Widget _host({
   bool pastDeadline = false,
   int zeroQuantityLineCount = 0,
   VoidCallback? onSubmit,
+  VoidCallback? onQuantityMissingTap,
 }) {
   return MaterialApp(
     home: Scaffold(
@@ -22,6 +23,7 @@ Widget _host({
         loanExceeded: loanExceeded,
         pastDeadline: pastDeadline,
         zeroQuantityLineCount: zeroQuantityLineCount,
+        onQuantityMissingTap: onQuantityMissingTap,
       ),
     ),
   );
@@ -142,6 +144,38 @@ void main() {
 
       await tester.tap(find.text('승인요청'));
       expect(tapped, isFalse);
+    });
+
+    testWidgets('수량 미입력 → 탭하면 이동 콜백 호출 (제출은 되지 않음)', (tester) async {
+      var jumped = false;
+      var submitted = false;
+      await tester.pumpWidget(
+        _host(
+          requiredFieldsFilled: false,
+          zeroQuantityLineCount: 1,
+          onSubmit: () => submitted = true,
+          onQuantityMissingTap: () => jumped = true,
+        ),
+      );
+
+      await tester.tap(find.text('수량 미입력 1건'));
+      expect(jumped, isTrue, reason: '해당 줄로 이동시켜야 한다');
+      expect(submitted, isFalse, reason: '수량이 0이므로 제출하면 안 된다');
+    });
+
+    testWidgets('차단(마감) → 탭해도 이동 콜백조차 호출되지 않는다', (tester) async {
+      var jumped = false;
+      await tester.pumpWidget(
+        _host(
+          pastDeadline: true,
+          requiredFieldsFilled: false,
+          zeroQuantityLineCount: 1,
+          onQuantityMissingTap: () => jumped = true,
+        ),
+      );
+
+      await tester.tap(find.text('마감시간 지남'));
+      expect(jumped, isFalse, reason: '마감은 줄을 고쳐도 해소되지 않는다');
     });
 
     testWidgets('제출 중 → 인디케이터로 대체되고 라벨은 사라진다', (tester) async {

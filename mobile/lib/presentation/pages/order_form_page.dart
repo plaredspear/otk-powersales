@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -40,12 +42,93 @@ class OrderFormPage extends ConsumerStatefulWidget {
 class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   late ScrollController _scrollController;
 
+  /// 제품 목록의 검색 해제를 호출하기 위한 키 (수량 미입력 줄로 이동 시).
+  final GlobalKey<ProductListSectionState> _productListKey =
+      GlobalKey<ProductListSectionState>();
+
+  /// 현재 강조 중인 제품코드 — 수량 미입력 줄로 이동한 직후 잠시 유지된다.
+  String? _highlightedProductCode;
+
+  /// 강조 해제 타이머 — 재진입/중복 탭 시 이전 타이머를 취소하기 위해 보관한다.
+  Timer? _highlightTimer;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+  }
+
+  /// 수량이 0 인 첫 줄로 스크롤 이동 + 강조.
+  ///
+  /// 목록은 [SliverList.builder] 라 화면 밖 카드는 트리에 없다. 따라서 대상 카드의 키를
+  /// 바로 [Scrollable.ensureVisible] 할 수 없고, 조금씩 내려가며 대상이 build 되기를 기다린 뒤
+  /// 정밀 정렬한다. 카드 높이가 제품명 줄수/에러 유무로 달라 오프셋 산술 계산은 쓰지 않는다.
+  Future<void> _scrollToFirstZeroQuantity(OrderFormState state) async {
+    final target = state.orderDraft.items
+        .cast<OrderDraftItem?>()
+        .firstWhere((e) => (e?.totalPieces ?? 1) <= 0, orElse: () => null);
+    if (target == null) return;
+    final productCode = target.productCode;
+
+    // 검색 중이면 대상이 필터에서 빠져 있을 수 있으므로 먼저 해제한다.
+    _productListKey.currentState?.clearSearch();
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    final targetKey = ValueKey('order-product-$productCode');
+    // 최대 60프레임(≈1초)까지 내려가며 대상이 트리에 올라오길 기다린다.
+    for (var attempt = 0; attempt < 60; attempt++) {
+      // 직전 프레임에서 트리를 훑어 찾은 context 이므로 이 시점엔 유효하다
+      // (mounted 로 한 번 더 확인해 lint 의 async-gap 경고 조건도 만족시킨다).
+      final targetContext = _findCardContext(targetKey);
+      if (targetContext != null && targetContext.mounted) {
+        await Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          // 화면 상단(툴바 아래)이 아니라 중앙 부근에 두어 앞뒤 맥락이 함께 보이게 한다.
+          alignment: 0.3,
+        );
+        break;
+      }
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if (position.pixels >= position.maxScrollExtent) break;
+      // 한 화면씩 내려가며 lazy build 를 유도한다.
+      _scrollController.jumpTo(
+        (position.pixels + position.viewportDimension * 0.8)
+            .clamp(0.0, position.maxScrollExtent),
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+
+    if (!mounted) return;
+    _highlightTimer?.cancel();
+    setState(() => _highlightedProductCode = productCode);
+    _highlightTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      setState(() => _highlightedProductCode = null);
+    });
+  }
+
+  /// 렌더 트리에서 [key] 를 가진 제품 카드의 BuildContext 를 찾는다 (없으면 null).
+  BuildContext? _findCardContext(ValueKey<String> key) {
+    BuildContext? found;
+    void visit(Element element) {
+      if (found != null) return;
+      if (element.widget.key == key) {
+        found = element;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    final rootElement = context as Element;
+    rootElement.visitChildren(visit);
+    return found;
   }
 
   /// 진입 초기화. 폼 로드 → (제품검색 진입이면 제품 preload) / (아니면 임시저장 복원 확인).
@@ -79,6 +162,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
   @override
   void dispose() {
+    _highlightTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -378,9 +462,11 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     ),
                     // 제품 목록(툴바 고정 포함)은 자체 sliver 구성으로 그린다.
                     ProductListSection(
+                      key: _productListKey,
                       items: state.items,
                       validationErrors: state.validationErrors,
                       allItemsSelected: state.allItemsSelected,
+                      highlightedProductCode: _highlightedProductCode,
                       onToggleSelection: notifier.toggleProductSelection,
                       onToggleSelectAll: notifier.toggleSelectAllProducts,
                       onAddProduct: () => _handleAddProduct(notifier),
@@ -419,6 +505,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     loanExceeded: state.isLoanExceeded,
                     pastDeadline: state.isPastDeadline,
                     zeroQuantityLineCount: state.zeroQuantityLineCount,
+                    onQuantityMissingTap: () =>
+                        _scrollToFirstZeroQuantity(state),
                   ),
                 ],
               ),

@@ -47,6 +47,10 @@ class OrderFormActionButtons extends StatelessWidget {
   /// 총EA 가 0 인 라인 수 — 라벨에 건수를 노출해 어느 정도 규모인지 알린다.
   final int zeroQuantityLineCount;
 
+  /// "수량 미입력" 상태에서 버튼을 눌렀을 때 — 해당 줄로 이동시킨다.
+  /// 이 상태만 탭이 살아 있다: 차단(마감/여신)과 달리 사용자가 지금 해소할 수 있기 때문.
+  final VoidCallback? onQuantityMissingTap;
+
   const OrderFormActionButtons({
     super.key,
     required this.onDelete,
@@ -57,6 +61,7 @@ class OrderFormActionButtons extends StatelessWidget {
     this.loanExceeded = false,
     this.pastDeadline = false,
     this.zeroQuantityLineCount = 0,
+    this.onQuantityMissingTap,
   });
 
   /// 차단 사유 우선순위: 마감 > 여신 > 수량.
@@ -101,6 +106,7 @@ class OrderFormActionButtons extends StatelessWidget {
               onPressed: isSubmitting ? null : onSaveDraft,
             ),
             // 승인요청 — 비활성 시 사유를 라벨/색으로 표현한다.
+            // 수량 미입력은 탭을 살려 해당 줄로 이동시킨다 (색은 비활성 그대로).
             _Segment(
               flex: 3,
               label: _labelFor(submitState),
@@ -110,6 +116,10 @@ class OrderFormActionButtons extends StatelessWidget {
               disabledForegroundColor: _disabledForegroundFor(submitState),
               loading: isSubmitting,
               onPressed: submitEnabled ? onSubmit : null,
+              inactiveOnPressed:
+                  (!isSubmitting && submitState == SubmitButtonState.quantityMissing)
+                      ? onQuantityMissingTap
+                      : null,
             ),
           ],
         ),
@@ -167,6 +177,10 @@ class _Segment extends StatelessWidget {
   final bool loading;
   final VoidCallback? onPressed;
 
+  /// 비활성 색을 유지한 채로만 반응하는 탭 (예: 수량 미입력 → 해당 줄로 이동).
+  /// [onPressed] 가 null 일 때만 쓰인다.
+  final VoidCallback? inactiveOnPressed;
+
   const _Segment({
     required this.flex,
     required this.label,
@@ -176,6 +190,7 @@ class _Segment extends StatelessWidget {
     this.disabledForegroundColor,
     this.loading = false,
     required this.onPressed,
+    this.inactiveOnPressed,
   });
 
   @override
@@ -193,7 +208,7 @@ class _Segment extends StatelessWidget {
       child: Material(
         color: bg,
         child: InkWell(
-          onTap: onPressed,
+          onTap: onPressed ?? inactiveOnPressed,
           child: Center(
             child: loading
                 ? SizedBox(

@@ -18,13 +18,18 @@ OrderDraftItem _item({double boxes = 1}) {
   );
 }
 
-Widget _host(ValidationError? error, {double boxes = 1}) {
+Widget _host(
+  ValidationError? error, {
+  double boxes = 1,
+  bool highlighted = false,
+}) {
   return MaterialApp(
     home: Scaffold(
       body: OrderProductCard(
         index: 0,
         item: _item(boxes: boxes),
         validationError: error,
+        highlighted: highlighted,
         onSelectionChanged: (_) {},
         onQuantityChanged: (_, _) {},
       ),
@@ -105,6 +110,39 @@ void main() {
 
       expect(_cardBorderColor(tester), AppColors.error);
       expect(_reasonBlockColor(tester), AppColors.errorLight);
+    });
+  });
+
+  group('OrderProductCard 이동 강조', () {
+    testWidgets('강조 없음 → 기본 테두리', (tester) async {
+      await tester.pumpWidget(_host(null));
+
+      expect(_cardBorderColor(tester), AppColors.border);
+      expect(tester.widget<Card>(find.byType(Card)).color, isNull);
+    });
+
+    testWidgets('강조 → 주황 테두리 + 연한 주황 배경', (tester) async {
+      await tester.pumpWidget(_host(null, highlighted: true));
+
+      expect(_cardBorderColor(tester), AppColors.warning);
+      expect(
+        tester.widget<Card>(find.byType(Card)).color,
+        AppColors.warningLight,
+      );
+    });
+
+    testWidgets('강조는 에러 테두리(빨강)보다 우선한다', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const ValidationError(
+            errorType: ValidationErrorType.minOrderQuantity,
+            message: '공급제한수량 초과',
+          ),
+          highlighted: true,
+        ),
+      );
+
+      expect(_cardBorderColor(tester), AppColors.warning);
     });
   });
 }
