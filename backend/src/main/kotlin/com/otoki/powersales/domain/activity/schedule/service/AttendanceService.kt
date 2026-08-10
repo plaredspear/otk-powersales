@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.platform.common.dto.response.AccountInfo
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.dto.response.AccountListResponse
@@ -73,6 +75,7 @@ class AttendanceService(
     private val attendanceProperties: AttendanceProperties,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
     private val accountNaverGeocodeService: AccountNaverGeocodeService,
+    private val featureToggleService: FeatureToggleService,
     private val clock: Clock
 ) {
 
@@ -506,10 +509,23 @@ class AttendanceService(
      * 일자는 오늘로 한정한다. 출근등록 대상 목록([getAccountList])이 `workingDate = 오늘` 만
      * 내려주므로 정상 클라이언트는 영향받지 않고, 앱이 들고 있던 낡은 id 로 과거/미래 일정에
      * 출근등록되는 것을 막는다.
+     *
+     * 두 검증은 기능 토글 [FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK] 로 함께 되돌릴 수 있다
+     * (비활성 = 일정 존재 확인만 하던 이전 동작). 예상 못 한 차단이 발생했을 때 배포 없이
+     * 복구하기 위한 스위치이며, 안정화되면 토글과 우회 경로를 함께 제거한다.
      */
     private fun resolveByScheduleId(scheduleId: Long, employee: Employee, today: LocalDate): ResolveResult {
         val tms = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamMemberScheduleNotFoundException() }
+
+        // 소유자/일자 검증은 기능 토글로 되돌릴 수 있다 (비활성 = 존재 확인만 하던 이전 동작).
+        if (!featureToggleService.isEnabled(FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK, employee.id)) {
+            log.warn(
+                "ATT_OWNER_DATE_CHECK_SKIPPED employeeId={} scheduleId={} scheduleOwnerId={} workingDate={}",
+                employee.id, scheduleId, tms.employee?.id, tms.workingDate
+            )
+            return ResolveResult(schedule = tms, newlyCreated = false)
+        }
 
         if (tms.employee?.id != employee.id) {
             throw TeamMemberScheduleNotFoundException()

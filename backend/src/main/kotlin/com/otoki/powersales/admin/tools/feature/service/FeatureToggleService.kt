@@ -77,6 +77,19 @@ class FeatureToggleService(
         )
     }
 
+    /**
+     * flag 활성 여부. **동작 전환형** flag 의 분기 판정용으로, 요청을 거부하지 않고 boolean 만 돌려준다
+     * (차단형은 [ensureEnabled] 를 쓴다).
+     *
+     * [userId] 가 예외 사번이면 비활성 상태에서도 활성으로 본다 — 차단형의 예외 사번이 "막혀도 통과"
+     * 인 것과 같은 의미로, 전사 롤백 없이 특정 사원만 신규 동작을 유지/검증할 수 있다.
+     * 예외 사번 조회(DB 1회)는 flag 가 비활성일 때만 수행하므로 정상 운영 중 비용은 Redis GET 1회다.
+     */
+    fun isEnabled(flag: FeatureFlag, userId: Long): Boolean {
+        if (store.getState(flag).enabled) return true
+        return isExemptEmployee(flag, userId)
+    }
+
     /** 사번이 없는 사원(외부 위탁 등)은 예외 지정 대상이 아니므로 false. */
     private fun isExemptEmployee(flag: FeatureFlag, userId: Long): Boolean {
         val employeeCode = employeeRepository.findById(userId).orElse(null)?.employeeCode

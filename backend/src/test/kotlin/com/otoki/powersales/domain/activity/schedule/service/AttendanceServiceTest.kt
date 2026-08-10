@@ -36,6 +36,8 @@ import com.otoki.powersales.domain.activity.schedule.exception.EventScheduleNotA
 import com.otoki.powersales.domain.activity.schedule.exception.EventScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.DistanceExceededException
 import com.otoki.powersales.domain.activity.schedule.exception.InvalidCoordsException
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequiredException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
@@ -77,6 +79,7 @@ class AttendanceServiceTest {
     private val attendanceProperties: AttendanceProperties = spyk(AttendanceProperties(gpsThresholdMeters = 500))
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
     private val accountNaverGeocodeService: AccountNaverGeocodeService = mockk()
+    private val featureToggleService: FeatureToggleService = mockk()
 
     private val attendanceService = AttendanceService(
         employeeRepository,
@@ -89,12 +92,15 @@ class AttendanceServiceTest {
         attendanceProperties,
         teamMemberScheduleOwnerResolver,
         accountNaverGeocodeService,
+        featureToggleService,
         clock,
     )
 
     init {
         every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
+        // 기본: 기능 토글 활성 (= 신규 소유자/일자 검증 적용). 비활성 케이스는 개별 테스트가 override.
+        every { featureToggleService.isEnabled(any(), any()) } returns true
         // 기본: 온디맨드 보강 실패 (좌표 누락 → 등록 거부 라는 기존 동작 유지).
         // 보강 성공 케이스는 개별 테스트가 override 한다 (MockK 는 마지막 stub 우선).
         every { accountNaverGeocodeService.resolveCoordinatesOnDemand(any()) } returns null
@@ -1218,6 +1224,41 @@ class AttendanceServiceTest {
             }.isInstanceOf(ScheduleDateMismatchException::class.java)
 
             verify(exactly = 0) { attendanceRegistrar.register(any()) }
+        }
+
+        @Test
+        @DisplayName("기능 토글 비활성 시 소유자/일자 검증을 건너뛰고 이전 동작(존재 확인만)으로 되돌아간다")
+        fun register_ownerDateCheckDisabled_fallsBackToLegacyBehavior() {
+            // Given — 타인 소유 + 과거 일자로 두 검증 모두 위반하는 일정.
+            // 토글이 꺼져 있으면 이전 동작대로 등록이 진행되어야 한다.
+            val userId = 1L
+            val otherUserId = 2L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+            val schedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = otherUserId, accountId = 8938,
+                workingDate = today.minusDays(1),
+                accountName = "이마트 강남점",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            every {
+                featureToggleService.isEnabled(FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK, userId)
+            } returns false
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(schedule)
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then — 예외 없이 등록 완료
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            verify(exactly = 1) { attendanceRegistrar.register(any()) }
         }
 
         @Test

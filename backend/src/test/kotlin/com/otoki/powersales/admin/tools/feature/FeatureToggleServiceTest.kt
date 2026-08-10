@@ -45,7 +45,12 @@ class FeatureToggleServiceTest {
 
         assertThat(result).hasSize(FeatureFlag.entries.size)
         assertThat(result.map { it.code })
-            .containsExactly("PRODUCT_CLAIM", "LOGISTICS_CLAIM", "ORDER_REQUEST")
+            .containsExactly(
+                "PRODUCT_CLAIM",
+                "LOGISTICS_CLAIM",
+                "ORDER_REQUEST",
+                "ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK",
+            )
         val order = result.first { it.code == "ORDER_REQUEST" }
         assertThat(order.label).isEqualTo("주문 등록")
         assertThat(order.enabled).isFalse()
@@ -120,6 +125,41 @@ class FeatureToggleServiceTest {
 
         assertThatCode { service.ensureEnabled(FeatureFlag.ORDER_REQUEST, 7L) }
             .doesNotThrowAnyException()
+    }
+
+    @Test
+    @DisplayName("isEnabled - 활성이면 사번 조회 없이 true (예외를 던지지 않는다)")
+    fun isEnabled_trueWhenEnabled() {
+        val flag = FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK
+        every { store.getState(flag) } returns FeatureToggleState(enabled = true, reason = null)
+
+        assertThat(service.isEnabled(flag, 1L)).isTrue()
+
+        verify(exactly = 0) { employeeRepository.findById(any()) }
+    }
+
+    @Test
+    @DisplayName("isEnabled - 비활성이면 false (요청을 거부하지 않고 분기 판정만)")
+    fun isEnabled_falseWhenDisabled() {
+        val flag = FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK
+        every { store.getState(flag) } returns FeatureToggleState(enabled = false, reason = "롤백")
+        every { employeeRepository.findById(1L) } returns
+            Optional.of(employee(id = 1L, code = "12345678"))
+        every { store.isExemptEmployee(flag, "12345678") } returns false
+
+        assertThat(service.isEnabled(flag, 1L)).isFalse()
+    }
+
+    @Test
+    @DisplayName("isEnabled - 비활성이어도 예외 사번이면 true (전사 롤백 중 특정 사원만 신규 동작 유지)")
+    fun isEnabled_trueForExemptEmployee() {
+        val flag = FeatureFlag.ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK
+        every { store.getState(flag) } returns FeatureToggleState(enabled = false, reason = "롤백")
+        every { employeeRepository.findById(7L) } returns
+            Optional.of(employee(id = 7L, code = "99999999"))
+        every { store.isExemptEmployee(flag, "99999999") } returns true
+
+        assertThat(service.isEnabled(flag, 7L)).isTrue()
     }
 
     @Test
