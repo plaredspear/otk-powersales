@@ -255,8 +255,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       }
     });
 
-    final canPopFreely =
-        state.orderDraft.items.isEmpty && state.selectedAccountId == null;
+    // 잃을 내용이 없으면 확인 없이 바로 나간다.
+    // 폼이 비어 있거나, 마지막 임시저장 이후 고친 것이 없는 경우가 여기 해당한다
+    // (임시저장 직후 back → 팝업 재노출 방지).
+    final canPopFreely = !state.isDirty;
 
     return PopScope(
       canPop: canPopFreely,

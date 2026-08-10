@@ -82,6 +82,15 @@ class OrderFormState {
   /// confirmSubmit 또는 cancelSubmitConfirm 호출.
   final bool requiresSubmitConfirm;
 
+  /// 마지막 임시저장(또는 폼 초기화) 이후 저장 대상 내용이 변경되었는지 여부.
+  ///
+  /// 이탈 확인 팝업 노출 판정에 쓴다. 임시저장 직후 아무것도 고치지 않았다면
+  /// 잃을 내용이 없으므로 팝업 없이 바로 화면을 벗어나야 한다.
+  ///
+  /// 저장 대상만 dirty 로 친다 — 제품 체크박스 선택, 여신 조회 결과,
+  /// 유효성 에러 표시는 임시저장 페이로드에 담기지 않으므로 제외한다.
+  final bool isDirty;
+
   const OrderFormState({
     required this.orderDraft,
     this.hasDraft = false,
@@ -99,6 +108,7 @@ class OrderFormState {
     this.pendingDraft,
     this.requiresDeliveryDateConfirm = false,
     this.requiresSubmitConfirm = false,
+    this.isDirty = false,
   });
 
   /// 초기 상태
@@ -196,6 +206,7 @@ class OrderFormState {
     OrderDraftResponseModel? pendingDraft,
     bool? requiresDeliveryDateConfirm,
     bool? requiresSubmitConfirm,
+    bool? isDirty,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearValidationErrors = false,
@@ -240,6 +251,7 @@ class OrderFormState {
       requiresSubmitConfirm: clearRequiresSubmitConfirm
           ? false
           : (requiresSubmitConfirm ?? this.requiresSubmitConfirm),
+      isDirty: isDirty ?? this.isDirty,
     );
   }
 }

@@ -197,6 +197,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       selectedAccountId: pending.accountId,
       selectedExternalKey: pending.accountExternalKey,
       clearPendingDraft: true,
+      // 서버 임시저장을 그대로 복원한 직후라 저장본과 동일 — 아직 변경 없음.
+      isDirty: false,
     );
 
     final externalKey = pending.accountExternalKey;
@@ -213,6 +215,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         hasDraft: false,
         clearPendingDraft: true,
         clearDraftId: true,
+        // 복원하지 않고 빈 폼으로 시작 — 잃을 내용 없음.
+        isDirty: false,
       );
     } catch (e) {
       state = state.copyWith(
@@ -230,6 +234,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       clearValidationErrors: true,
       clearError: true,
       clearSuccess: true,
+      // 빈 폼으로 되돌린 직후 — 잃을 내용 없음.
+      isDirty: false,
     );
   }
 
@@ -248,6 +254,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       selectedExternalKey: resolvedExternalKey,
       // externalKey 없는 거래처면 조회하지 않으므로 idle 로 리셋(이전 실패 상태 잔존 방지).
       loanInquiryStatus: willFetch ? null : LoanInquiryStatus.idle,
+      isDirty: true,
     );
 
     if (willFetch) {
@@ -316,6 +323,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   void setDeliveryDate(DateTime date) {
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(deliveryDate: date),
+      isDirty: true,
     );
   }
 
@@ -374,6 +382,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         items: updatedItems,
         totalAmount: totalAmount,
       ),
+      isDirty: true,
     );
     return null;
   }
@@ -459,6 +468,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         items: updatedItems,
         totalAmount: totalAmount,
       ),
+      isDirty: true,
     );
   }
 
@@ -486,6 +496,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         totalAmount: totalAmount,
       ),
       validationErrors: updatedValidationErrors,
+      isDirty: true,
     );
   }
 
@@ -521,10 +532,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         items: updatedItems,
         totalAmount: totalAmount,
       ),
+      isDirty: true,
     );
   }
 
   /// 제품 선택 토글
+  ///
+  /// 체크박스 선택 상태는 임시저장 페이로드에 담기지 않으므로 dirty 로 치지 않는다.
   void toggleProductSelection(String productCode) {
     final updatedItems = state.orderDraft.items.map((item) {
       if (item.productCode == productCode) {
@@ -706,6 +720,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         successMessage: '주문이 접수되었습니다.',
         clearError: true,
         clearClientRequestId: true,
+        // 전송 완료 — 폼에 잃을 내용이 남아 있지 않다.
+        isDirty: false,
       );
     } catch (e) {
       // 서버가 라인별 위반 목록을 내려주면(공급제한/환산수량) 제품 카드마다 사유를 표시한다
@@ -864,6 +880,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         successMessage: '임시저장이 완료되었습니다.',
         draftId: saved.draftId,
         clearError: true,
+        // 저장 완료 — 이후 아무것도 고치지 않으면 이탈 확인 없이 나갈 수 있다.
+        isDirty: false,
       );
       return true;
     } catch (e) {

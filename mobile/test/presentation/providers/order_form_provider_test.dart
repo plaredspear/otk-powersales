@@ -370,6 +370,150 @@ void main() {
       });
     });
 
+    // 이탈 확인 팝업(PopScope canPop) 판정 기준.
+    // 폼 변경 메소드를 새로 추가할 때 isDirty 표시를 빠뜨리면 여기서 걸린다.
+    group('isDirty — 이탈 확인 팝업 판정', () {
+      /// 임시저장을 마쳐 isDirty=false 인 기준선 상태로 만든다.
+      Future<void> saveAndSettle() async {
+        formRepo.orderDraftSavedToReturn = const OrderDraftSavedModel(
+          draftId: 77,
+          savedAt: '2026-05-04T10:00:00Z',
+        );
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            items: [_item('P001')],
+          ),
+        );
+        final saved = await notifier.saveDraft();
+        expect(saved, isTrue);
+        expect(notifier.state.isDirty, isFalse);
+      }
+
+      test('초기 상태는 변경 없음', () {
+        expect(notifier.state.isDirty, isFalse);
+      });
+
+      test('임시저장 성공 시 변경 없음으로 리셋된다', () async {
+        await saveAndSettle();
+      });
+
+      group('저장 대상 변경은 dirty 로 표시된다', () {
+        test('selectClient — 거래처 선택', () async {
+          await saveAndSettle();
+          notifier.selectClient(1111, '거래처B', 'EK002');
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('setDeliveryDate — 납기일 변경', () async {
+          await saveAndSettle();
+          notifier.setDeliveryDate(DateTime(2026, 5, 20));
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('addProductLine — 제품 추가', () async {
+          await saveAndSettle();
+          expect(notifier.addProductLine(_product('P999')), isTrue);
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('addProductToOrder — 제품 직접 추가', () async {
+          await saveAndSettle();
+          notifier.addProductToOrder(_item('P888'));
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('updateProductQuantity — 수량 변경', () async {
+          await saveAndSettle();
+          notifier.updateProductQuantity('P001', 5, 3);
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('removeSelectedProducts — 제품 삭제', () async {
+          await saveAndSettle();
+          notifier.toggleSelectAllProducts();
+          notifier.removeSelectedProducts();
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('preloadProductByCode — 제품검색 진입 프리필', () async {
+          await notifier.preloadProductByCode('01101123');
+          expect(notifier.state.isDirty, isTrue);
+        });
+
+        test('addProductByBarcode — 바코드 추가', () async {
+          await notifier.addProductByBarcode('01101123');
+          expect(notifier.state.isDirty, isTrue);
+        });
+      });
+
+      group('저장 대상이 아닌 변경은 dirty 로 치지 않는다', () {
+        test('toggleProductSelection — 체크박스 선택', () async {
+          await saveAndSettle();
+          notifier.toggleProductSelection('P001');
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('toggleSelectAllProducts — 전체 선택', () async {
+          await saveAndSettle();
+          notifier.toggleSelectAllProducts();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('clearValidationErrors — 유효성 에러 표시 해제', () async {
+          await saveAndSettle();
+          notifier.clearValidationErrors();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('retryLoanInquiry — 여신 재조회', () async {
+          await saveAndSettle();
+          notifier.state =
+              notifier.state.copyWith(selectedExternalKey: 'EK001');
+          await notifier.retryLoanInquiry();
+          expect(notifier.state.isDirty, isFalse);
+        });
+      });
+
+      group('폼 리셋 경로는 변경 없음으로 되돌린다', () {
+        test('acceptDraft — 서버 임시저장 복원 직후', () async {
+          formRepo.orderDraftToReturn = _draftResponse();
+          await notifier.initialize();
+          await notifier.acceptDraft();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('declineDraft — 복원하지 않고 빈 폼으로 시작', () async {
+          formRepo.orderDraftToReturn = _draftResponse();
+          await notifier.initialize();
+          await notifier.declineDraft();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('initializeNewOrder — 새로 작성', () async {
+          await saveAndSettle();
+          notifier.selectClient(1111, '거래처B', 'EK002');
+          notifier.initializeNewOrder();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('deleteDraft — 임시저장 삭제', () async {
+          await saveAndSettle();
+          notifier.selectClient(1111, '거래처B', 'EK002');
+          await notifier.deleteDraft();
+          expect(notifier.state.isDirty, isFalse);
+        });
+
+        test('discardForm — 그냥 나가기', () async {
+          await saveAndSettle();
+          notifier.selectClient(1111, '거래처B', 'EK002');
+          notifier.discardForm();
+          expect(notifier.state.isDirty, isFalse);
+        });
+      });
+    });
+
     group('deleteDraft (#598 P2-M §2.5)', () {
       test('H6 — DELETE /draft → 빈 폼 + 새 clientRequestId + 성공 메시지', () async {
         notifier.state = notifier.state.copyWith(
