@@ -449,7 +449,15 @@ class ScheduleUploadValidator {
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }
 
-            val existingTypes = sameEmployeeSamePeriod.map {
+            // 레거시 트리거는 상시(고정/격고/순회) 카운팅에만 `ValidData__c == '유효'` 를 요구하고
+            // (DisplayWorkScheduleMasterTriggerHandler.cls:152,155,158), 임시는 else 분기에서 필터
+            // 없이 전건 카운트한다 (같은 파일 :161-163). 이 비대칭을 그대로 재현하기 위해 판정 집합을
+            // 둘로 나눈다: C1/C2/C2a 는 유효 집합, C3 는 필터 없는 원본 집합.
+            val today = LocalDate.now()
+            val existingTypes = sameEmployeeSamePeriod
+                .filter { isValidData(it, today) }
+                .map { Pair(it.typeOfWork3?.displayName, it.typeOfWork5?.displayName) }
+            val existingTypesUnfiltered = sameEmployeeSamePeriod.map {
                 Pair(it.typeOfWork3?.displayName, it.typeOfWork5?.displayName)
             }
 
@@ -469,8 +477,9 @@ class ScheduleUploadValidator {
                     }
                 }
             }
+            // C3: 임시 최대 1건. 레거시 :161-163 이 ValidData 무관하게 카운트하므로 원본 집합 사용.
             if (typeOfWork5 == "임시") {
-                val existingTempCount = existingTypes.count { it.second == "임시" }
+                val existingTempCount = existingTypesUnfiltered.count { it.second == "임시" }
                 if (existingTempCount >= 1) {
                     messages.add("임시 배치가 이미 존재합니다")
                 }
@@ -500,6 +509,33 @@ class ScheduleUploadValidator {
         val messages: List<String>,
         val validatedRow: ValidatedRow?
     )
+
+    /**
+     * SF formula `ValidData__c == '유효'` 판정.
+     *
+     * 원본 formula (DisplayWorkScheduleMaster__c/fields/ValidData__c.field-meta.xml) 의 '유효' 분기는
+     * 아래 두 갈래의 OR 이며, 기간 조건은 양쪽 공통이다.
+     *   ① 사원 재직 AND 기간이 오늘을 포함
+     *   ② (사원 퇴직 OR appLoginActive=false) AND 기간이 오늘을 포함 AND 사원 종료일 >= 오늘
+     *
+     * 즉 스케줄이 오늘 시점에 진행 중이어야 하며, 미래 시작('예정')이나 이미 종료('종료')된 스케줄은
+     * 충돌 후보에서 제외된다. 신규에는 ValidData 컬럼이 없으므로 동일 조건을 계산으로 재현한다.
+     */
+    private fun isValidData(schedule: DisplayWorkSchedule, today: LocalDate): Boolean {
+        val start = schedule.startDate ?: return false
+        // 기간이 오늘을 포함: startDate <= today AND (endDate IS NULL OR today <= endDate)
+        if (start.isAfter(today)) return false
+        val end = schedule.endDate
+        if (end != null && end.isBefore(today)) return false
+
+        val employee = schedule.employee ?: return false
+        if (employee.status == "재직") return true
+        // 퇴직 / 앱 비활성 사원은 사원 종료일이 아직 지나지 않은 경우에만 '유효'
+        val isRetiredOrInactive = employee.status == "퇴직" || employee.appLoginActive == false
+        if (!isRetiredOrInactive) return false
+        val employeeEndDate = employee.endDate ?: return false
+        return !employeeEndDate.isBefore(today)
+    }
 
     private fun periodsOverlap(
         start1: LocalDate?,

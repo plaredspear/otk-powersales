@@ -1015,6 +1015,181 @@ class ScheduleUploadValidatorTest {
         }
     }
 
+    @Nested
+    @DisplayName("validateSingle - ValidData 필터 (레거시 트리거 :152,155,158 정합)")
+    inner class ValidateSingleValidDataFilter {
+
+        private val employee = createEmployee("20030001", "홍길동", "USR001", "재직")
+        private val account = createAccount("ACC001", "ACC_SF001", "테스트거래처")
+        private val otherAccount = createAccount("ACC002", "ACC_SF002", "다른거래처", id = 2L)
+        private val today: LocalDate = LocalDate.now()
+
+        private fun existingSchedule(
+            start: LocalDate,
+            end: LocalDate?,
+            type3: TypeOfWork3 = TypeOfWork3.ROTATION,
+            type5: TypeOfWork5 = TypeOfWork5.REGULAR,
+            emp: Employee = employee
+        ) = DisplayWorkSchedule(
+            id = 1L,
+            employee = emp,
+            account = otherAccount,
+            typeOfWork3 = type3,
+            typeOfWork5 = type5,
+            startDate = start,
+            endDate = end
+        )
+
+        /** 신규 고정 배치를 today 기준 넓은 기간으로 등록 시도 */
+        private fun addFixed(existing: List<DisplayWorkSchedule>) = validator.validateSingle(
+            employeeCode = "20030001",
+            accountCode = "ACC001",
+            typeOfWork3 = "고정",
+            typeOfWork4 = "상온",
+            typeOfWork5 = "상시",
+            startDate = today.minusMonths(6),
+            endDate = today.plusMonths(6),
+            employee = employee,
+            account = account,
+            existingSchedules = existing
+        )
+
+        @Test
+        @DisplayName("진행 중(유효) 순회 존재 - 고정 추가 차단")
+        fun validData_ongoing_blocksFixed() {
+            val result = addFixed(listOf(existingSchedule(today.minusMonths(2), today.plusMonths(2))))
+
+            assertThat(result.messages).anyMatch { it.contains("다른 배치가 존재하여 고정을 추가할 수 없습니다") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("종료일 무기한(endDate=null) 순회 존재 - 고정 추가 차단")
+        fun validData_openEnded_blocksFixed() {
+            val result = addFixed(listOf(existingSchedule(today.minusMonths(2), null)))
+
+            assertThat(result.messages).anyMatch { it.contains("다른 배치가 존재하여 고정을 추가할 수 없습니다") }
+        }
+
+        @Test
+        @DisplayName("이미 종료된('종료') 순회만 존재 - 고정 추가 허용")
+        fun validData_ended_allowsFixed() {
+            val result = addFixed(listOf(existingSchedule(today.minusMonths(5), today.minusMonths(1))))
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+        }
+
+        @Test
+        @DisplayName("미래 시작('예정') 순회만 존재 - 고정 추가 허용")
+        fun validData_scheduled_allowsFixed() {
+            val result = addFixed(listOf(existingSchedule(today.plusMonths(1), today.plusMonths(3))))
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+        }
+
+        @Test
+        @DisplayName("퇴직 + 사원종료일 경과 사원의 진행 중 순회 - 고정 추가 허용")
+        fun validData_retiredPastEndDate_allowsFixed() {
+            val retired = createEmployee(
+                "20030001", "홍길동", "USR001", "퇴직",
+                endDate = today.minusDays(1)
+            )
+            val result = addFixed(
+                listOf(existingSchedule(today.minusMonths(2), today.plusMonths(2), emp = retired))
+            )
+
+            assertThat(result.messages).isEmpty()
+        }
+
+        @Test
+        @DisplayName("퇴직 + 사원종료일 미도래 사원의 진행 중 순회 - 고정 추가 차단")
+        fun validData_retiredFutureEndDate_blocksFixed() {
+            val retired = createEmployee(
+                "20030001", "홍길동", "USR001", "퇴직",
+                endDate = today.plusMonths(1)
+            )
+            val result = addFixed(
+                listOf(existingSchedule(today.minusMonths(2), today.plusMonths(2), emp = retired))
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("다른 배치가 존재하여 고정을 추가할 수 없습니다") }
+        }
+
+        @Test
+        @DisplayName("종료된 격고 2건 - 격고 추가 허용 (C2 도 필터 적용)")
+        fun validData_endedAlternates_allowThirdAlternate() {
+            val ended1 = existingSchedule(today.minusMonths(5), today.minusMonths(1), TypeOfWork3.GAP)
+            val ended2 = DisplayWorkSchedule(
+                id = 2L,
+                employee = employee,
+                account = createAccount("ACC003", "ACC_SF003", "거래처3", id = 3L),
+                typeOfWork3 = TypeOfWork3.GAP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = today.minusMonths(5),
+                endDate = today.minusMonths(1)
+            )
+
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "격고",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = today.minusMonths(6),
+                endDate = today.plusMonths(6),
+                employee = employee,
+                account = account,
+                existingSchedules = listOf(ended1, ended2)
+            )
+
+            assertThat(result.messages).isEmpty()
+        }
+
+        @Test
+        @DisplayName("C3 임시는 ValidData 무관하게 카운트 - 종료된 임시도 차단 (레거시 :161-163 비대칭)")
+        fun validData_endedTemporary_stillBlocksTemporary() {
+            val endedTemp = existingSchedule(
+                today.minusMonths(5), today.minusMonths(1),
+                TypeOfWork3.ROTATION, TypeOfWork5.TEMPORARY
+            )
+
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "순회",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "임시",
+                startDate = today.minusMonths(6),
+                endDate = today.plusMonths(6),
+                employee = employee,
+                account = account,
+                existingSchedules = listOf(endedTemp)
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("임시 배치가 이미 존재") }
+        }
+
+        @Test
+        @DisplayName("V8 거래처 중복은 ValidData 무관 - 종료된 동일 거래처도 차단 (레거시 :138-144)")
+        fun validData_endedSameAccount_stillBlocksV8() {
+            val endedSameAccount = DisplayWorkSchedule(
+                id = 3L,
+                employee = employee,
+                account = account,
+                typeOfWork3 = TypeOfWork3.ROTATION,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = today.minusMonths(5),
+                endDate = today.minusMonths(1)
+            )
+
+            val result = addFixed(listOf(endedSameAccount))
+
+            assertThat(result.messages).anyMatch { it.contains("기간내에 동일한 거래처") }
+        }
+    }
+
     private fun createEmployee(
         employeeCode: String,
         name: String,
