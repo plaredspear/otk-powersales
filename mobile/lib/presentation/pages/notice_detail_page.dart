@@ -1,9 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
 import 'package:mobile/core/theme/app_typography.dart';
@@ -12,6 +10,7 @@ import '../../domain/entities/notice_category.dart';
 import '../providers/notice_detail_provider.dart';
 import '../providers/notice_detail_state.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/notice/notice_content_html.dart';
 
 /// 공지사항 상세 화면
 ///
@@ -152,64 +151,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
           const Divider(height: AppSpacing.xl, color: AppColors.border),
 
           // 본문 (HTML 렌더링)
-          // 본문 인라인 이미지는 backend 가 presigned URL 로 rewrite 해서 내려준다(만료/매 조회 변동).
-          // <img> 를 가로채 CachedNetworkImage 로 렌더하되 cacheKey 를 data-refid(안정 식별자)로 지정해
-          // presigned URL 변동과 무관하게 캐시를 재사용한다.
-          HtmlWidget(
-            detail.content,
-            textStyle: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              height: 1.6,
-            ),
-            // 본문 링크(<a href>) 탭 시 외부 브라우저로 연다. 색상/정렬 등 인라인 style 은 기본 렌더.
-            onTapUrl: (url) async {
-              final uri = Uri.tryParse(url);
-              if (uri == null) return false;
-              return launchUrl(uri, mode: LaunchMode.externalApplication);
-            },
-            // 작성자가 넣은 빈 줄을 그대로 보존한다.
-            //
-            // 웹 에디터(Quill)는 빈 줄을 `<p><br></p>` 로 내보낸다. HtmlWidget 은 이 형태를 1em 높이로
-            // 살려주지만, <p> 기본 margin(1em 0)이 인접 문단과 collapse 되면서(HeightPlaceholder.mergeWith
-            // 가 max 채택) 빈 줄을 여러 개 넣어도 간격이 한 칸으로 합쳐져 보인다.
-            // 빈 문단에 한해 margin 을 0 으로 두면 문단 자체의 1em 높이가 collapse 없이 누적되어
-            // 넣은 개수만큼 줄바꿈이 표현된다 (일반 문단의 1em 문단 간격은 그대로 유지).
-            customStylesBuilder: (element) {
-              if (element.localName != 'p') return null;
-              final isBlankLine = element.children.length == 1 &&
-                  element.children.first.localName == 'br' &&
-                  element.text.trim().isEmpty;
-              if (!isBlankLine) return null;
-              return {'margin': '0'};
-            },
-            customWidgetBuilder: (element) {
-              if (element.localName != 'img') return null;
-              final src = element.attributes['src'];
-              // placeholder(notice-image://) 잔존 = rewrite 미적용/실패분 → 깨진 이미지 박스.
-              if (src == null || !src.startsWith('http')) {
-                return _brokenImageBox();
-              }
-              final refid = element.attributes['data-refid'];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  child: CachedNetworkImage(
-                    imageUrl: src,
-                    cacheKey: refid, // null 이면 imageUrl 로 fallback
-                    fit: BoxFit.fitWidth,
-                    placeholder: (context, url) => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.lg),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => _brokenImageBox(),
-                  ),
-                ),
-              );
-            },
-          ),
+          NoticeContentHtml(html: detail.content),
 
           // 이미지 목록
           if (detail.images.isNotEmpty) ...[
@@ -230,28 +172,14 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
                         child: CircularProgressIndicator(),
                       ),
                     ),
-                    errorWidget: (context, url, error) => _brokenImageBox(),
+                    errorWidget: (context, url, error) =>
+                        const NoticeBrokenImageBox(),
                   ),
                 ),
               );
             }),
           ],
         ],
-      ),
-    );
-  }
-
-  /// 이미지 로드 실패 / placeholder 잔존 시 표시할 깨진 이미지 박스.
-  Widget _brokenImageBox() {
-    return Container(
-      height: 200,
-      color: AppColors.surface,
-      child: const Center(
-        child: Icon(
-          Icons.broken_image,
-          size: 48,
-          color: AppColors.textTertiary,
-        ),
       ),
     );
   }
