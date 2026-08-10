@@ -1218,6 +1218,29 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("연결 일정의 역방향 promotionEmployee 참조를 삭제 전에 해제 (TransientPropertyValueException 회귀 방지)")
+        fun deleteEmployee_clearsScheduleBackReferenceBeforeDelete() {
+            val pe = createPe(teamMemberScheduleId = 100L)
+            val schedule = TeamMemberSchedule(id = 100L).also { it.promotionEmployee = pe }
+            pe.teamMemberSchedule = schedule
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            stubRollup()
+
+            // 양방향 연관이라 역방향 참조가 남은 채 PE 를 삭제하면 flush 시점에
+            // TransientPropertyValueException 이 난다 — delete 호출 시점에 이미 끊겨 있어야 한다.
+            every { promotionEmployeeRepository.delete(pe) } answers {
+                assertThat(schedule.promotionEmployee).isNull()
+            }
+
+            service.deleteEmployee(principal, 1L)
+
+            assertThat(schedule.promotionEmployee).isNull()
+            verify { promotionEmployeeRepository.delete(pe) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
+        }
+
+        @Test
         @DisplayName("마감 조원이지만 사번 00000009 의 여사원 -> 삭제 허용 (레거시 동등)")
         fun deleteEmployee_closed_bypassForSpecialEmployeeCode() {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true).also {
