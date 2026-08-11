@@ -83,5 +83,49 @@ object StorageConstants {
 		"application/vnd.openxmlformats-officedocument.presentationml.presentation",
 		"application/vnd.ms-powerpoint"
 	)
+
+	// 브라우저/OS 가 content-type 을 못 붙였다는 신호. 빈 값 외에 octet-stream 도 "모르겠음"의 관용 표현이라
+	// 같이 취급한다 (.hwp 처럼 OS MIME 레지스트리에 없는 확장자에서 실제로 관측된다).
+	private val UNKNOWN_CONTENT_TYPES: Set<String> = setOf("", "application/octet-stream")
+
+	// 확장자 → content-type fallback. 위 UNKNOWN_CONTENT_TYPES 인 업로드에 한해 확장자로 MIME 을 보정한다.
+	// key 집합은 EducationService.determineFileType 의 f00001/f00002/f00003 확장자 목록과 1:1 로 맞춘다 —
+	// 여기 없는 확장자는 보정하지 않고 그대로 거부되므로, 매핑 누락이 곧 화이트리스트 우회로 이어지지 않는다.
+	private val EDUCATION_EXTENSION_CONTENT_TYPES: Map<String, String> = mapOf(
+		// f00001 이미지
+		"jpg" to "image/jpeg",
+		"jpeg" to "image/jpeg",
+		"png" to "image/png",
+		"gif" to "image/gif",
+		// f00002 동영상
+		"mp4" to "video/mp4",
+		"m4v" to "video/x-m4v",
+		"mov" to "video/quicktime",
+		"avi" to "video/x-msvideo",
+		"wmv" to "video/x-ms-wmv",
+		"mkv" to "video/x-matroska",
+		// f00003 문서
+		"pdf" to "application/pdf",
+		"docx" to "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		"txt" to "text/plain",
+		"hwp" to "application/x-hwp",
+		"pptx" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		"xlsx" to "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	)
+
+	/**
+	 * 교육 첨부의 실효 content-type 을 판정한다. 업로드가 content-type 을 실어 왔으면 그대로 쓰고, 비어 있거나
+	 * `application/octet-stream` 이면 파일명 확장자로 보정한다 (보정 실패 시 null → 호출자가 거부).
+	 *
+	 * 보정된 값도 [EDUCATION_ALLOWED_CONTENT_TYPES] 검증을 그대로 통과해야 하므로, 이 fallback 이 화이트리스트를
+	 * 넓히지는 않는다. 확장자를 신뢰하는 범위는 위 매핑 테이블에 등재된 것으로 한정된다.
+	 */
+	fun resolveEducationContentType(contentType: String?, originalName: String?): String? {
+		val declared = contentType?.trim()?.lowercase().orEmpty()
+		if (declared !in UNKNOWN_CONTENT_TYPES) return declared
+		val ext = originalName?.substringAfterLast('.', "")?.lowercase().orEmpty()
+		return EDUCATION_EXTENSION_CONTENT_TYPES[ext]
+	}
+
 	val DEFAULT_PRESIGN_TTL: Duration = Duration.ofMinutes(5)
 }

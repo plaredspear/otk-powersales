@@ -59,14 +59,21 @@ class FileStorageService(
 	 * segment 없는 `<fileKey>` 원본이다. 레거시 마이그레이션분과 동일한 평면 file_key 규칙을 유지한다:
 	 * `{13자리 epoch밀리초}{8자리 random}.{ext}` (최대 25자, `file_key` 컬럼 length=30 이내).
 	 * (레거시는 public S3 URL 이었으나 권한 통제 정합 위해 다른 도메인과 동일하게 private 전환.)
+	 *
+	 * content-type 은 브라우저/OS 가 확장자를 모르면 비어 오거나 `application/octet-stream` 으로 온다
+	 * (.hwp 등에서 실제로 관측). 그 경우 [StorageConstants.resolveEducationContentType] 이 파일명 확장자로
+	 * 보정한다 — 보정된 값도 화이트리스트 검증을 그대로 거치므로 허용 범위가 넓어지지는 않는다.
 	 */
 	fun uploadEducationFile(file: MultipartFile, eduId: String): String {
 		validateNotEmpty(file)
-		val fileKey = newEducationFileKey(file.originalFilename ?: "unknown")
+		val originalName = file.originalFilename ?: "unknown"
+		val contentType = StorageConstants.resolveEducationContentType(file.contentType, originalName)
+			?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+		val fileKey = newEducationFileKey(originalName)
 		val result = storageService.uploadPrivateWithKey(
 			uniqueKey = educationUniqueKey(fileKey),
 			bytes = file.bytes,
-			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+			contentType = contentType
 		)
 		// uploadPrivateWithKey 반환 key 는 넘긴 uniqueKey("education/<fileKey>") 이므로 segment 를 벗겨 file_key 로 저장.
 		return result.key.substringAfterLast('/')
