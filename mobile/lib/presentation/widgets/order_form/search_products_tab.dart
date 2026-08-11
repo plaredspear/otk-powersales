@@ -14,9 +14,12 @@ import '../common/single_select_sheet.dart';
 import 'product_card_for_add.dart';
 
 /// 제품 검색 탭
+///
+/// 무한스크롤을 위해 **자체 ScrollController 를 소유**한다. 바텀시트가 탭 3개에
+/// 넘겨주는 공유 controller 를 쓰면 여러 ScrollView 가 한 controller 에 붙어
+/// `position` 접근이 "attached to multiple scroll views" 로 실패하기 때문이다.
+/// 대신 이 탭에서는 목록을 아래로 끌어 시트를 닫는 동작이 되지 않는다.
 class SearchProductsTab extends ConsumerStatefulWidget {
-  final ScrollController scrollController;
-
   /// 중/소분류 필터 노출 여부(전산매출 등 분류검색용).
   final bool showCategoryFilter;
 
@@ -28,7 +31,6 @@ class SearchProductsTab extends ConsumerStatefulWidget {
 
   const SearchProductsTab({
     super.key,
-    required this.scrollController,
     this.showCategoryFilter = false,
     this.requireBarcode = false,
     this.blockExclusive = false,
@@ -43,14 +45,17 @@ const double _loadMoreThreshold = 200;
 
 class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
   final _searchController = TextEditingController();
+
+  /// 이 탭 전용 스크롤 컨트롤러 — 무한스크롤 하단 감지용(공유 금지, 위 클래스 주석 참조).
+  final _scrollController = ScrollController();
+
   Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     // 무한스크롤 — 하단 근처에 닿으면 다음 페이지를 이어 붙인다.
-    // controller 는 부모 소유라 리스너만 등록/해제한다(dispose 는 부모 책임).
-    widget.scrollController.addListener(_onScroll);
+    _scrollController.addListener(_onScroll);
     if (widget.showCategoryFilter) {
       // 분류 드롭다운 소스 로드(기존 제품추가 카테고리 인프라 재사용).
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,7 +66,8 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
 
   @override
   void dispose() {
-    widget.scrollController.removeListener(_onScroll);
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
@@ -70,12 +76,9 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
   /// 목록 끝에서 [_loadMoreThreshold] 픽셀 이내로 스크롤되면 다음 페이지를 요청한다.
   /// 중복 호출 방지는 provider 쪽 가드(isLoadingMore/hasMore)가 담당한다.
   void _onScroll() {
-    // scrollController 는 바텀시트가 탭 3개에 공유하므로, 검색 탭이 활성일 때만
-    // 추가 로드한다(즐겨찾기/주문이력 탭 스크롤로 검색 페이지가 늘지 않도록).
-    if (ref.read(addProductProvider).currentTab != AddProductTab.search) return;
-    if (!widget.scrollController.hasClients) return;
+    if (!_scrollController.hasClients) return;
 
-    final position = widget.scrollController.position;
+    final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - _loadMoreThreshold) {
       ref.read(addProductProvider.notifier).loadMoreSearchResults();
     }
@@ -273,7 +276,7 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
     final showFooter = hasMore || isLoadingMore;
 
     return ListView.builder(
-      controller: widget.scrollController,
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       itemCount: results.length + (showFooter ? 1 : 0),
       itemBuilder: (context, index) {

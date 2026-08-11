@@ -190,7 +190,7 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                     blockExclusive: widget.blockExclusive,
                   ),
                   SearchProductsTab(
-                    scrollController: scrollController,
+                    // 무한스크롤 하단 감지를 위해 자체 controller 를 쓴다(공유 불가).
                     showCategoryFilter: widget.showCategoryFilter,
                     requireBarcode: widget.requireBarcode,
                     blockExclusive: widget.blockExclusive,
