@@ -7,7 +7,9 @@ import com.otoki.powersales.domain.foundation.product.dto.response.ProductDto
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.domain.foundation.product.exception.ProductNotFoundException
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import java.time.LocalDate
 import org.springframework.data.domain.PageRequest
@@ -21,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class ProductService(
     private val productRepository: ProductRepository,
-    private val favoriteProductService: FavoriteProductService
+    private val favoriteProductService: FavoriteProductService,
+    private val orderRequestRepository: OrderRequestRepository
 ) {
 
     companion object {
@@ -42,6 +45,14 @@ class ProductService(
          * 이 기간 내 본인이 주문한 제품은 검색 결과 상단으로 올라간다.
          */
         private const val RECENT_ORDER_DAYS = 10L
+
+        /**
+         * 최근 주문 제품 ID 조회 상한 — 정렬 IN 절 파라미터 크기 가드.
+         * 초과분(더 오래된 주문)은 상단 정렬 대상에서 제외되고 경고 로그가 남는다.
+         */
+        private const val RECENT_ORDER_ID_LIMIT = 300
+
+        private val log = LoggerFactory.getLogger(ProductService::class.java)
 
         private val NUMERIC_PATTERN = Regex("^\\d+$")
         private val VALID_SEARCH_TYPES = setOf("text", "barcode")
@@ -152,13 +163,13 @@ class ProductService(
         validatePagination(page, size)
 
         val pageable = PageRequest.of(page, size)
+        val recentProductIds = findRecentlyOrderedProductIds(userId)
         val rowPage = productRepository.searchForOrder(
             query = query.trim(),
             category2 = categoryMid?.trim()?.ifBlank { null },
             category3 = categorySub?.trim()?.ifBlank { null },
             pageable = pageable,
-            recentOrderEmployeeId = userId,
-            recentOrderFrom = LocalDate.now().minusDays(RECENT_ORDER_DAYS).atStartOfDay()
+            recentlyOrderedProductIds = recentProductIds
         )
 
         val favoriteCodes = favoriteProductService.getFavoriteProductCodes(userId)
@@ -167,6 +178,29 @@ class ProductService(
                 .copy(recentlyOrdered = row.recentlyOrdered)
             if (dto.productCode in favoriteCodes) dto.copy(isFavorite = true) else dto
         }
+    }
+
+    /**
+     * 최근 주문 제품 ID 조회 — 제품검색 상단 정렬용.
+     *
+     * 정렬 IN 절 파라미터가 되므로 [RECENT_ORDER_ID_LIMIT] 개로 제한한다(최신 주문순).
+     * 상한에 도달하면 오래된 주문 제품이 정렬에서 빠지므로, 실제 운영 분포 파악을 위해
+     * 경고 로그를 남긴다.
+     */
+    private fun findRecentlyOrderedProductIds(userId: Long): List<Long> {
+        val ids = orderRequestRepository.findRecentlyOrderedProductIds(
+            employeeId = userId,
+            orderDateFrom = LocalDate.now().minusDays(RECENT_ORDER_DAYS).atStartOfDay(),
+            limit = RECENT_ORDER_ID_LIMIT,
+        )
+        if (ids.size >= RECENT_ORDER_ID_LIMIT) {
+            log.warn(
+                "최근 주문 제품이 상단정렬 상한({})에 도달했습니다. userId={}, 최근 {}일 — " +
+                    "상한 밖 제품은 상단 정렬에서 제외됩니다.",
+                RECENT_ORDER_ID_LIMIT, userId, RECENT_ORDER_DAYS,
+            )
+        }
+        return ids
     }
 
     /**

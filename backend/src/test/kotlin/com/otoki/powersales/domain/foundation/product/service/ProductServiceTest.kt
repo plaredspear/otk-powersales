@@ -7,6 +7,7 @@ import java.math.BigDecimal
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.domain.foundation.product.repository.CategoryGroupRow
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductSearchRow
 import com.otoki.powersales.domain.foundation.product.service.ProductService
@@ -26,10 +27,12 @@ class ProductServiceTest {
 
     private val productRepository: ProductRepository = mockk()
     private val favoriteProductService: FavoriteProductService = mockk()
+    private val orderRequestRepository: OrderRequestRepository = mockk(relaxed = true)
 
     private val productService = ProductService(
         productRepository,
         favoriteProductService,
+        orderRequestRepository,
     )
 
     @Nested
@@ -322,17 +325,59 @@ class ProductServiceTest {
     inner class OrderSearch {
 
         @Test
+        @DisplayName("최근 주문 제품 ID 를 상한(300)까지만 조회해 정렬 파라미터로 넘긴다")
+        fun searchProductsForOrder_limitsRecentOrderIds() {
+            val page = rowPage(emptyList(), PageRequest.of(0, 20), 0)
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
+            every {
+                orderRequestRepository.findRecentlyOrderedProductIds(1L, any(), any())
+            } returns listOf(10L, 20L)
+
+            productService.searchProductsForOrder("라면", null, null, 0, 20, 1L)
+
+            // IN 절 파라미터 크기 가드 — 상한을 그대로 repository 에 전달한다.
+            verify {
+                orderRequestRepository.findRecentlyOrderedProductIds(1L, any(), 300)
+            }
+            // 조회된 ID 가 검색 정렬 파라미터로 전달된다.
+            verify {
+                productRepository.searchForOrder(
+                    "라면", null, null, any(),
+                    match { it.toList() == listOf(10L, 20L) },
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("최근 주문이 없으면 빈 목록을 넘겨 기존 정렬만 적용되게 한다")
+        fun searchProductsForOrder_noRecentOrders_passesEmpty() {
+            val page = rowPage(emptyList(), PageRequest.of(0, 20), 0)
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
+            every {
+                orderRequestRepository.findRecentlyOrderedProductIds(1L, any(), any())
+            } returns emptyList()
+
+            productService.searchProductsForOrder("라면", null, null, 0, 20, 1L)
+
+            verify {
+                productRepository.searchForOrder("라면", null, null, any(), match { it.isEmpty() })
+            }
+        }
+
+        @Test
         @DisplayName("페이지 크기 200(상한)까지 허용된다 — 모바일이 1회에 요청하는 건수")
         fun searchProductsForOrder_allowsMaxPageSize() {
             val page = rowPage(emptyList(), PageRequest.of(0, 200), 0)
-            every { productRepository.searchForOrder("라면", null, null, any(), any(), any()) } returns page
+            every { productRepository.searchForOrder("라면", null, null, any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("라면", null, null, 0, 200, 1L)
 
             assertThat(result.content).isEmpty()
             verify {
-                productRepository.searchForOrder("라면", null, null, match { it.pageSize == 200 }, any(), any())
+                productRepository.searchForOrder("라면", null, null, match { it.pageSize == 200 }, any())
             }
         }
 
@@ -355,7 +400,7 @@ class ProductServiceTest {
                 )
             )
             val page = rowPage(products, PageRequest.of(0, 30), 1)
-            every { productRepository.searchForOrder("열라면", null, null, any(), any(), any()) } returns page
+            every { productRepository.searchForOrder("열라면", null, null, any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 1L)
@@ -381,7 +426,7 @@ class ProductServiceTest {
                 )
             )
             val page = rowPage(products, PageRequest.of(0, 30), 1)
-            every { productRepository.searchForOrder("참치", null, null, any(), any(), any()) } returns page
+            every { productRepository.searchForOrder("참치", null, null, any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("참치", null, null, 0, 30, 1L)
@@ -397,7 +442,7 @@ class ProductServiceTest {
                 createTestProduct("18110007", "열라면_용기115G", "18110007", "8801045570723")
             )
             val page = rowPage(products, PageRequest.of(0, 30), 2)
-            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns page
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(7L) } returns setOf("18110007")
 
             val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 7L)
@@ -416,7 +461,7 @@ class ProductServiceTest {
                     productType = ProductType.PRODUCT_TYPE_2
                 )
             )
-            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
             every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 
@@ -434,7 +479,7 @@ class ProductServiceTest {
                     tasteGift = "x"
                 )
             )
-            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
             every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 

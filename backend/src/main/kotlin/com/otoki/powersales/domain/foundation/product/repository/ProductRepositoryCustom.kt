@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.foundation.product.repository
 
 import com.otoki.powersales.domain.foundation.product.entity.Product
-import java.time.LocalDateTime
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
@@ -22,19 +21,19 @@ interface ProductRepositoryCustom {
      * 주문 작성용 제품 검색 — 레거시 주문 `selectProduct`(searchWord) 정합.
      * 단일 검색어를 제품명/제품코드/소비자 바코드(ProductBarcode.barcode) OR 부분일치로 매칭하며
      * orderable 필터 + 선택적 중분류/소분류를 적용한다. 주문에 필요한 전체 필드를 함께 반환한다.
-     */
-    /**
-     * [recentOrderEmployeeId] / [recentOrderFrom] 이 주어지면 해당 사원이 그 시점 이후 주문한
-     * 제품을 결과 상단으로 올리고 [ProductSearchRow.recentlyOrdered] 에 표시한다.
-     * 둘 중 하나라도 null 이면 최근주문 정렬을 적용하지 않는다.
+     *
+     * [recentlyOrderedProductIds] 에 담긴 제품을 결과 상단으로 올리고
+     * [ProductSearchRow.recentlyOrdered] 에 표시한다. 비어 있으면 기존 정렬만 적용한다.
+     *
+     * 목록은 호출자가 별도 조회해서 넘긴다(상관 서브쿼리로 매 행 평가하지 않기 위함) —
+     * 정렬용 IN 절 파라미터가 되므로 호출자가 크기를 제한해야 한다.
      */
     fun searchForOrder(
         query: String,
         category2: String?,
         category3: String?,
         pageable: Pageable,
-        recentOrderEmployeeId: Long? = null,
-        recentOrderFrom: LocalDateTime? = null
+        recentlyOrderedProductIds: Collection<Long> = emptyList()
     ): Page<ProductSearchRow>
 
     /**

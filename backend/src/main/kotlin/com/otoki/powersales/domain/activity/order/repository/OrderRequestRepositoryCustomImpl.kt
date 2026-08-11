@@ -88,6 +88,29 @@ class OrderRequestRepositoryCustomImpl(
             }
     }
 
+    override fun findRecentlyOrderedProductIds(
+        employeeId: Long,
+        orderDateFrom: LocalDateTime,
+        limit: Int,
+    ): List<Long> {
+        // 같은 제품을 여러 번 주문했으면 가장 최근 주문일을 기준으로 삼는다(최신순 상한 절단용).
+        return queryFactory
+            .select(orderRequestProduct.product.id, orderRequest.orderDate.max())
+            .from(orderRequestProduct)
+            .join(orderRequestProduct.orderRequest, orderRequest)
+            .where(
+                orderRequestProduct.product.id.isNotNull,
+                orderRequest.employee.id.eq(employeeId),
+                orderRequest.orderDate.goe(orderDateFrom),
+                orderRequest.isDeleted.isNull.or(orderRequest.isDeleted.eq(false)),
+            )
+            .groupBy(orderRequestProduct.product.id)
+            .orderBy(orderRequest.orderDate.max().desc())
+            .limit(limit.toLong())
+            .fetch()
+            .mapNotNull { it.get(orderRequestProduct.product.id) }
+    }
+
     private fun buildOrderSpecifiers(sortBy: String, sortDir: String): Array<OrderSpecifier<*>> {
         val direction = if (sortDir.equals("ASC", ignoreCase = true)) Order.ASC else Order.DESC
         val target: ComparableExpressionBase<*> = when (sortBy) {

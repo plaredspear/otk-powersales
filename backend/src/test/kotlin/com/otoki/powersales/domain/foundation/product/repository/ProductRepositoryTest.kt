@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.product.repository
 
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import java.time.LocalDateTime
@@ -34,6 +35,9 @@ class ProductRepositoryTest {
 
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
+
+    @Autowired
+    private lateinit var orderRequestRepository: OrderRequestRepository
 
     @BeforeEach
     fun setUp() {
@@ -545,10 +549,12 @@ class ProductRepositoryTest {
         @Test
         @DisplayName("최근 주문 제품이 기존 정렬을 앞질러 맨 위로 올라온다")
         fun recentlyOrderedProductComesFirst() {
+            val recentIds = orderRequestRepository.findRecentlyOrderedProductIds(
+                employeeId, LocalDateTime.now().minusDays(10), 300
+            )
             val result = productRepository.searchForOrder(
                 "최근", null, null, PageRequest.of(0, 20),
-                recentOrderEmployeeId = employeeId,
-                recentOrderFrom = LocalDateTime.now().minusDays(10),
+                recentlyOrderedProductIds = recentIds,
             )
 
             val names = result.content.map { it.product.name }
@@ -559,7 +565,7 @@ class ProductRepositoryTest {
         }
 
         @Test
-        @DisplayName("최근주문 파라미터가 없으면 기존 정렬만 적용된다")
+        @DisplayName("최근주문 ID 목록이 비면 기존 정렬만 적용된다")
         fun withoutRecentOrderParams_keepsLegacySort() {
             val result = productRepository.searchForOrder(
                 "최근", null, null, PageRequest.of(0, 20)
@@ -573,11 +579,14 @@ class ProductRepositoryTest {
         @Test
         @DisplayName("기간 밖(10일 초과) 주문은 상단 정렬 대상이 아니다")
         fun orderOutsideWindow_isNotRecent() {
+            val recentIds = orderRequestRepository.findRecentlyOrderedProductIds(
+                // 주문일(3일 전)보다 뒤인 기준일 → 윈도우 밖
+                employeeId, LocalDateTime.now().minusDays(1), 300
+            )
+            assertThat(recentIds).isEmpty()
             val result = productRepository.searchForOrder(
                 "최근", null, null, PageRequest.of(0, 20),
-                recentOrderEmployeeId = employeeId,
-                // 주문일(3일 전)보다 뒤인 기준일 → 윈도우 밖
-                recentOrderFrom = LocalDateTime.now().minusDays(1),
+                recentlyOrderedProductIds = recentIds,
             )
 
             val names = result.content.map { it.product.name }
@@ -588,10 +597,13 @@ class ProductRepositoryTest {
         @Test
         @DisplayName("다른 사원의 주문은 상단 정렬 대상이 아니다")
         fun otherEmployeesOrder_isNotRecent() {
+            val recentIds = orderRequestRepository.findRecentlyOrderedProductIds(
+                employeeId + 999, LocalDateTime.now().minusDays(10), 300
+            )
+            assertThat(recentIds).isEmpty()
             val result = productRepository.searchForOrder(
                 "최근", null, null, PageRequest.of(0, 20),
-                recentOrderEmployeeId = employeeId + 999,
-                recentOrderFrom = LocalDateTime.now().minusDays(10),
+                recentlyOrderedProductIds = recentIds,
             )
 
             val names = result.content.map { it.product.name }

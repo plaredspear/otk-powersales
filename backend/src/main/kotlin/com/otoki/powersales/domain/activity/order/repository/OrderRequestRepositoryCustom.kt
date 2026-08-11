@@ -38,6 +38,22 @@ interface OrderRequestRepositoryCustom {
         orderDateFrom: LocalDateTime,
         orderDateToExclusive: LocalDateTime,
     ): List<OrderHistoryRow>
+
+    /**
+     * 최근 주문 제품 ID 목록 — 제품검색 결과 상단 정렬용.
+     *
+     * 본인(employeeId)이 [orderDateFrom] 이후 주문한 제품을 최신 주문순으로 [limit] 개까지
+     * 반환한다. 거래처 조건은 걸지 않는다(주문서에서 거래처 미선택 상태로도 제품검색이 열림 —
+     * 거래처 AND 인 [findOrderHistory] 와 기준이 다르다).
+     *
+     * 정렬용 IN 절 파라미터로 쓰이므로 [limit] 로 크기를 제한한다. 주문 상태는 구분하지 않고
+     * 삭제분만 제외한다([findOrderHistory] 와 동일).
+     */
+    fun findRecentlyOrderedProductIds(
+        employeeId: Long,
+        orderDateFrom: LocalDateTime,
+        limit: Int,
+    ): List<Long>
 }
 
 /**

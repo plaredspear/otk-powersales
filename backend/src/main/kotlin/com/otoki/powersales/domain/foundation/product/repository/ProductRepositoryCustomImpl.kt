@@ -28,28 +28,6 @@ class ProductRepositoryCustomImpl(
     }
 
     /**
-     * 최근 주문 제품 여부 — 검색 결과 상단 정렬키.
-     *
-     * [employeeId] 본인이 [orderDateFrom] 이후 주문한 제품이면 true. 거래처(account) 조건은
-     * 걸지 않아 거래처 미선택 상태에서도 동작한다(주문이력 탭은 거래처 AND 라 기준이 다름).
-     * 주문 상태는 구분하지 않고 삭제분만 제외한다(주문이력 탭 findOrderHistory 와 동일).
-     */
-    private fun recentlyOrderedProduct(
-        employeeId: Long,
-        orderDateFrom: LocalDateTime,
-    ): BooleanExpression =
-        JPAExpressions.selectOne()
-            .from(orderRequestProduct)
-            .join(orderRequestProduct.orderRequest, orderRequest)
-            .where(
-                orderRequestProduct.product.id.eq(product.id),
-                orderRequest.employee.id.eq(employeeId),
-                orderRequest.orderDate.goe(orderDateFrom),
-                orderRequest.isDeleted.isNull.or(orderRequest.isDeleted.eq(false)),
-            )
-            .exists()
-
-    /**
      * 모바일 제품검색(영업사원용) 고정 필터 — 레거시 productMapper.xml `selectProduct` 의
      * 고정 WHERE 조건을 이식한다.
      *  1) 발주 단위(product.unit)와 일치하는 바코드가 등록된 제품만
@@ -117,19 +95,12 @@ class ProductRepositoryCustomImpl(
         where: BooleanExpression,
         pageable: Pageable,
         orderBy: Array<OrderSpecifier<*>> = arrayOf(product.name.asc(), product.productCode.asc()),
-        recentlyOrdered: BooleanExpression? = null,
+        recentlyOrderedProductIds: Set<Long> = emptySet(),
     ): Page<ProductSearchRow> {
         val matchedBarcode = unitMatchedBarcode()
 
-        // Hibernate 6 는 SELECT 절의 벌거벗은 exists() 를 파싱하지 못하므로 CASE 로 스칼라화한다.
-        val recentFlag: Expression<Int> = recentlyOrdered
-            ?.let {
-                Expressions.cases().`when`(it).then(1).otherwise(0)
-            }
-            ?: Expressions.asNumber(0).intValue()
-
         val rows = queryFactory
-            .select(product, matchedBarcode, recentFlag)
+            .select(product, matchedBarcode)
             .from(product)
             .where(where)
             .orderBy(*orderBy)
@@ -137,11 +108,14 @@ class ProductRepositoryCustomImpl(
             .limit(pageable.pageSize.toLong())
             .fetch()
 
+        // 최근주문 여부는 조회 결과와 호출자가 넘긴 ID 집합을 메모리에서 대조해 채운다
+        // (플래그를 SELECT 절에서 다시 계산하지 않는다).
         val content = rows.map { tuple ->
+            val p = tuple.get(product)!!
             ProductSearchRow(
-                product = tuple.get(product)!!,
+                product = p,
                 barcode = tuple.get(matchedBarcode),
-                recentlyOrdered = tuple.get(recentFlag) == 1
+                recentlyOrdered = p.id in recentlyOrderedProductIds
             )
         }
 
@@ -334,8 +308,7 @@ class ProductRepositoryCustomImpl(
         category2: String?,
         category3: String?,
         pageable: Pageable,
-        recentOrderEmployeeId: Long?,
-        recentOrderFrom: LocalDateTime?
+        recentlyOrderedProductIds: Collection<Long>
     ): Page<ProductSearchRow> {
         // 레거시 주문 `searchWord`: name OR productCode OR 소비자 바코드(ProductBarcode.barcode) OR LIKE.
         val lowerPattern = "%${query.lowercase()}%"
@@ -363,11 +336,11 @@ class ProductRepositoryCustomImpl(
             where = where.and(product.productCategory3.eq(category3))
         }
 
-        // 최근 주문 제품을 상단으로 올린다(요청 시에만). 그 뒤로는 레거시
+        // 최근 주문 제품을 상단으로 올린다(목록이 주어졌을 때만). 그 뒤로는 레거시
         // `selectProduct` 정렬 `ORDER BY categorycode3, productcode` 를 그대로 유지한다.
         val recentlyOrdered =
-            if (recentOrderEmployeeId != null && recentOrderFrom != null) {
-                recentlyOrderedProduct(recentOrderEmployeeId, recentOrderFrom)
+            if (recentlyOrderedProductIds.isNotEmpty()) {
+                product.id.`in`(recentlyOrderedProductIds)
             } else {
                 null
             }
@@ -376,8 +349,8 @@ class ProductRepositoryCustomImpl(
             product.categoryCode3.asc(),
             product.productCode.asc(),
         )
-        // desc: 최근주문(1)이 먼저. SELECT 절과 동일하게 CASE 로 스칼라화한다
-        // (Hibernate 6 는 벌거벗은 exists() 를 ORDER BY/SELECT 에서 파싱하지 못한다).
+        // Hibernate 6 는 ORDER BY 절의 벌거벗은 불리언식(in/exists)을 파싱하지 못하므로
+        // CASE 로 스칼라화한다. desc: 최근주문(1)이 먼저.
         val orderBy = if (recentlyOrdered != null) {
             arrayOf(
                 Expressions.cases().`when`(recentlyOrdered).then(1).otherwise(0).desc(),
@@ -387,7 +360,12 @@ class ProductRepositoryCustomImpl(
             legacyOrder
         }
 
-        return pagedSearch(where, pageable, orderBy = orderBy, recentlyOrdered = recentlyOrdered)
+        return pagedSearch(
+            where,
+            pageable,
+            orderBy = orderBy,
+            recentlyOrderedProductIds = recentlyOrderedProductIds.toSet(),
+        )
     }
 
     override fun findOrderRowsByProductCodes(productCodes: Collection<String>): List<ProductSearchRow> {
