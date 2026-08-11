@@ -3,6 +3,7 @@ import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/product_search_result.dart';
 import 'package:mobile/domain/entities/product_order_history_group.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/add_to_favorites_usecase.dart';
@@ -149,6 +150,57 @@ void main() {
         expect(notifier.state.searchQuery, '');
         expect(notifier.state.searchResults, isEmpty);
         expect(fakeRepo.searchProductsCalled, false);
+      });
+
+      test('전체 건수가 상한 이하면 isSearchTruncated=false', () async {
+        // Arrange - 전체 200건, 상한 200건 (경계값: 초과 아님)
+        fakeRepo.searchProductsResult = [
+          _createTestProduct(productCode: 'P001'),
+        ];
+        fakeRepo.searchPageLimit = 200;
+        fakeRepo.searchTotalCountOverride = 200;
+
+        // Act
+        await notifier.searchProducts(query: '라면');
+
+        // Assert
+        expect(notifier.state.searchTotalCount, 200);
+        expect(notifier.state.searchPageLimit, 200);
+        expect(notifier.state.isSearchTruncated, false);
+      });
+
+      test('전체 건수가 상한을 초과하면 isSearchTruncated=true', () async {
+        // Arrange - 전체 201건, 상한 200건
+        fakeRepo.searchProductsResult = [
+          _createTestProduct(productCode: 'P001'),
+        ];
+        fakeRepo.searchPageLimit = 200;
+        fakeRepo.searchTotalCountOverride = 201;
+
+        // Act
+        await notifier.searchProducts(query: '라면');
+
+        // Assert
+        expect(notifier.state.searchTotalCount, 201);
+        expect(notifier.state.isSearchTruncated, true);
+      });
+
+      test('빈 검색어로 클리어하면 초과 상태도 해제된다', () async {
+        // Arrange - 먼저 초과 상태를 만든다
+        fakeRepo.searchProductsResult = [
+          _createTestProduct(productCode: 'P001'),
+        ];
+        fakeRepo.searchTotalCountOverride = 500;
+        await notifier.searchProducts(query: '라면');
+        expect(notifier.state.isSearchTruncated, true);
+
+        // Act
+        await notifier.searchProducts(query: '');
+
+        // Assert
+        expect(notifier.state.searchTotalCount, 0);
+        expect(notifier.state.searchPageLimit, 0);
+        expect(notifier.state.isSearchTruncated, false);
       });
 
       test('카테고리 필터와 함께 검색', () async {
@@ -708,6 +760,12 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   // --- Controllable returns ---
   List<ProductForOrder> favoriteProductsResult = [];
   List<ProductForOrder> searchProductsResult = [];
+
+  /// 검색 전체 건수 override — 상한 초과(truncated) 시나리오 재현용.
+  int? searchTotalCountOverride;
+
+  /// 검색 1회 조회 상한 — 초과 판정 기준.
+  int searchPageLimit = 200;
   bool shouldThrowOnFavorites = false;
   bool shouldThrowOnSearch = false;
   bool shouldThrowOnAddFavorites = false;
@@ -733,7 +791,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   }
 
   @override
-  Future<List<ProductForOrder>> searchProductsForOrder({
+  Future<ProductSearchResult> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
@@ -743,7 +801,11 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     lastCategoryMid = categoryMid;
     lastCategorySub = categorySub;
     if (shouldThrowOnSearch) throw Exception(errorMessage);
-    return searchProductsResult;
+    return ProductSearchResult(
+      products: searchProductsResult,
+      totalCount: searchTotalCountOverride ?? searchProductsResult.length,
+      pageLimit: searchPageLimit,
+    );
   }
 
   @override

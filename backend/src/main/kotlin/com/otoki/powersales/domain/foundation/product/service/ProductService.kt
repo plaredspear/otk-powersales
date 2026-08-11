@@ -27,7 +27,14 @@ class ProductService(
         private const val MIN_TEXT_QUERY_LENGTH = 2
         private const val MIN_BARCODE_LENGTH = 8
         private const val DEFAULT_PAGE_SIZE = 20
-        private const val MAX_PAGE_SIZE = 100
+
+        /**
+         * 제품검색 페이지 크기 상한.
+         *
+         * 주문서 제품검색은 페이징 UI 없이 1회 조회분만 노출하므로, 모바일이 이 상한값을 그대로
+         * 요청해 한 번에 받아간다(초과분은 "검색어를 좁혀 달라" 안내로 유도).
+         */
+        private const val MAX_PAGE_SIZE = 200
 
         private val NUMERIC_PATTERN = Regex("^\\d+$")
         private val VALID_SEARCH_TYPES = setOf("text", "barcode")

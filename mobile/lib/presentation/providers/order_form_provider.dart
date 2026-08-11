@@ -392,7 +392,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   /// 검색 실패/미일치는 조용히 무시하고 빈 주문서로 진입한다.
   Future<void> preloadProductByCode(String productCode) async {
     try {
-      final results = await _searchProductsForOrder.call(query: productCode);
+      final results =
+          (await _searchProductsForOrder.call(query: productCode)).products;
       ProductForOrder? match;
       for (final p in results) {
         if (p.productCode == productCode) {
@@ -418,7 +419,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     final code = barcode.trim();
     if (code.isEmpty) return;
     try {
-      final results = await _searchProductsForOrder.call(query: code);
+      final results = (await _searchProductsForOrder.call(query: code)).products;
       if (results.isEmpty) {
         state = state.copyWith(errorMessage: '바코드에 해당하는 제품이 없습니다.');
         return;

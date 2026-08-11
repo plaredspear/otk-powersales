@@ -201,21 +201,27 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         (categoryMid != null && categoryMid.isNotEmpty) ||
             (categorySub != null && categorySub.isNotEmpty);
     if (query.trim().isEmpty && !hasCategory) {
-      state = state.copyWith(searchResults: []);
+      state = state.copyWith(
+        searchResults: [],
+        searchTotalCount: 0,
+        searchPageLimit: 0,
+      );
       return;
     }
 
     state = state.toLoading();
 
     try {
-      final results = await _searchProductsForOrder.call(
+      final result = await _searchProductsForOrder.call(
         query: query,
         categoryMid: categoryMid,
         categorySub: categorySub,
       );
       state = state.copyWith(
         isLoading: false,
-        searchResults: results,
+        searchResults: result.products,
+        searchTotalCount: result.totalCount,
+        searchPageLimit: result.pageLimit,
         clearError: true,
       );
     } catch (e) {

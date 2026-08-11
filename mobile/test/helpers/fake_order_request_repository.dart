@@ -5,6 +5,7 @@ import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/product_search_result.dart';
 import 'package:mobile/domain/entities/product_order_history_group.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 
@@ -766,8 +767,15 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     return const <ProductOrderHistoryGroup>[];
   }
 
+  /// 검색 전체 건수 override — 상한 초과(truncated) 시나리오 재현용.
+  /// null 이면 실제 반환 목록 길이를 전체 건수로 쓴다.
+  int? searchTotalCountOverride;
+
+  /// 검색 1회 조회 상한 — 초과 판정 기준.
+  int searchPageLimit = 200;
+
   @override
-  Future<List<ProductForOrder>> searchProductsForOrder({
+  Future<ProductSearchResult> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
@@ -787,10 +795,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     }
 
     // 즐겨찾기 상태 반영
-    return results
+    final products = results
         .map((p) => p.copyWith(
             isFavorite: _favoriteProductCodes.contains(p.productCode)))
         .toList();
+
+    return ProductSearchResult(
+      products: products,
+      totalCount: searchTotalCountOverride ?? products.length,
+      pageLimit: searchPageLimit,
+    );
   }
 
   @override

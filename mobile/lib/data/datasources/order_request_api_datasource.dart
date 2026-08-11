@@ -144,7 +144,7 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<List<ProductForOrderModel>> searchProductsForOrder({
+  Future<ProductSearchResultModel> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
@@ -152,7 +152,7 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     final queryParameters = <String, dynamic>{
       'query': query,
       'page': 0,
-      'size': 30,
+      'size': orderProductSearchPageLimit,
     };
     if (categoryMid != null && categoryMid.isNotEmpty) {
       queryParameters['categoryMid'] = categoryMid;
@@ -168,10 +168,20 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
 
     final page = response.data['data'] as Map<String, dynamic>;
     final content = (page['content'] as List<dynamic>?) ?? const [];
-    return content
+    final products = content
         .map((raw) =>
             ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
         .toList();
+
+    // totalElements 는 서버가 집계한 전체 건수 — 상한 초과 판별에 쓴다.
+    // 누락 시 목록 길이로 폴백해 "초과 아님"으로 안전하게 판정한다.
+    final totalCount =
+        (page['totalElements'] as num?)?.toInt() ?? products.length;
+
+    return ProductSearchResultModel(
+      products: products,
+      totalCount: totalCount,
+    );
   }
 
   @override

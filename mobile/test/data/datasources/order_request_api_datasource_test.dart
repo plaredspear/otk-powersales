@@ -4,6 +4,7 @@ import 'package:mobile/data/datasources/order_request_api_datasource.dart';
 import 'package:mobile/data/datasources/order_request_remote_datasource.dart';
 import 'package:mobile/data/models/order_cancel_model.dart';
 import 'package:mobile/data/models/order_request_detail_model.dart';
+import 'package:mobile/data/models/product_for_order_model.dart';
 
 void main() {
   group('OrderRequestApiDataSource', () {
@@ -295,12 +296,16 @@ void main() {
         final result =
             await dataSource.searchProductsForOrder(query: '열라면');
 
-        expect(result.length, 1);
-        expect(result[0].productCode, '18110014');
-        expect(result[0].unitPrice, 1200);
-        expect(result[0].boxSize, 30);
-        expect(result[0].productType, 'EXCLUSIVE');
-        expect(result[0].tasteGiftType, 'TASTING_GIFT');
+        expect(result.products.length, 1);
+        expect(result.products[0].productCode, '18110014');
+        expect(result.products[0].unitPrice, 1200);
+        expect(result.products[0].boxSize, 30);
+        expect(result.products[0].productType, 'EXCLUSIVE');
+        expect(result.products[0].tasteGiftType, 'TASTING_GIFT');
+        expect(result.totalCount, 1);
+        // 엔티티 변환 시 상한이 실려 초과 판정이 가능해진다.
+        expect(result.toEntity().pageLimit, orderProductSearchPageLimit);
+        expect(result.toEntity().isTruncated, false);
         expect(capturedParams!['query'], '열라면');
       });
 
@@ -333,6 +338,9 @@ void main() {
 
         expect(capturedParams!['categoryMid'], '봉지면');
         expect(capturedParams!['categorySub'], '가정');
+        // 주문서 제품검색은 페이징 UI 가 없어 상한 건수를 1회에 요청한다.
+        expect(capturedParams!['size'], orderProductSearchPageLimit);
+        expect(capturedParams!['page'], 0);
       });
     });
 

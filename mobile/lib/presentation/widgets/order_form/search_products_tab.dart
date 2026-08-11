@@ -241,11 +241,72 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
       );
     }
 
+    // 상한 초과 시 목록 마지막에 안내 행을 한 칸 더 붙인다.
+    final isTruncated = state.isSearchTruncated as bool;
+
+    return Column(
+      children: [
+        if (isTruncated)
+          _buildTruncatedBanner(
+            state.searchTotalCount as int,
+            state.searchPageLimit as int,
+          ),
+        Expanded(
+          child: _buildResultList(state, results, isTruncated),
+        ),
+      ],
+    );
+  }
+
+  /// 검색 결과가 상한을 넘었을 때 목록 위에 고정 노출하는 배너.
+  Widget _buildTruncatedBanner(int totalCount, int pageLimit) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              size: 18, color: AppColors.warning),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '검색 결과가 많습니다($totalCount건). '
+              '상위 $pageLimit건만 표시되니 검색어를 좁혀 주세요.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultList(dynamic state, List results, bool isTruncated) {
     return ListView.builder(
       controller: widget.scrollController,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      itemCount: results.length,
+      itemCount: results.length + (isTruncated ? 1 : 0),
       itemBuilder: (context, index) {
+        // 상한 초과 시 마지막 인덱스는 제품이 아니라 하단 안내 행이다.
+        if (isTruncated && index == results.length) {
+          return _buildTruncatedFooter();
+        }
         final product = results[index];
         return ProductCardForAdd(
           product: product,
@@ -270,6 +331,29 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
           isFavoriteTab: false,
         );
       },
+    );
+  }
+
+  /// 목록 최하단 안내 행 — 스크롤을 끝까지 내린 사용자에게 검색어 구체화를 유도한다.
+  Widget _buildTruncatedFooter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: AppColors.textTertiary),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Text(
+              '찾는 제품이 없다면 검색어를 더 구체적으로 입력해 주세요.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

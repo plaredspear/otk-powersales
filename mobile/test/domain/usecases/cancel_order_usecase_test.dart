@@ -3,6 +3,7 @@ import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/product_search_result.dart';
 import 'package:mobile/domain/entities/product_order_history_group.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/cancel_order_usecase.dart';
@@ -70,7 +71,7 @@ class _MockOrderRepository implements OrderRequestRepository {
   }
 
   @override
-  Future<List<ProductForOrder>> searchProductsForOrder({required String query, String? categoryMid, String? categorySub}) {
+  Future<ProductSearchResult> searchProductsForOrder({required String query, String? categoryMid, String? categorySub}) {
     throw UnimplementedError();
   }
 

@@ -1,4 +1,5 @@
 import '../../domain/entities/product_for_order.dart';
+import '../../domain/entities/product_search_result.dart';
 
 /// 주문용 제품 정보 API 모델 (DTO)
 ///
@@ -153,5 +154,33 @@ class ProductForOrderModel {
         'isFavorite: $isFavorite, categoryMid: $categoryMid, '
         'categorySub: $categorySub, productType: $productType, '
         'tasteGiftType: $tasteGiftType)';
+  }
+}
+
+/// 주문서 제품검색 1회 조회 상한.
+///
+/// 주문서 제품검색은 페이징 UI 가 없어 이 건수까지만 노출한다(backend
+/// `ProductService.MAX_PAGE_SIZE` 와 동일 값 — 초과 시 서버가 400 을 반환하므로
+/// 양쪽을 함께 올려야 한다). 초과분은 "검색어를 좁혀 달라" 안내로 유도한다.
+const int orderProductSearchPageLimit = 200;
+
+/// 주문용 제품 검색 결과 API 모델 — 목록 + 서버 집계 전체 건수.
+class ProductSearchResultModel {
+  final List<ProductForOrderModel> products;
+
+  /// 검색 조건에 매칭되는 전체 건수 (목록 길이와 다를 수 있음)
+  final int totalCount;
+
+  const ProductSearchResultModel({
+    required this.products,
+    required this.totalCount,
+  });
+
+  ProductSearchResult toEntity() {
+    return ProductSearchResult(
+      products: products.map((m) => m.toEntity()).toList(),
+      totalCount: totalCount,
+      pageLimit: orderProductSearchPageLimit,
+    );
   }
 }

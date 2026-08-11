@@ -209,10 +209,10 @@ class ProductServiceTest {
         }
 
         @Test
-        @DisplayName("페이지 크기 초과 (101) - INVALID_PARAMETER 예외")
+        @DisplayName("페이지 크기 초과 (201) - INVALID_PARAMETER 예외")
         fun searchProducts_oversizeSize_throwsException() {
             assertThatThrownBy {
-                productService.searchProducts("열라면", "text", 0, 101)
+                productService.searchProducts("열라면", "text", 0, 201)
             }.isInstanceOf(InvalidSearchParameterException::class.java)
                 .hasMessageContaining("페이지 크기")
         }
@@ -265,7 +265,7 @@ class ProductServiceTest {
         @DisplayName("페이지 크기 초과 - INVALID_PARAMETER 예외")
         fun filterSearch_oversize_throwsException() {
             assertThatThrownBy {
-                productService.searchProductsByFilter(null, null, null, null, 0, 101)
+                productService.searchProductsByFilter(null, null, null, null, 0, 201)
             }.isInstanceOf(InvalidSearchParameterException::class.java)
         }
     }
@@ -320,6 +320,29 @@ class ProductServiceTest {
     @Nested
     @DisplayName("주문 작성용 제품 검색 (searchProductsForOrder)")
     inner class OrderSearch {
+
+        @Test
+        @DisplayName("페이지 크기 200(상한)까지 허용된다 — 모바일이 1회에 요청하는 건수")
+        fun searchProductsForOrder_allowsMaxPageSize() {
+            val page = rowPage(emptyList(), PageRequest.of(0, 200), 0)
+            every { productRepository.searchForOrder("라면", null, null, any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
+
+            val result = productService.searchProductsForOrder("라면", null, null, 0, 200, 1L)
+
+            assertThat(result.content).isEmpty()
+            verify {
+                productRepository.searchForOrder("라면", null, null, match { it.pageSize == 200 })
+            }
+        }
+
+        @Test
+        @DisplayName("페이지 크기가 상한(200)을 넘으면 예외")
+        fun searchProductsForOrder_rejectsOverMaxPageSize() {
+            assertThatThrownBy {
+                productService.searchProductsForOrder("라면", null, null, 0, 201, 1L)
+            }.isInstanceOf(InvalidSearchParameterException::class.java)
+        }
 
         @Test
         @DisplayName("검색 결과를 주문 DTO로 매핑 - 단가/박스입수 포함")

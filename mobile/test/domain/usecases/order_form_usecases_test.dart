@@ -46,10 +46,10 @@ void main() {
       final products = await searchProductsForOrder(query: query);
 
       // Then: 검색 결과 반환
-      expect(products, isA<List<ProductForOrder>>());
-      expect(products.isNotEmpty, true);
+      expect(products.products, isA<List<ProductForOrder>>());
+      expect(products.products.isNotEmpty, true);
       expect(
-        products.any((p) => p.productName.contains('갈릭')),
+        products.products.any((p) => p.productName.contains('갈릭')),
         true,
       );
     });
@@ -62,7 +62,7 @@ void main() {
       final products = await searchProductsForOrder(query: query);
 
       // Then: 빈 리스트 반환
-      expect(products, isEmpty);
+      expect(products.products, isEmpty);
     });
 
     test('공백만 있는 검색어 시 빈 리스트 반환', () async {
@@ -73,7 +73,7 @@ void main() {
       final products = await searchProductsForOrder(query: query);
 
       // Then: 빈 리스트 반환
-      expect(products, isEmpty);
+      expect(products.products, isEmpty);
     });
   });
 

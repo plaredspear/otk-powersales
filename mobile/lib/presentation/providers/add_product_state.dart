@@ -60,8 +60,14 @@ class AddProductState {
   /// 즐겨찾기 제품 목록
   final List<ProductForOrder> favoriteProducts;
 
-  /// 검색 결과 제품 목록
+  /// 검색 결과 제품 목록 (1회 조회 상한까지만 담긴다)
   final List<ProductForOrder> searchResults;
+
+  /// 검색 조건에 매칭되는 전체 건수 (서버 집계값 — [searchResults] 길이와 다를 수 있음)
+  final int searchTotalCount;
+
+  /// 검색 1회 조회 상한. 0 이면 미검색 상태.
+  final int searchPageLimit;
 
   /// 주문 이력 그룹 목록
   final List<OrderHistoryGroup> orderHistoryGroups;
@@ -102,6 +108,8 @@ class AddProductState {
     this.currentTab = AddProductTab.favorites,
     this.favoriteProducts = const [],
     this.searchResults = const [],
+    this.searchTotalCount = 0,
+    this.searchPageLimit = 0,
     this.orderHistoryGroups = const [],
     this.selectedProductCodes = const {},
     this.multiSelect = true,
@@ -162,6 +170,11 @@ class AddProductState {
     }
   }
 
+  /// 검색 결과가 1회 조회 상한을 초과해 일부만 노출되고 있는지 여부.
+  /// 상한을 넘으면 화면에서 "검색어를 좁혀 달라" 안내를 노출한다.
+  bool get isSearchTruncated =>
+      searchPageLimit > 0 && searchTotalCount > searchPageLimit;
+
   /// 특정 제품이 선택되었는지 확인
   bool isProductSelected(String productCode) {
     return selectedProductCodes.contains(productCode);
@@ -171,6 +184,8 @@ class AddProductState {
     AddProductTab? currentTab,
     List<ProductForOrder>? favoriteProducts,
     List<ProductForOrder>? searchResults,
+    int? searchTotalCount,
+    int? searchPageLimit,
     List<OrderHistoryGroup>? orderHistoryGroups,
     Set<String>? selectedProductCodes,
     bool? multiSelect,
@@ -190,6 +205,8 @@ class AddProductState {
       currentTab: currentTab ?? this.currentTab,
       favoriteProducts: favoriteProducts ?? this.favoriteProducts,
       searchResults: searchResults ?? this.searchResults,
+      searchTotalCount: searchTotalCount ?? this.searchTotalCount,
+      searchPageLimit: searchPageLimit ?? this.searchPageLimit,
       orderHistoryGroups: orderHistoryGroups ?? this.orderHistoryGroups,
       selectedProductCodes: selectedProductCodes ?? this.selectedProductCodes,
       multiSelect: multiSelect ?? this.multiSelect,

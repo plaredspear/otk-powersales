@@ -3,6 +3,7 @@ import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/entities/product_for_order.dart';
 import '../../domain/entities/product_order_history_group.dart';
+import '../../domain/entities/product_search_result.dart';
 import '../../domain/repositories/order_request_repository.dart';
 import '../datasources/order_request_remote_datasource.dart';
 import '../models/order_cancel_model.dart';
@@ -82,17 +83,17 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
   }
 
   @override
-  Future<List<ProductForOrder>> searchProductsForOrder({
+  Future<ProductSearchResult> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
   }) async {
-    final models = await _remoteDataSource.searchProductsForOrder(
+    final result = await _remoteDataSource.searchProductsForOrder(
       query: query,
       categoryMid: categoryMid,
       categorySub: categorySub,
     );
-    return models.map((model) => model.toEntity()).toList();
+    return result.toEntity();
   }
 
   @override

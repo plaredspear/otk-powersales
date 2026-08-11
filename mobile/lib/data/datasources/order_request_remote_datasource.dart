@@ -85,7 +85,7 @@ abstract class OrderRequestRemoteDataSource {
   /// GET /api/v1/mobile/products/search
   ///
   /// 제품을 검색합니다 (중분류/소분류/제품명/제품코드).
-  Future<List<ProductForOrderModel>> searchProductsForOrder({
+  Future<ProductSearchResultModel> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,

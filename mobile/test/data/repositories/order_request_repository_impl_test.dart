@@ -63,9 +63,9 @@ void main() {
       expect(fakeRemoteDataSource.lastSearchQuery, '진라면');
       expect(fakeRemoteDataSource.lastSearchCategoryMid, '라면');
       expect(fakeRemoteDataSource.lastSearchCategorySub, '봉지라면');
-      expect(products.length, 1);
-      expect(products[0], isA<ProductForOrder>());
-      expect(products[0].productName, '오뚜기 진라면');
+      expect(products.products.length, 1);
+      expect(products.products[0], isA<ProductForOrder>());
+      expect(products.products[0].productName, '오뚜기 진라면');
     });
 
     test('즐겨찾기 추가: remote datasource를 productCode와 함께 호출한다', () async {
@@ -123,7 +123,7 @@ class FakeOrderRemoteDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<List<ProductForOrderModel>> searchProductsForOrder({
+  Future<ProductSearchResultModel> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
@@ -132,8 +132,14 @@ class FakeOrderRemoteDataSource implements OrderRequestRemoteDataSource {
     lastSearchQuery = query;
     lastSearchCategoryMid = categoryMid;
     lastSearchCategorySub = categorySub;
-    return searchResultsToReturn;
+    return ProductSearchResultModel(
+      products: searchResultsToReturn,
+      totalCount: searchTotalCountToReturn ?? searchResultsToReturn.length,
+    );
   }
+
+  /// 검색 전체 건수 override — 상한 초과 시나리오 재현용.
+  int? searchTotalCountToReturn;
 
   @override
   Future<void> addToFavorites({required String productCode}) async {

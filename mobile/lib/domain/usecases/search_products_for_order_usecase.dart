@@ -1,4 +1,4 @@
-import '../entities/product_for_order.dart';
+import '../entities/product_search_result.dart';
 import '../repositories/order_request_repository.dart';
 
 /// 주문용 제품 검색 UseCase
@@ -14,8 +14,8 @@ class SearchProductsForOrder {
   /// [query]: 검색어 (제품명 또는 제품코드)
   /// [categoryMid]: 중분류 카테고리 (선택)
   /// [categorySub]: 소분류 카테고리 (선택)
-  /// Returns: 검색 결과 제품 목록
-  Future<List<ProductForOrder>> call({
+  /// Returns: 검색 결과 (목록 + 서버 집계 전체 건수)
+  Future<ProductSearchResult> call({
     required String query,
     String? categoryMid,
     String? categorySub,
@@ -25,7 +25,7 @@ class SearchProductsForOrder {
     final hasCategory = (categoryMid != null && categoryMid.trim().isNotEmpty) ||
         (categorySub != null && categorySub.trim().isNotEmpty);
     if (query.trim().isEmpty && !hasCategory) {
-      return [];
+      return const ProductSearchResult.empty();
     }
     return await _repository.searchProductsForOrder(
       query: query.trim(),

@@ -4,6 +4,7 @@ import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
 import '../entities/product_for_order.dart';
 import '../entities/product_order_history_group.dart';
+import '../entities/product_search_result.dart';
 
 /// 본인 주문요청 목록 조회 결과 값 객체 (클라이언트 슬라이스 패턴).
 ///
@@ -112,8 +113,8 @@ abstract class OrderRequestRepository {
   /// [query]: 검색어 (제품명 또는 제품코드)
   /// [categoryMid]: 중분류 카테고리 (선택)
   /// [categorySub]: 소분류 카테고리 (선택)
-  /// Returns: 검색 결과 제품 목록
-  Future<List<ProductForOrder>> searchProductsForOrder({
+  /// Returns: 검색 결과 (목록 + 서버 집계 전체 건수)
+  Future<ProductSearchResult> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
