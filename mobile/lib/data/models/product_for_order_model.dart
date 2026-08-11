@@ -22,6 +22,9 @@ class ProductForOrderModel {
   /// 시식·증정용 차단 판정값 (`'TASTING_GIFT'` 이면 차단). 레거시 `tastegift__c == 'x'/'X'` 매핑.
   final String? tasteGiftType;
 
+  /// 최근 주문 이력 포함 여부 — 검색 결과 상단 정렬 + 배지 표시용.
+  final bool recentlyOrdered;
+
   const ProductForOrderModel({
     required this.productCode,
     required this.productName,
@@ -35,6 +38,7 @@ class ProductForOrderModel {
     this.categorySub,
     this.productType,
     this.tasteGiftType,
+    this.recentlyOrdered = false,
   });
 
   /// camelCase JSON에서 파싱 (null-safe — 누락 필드는 기본값으로 방어).
@@ -52,6 +56,7 @@ class ProductForOrderModel {
       categorySub: json['categorySub'] as String?,
       productType: json['productType'] as String?,
       tasteGiftType: json['tasteGiftType'] as String?,
+      recentlyOrdered: json['recentlyOrdered'] as bool? ?? false,
     );
   }
 
@@ -70,6 +75,7 @@ class ProductForOrderModel {
       'categorySub': categorySub,
       'productType': productType,
       'tasteGiftType': tasteGiftType,
+      'recentlyOrdered': recentlyOrdered,
     };
   }
 
@@ -88,6 +94,7 @@ class ProductForOrderModel {
       categorySub: categorySub,
       productType: productType,
       tasteGiftType: tasteGiftType,
+      recentlyOrdered: recentlyOrdered,
     );
   }
 
@@ -106,6 +113,7 @@ class ProductForOrderModel {
       categorySub: entity.categorySub,
       productType: entity.productType,
       tasteGiftType: entity.tasteGiftType,
+      recentlyOrdered: entity.recentlyOrdered,
     );
   }
 
@@ -124,7 +132,8 @@ class ProductForOrderModel {
         other.categoryMid == categoryMid &&
         other.categorySub == categorySub &&
         other.productType == productType &&
-        other.tasteGiftType == tasteGiftType;
+        other.tasteGiftType == tasteGiftType &&
+        other.recentlyOrdered == recentlyOrdered;
   }
 
   @override
@@ -142,6 +151,7 @@ class ProductForOrderModel {
       categorySub,
       productType,
       tasteGiftType,
+      recentlyOrdered,
     );
   }
 

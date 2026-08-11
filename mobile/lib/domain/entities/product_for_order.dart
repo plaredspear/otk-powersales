@@ -42,6 +42,10 @@ class ProductForOrder {
   /// `'TASTING_GIFT'` 면 시식·증정으로 추가 차단. 레거시 `tastegift__c='x'/'X'` 매핑.
   final String? tasteGiftType;
 
+  /// 최근 주문 이력에 포함된 제품인지 여부 (주문 작성용 검색에서만 판정).
+  /// true 면 검색 결과 상단에 정렬되고 "최근 주문" 배지가 표시된다.
+  final bool recentlyOrdered;
+
   const ProductForOrder({
     required this.productCode,
     required this.productName,
@@ -55,6 +59,7 @@ class ProductForOrder {
     this.categorySub,
     this.productType,
     this.tasteGiftType,
+    this.recentlyOrdered = false,
   });
 
   /// 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합).
@@ -99,6 +104,7 @@ class ProductForOrder {
     String? categorySub,
     String? productType,
     String? tasteGiftType,
+    bool? recentlyOrdered,
   }) {
     return ProductForOrder(
       productCode: productCode ?? this.productCode,
@@ -113,6 +119,7 @@ class ProductForOrder {
       categorySub: categorySub ?? this.categorySub,
       productType: productType ?? this.productType,
       tasteGiftType: tasteGiftType ?? this.tasteGiftType,
+      recentlyOrdered: recentlyOrdered ?? this.recentlyOrdered,
     );
   }
 

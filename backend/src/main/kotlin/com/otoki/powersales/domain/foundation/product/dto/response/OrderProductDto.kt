@@ -28,7 +28,12 @@ data class OrderProductDto(
     /** "EXCLUSIVE" 면 전용상품(추가 차단). 그 외 null. */
     val productType: String?,
     /** "TASTING_GIFT" 면 시식·증정용(추가 차단). 그 외 null. */
-    val tasteGiftType: String?
+    val tasteGiftType: String?,
+    /**
+     * 최근 주문 이력에 포함된 제품인지 여부. 주문 작성용 검색에서만 판정되며,
+     * true 면 검색 결과 상단에 정렬되고 화면에 "최근 주문" 배지가 표시된다.
+     */
+    val recentlyOrdered: Boolean = false
 ) {
     companion object {
         /** 레거시 전용상품 판정값 (DKRetail__ProductType__c). */

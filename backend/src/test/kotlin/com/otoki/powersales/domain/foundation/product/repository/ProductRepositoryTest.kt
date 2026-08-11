@@ -1,5 +1,9 @@
 package com.otoki.powersales.domain.foundation.product.repository
 
+import com.otoki.powersales.domain.activity.order.entity.OrderRequest
+import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import java.time.LocalDateTime
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.entity.ProductBarcode
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
@@ -483,6 +487,116 @@ class ProductRepositoryTest {
 
             val names = result.content.map { it.product.name }
             assertThat(names).containsExactly("정렬다_C", "정렬나_B", "정렬가_A")
+        }
+    }
+
+    // ========== 최근 주문 제품 상단 정렬 ==========
+
+    @Nested
+    @DisplayName("최근 주문 제품 상단 정렬 (searchForOrder recentOrder*)")
+    inner class RecentOrderSortTests {
+
+        private var employeeId = 0L
+
+        /**
+         * 소분류코드 정렬상 맨 뒤인 제품(Z90)을 최근 주문분으로 만들어,
+         * 최근주문 정렬키가 기존 정렬을 실제로 앞지르는지 확인한다.
+         */
+        @BeforeEach
+        fun setUpRecentOrderFixtures() {
+            val employee = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "E-RECENT", name = "테스터")
+            )
+            employeeId = employee.id
+
+            val fixtures = listOf(
+                Triple("최근가_A", "80000001", "A10"),
+                Triple("최근나_B", "80000002", "B20"),
+                Triple("최근다_C", "80000003", "Z90"),
+            )
+            val saved = fixtures.map { (name, code, categoryCode3) ->
+                val p = testEntityManager.persistAndFlush(
+                    createProduct(
+                        productName = name,
+                        productCode = code,
+                        logisticsBarcode = "777$code",
+                        unit = "EA",
+                        categoryCode3 = categoryCode3
+                    )
+                )
+                testEntityManager.persistAndFlush(createBarcode(p.id, "EA", "770$code"))
+                p
+            }
+
+            // 정렬상 마지막인 최근다_C(Z90) 만 3일 전에 주문한 이력을 만든다.
+            val order = testEntityManager.persistAndFlush(
+                OrderRequest(
+                    orderRequestNumber = "OP-RECENT-001",
+                    employee = employee,
+                    orderDate = LocalDateTime.now().minusDays(3),
+                )
+            )
+            testEntityManager.persistAndFlush(
+                OrderRequestProduct(orderRequest = order, product = saved[2])
+            )
+            testEntityManager.clear()
+        }
+
+        @Test
+        @DisplayName("최근 주문 제품이 기존 정렬을 앞질러 맨 위로 올라온다")
+        fun recentlyOrderedProductComesFirst() {
+            val result = productRepository.searchForOrder(
+                "최근", null, null, PageRequest.of(0, 20),
+                recentOrderEmployeeId = employeeId,
+                recentOrderFrom = LocalDateTime.now().minusDays(10),
+            )
+
+            val names = result.content.map { it.product.name }
+            // 최근다_C 는 소분류코드(Z90)상 원래 맨 뒤지만 최근 주문이라 맨 앞으로 온다.
+            assertThat(names).containsExactly("최근다_C", "최근가_A", "최근나_B")
+            assertThat(result.content[0].recentlyOrdered).isTrue()
+            assertThat(result.content[1].recentlyOrdered).isFalse()
+        }
+
+        @Test
+        @DisplayName("최근주문 파라미터가 없으면 기존 정렬만 적용된다")
+        fun withoutRecentOrderParams_keepsLegacySort() {
+            val result = productRepository.searchForOrder(
+                "최근", null, null, PageRequest.of(0, 20)
+            )
+
+            val names = result.content.map { it.product.name }
+            assertThat(names).containsExactly("최근가_A", "최근나_B", "최근다_C")
+            assertThat(result.content).allMatch { !it.recentlyOrdered }
+        }
+
+        @Test
+        @DisplayName("기간 밖(10일 초과) 주문은 상단 정렬 대상이 아니다")
+        fun orderOutsideWindow_isNotRecent() {
+            val result = productRepository.searchForOrder(
+                "최근", null, null, PageRequest.of(0, 20),
+                recentOrderEmployeeId = employeeId,
+                // 주문일(3일 전)보다 뒤인 기준일 → 윈도우 밖
+                recentOrderFrom = LocalDateTime.now().minusDays(1),
+            )
+
+            val names = result.content.map { it.product.name }
+            assertThat(names).containsExactly("최근가_A", "최근나_B", "최근다_C")
+            assertThat(result.content).allMatch { !it.recentlyOrdered }
+        }
+
+        @Test
+        @DisplayName("다른 사원의 주문은 상단 정렬 대상이 아니다")
+        fun otherEmployeesOrder_isNotRecent() {
+            val result = productRepository.searchForOrder(
+                "최근", null, null, PageRequest.of(0, 20),
+                recentOrderEmployeeId = employeeId + 999,
+                recentOrderFrom = LocalDateTime.now().minusDays(10),
+            )
+
+            val names = result.content.map { it.product.name }
+            assertThat(names).containsExactly("최근가_A", "최근나_B", "최근다_C")
+            assertThat(result.content).allMatch { !it.recentlyOrdered }
         }
     }
 

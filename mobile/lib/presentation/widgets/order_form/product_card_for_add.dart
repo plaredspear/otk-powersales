@@ -95,6 +95,10 @@ class ProductCardForAdd extends StatelessWidget {
                             style: AppTypography.labelLarge,
                           ),
                         ),
+                        if (product.recentlyOrdered) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          _RecentOrderBadge(),
+                        ],
                         if (exclusiveBlocked) ...[
                           const SizedBox(width: AppSpacing.xs),
                           _ExclusiveBadge(),
@@ -186,6 +190,34 @@ class ProductCardForAdd extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 최근 주문 표시 뱃지
+///
+/// 최근 주문 이력에 포함된 제품은 검색 결과 상단으로 정렬되므로,
+/// 왜 위에 있는지 알 수 있도록 제품명 옆에 표시합니다.
+class _RecentOrderBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.otokiBlue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.otokiBlue),
+      ),
+      child: Text(
+        '최근 주문',
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.otokiBlue,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

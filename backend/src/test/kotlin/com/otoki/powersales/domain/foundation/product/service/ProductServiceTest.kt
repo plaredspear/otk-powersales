@@ -325,14 +325,14 @@ class ProductServiceTest {
         @DisplayName("페이지 크기 200(상한)까지 허용된다 — 모바일이 1회에 요청하는 건수")
         fun searchProductsForOrder_allowsMaxPageSize() {
             val page = rowPage(emptyList(), PageRequest.of(0, 200), 0)
-            every { productRepository.searchForOrder("라면", null, null, any()) } returns page
+            every { productRepository.searchForOrder("라면", null, null, any(), any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("라면", null, null, 0, 200, 1L)
 
             assertThat(result.content).isEmpty()
             verify {
-                productRepository.searchForOrder("라면", null, null, match { it.pageSize == 200 })
+                productRepository.searchForOrder("라면", null, null, match { it.pageSize == 200 }, any(), any())
             }
         }
 
@@ -355,7 +355,7 @@ class ProductServiceTest {
                 )
             )
             val page = rowPage(products, PageRequest.of(0, 30), 1)
-            every { productRepository.searchForOrder("열라면", null, null, any()) } returns page
+            every { productRepository.searchForOrder("열라면", null, null, any(), any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 1L)
@@ -381,7 +381,7 @@ class ProductServiceTest {
                 )
             )
             val page = rowPage(products, PageRequest.of(0, 30), 1)
-            every { productRepository.searchForOrder("참치", null, null, any()) } returns page
+            every { productRepository.searchForOrder("참치", null, null, any(), any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
             val result = productService.searchProductsForOrder("참치", null, null, 0, 30, 1L)
@@ -397,7 +397,7 @@ class ProductServiceTest {
                 createTestProduct("18110007", "열라면_용기115G", "18110007", "8801045570723")
             )
             val page = rowPage(products, PageRequest.of(0, 30), 2)
-            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns page
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns page
             every { favoriteProductService.getFavoriteProductCodes(7L) } returns setOf("18110007")
 
             val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 7L)
@@ -416,7 +416,7 @@ class ProductServiceTest {
                     productType = ProductType.PRODUCT_TYPE_2
                 )
             )
-            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
             every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 
@@ -434,7 +434,7 @@ class ProductServiceTest {
                     tasteGift = "x"
                 )
             )
-            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
+            every { productRepository.searchForOrder(any(), any(), any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
             every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 

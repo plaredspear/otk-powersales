@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTyp
 import com.otoki.powersales.domain.foundation.product.exception.ProductNotFoundException
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import org.springframework.data.domain.Page
+import java.time.LocalDate
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,10 +32,16 @@ class ProductService(
         /**
          * 제품검색 페이지 크기 상한.
          *
-         * 주문서 제품검색은 페이징 UI 없이 1회 조회분만 노출하므로, 모바일이 이 상한값을 그대로
-         * 요청해 한 번에 받아간다(초과분은 "검색어를 좁혀 달라" 안내로 유도).
+         * 주문서 제품검색은 무한스크롤로 페이지를 이어 받으므로 모바일은 이보다 작은 크기로
+         * 요청한다(mobile `orderProductSearchPageSize`). 이 값은 그 여유분 상한이다.
          */
         private const val MAX_PAGE_SIZE = 200
+
+        /**
+         * 주문 작성용 제품검색에서 "최근 주문" 으로 판정할 기간(일).
+         * 이 기간 내 본인이 주문한 제품은 검색 결과 상단으로 올라간다.
+         */
+        private const val RECENT_ORDER_DAYS = 10L
 
         private val NUMERIC_PATTERN = Regex("^\\d+$")
         private val VALID_SEARCH_TYPES = setOf("text", "barcode")
@@ -129,6 +136,9 @@ class ProductService(
      * @param categoryMid 중분류(category2, 선택)
      * @param categorySub 소분류(category3, 선택)
      * @param userId 인증 사용자 — 검색 행별 즐겨찾기 여부(`isFavorite`) 표시에 사용(레거시 `product_favorites` 서브쿼리 정합)
+     *
+     * 최근 [RECENT_ORDER_DAYS]일 내 본인이 주문한 제품은 결과 상단으로 정렬되고
+     * `recentlyOrdered = true` 로 표시된다(거래처 무관 — 본인 주문 전체 기준).
      */
     fun searchProductsForOrder(
         query: String,
@@ -146,12 +156,15 @@ class ProductService(
             query = query.trim(),
             category2 = categoryMid?.trim()?.ifBlank { null },
             category3 = categorySub?.trim()?.ifBlank { null },
-            pageable = pageable
+            pageable = pageable,
+            recentOrderEmployeeId = userId,
+            recentOrderFrom = LocalDate.now().minusDays(RECENT_ORDER_DAYS).atStartOfDay()
         )
 
         val favoriteCodes = favoriteProductService.getFavoriteProductCodes(userId)
         return rowPage.map { row ->
             val dto = OrderProductDto.Companion.from(row.product, row.barcode)
+                .copy(recentlyOrdered = row.recentlyOrdered)
             if (dto.productCode in favoriteCodes) dto.copy(isFavorite = true) else dto
         }
     }

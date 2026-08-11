@@ -4,6 +4,10 @@ import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.domain.foundation.product.entity.QProductBarcode.Companion.productBarcode
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
+import com.otoki.powersales.domain.activity.order.entity.QOrderRequest.Companion.orderRequest
+import com.otoki.powersales.domain.activity.order.entity.QOrderRequestProduct.Companion.orderRequestProduct
+import com.querydsl.core.types.dsl.Expressions
+import java.time.LocalDateTime
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Expression
 import com.querydsl.core.types.OrderSpecifier
@@ -22,6 +26,28 @@ class ProductRepositoryCustomImpl(
         /** 레거시 제품검색 소분류(category3) 고정 필터 값 (label.properties: 가정/업소). */
         private val ORDERABLE_CATEGORY3 = listOf("가정", "업소")
     }
+
+    /**
+     * 최근 주문 제품 여부 — 검색 결과 상단 정렬키.
+     *
+     * [employeeId] 본인이 [orderDateFrom] 이후 주문한 제품이면 true. 거래처(account) 조건은
+     * 걸지 않아 거래처 미선택 상태에서도 동작한다(주문이력 탭은 거래처 AND 라 기준이 다름).
+     * 주문 상태는 구분하지 않고 삭제분만 제외한다(주문이력 탭 findOrderHistory 와 동일).
+     */
+    private fun recentlyOrderedProduct(
+        employeeId: Long,
+        orderDateFrom: LocalDateTime,
+    ): BooleanExpression =
+        JPAExpressions.selectOne()
+            .from(orderRequestProduct)
+            .join(orderRequestProduct.orderRequest, orderRequest)
+            .where(
+                orderRequestProduct.product.id.eq(product.id),
+                orderRequest.employee.id.eq(employeeId),
+                orderRequest.orderDate.goe(orderDateFrom),
+                orderRequest.isDeleted.isNull.or(orderRequest.isDeleted.eq(false)),
+            )
+            .exists()
 
     /**
      * 모바일 제품검색(영업사원용) 고정 필터 — 레거시 productMapper.xml `selectProduct` 의
@@ -91,11 +117,19 @@ class ProductRepositoryCustomImpl(
         where: BooleanExpression,
         pageable: Pageable,
         orderBy: Array<OrderSpecifier<*>> = arrayOf(product.name.asc(), product.productCode.asc()),
+        recentlyOrdered: BooleanExpression? = null,
     ): Page<ProductSearchRow> {
         val matchedBarcode = unitMatchedBarcode()
 
+        // Hibernate 6 는 SELECT 절의 벌거벗은 exists() 를 파싱하지 못하므로 CASE 로 스칼라화한다.
+        val recentFlag: Expression<Int> = recentlyOrdered
+            ?.let {
+                Expressions.cases().`when`(it).then(1).otherwise(0)
+            }
+            ?: Expressions.asNumber(0).intValue()
+
         val rows = queryFactory
-            .select(product, matchedBarcode)
+            .select(product, matchedBarcode, recentFlag)
             .from(product)
             .where(where)
             .orderBy(*orderBy)
@@ -106,7 +140,8 @@ class ProductRepositoryCustomImpl(
         val content = rows.map { tuple ->
             ProductSearchRow(
                 product = tuple.get(product)!!,
-                barcode = tuple.get(matchedBarcode)
+                barcode = tuple.get(matchedBarcode),
+                recentlyOrdered = tuple.get(recentFlag) == 1
             )
         }
 
@@ -298,7 +333,9 @@ class ProductRepositoryCustomImpl(
         query: String,
         category2: String?,
         category3: String?,
-        pageable: Pageable
+        pageable: Pageable,
+        recentOrderEmployeeId: Long?,
+        recentOrderFrom: LocalDateTime?
     ): Page<ProductSearchRow> {
         // 레거시 주문 `searchWord`: name OR productCode OR 소비자 바코드(ProductBarcode.barcode) OR LIKE.
         val lowerPattern = "%${query.lowercase()}%"
@@ -326,12 +363,31 @@ class ProductRepositoryCustomImpl(
             where = where.and(product.productCategory3.eq(category3))
         }
 
-        // 레거시 `selectProduct` 정렬: `ORDER BY categorycode3, productcode`.
-        return pagedSearch(
-            where,
-            pageable,
-            orderBy = arrayOf(product.categoryCode3.asc(), product.productCode.asc()),
+        // 최근 주문 제품을 상단으로 올린다(요청 시에만). 그 뒤로는 레거시
+        // `selectProduct` 정렬 `ORDER BY categorycode3, productcode` 를 그대로 유지한다.
+        val recentlyOrdered =
+            if (recentOrderEmployeeId != null && recentOrderFrom != null) {
+                recentlyOrderedProduct(recentOrderEmployeeId, recentOrderFrom)
+            } else {
+                null
+            }
+
+        val legacyOrder = arrayOf<OrderSpecifier<*>>(
+            product.categoryCode3.asc(),
+            product.productCode.asc(),
         )
+        // desc: 최근주문(1)이 먼저. SELECT 절과 동일하게 CASE 로 스칼라화한다
+        // (Hibernate 6 는 벌거벗은 exists() 를 ORDER BY/SELECT 에서 파싱하지 못한다).
+        val orderBy = if (recentlyOrdered != null) {
+            arrayOf(
+                Expressions.cases().`when`(recentlyOrdered).then(1).otherwise(0).desc(),
+                *legacyOrder,
+            )
+        } else {
+            legacyOrder
+        }
+
+        return pagedSearch(where, pageable, orderBy = orderBy, recentlyOrdered = recentlyOrdered)
     }
 
     override fun findOrderRowsByProductCodes(productCodes: Collection<String>): List<ProductSearchRow> {
