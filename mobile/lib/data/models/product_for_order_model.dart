@@ -161,7 +161,7 @@ class ProductForOrderModel {
 ///
 /// backend `ProductService.MAX_PAGE_SIZE` 이하여야 한다 — 초과하면 서버가 400 을
 /// 반환한다. 스크롤을 이어가며 전건까지 로드하므로 이 값은 상한이 아니라 로드 단위다.
-const int orderProductSearchPageSize = 50;
+const int orderProductSearchPageSize = 100;
 
 /// 주문용 제품 검색 결과 API 모델 — 목록 + 서버 집계 전체 건수.
 class ProductSearchResultModel {
