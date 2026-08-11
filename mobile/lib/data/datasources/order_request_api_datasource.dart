@@ -148,11 +148,12 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
   }) async {
     final queryParameters = <String, dynamic>{
       'query': query,
-      'page': 0,
-      'size': orderProductSearchPageLimit,
+      'page': page,
+      'size': orderProductSearchPageSize,
     };
     if (categoryMid != null && categoryMid.isNotEmpty) {
       queryParameters['categoryMid'] = categoryMid;
@@ -166,21 +167,22 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
       queryParameters: queryParameters,
     );
 
-    final page = response.data['data'] as Map<String, dynamic>;
-    final content = (page['content'] as List<dynamic>?) ?? const [];
+    final pageData = response.data['data'] as Map<String, dynamic>;
+    final content = (pageData['content'] as List<dynamic>?) ?? const [];
     final products = content
         .map((raw) =>
             ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
         .toList();
 
-    // totalElements 는 서버가 집계한 전체 건수 — 상한 초과 판별에 쓴다.
-    // 누락 시 목록 길이로 폴백해 "초과 아님"으로 안전하게 판정한다.
+    // totalElements 는 서버가 집계한 전체 건수 — 다음 페이지 존재 판별에 쓴다.
+    // 누락 시 "받은 만큼이 전부"로 폴백해 무한 재요청을 막는다.
     final totalCount =
-        (page['totalElements'] as num?)?.toInt() ?? products.length;
+        (pageData['totalElements'] as num?)?.toInt() ?? products.length;
 
     return ProductSearchResultModel(
       products: products,
       totalCount: totalCount,
+      page: page,
     );
   }
 

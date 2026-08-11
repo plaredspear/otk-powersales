@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
+import '../../providers/add_product_state.dart';
 import '../../providers/product_add_provider.dart';
 import '../common/loading_indicator.dart';
 import '../common/single_select_sheet.dart';
@@ -37,6 +38,9 @@ class SearchProductsTab extends ConsumerStatefulWidget {
   ConsumerState<SearchProductsTab> createState() => _SearchProductsTabState();
 }
 
+/// 목록 끝에서 이 거리(px) 안으로 들어오면 다음 페이지를 미리 요청한다.
+const double _loadMoreThreshold = 200;
+
 class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
@@ -44,6 +48,9 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
   @override
   void initState() {
     super.initState();
+    // 무한스크롤 — 하단 근처에 닿으면 다음 페이지를 이어 붙인다.
+    // controller 는 부모 소유라 리스너만 등록/해제한다(dispose 는 부모 책임).
+    widget.scrollController.addListener(_onScroll);
     if (widget.showCategoryFilter) {
       // 분류 드롭다운 소스 로드(기존 제품추가 카테고리 인프라 재사용).
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,9 +61,24 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
 
   @override
   void dispose() {
+    widget.scrollController.removeListener(_onScroll);
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// 목록 끝에서 [_loadMoreThreshold] 픽셀 이내로 스크롤되면 다음 페이지를 요청한다.
+  /// 중복 호출 방지는 provider 쪽 가드(isLoadingMore/hasMore)가 담당한다.
+  void _onScroll() {
+    // scrollController 는 바텀시트가 탭 3개에 공유하므로, 검색 탭이 활성일 때만
+    // 추가 로드한다(즐겨찾기/주문이력 탭 스크롤로 검색 페이지가 늘지 않도록).
+    if (ref.read(addProductProvider).currentTab != AddProductTab.search) return;
+    if (!widget.scrollController.hasClients) return;
+
+    final position = widget.scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - _loadMoreThreshold) {
+      ref.read(addProductProvider.notifier).loadMoreSearchResults();
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -241,71 +263,22 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
       );
     }
 
-    // 상한 초과 시 목록 마지막에 안내 행을 한 칸 더 붙인다.
-    final isTruncated = state.isSearchTruncated as bool;
-
-    return Column(
-      children: [
-        if (isTruncated)
-          _buildTruncatedBanner(
-            state.searchTotalCount as int,
-            state.searchPageLimit as int,
-          ),
-        Expanded(
-          child: _buildResultList(state, results, isTruncated),
-        ),
-      ],
-    );
+    return _buildResultList(state, results);
   }
 
-  /// 검색 결과가 상한을 넘었을 때 목록 위에 고정 노출하는 배너.
-  Widget _buildTruncatedBanner(int totalCount, int pageLimit) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.sm,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.warning_amber_rounded,
-              size: 18, color: AppColors.warning),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              '검색 결과가 많습니다($totalCount건). '
-              '상위 $pageLimit건만 표시되니 검색어를 좁혀 주세요.',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildResultList(dynamic state, List results) {
+    final hasMore = state.hasMoreSearchResults as bool;
+    final isLoadingMore = state.isLoadingMore as bool;
+    // 더 불러올 결과가 있거나 로드 중이면 목록 끝에 상태 행을 한 칸 붙인다.
+    final showFooter = hasMore || isLoadingMore;
 
-  Widget _buildResultList(dynamic state, List results, bool isTruncated) {
     return ListView.builder(
       controller: widget.scrollController,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      itemCount: results.length + (isTruncated ? 1 : 0),
+      itemCount: results.length + (showFooter ? 1 : 0),
       itemBuilder: (context, index) {
-        // 상한 초과 시 마지막 인덱스는 제품이 아니라 하단 안내 행이다.
-        if (isTruncated && index == results.length) {
-          return _buildTruncatedFooter();
+        if (showFooter && index == results.length) {
+          return _buildLoadMoreFooter();
         }
         final product = results[index];
         return ProductCardForAdd(
@@ -334,28 +307,20 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
     );
   }
 
-  /// 목록 최하단 안내 행 — 스크롤을 끝까지 내린 사용자에게 검색어 구체화를 유도한다.
-  Widget _buildTruncatedFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, size: 16, color: AppColors.textTertiary),
-          const SizedBox(width: AppSpacing.sm),
-          Flexible(
-            child: Text(
-              '찾는 제품이 없다면 검색어를 더 구체적으로 입력해 주세요.',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
+  /// 목록 최하단 로딩 행 — 다음 페이지를 불러오는 동안 노출한다.
+  Widget _buildLoadMoreFooter() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       ),
     );
   }
+
 }
 
 /// 분류 필터 — 탭하면 바텀시트(SingleSelectSheet)로 단일 선택.

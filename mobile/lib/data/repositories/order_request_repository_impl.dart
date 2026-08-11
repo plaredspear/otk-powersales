@@ -87,13 +87,19 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
+    int loadedCount = 0,
   }) async {
     final result = await _remoteDataSource.searchProductsForOrder(
       query: query,
       categoryMid: categoryMid,
       categorySub: categorySub,
+      page: page,
     );
-    return result.toEntity();
+    // 이전 페이지까지 누적분 + 이번 페이지 = 총 로드 건수 (hasMore 판정 기준).
+    return result.toEntity(
+      loadedCount: loadedCount + result.products.length,
+    );
   }
 
   @override

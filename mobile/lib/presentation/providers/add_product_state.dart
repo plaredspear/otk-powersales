@@ -60,14 +60,21 @@ class AddProductState {
   /// 즐겨찾기 제품 목록
   final List<ProductForOrder> favoriteProducts;
 
-  /// 검색 결과 제품 목록 (1회 조회 상한까지만 담긴다)
+  /// 검색 결과 제품 목록 (무한스크롤로 페이지를 이어붙인 누적 목록)
   final List<ProductForOrder> searchResults;
 
   /// 검색 조건에 매칭되는 전체 건수 (서버 집계값 — [searchResults] 길이와 다를 수 있음)
   final int searchTotalCount;
 
-  /// 검색 1회 조회 상한. 0 이면 미검색 상태.
-  final int searchPageLimit;
+  /// 마지막으로 로드한 검색 페이지 번호 (0-based)
+  final int searchPage;
+
+  /// 서버에 더 불러올 제품이 남아 있는지 여부
+  final bool hasMoreSearchResults;
+
+  /// 다음 페이지 추가 로드 중인지 여부.
+  /// 최초 검색([isLoading])과 구분해야 목록을 유지한 채 하단 스피너만 노출할 수 있다.
+  final bool isLoadingMore;
 
   /// 주문 이력 그룹 목록
   final List<OrderHistoryGroup> orderHistoryGroups;
@@ -109,7 +116,9 @@ class AddProductState {
     this.favoriteProducts = const [],
     this.searchResults = const [],
     this.searchTotalCount = 0,
-    this.searchPageLimit = 0,
+    this.searchPage = 0,
+    this.hasMoreSearchResults = false,
+    this.isLoadingMore = false,
     this.orderHistoryGroups = const [],
     this.selectedProductCodes = const {},
     this.multiSelect = true,
@@ -170,11 +179,6 @@ class AddProductState {
     }
   }
 
-  /// 검색 결과가 1회 조회 상한을 초과해 일부만 노출되고 있는지 여부.
-  /// 상한을 넘으면 화면에서 "검색어를 좁혀 달라" 안내를 노출한다.
-  bool get isSearchTruncated =>
-      searchPageLimit > 0 && searchTotalCount > searchPageLimit;
-
   /// 특정 제품이 선택되었는지 확인
   bool isProductSelected(String productCode) {
     return selectedProductCodes.contains(productCode);
@@ -185,7 +189,9 @@ class AddProductState {
     List<ProductForOrder>? favoriteProducts,
     List<ProductForOrder>? searchResults,
     int? searchTotalCount,
-    int? searchPageLimit,
+    int? searchPage,
+    bool? hasMoreSearchResults,
+    bool? isLoadingMore,
     List<OrderHistoryGroup>? orderHistoryGroups,
     Set<String>? selectedProductCodes,
     bool? multiSelect,
@@ -206,7 +212,10 @@ class AddProductState {
       favoriteProducts: favoriteProducts ?? this.favoriteProducts,
       searchResults: searchResults ?? this.searchResults,
       searchTotalCount: searchTotalCount ?? this.searchTotalCount,
-      searchPageLimit: searchPageLimit ?? this.searchPageLimit,
+      searchPage: searchPage ?? this.searchPage,
+      hasMoreSearchResults:
+          hasMoreSearchResults ?? this.hasMoreSearchResults,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       orderHistoryGroups: orderHistoryGroups ?? this.orderHistoryGroups,
       selectedProductCodes: selectedProductCodes ?? this.selectedProductCodes,
       multiSelect: multiSelect ?? this.multiSelect,

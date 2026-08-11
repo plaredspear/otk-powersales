@@ -157,30 +157,36 @@ class ProductForOrderModel {
   }
 }
 
-/// 주문서 제품검색 1회 조회 상한.
+/// 주문서 제품검색 페이지 크기 (무한스크롤 1회 로드 건수).
 ///
-/// 주문서 제품검색은 페이징 UI 가 없어 이 건수까지만 노출한다(backend
-/// `ProductService.MAX_PAGE_SIZE` 와 동일 값 — 초과 시 서버가 400 을 반환하므로
-/// 양쪽을 함께 올려야 한다). 초과분은 "검색어를 좁혀 달라" 안내로 유도한다.
-const int orderProductSearchPageLimit = 200;
+/// backend `ProductService.MAX_PAGE_SIZE` 이하여야 한다 — 초과하면 서버가 400 을
+/// 반환한다. 스크롤을 이어가며 전건까지 로드하므로 이 값은 상한이 아니라 로드 단위다.
+const int orderProductSearchPageSize = 50;
 
 /// 주문용 제품 검색 결과 API 모델 — 목록 + 서버 집계 전체 건수.
 class ProductSearchResultModel {
   final List<ProductForOrderModel> products;
 
-  /// 검색 조건에 매칭되는 전체 건수 (목록 길이와 다를 수 있음)
+  /// 검색 조건에 매칭되는 전체 건수
   final int totalCount;
+
+  /// 이번 응답의 페이지 번호 (0-based)
+  final int page;
 
   const ProductSearchResultModel({
     required this.products,
     required this.totalCount,
+    required this.page,
   });
 
-  ProductSearchResult toEntity() {
+  /// [loadedCount] 는 이전 페이지까지 누적분을 포함한 총 로드 건수.
+  /// 생략하면 이번 페이지만 로드된 것으로 본다(첫 페이지).
+  ProductSearchResult toEntity({int? loadedCount}) {
     return ProductSearchResult(
       products: products.map((m) => m.toEntity()).toList(),
       totalCount: totalCount,
-      pageLimit: orderProductSearchPageLimit,
+      page: page,
+      loadedCount: loadedCount ?? products.length,
     );
   }
 }

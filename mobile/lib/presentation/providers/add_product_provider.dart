@@ -63,6 +63,11 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   /// 거래처가 선택된 화면에서만 주입되며, 없으면 주문이력 탭은 항상 비어 있다.
   int? _orderHistoryAccountId;
 
+  /// 마지막 검색에 사용한 분류 조건 — 무한스크롤 추가 로드 시 동일 조건으로 재요청한다.
+  /// (검색어는 state.searchQuery 에 남지만 분류는 화면 상태라 여기서 보관한다.)
+  String? _searchCategoryMid;
+  String? _searchCategorySub;
+
   AddProductNotifier({
     required GetFavoriteProducts getFavoriteProducts,
     required SearchProductsForOrder searchProductsForOrder,
@@ -204,11 +209,16 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       state = state.copyWith(
         searchResults: [],
         searchTotalCount: 0,
-        searchPageLimit: 0,
+        searchPage: 0,
+        hasMoreSearchResults: false,
+        isLoadingMore: false,
       );
       return;
     }
 
+    // 새 검색은 항상 첫 페이지부터 — 이전 검색의 누적 결과/페이지를 버린다.
+    _searchCategoryMid = categoryMid;
+    _searchCategorySub = categorySub;
     state = state.toLoading();
 
     try {
@@ -221,12 +231,49 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         isLoading: false,
         searchResults: result.products,
         searchTotalCount: result.totalCount,
-        searchPageLimit: result.pageLimit,
+        searchPage: result.page,
+        hasMoreSearchResults: result.hasMore,
+        isLoadingMore: false,
         clearError: true,
       );
     } catch (e) {
       state = state.toError(
         extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// 검색 결과 다음 페이지 로드 (무한스크롤).
+  ///
+  /// 이미 로딩 중이거나 더 불러올 결과가 없으면 아무것도 하지 않는다.
+  /// 추가 로드 실패는 기존 목록을 유지한 채 에러 메시지만 노출한다(누적분 보존).
+  Future<void> loadMoreSearchResults() async {
+    if (state.isLoading || state.isLoadingMore || !state.hasMoreSearchResults) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingMore: true);
+
+    try {
+      final result = await _searchProductsForOrder.call(
+        query: state.searchQuery,
+        categoryMid: _searchCategoryMid,
+        categorySub: _searchCategorySub,
+        page: state.searchPage + 1,
+        loadedCount: state.searchResults.length,
+      );
+      state = state.copyWith(
+        isLoadingMore: false,
+        searchResults: [...state.searchResults, ...result.products],
+        searchTotalCount: result.totalCount,
+        searchPage: result.page,
+        hasMoreSearchResults: result.hasMore,
+        clearError: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        errorMessage: extractErrorMessage(e),
       );
     }
   }

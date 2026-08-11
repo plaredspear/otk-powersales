@@ -89,6 +89,7 @@ abstract class OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page,
   });
 
   /// GET /api/v1/mobile/me/order-requests/product-history

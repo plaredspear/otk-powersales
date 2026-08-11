@@ -126,6 +126,8 @@ class _MockOrderRepository implements OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
+    int loadedCount = 0,
   }) {
     throw UnimplementedError();
   }

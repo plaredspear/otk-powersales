@@ -127,19 +127,25 @@ class FakeOrderRemoteDataSource implements OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
   }) async {
     searchProductsForOrderCalls++;
     lastSearchQuery = query;
     lastSearchCategoryMid = categoryMid;
     lastSearchCategorySub = categorySub;
+    lastSearchPage = page;
     return ProductSearchResultModel(
       products: searchResultsToReturn,
       totalCount: searchTotalCountToReturn ?? searchResultsToReturn.length,
+      page: page,
     );
   }
 
-  /// 검색 전체 건수 override — 상한 초과 시나리오 재현용.
+  /// 검색 전체 건수 override — hasMore 판정 시나리오 재현용.
   int? searchTotalCountToReturn;
+
+  /// 마지막 요청 페이지 번호
+  int? lastSearchPage;
 
   @override
   Future<void> addToFavorites({required String productCode}) async {

@@ -71,7 +71,7 @@ class _MockOrderRepository implements OrderRequestRepository {
   }
 
   @override
-  Future<ProductSearchResult> searchProductsForOrder({required String query, String? categoryMid, String? categorySub}) {
+  Future<ProductSearchResult> searchProductsForOrder({required String query, String? categoryMid, String? categorySub, int page = 0, int loadedCount = 0}) {
     throw UnimplementedError();
   }
 

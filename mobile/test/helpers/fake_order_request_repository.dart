@@ -767,18 +767,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     return const <ProductOrderHistoryGroup>[];
   }
 
-  /// 검색 전체 건수 override — 상한 초과(truncated) 시나리오 재현용.
-  /// null 이면 실제 반환 목록 길이를 전체 건수로 쓴다.
-  int? searchTotalCountOverride;
-
-  /// 검색 1회 조회 상한 — 초과 판정 기준.
-  int searchPageLimit = 200;
+  /// 검색 페이지 크기 — 무한스크롤 페이지 분할 재현용.
+  int searchPageSize = 50;
 
   @override
   Future<ProductSearchResult> searchProductsForOrder({
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
+    int loadedCount = 0,
   }) async {
     await _simulateDelay();
     var results = _mockProducts.where((p) {
@@ -795,15 +793,25 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     }
 
     // 즐겨찾기 상태 반영
-    final products = results
+    final all = results
         .map((p) => p.copyWith(
             isFavorite: _favoriteProductCodes.contains(p.productCode)))
         .toList();
 
+    // 요청 페이지 구간만 잘라 반환한다(실제 서버 페이징 재현).
+    final start = page * searchPageSize;
+    final products = start >= all.length
+        ? <ProductForOrder>[]
+        : all.sublist(
+            start,
+            (start + searchPageSize).clamp(0, all.length),
+          );
+
     return ProductSearchResult(
       products: products,
-      totalCount: searchTotalCountOverride ?? products.length,
-      pageLimit: searchPageLimit,
+      totalCount: all.length,
+      page: page,
+      loadedCount: loadedCount + products.length,
     );
   }
 

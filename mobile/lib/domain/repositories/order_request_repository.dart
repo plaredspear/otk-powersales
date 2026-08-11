@@ -118,6 +118,8 @@ abstract class OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page,
+    int loadedCount,
   });
 
   /// 즐겨찾기 추가

@@ -303,9 +303,9 @@ void main() {
         expect(result.products[0].productType, 'EXCLUSIVE');
         expect(result.products[0].tasteGiftType, 'TASTING_GIFT');
         expect(result.totalCount, 1);
-        // 엔티티 변환 시 상한이 실려 초과 판정이 가능해진다.
-        expect(result.toEntity().pageLimit, orderProductSearchPageLimit);
-        expect(result.toEntity().isTruncated, false);
+        expect(result.page, 0);
+        // 전건(1건)을 받았으므로 더 불러올 페이지가 없다.
+        expect(result.toEntity().hasMore, false);
         expect(capturedParams!['query'], '열라면');
       });
 
@@ -338,8 +338,8 @@ void main() {
 
         expect(capturedParams!['categoryMid'], '봉지면');
         expect(capturedParams!['categorySub'], '가정');
-        // 주문서 제품검색은 페이징 UI 가 없어 상한 건수를 1회에 요청한다.
-        expect(capturedParams!['size'], orderProductSearchPageLimit);
+        // 무한스크롤 — 페이지 크기 단위로 요청하고 page 로 이어 받는다.
+        expect(capturedParams!['size'], orderProductSearchPageSize);
         expect(capturedParams!['page'], 0);
       });
     });

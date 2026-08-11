@@ -152,55 +152,152 @@ void main() {
         expect(fakeRepo.searchProductsCalled, false);
       });
 
-      test('전체 건수가 상한 이하면 isSearchTruncated=false', () async {
-        // Arrange - 전체 200건, 상한 200건 (경계값: 초과 아님)
+      test('더 불러올 결과가 없으면 hasMoreSearchResults=false', () async {
+        // Arrange - 전체 1건, 첫 페이지에 1건 (전부 로드됨)
         fakeRepo.searchProductsResult = [
           _createTestProduct(productCode: 'P001'),
         ];
-        fakeRepo.searchPageLimit = 200;
-        fakeRepo.searchTotalCountOverride = 200;
 
         // Act
         await notifier.searchProducts(query: '라면');
 
         // Assert
-        expect(notifier.state.searchTotalCount, 200);
-        expect(notifier.state.searchPageLimit, 200);
-        expect(notifier.state.isSearchTruncated, false);
+        expect(notifier.state.searchTotalCount, 1);
+        expect(notifier.state.searchPage, 0);
+        expect(notifier.state.hasMoreSearchResults, false);
       });
 
-      test('전체 건수가 상한을 초과하면 isSearchTruncated=true', () async {
-        // Arrange - 전체 201건, 상한 200건
+      test('전체 건수가 로드분보다 많으면 hasMoreSearchResults=true', () async {
+        // Arrange - 첫 페이지 1건인데 전체는 5건
         fakeRepo.searchProductsResult = [
           _createTestProduct(productCode: 'P001'),
         ];
-        fakeRepo.searchPageLimit = 200;
-        fakeRepo.searchTotalCountOverride = 201;
+        fakeRepo.searchTotalCountOverride = 5;
 
         // Act
         await notifier.searchProducts(query: '라면');
 
         // Assert
-        expect(notifier.state.searchTotalCount, 201);
-        expect(notifier.state.isSearchTruncated, true);
+        expect(notifier.state.searchTotalCount, 5);
+        expect(notifier.state.hasMoreSearchResults, true);
       });
 
-      test('빈 검색어로 클리어하면 초과 상태도 해제된다', () async {
-        // Arrange - 먼저 초과 상태를 만든다
+      test('빈 검색어로 클리어하면 페이지 상태도 초기화된다', () async {
+        // Arrange - 먼저 더 불러올 게 있는 상태를 만든다
         fakeRepo.searchProductsResult = [
           _createTestProduct(productCode: 'P001'),
         ];
         fakeRepo.searchTotalCountOverride = 500;
         await notifier.searchProducts(query: '라면');
-        expect(notifier.state.isSearchTruncated, true);
+        expect(notifier.state.hasMoreSearchResults, true);
 
         // Act
         await notifier.searchProducts(query: '');
 
         // Assert
         expect(notifier.state.searchTotalCount, 0);
-        expect(notifier.state.searchPageLimit, 0);
-        expect(notifier.state.isSearchTruncated, false);
+        expect(notifier.state.searchPage, 0);
+        expect(notifier.state.hasMoreSearchResults, false);
+      });
+    });
+
+    group('loadMoreSearchResults (무한스크롤)', () {
+      test('다음 페이지를 기존 목록 뒤에 이어붙인다', () async {
+        // Arrange - 2페이지로 나뉜 전체 4건
+        fakeRepo.pagedSearchResults = [
+          [
+            _createTestProduct(productCode: 'P001'),
+            _createTestProduct(productCode: 'P002'),
+          ],
+          [
+            _createTestProduct(productCode: 'P003'),
+            _createTestProduct(productCode: 'P004'),
+          ],
+        ];
+        await notifier.searchProducts(query: '라면');
+        expect(notifier.state.searchResults.length, 2);
+        expect(notifier.state.hasMoreSearchResults, true);
+
+        // Act
+        await notifier.loadMoreSearchResults();
+
+        // Assert - 누적 4건, 페이지 1, 전건 로드 완료
+        expect(notifier.state.searchResults.length, 4);
+        expect(
+          notifier.state.searchResults.map((p) => p.productCode),
+          ['P001', 'P002', 'P003', 'P004'],
+        );
+        expect(notifier.state.searchPage, 1);
+        expect(notifier.state.hasMoreSearchResults, false);
+        expect(notifier.state.isLoadingMore, false);
+      });
+
+      test('추가 로드 시 다음 페이지 번호와 누적 건수를 넘긴다', () async {
+        // Arrange
+        fakeRepo.pagedSearchResults = [
+          [_createTestProduct(productCode: 'P001')],
+          [_createTestProduct(productCode: 'P002')],
+        ];
+        await notifier.searchProducts(query: '라면');
+
+        // Act
+        await notifier.loadMoreSearchResults();
+
+        // Assert
+        expect(fakeRepo.lastSearchPage, 1);
+        expect(fakeRepo.lastLoadedCount, 1);
+      });
+
+      test('더 불러올 결과가 없으면 API 를 호출하지 않는다', () async {
+        // Arrange - 전체 1건이라 첫 페이지로 끝
+        fakeRepo.searchProductsResult = [
+          _createTestProduct(productCode: 'P001'),
+        ];
+        await notifier.searchProducts(query: '라면');
+        expect(notifier.state.hasMoreSearchResults, false);
+        final callsAfterSearch = fakeRepo.searchProductsCallCount;
+
+        // Act
+        await notifier.loadMoreSearchResults();
+
+        // Assert
+        expect(fakeRepo.searchProductsCallCount, callsAfterSearch);
+      });
+
+      test('추가 로드 실패 시 기존 목록을 유지하고 에러만 노출한다', () async {
+        // Arrange - 첫 페이지 성공 후 다음 호출부터 실패
+        fakeRepo.pagedSearchResults = [
+          [_createTestProduct(productCode: 'P001')],
+          [_createTestProduct(productCode: 'P002')],
+        ];
+        await notifier.searchProducts(query: '라면');
+        fakeRepo.shouldThrowOnSearch = true;
+
+        // Act
+        await notifier.loadMoreSearchResults();
+
+        // Assert - 누적분 보존
+        expect(notifier.state.searchResults.length, 1);
+        expect(notifier.state.errorMessage, isNotNull);
+        expect(notifier.state.isLoadingMore, false);
+      });
+
+      test('새 검색을 하면 이전 누적 결과를 버리고 첫 페이지부터 다시 로드한다', () async {
+        // Arrange - 2페이지까지 로드한 상태
+        fakeRepo.pagedSearchResults = [
+          [_createTestProduct(productCode: 'P001')],
+          [_createTestProduct(productCode: 'P002')],
+        ];
+        await notifier.searchProducts(query: '라면');
+        await notifier.loadMoreSearchResults();
+        expect(notifier.state.searchResults.length, 2);
+
+        // Act - 새 검색
+        await notifier.searchProducts(query: '진라면');
+
+        // Assert - 첫 페이지 결과만 남는다
+        expect(notifier.state.searchResults.length, 1);
+        expect(notifier.state.searchPage, 0);
       });
 
       test('카테고리 필터와 함께 검색', () async {
@@ -761,11 +858,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   List<ProductForOrder> favoriteProductsResult = [];
   List<ProductForOrder> searchProductsResult = [];
 
-  /// 검색 전체 건수 override — 상한 초과(truncated) 시나리오 재현용.
+  /// 검색 전체 건수 override — hasMore 판정 시나리오 재현용.
   int? searchTotalCountOverride;
 
-  /// 검색 1회 조회 상한 — 초과 판정 기준.
-  int searchPageLimit = 200;
+  /// 페이지별 검색 결과 — 무한스크롤 추가 로드 재현용.
+  /// null 이면 [searchProductsResult] 를 0페이지 결과로 쓴다.
+  List<List<ProductForOrder>>? pagedSearchResults;
+
+  int searchProductsCallCount = 0;
+  int? lastSearchPage;
+  int? lastLoadedCount;
   bool shouldThrowOnFavorites = false;
   bool shouldThrowOnSearch = false;
   bool shouldThrowOnAddFavorites = false;
@@ -795,16 +897,32 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
+    int page = 0,
+    int loadedCount = 0,
   }) async {
     searchProductsCalled = true;
+    searchProductsCallCount++;
     lastSearchQuery = query;
     lastCategoryMid = categoryMid;
     lastCategorySub = categorySub;
+    lastSearchPage = page;
+    lastLoadedCount = loadedCount;
     if (shouldThrowOnSearch) throw Exception(errorMessage);
+
+    // 페이지별 결과를 지정했으면 그것을, 아니면 searchProductsResult 를 0페이지로 쓴다.
+    final products = pagedSearchResults != null
+        ? (page < pagedSearchResults!.length
+            ? pagedSearchResults![page]
+            : <ProductForOrder>[])
+        : (page == 0 ? searchProductsResult : <ProductForOrder>[]);
+
     return ProductSearchResult(
-      products: searchProductsResult,
-      totalCount: searchTotalCountOverride ?? searchProductsResult.length,
-      pageLimit: searchPageLimit,
+      products: products,
+      totalCount: searchTotalCountOverride ??
+          (pagedSearchResults?.expand((e) => e).length ??
+              searchProductsResult.length),
+      page: page,
+      loadedCount: loadedCount + products.length,
     );
   }
 
