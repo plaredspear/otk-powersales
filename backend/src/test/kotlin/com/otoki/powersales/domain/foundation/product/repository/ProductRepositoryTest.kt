@@ -277,7 +277,8 @@ class ProductRepositoryTest {
         category2: String? = null,
         category3: String? = "가정",
         unit: String = "EA",
-        productStatus: ProductStatus? = null
+        productStatus: ProductStatus? = null,
+        categoryCode3: String? = null
     ): Product {
         return Product(
             name = productName,
@@ -289,7 +290,8 @@ class ProductRepositoryTest {
             productCategory2 = category2,
             productCategory3 = category3,
             unit = unit,
-            productStatus = productStatus
+            productStatus = productStatus,
+            categoryCode3 = categoryCode3
         )
     }
 
@@ -425,6 +427,62 @@ class ProductRepositoryTest {
         @DisplayName("빈 코드 목록 → 빈 결과")
         fun emptyInput() {
             assertThat(productRepository.findOrderRowsByProductCodes(emptyList())).isEmpty()
+        }
+    }
+
+    // ========== 주문서 제품검색 정렬 (레거시 selectProduct ORDER BY 이식) ==========
+
+    @Nested
+    @DisplayName("주문서 제품검색 정렬 - 레거시 ORDER BY categorycode3, productcode")
+    inner class OrderSearchSortTests {
+
+        /**
+         * 제품명 정렬과 소분류코드 정렬의 결과 순서가 어긋나도록 배치한다.
+         * 제품명 가나다순: 정렬가_A → 정렬나_B → 정렬다_C
+         * 소분류코드,제품코드순: 정렬다_C(A10) → 정렬나_B(B20/70000002) → 정렬가_A(B20/70000003)
+         */
+        @BeforeEach
+        fun setUpSortFixtures() {
+            val fixtures = listOf(
+                Triple("정렬가_A", "70000003", "B20"),
+                Triple("정렬나_B", "70000002", "B20"),
+                Triple("정렬다_C", "70000001", "A10"),
+            )
+            fixtures.forEach { (name, code, categoryCode3) ->
+                val saved = testEntityManager.persistAndFlush(
+                    createProduct(
+                        productName = name,
+                        productCode = code,
+                        logisticsBarcode = "999$code",
+                        category2 = "정렬중분류",
+                        unit = "EA",
+                        categoryCode3 = categoryCode3
+                    )
+                )
+                testEntityManager.persistAndFlush(createBarcode(saved.id, "EA", "880$code"))
+            }
+            testEntityManager.clear()
+        }
+
+        @Test
+        @DisplayName("searchForOrder - 소분류코드 → 제품코드 오름차순으로 정렬된다 (제품명순 아님)")
+        fun searchForOrder_sortedByCategoryCode3ThenProductCode() {
+            val result = productRepository.searchForOrder("정렬", null, null, PageRequest.of(0, 20))
+
+            // 제품명 가나다순이면 정렬가_A 가 먼저 나오므로, 이 기대값은 제품명 정렬로 회귀하면 깨진다.
+            val names = result.content.map { it.product.name }
+            assertThat(names).containsExactly("정렬다_C", "정렬나_B", "정렬가_A")
+        }
+
+        @Test
+        @DisplayName("searchByFilter - 소분류코드 → 제품코드 오름차순으로 정렬된다")
+        fun searchByFilter_sortedByCategoryCode3ThenProductCode() {
+            val result = productRepository.searchByFilter(
+                null, null, "정렬중분류", null, PageRequest.of(0, 20)
+            )
+
+            val names = result.content.map { it.product.name }
+            assertThat(names).containsExactly("정렬다_C", "정렬나_B", "정렬가_A")
         }
     }
 

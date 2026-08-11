@@ -326,7 +326,12 @@ class ProductRepositoryCustomImpl(
             where = where.and(product.productCategory3.eq(category3))
         }
 
-        return pagedSearch(where, pageable)
+        // 레거시 `selectProduct` 정렬: `ORDER BY categorycode3, productcode`.
+        return pagedSearch(
+            where,
+            pageable,
+            orderBy = arrayOf(product.categoryCode3.asc(), product.productCode.asc()),
+        )
     }
 
     override fun findOrderRowsByProductCodes(productCodes: Collection<String>): List<ProductSearchRow> {
