@@ -101,7 +101,8 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
   const handleDownload = async (id: number) => {
     try {
       const detail = await fetchAppPackageDetail(id);
-      // iOS 는 .ipa 직접 다운로드로 설치 불가. 고정 OTA 설치 안내 페이지(API public 도메인)를 새 탭으로 연다.
+      // iOS 는 .ipa 직접 다운로드로 설치 불가. 해당 버전의 OTA 설치 안내 페이지(API public 도메인)를
+      // 새 탭으로 연다 — Android 가 그 행 버전의 presigned URL 을 여는 것과 대응.
       if (platform === 'IOS') {
         if (!detail.iosInstallUrl) {
           message.warning('설치 링크를 사용할 수 없습니다 (API 도메인 미설정 환경)');
@@ -120,16 +121,19 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
   const handleCopyUrl = async (id: number) => {
     try {
       const detail = await fetchAppPackageDetail(id);
-      // iOS 는 고정 설치 안내 페이지 URL(API public 도메인)을 복사한다. 새 버전 배포 후 "최신 지정"만
-      // 하면 같은 링크가 신버전을 가리키므로 사번 전체에 1회만 공지하면 된다. 카톡/문자로 공유하면
-      // 받는 사람이 클릭 → Safari → "설치" 버튼으로 OTA 설치. 링크는 만료되지 않는다.
+      // iOS 는 해당 버전의 OTA 설치 안내 페이지 URL(API public 도메인)을 복사한다. 카톡/문자로
+      // 공유하면 받는 사람이 클릭 → Safari → "설치" 버튼으로 OTA 설치.
+      // Android presigned URL 과 달리 만료되지 않는다 — IPA presigned URL 은 페이지가 fetch 하는
+      // manifest 가 그때그때 새로 발급하므로 페이지 링크 자체에는 TTL 이 없다.
       if (platform === 'IOS') {
         if (!detail.iosInstallUrl) {
           message.warning('설치 링크를 사용할 수 없습니다 (API 도메인 미설정 환경)');
           return;
         }
         await copyToClipboard(detail.iosInstallUrl);
-        message.success('고정 설치 링크가 복사되었습니다 — 사번 전체에 공지해 설치할 수 있습니다');
+        message.success(
+          `${detail.versionName} 설치 링크가 복사되었습니다 — iPhone Safari 에서 열면 이 버전이 설치됩니다`,
+        );
         return;
       }
       // Android: presigned URL 을 새로 발급받아 클립보드에 복사. URL 은 발급 시점부터 TTL 동안만 유효.
@@ -202,11 +206,19 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
       render: (_: unknown, r) => (
         <Space>
           <Tooltip
-            title={platform === 'IOS' ? '고정 설치 페이지 열기 (항상 최신, iPhone Safari)' : '다운로드 (새 탭)'}
+            title={
+              platform === 'IOS'
+                ? `이 버전(${r.versionName}) 설치 페이지 열기 (iPhone Safari)`
+                : '다운로드 (새 탭)'
+            }
           >
             <Button size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(r.id)} />
           </Tooltip>
-          <Tooltip title={platform === 'IOS' ? '고정 설치 링크 복사 (대규모 공지용)' : '다운로드 URL 복사'}>
+          <Tooltip
+            title={
+              platform === 'IOS' ? `이 버전(${r.versionName}) 설치 링크 복사` : '다운로드 URL 복사'
+            }
+          >
             <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopyUrl(r.id)} />
           </Tooltip>
           {!r.isLatest && (

@@ -37,6 +37,13 @@ class MobileAppPackageService(
         fun iosLatestManifestPath(baseUrl: String): String =
             "$baseUrl$IOS_BASE/manifest.plist/latest"
 
+        /**
+         * iOS OTA 설치 안내 페이지 경로 (특정 버전). web admin 목록의 버전별 다운로드/링크 복사용 —
+         * Android 의 버전별 presigned URL 에 대응한다. 최신 지정이 바뀌어도 이 링크는 그 버전을 유지.
+         */
+        fun iosInstallPath(baseUrl: String, id: Long): String =
+            "$baseUrl$IOS_BASE/install?id=$id"
+
         /** iOS OTA 설치 안내 페이지 경로 (항상 최신 isLatest 버전). 고정 배포 링크. */
         fun iosLatestInstallPath(baseUrl: String): String =
             "$baseUrl$IOS_BASE/install/latest"

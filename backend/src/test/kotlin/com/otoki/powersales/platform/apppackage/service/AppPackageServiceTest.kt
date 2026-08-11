@@ -422,11 +422,11 @@ class AppPackageServiceTest {
     }
 
     @Nested
-    @DisplayName("상세 조회 — iOS 고정 설치 URL")
+    @DisplayName("상세 조회 — iOS 버전별 설치 URL")
     inner class IosInstallUrl {
 
         @Test
-        @DisplayName("iOS 상세는 API 도메인 기반 고정 latest 설치 URL 포함")
+        @DisplayName("iOS 상세는 API 도메인 기반 해당 버전 설치 URL 포함")
         fun iosDetailIncludesInstallUrl() {
             every { repository.findById(3L) } returns Optional.of(
                 entity(id = 3L, platform = AppPlatform.IOS, isLatest = true, bundleIdentifier = "com.otoki.app")
@@ -436,7 +436,22 @@ class AppPackageServiceTest {
             val dto = adminService.getDetail(3L)
 
             assertThat(dto.iosInstallUrl)
-                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest")
+                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install?id=3")
+        }
+
+        @Test
+        @DisplayName("최신이 아닌 iOS 버전도 자기 id 설치 URL — latest 고정 링크로 새지 않음")
+        fun nonLatestIosDetailPointsToOwnVersion() {
+            every { repository.findById(9L) } returns Optional.of(
+                entity(id = 9L, platform = AppPlatform.IOS, isLatest = false, bundleIdentifier = "com.otoki.app")
+            )
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/old.ipa"
+
+            val dto = adminService.getDetail(9L)
+
+            assertThat(dto.iosInstallUrl)
+                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install?id=9")
+            assertThat(dto.iosInstallUrl).doesNotContain("/install/latest")
         }
 
         @Test

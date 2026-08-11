@@ -55,9 +55,16 @@ data class AppPackageDetailDto(
     val downloadUrl: String,
     val downloadUrlExpiresInSeconds: Int,
     /**
-     * iOS 고정 OTA 설치 안내 페이지 URL (mobile API public 도메인 기준, 항상 최신 버전).
-     * Android 는 null. web 은 이 값을 그대로 복사/공유한다 — web admin 도메인(IP whitelist)이
-     * 아니라 사외 접근 가능한 API 도메인이어야 영업사원이 설치할 수 있기 때문.
+     * iOS OTA 설치 안내 페이지 URL — **본 상세 조회 대상 버전** (mobile API public 도메인 기준).
+     * Android 는 null. Android 의 버전별 [downloadUrl] 에 대응하는 축이며, 최신 지정이 바뀌어도
+     * 이 링크는 해당 버전을 계속 가리킨다(항상 최신을 가리키는 고정 배포 링크는
+     * [AppPackageDistributionUrlsDto.iosInstallUrl] 쪽).
+     *
+     * web 은 이 값을 그대로 복사/공유한다 — web admin 도메인(IP whitelist)이 아니라 사외 접근
+     * 가능한 API 도메인이어야 영업사원이 설치할 수 있기 때문.
+     *
+     * [downloadUrl] 과 달리 만료되지 않는다 — presigned IPA URL 은 이 페이지가 fetch 하는
+     * manifest 엔드포인트가 요청 시점에 새로 발급하므로 페이지 URL 자체에는 TTL 이 없다.
      */
     val iosInstallUrl: String?,
     val uploadedAt: LocalDateTime,

@@ -51,17 +51,27 @@ class AdminAppPackageService(
             entity,
             url,
             StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS,
-            iosInstallUrl = iosInstallUrlOrNull(entity.platform),
+            iosInstallUrl = iosInstallUrlOrNull(entity),
         )
     }
 
     /**
-     * iOS 패키지면 대규모 배포용 고정 설치 링크(API public 도메인, 항상 최신 버전)를 반환. Android 는 null.
+     * iOS 패키지면 **해당 버전**의 OTA 설치 페이지 링크(API public 도메인)를 반환. Android 는 null.
+     *
+     * Android 가 행마다 그 버전의 presigned URL 을 주는 것과 대응한다 — 목록에서 특정 버전을
+     * 내려받거나 링크 복사하면 그 버전이 설치되어야 하기 때문. 페이지 상단 배너의 "항상 최신"
+     * 고정 링크([iosInstallUrl])와는 별개다.
+     *
+     * iOS 는 .ipa presigned URL 을 직접 열어도 설치되지 않는다(itms-services + manifest.plist 필수)
+     * 므로, 버전별 링크의 형태가 Android 처럼 presigned URL 이 아니라 설치 페이지 URL 이다.
+     * 실제 presigned IPA URL 은 manifest 엔드포인트가 fetch 시점에 새로 발급한다.
+     *
      * API 도메인 미설정(local)이면 null (web 은 이 경우 버튼을 비활성/숨김 처리).
      */
-    private fun iosInstallUrlOrNull(platform: AppPlatform): String? {
-        if (platform != AppPlatform.IOS) return null
-        return iosInstallUrl()
+    private fun iosInstallUrlOrNull(entity: AppPackage): String? {
+        if (entity.platform != AppPlatform.IOS) return null
+        val base = apiBaseUrlOrNull() ?: return null
+        return MobileAppPackageService.iosInstallPath(base, entity.id)
     }
 
     /**
