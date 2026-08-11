@@ -19,10 +19,10 @@ class EducationPostsState {
     this.errorMessage,
   });
 
-  /// 초기 상태
-  factory EducationPostsState.initial() {
-    return const EducationPostsState(
-      category: EducationCategory.tastingManual,
+  /// 초기 상태. 카테고리는 provider family key 로 주입되며 이후 변경되지 않는다.
+  factory EducationPostsState.initial(EducationCategory category) {
+    return EducationPostsState(
+      category: category,
       searchKeyword: null,
       currentPage: 1,
       postPage: null,
@@ -64,18 +64,6 @@ class EducationPostsState {
       postPage: postPage,
       isLoading: false,
       errorMessage: message,
-    );
-  }
-
-  /// 카테고리 변경
-  EducationPostsState withCategory(EducationCategory newCategory) {
-    return EducationPostsState(
-      category: newCategory,
-      searchKeyword: null, // 카테고리 변경 시 검색어 초기화
-      currentPage: 1, // 첫 페이지로 리셋
-      postPage: null,
-      isLoading: false,
-      errorMessage: null,
     );
   }
 

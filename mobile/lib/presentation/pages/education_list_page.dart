@@ -19,12 +19,12 @@ import 'package:mobile/presentation/widgets/education/education_pagination.dart'
 /// 선택한 카테고리의 교육 자료 목록을 표시합니다.
 /// 검색, 페이지네이션 기능을 제공합니다.
 class EducationListPage extends ConsumerStatefulWidget {
-  /// 카테고리 (optional - 없으면 provider의 현재 카테고리 사용)
-  final EducationCategory? category;
+  /// 표시할 카테고리. provider family key 이므로 화면 수명 동안 고정된다.
+  final EducationCategory category;
 
   const EducationListPage({
     super.key,
-    this.category,
+    required this.category,
   });
 
   @override
@@ -35,16 +35,9 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
     with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    // 카테고리가 전달된 경우 해당 카테고리로 변경
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.category != null) {
-        ref.read(educationPostsProvider.notifier).selectCategory(widget.category!);
-      }
-    });
-  }
+  /// 이 화면이 사용하는 카테고리별 provider. 카테고리가 다르면 상태를 공유하지 않는다.
+  AutoDisposeStateNotifierProvider<EducationPostsNotifier, EducationPostsState>
+      get _provider => educationPostsProvider(widget.category);
 
   @override
   void dispose() {
@@ -54,7 +47,7 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
 
   /// 검색 실행
   void _onSearch(String keyword) {
-    ref.read(educationPostsProvider.notifier).search(
+    ref.read(_provider.notifier).search(
           keyword.trim().isEmpty ? null : keyword.trim(),
         );
   }
@@ -68,12 +61,12 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
 
   /// Pull-to-refresh 핸들러
   Future<void> _onRefresh() async {
-    await ref.read(educationPostsProvider.notifier).refresh();
+    await ref.read(_provider.notifier).refresh();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(educationPostsProvider);
+    final state = ref.watch(_provider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -117,7 +110,7 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
         message: '게시물을 불러올 수 없습니다',
         description: state.errorMessage,
         onRetry: () {
-          ref.read(educationPostsProvider.notifier).refresh();
+          ref.read(_provider.notifier).refresh();
         },
       );
     }
@@ -184,10 +177,10 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
             totalPages: state.totalPages,
             totalCount: state.totalCount,
             onPreviousPage: () {
-              ref.read(educationPostsProvider.notifier).previousPage();
+              ref.read(_provider.notifier).previousPage();
             },
             onNextPage: () {
-              ref.read(educationPostsProvider.notifier).nextPage();
+              ref.read(_provider.notifier).nextPage();
             },
           ),
       ],

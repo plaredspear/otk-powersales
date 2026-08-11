@@ -224,8 +224,9 @@ class AppRouter {
         },
         education: (context) => const EducationMainPage(),
         educationList: (context) {
+          // 카테고리는 provider family key 라 필수다 (진입점은 교육 메인의 카테고리 카드 단일).
           final category =
-              ModalRoute.of(context)?.settings.arguments as EducationCategory?;
+              ModalRoute.of(context)!.settings.arguments as EducationCategory;
           return EducationListPage(category: category);
         },
         educationDetail: (context) {
