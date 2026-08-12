@@ -54,6 +54,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -1478,6 +1479,187 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(result.distanceKm).isEqualTo(0.0)
+        }
+
+        // ========== 이동매장 요일별 좌표 예외 (AccountDayCoordinateOverride) ==========
+        //
+        // register 의 등록 기준일이 주입 clock 기준이므로, 아래 테스트는 요일을 고정해
+        // 실행 시점과 무관하게 항상 같은 경로를 검증한다 (조건부 assertion 금지).
+        // 요일 매칭 규칙 자체의 전수 검증은 AccountDayCoordinateOverrideTest 가 담당한다.
+
+        /** 지정 요일 10시로 clock 을 고정하고 그 날짜를 반환한다. */
+        private fun fixClockToDayOfWeek(target: DayOfWeek): LocalDate {
+            var date = LocalDate.now()
+            while (date.dayOfWeek != target) {
+                date = date.plusDays(1)
+            }
+            every { clock.withZone(any()) } returns Clock.fixed(
+                date.atTime(10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            return date
+        }
+
+        /** 이동매장 예외 대상(1015773) 스케줄 fixture — 거래처 원본 좌표는 서울(예외 좌표에서 100km 이상). */
+        private fun createMovingStoreSchedule(
+            scheduleId: Long,
+            userId: Long,
+            workingDate: LocalDate,
+            latitude: String? = accountLat.toString(),
+            longitude: String? = accountLon.toString(),
+            externalKey: String? = "1015773"
+        ) = createTeamMemberSchedule(
+            id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+            workingDate = workingDate, commuteLogSfid = null,
+            accountName = "제이마트", accountAbcTypeCode = "2110",
+            accountLatitude = latitude, accountLongitude = longitude,
+            accountExternalKey = externalKey
+        )
+
+        private fun stubRegisterFlow(userId: Long, scheduleId: Long, date: LocalDate, schedule: TeamMemberSchedule) {
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(id = userId, sfid = "USR001"))
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, date) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(schedule)
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 수요일 — 예외 좌표 인근 -> 등록 통과, 거래처 원본 좌표는 미변경")
+        fun register_movingStore_wednesday_nearOverride_passes() {
+            // Given — 사원은 양구 예외 좌표 인근. 오버라이드가 적용되어야만 통과한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today)
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When — 예외 좌표에서 약 44m 떨어진 지점
+            val result = attendanceService.register(userId, scheduleId, null, null, 38.1022113, 127.9886619, null)
+
+            // Then — 검증 시점 오버라이드이므로 Account 원본 좌표는 그대로여야 한다
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            assertThat(teamMemberSchedule.account?.latitude).isEqualTo(accountLat.toString())
+            assertThat(teamMemberSchedule.account?.longitude).isEqualTo(accountLon.toString())
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 수요일 — 거래처 원본 좌표 인근 -> ATT_GPS_DISTANCE_EXCEEDED")
+        fun register_movingStore_wednesday_nearAccountCoords_throws() {
+            // Given — 기준이 양구로 바뀌므로 서울 거래처 좌표 인근은 거리 초과여야 한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today)
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DistanceExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 목요일 — 예외 미적용, 거래처 원본 좌표 인근 -> 등록 통과")
+        fun register_movingStore_thursday_usesAccountCoordinate() {
+            // Given
+            val today = fixClockToDayOfWeek(DayOfWeek.THURSDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today)
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 목요일 — 예외 좌표 인근 -> ATT_GPS_DISTANCE_EXCEEDED")
+        fun register_movingStore_thursday_nearOverride_throws() {
+            // Given — 수요일 케이스의 대칭. 예외가 걸리지 않으므로 양구 인근은 거리 초과여야 한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.THURSDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today)
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, 38.1022113, 127.9886619, null)
+            }.isInstanceOf(DistanceExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 수요일 — 거래처 좌표 null 이어도 예외 좌표로 통과 (온디맨드 지오코딩 미호출)")
+        fun register_movingStore_wednesday_nullAccountCoords_skipsGeocoding() {
+            // Given — 예외 좌표는 코드 상수이므로 원본 누락/온디맨드 지오코딩 경로를 타지 않아야 한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(
+                scheduleId, userId, today, latitude = null, longitude = null
+            )
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, null, 38.1018113, 127.9886619, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
+            verify(exactly = 0) { accountNaverGeocodeService.resolveCoordinatesOnDemand(any()) }
+        }
+
+        @Test
+        @DisplayName("이동매장 아닌 거래처 수요일 — 거래처 좌표 null -> ATT_ACCOUNT_COORDS_MISSING (기존 동작 유지)")
+        fun register_nonMovingStore_wednesday_nullCoords_throwsCoordsMissing() {
+            // Given — 예외 대상이 아니면 수요일에도 기존 누락 판정이 그대로 나야 한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(
+                scheduleId, userId, today, latitude = null, longitude = null, externalKey = "9999999"
+            )
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, 38.1018113, 127.9886619, null)
+            }.isInstanceOf(AccountCoordsMissingException::class.java)
+        }
+
+        @Test
+        @DisplayName("이동매장 아닌 거래처 수요일 — 거래처 원본 좌표 인근 -> 등록 통과 (예외 미적용)")
+        fun register_nonMovingStore_wednesday_usesAccountCoordinate() {
+            // Given — externalKey 가 예외 대상이 아니면 수요일에도 원본 좌표 기준이어야 한다.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today, externalKey = "9999999")
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When
+            val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then
+            assertThat(result.scheduleId).isEqualTo(scheduleId)
         }
 
         @Test
@@ -2975,6 +3157,7 @@ class AttendanceServiceTest {
         accountAbcTypeCode: String? = null,
         accountLatitude: String? = null,
         accountLongitude: String? = null,
+        accountExternalKey: String? = null,
         commuteLogSfid: String? = null,
         secondWorkType: String? = null,
         workingCategory4: String? = null
@@ -2995,7 +3178,8 @@ class AttendanceServiceTest {
                     address1 = accountAddress,
                     abcTypeCode = accountAbcTypeCode,
                     latitude = accountLatitude,
-                    longitude = accountLongitude
+                    longitude = accountLongitude,
+                    externalKey = accountExternalKey
                 )
             },
             commuteLogSfid = commuteLogSfid,

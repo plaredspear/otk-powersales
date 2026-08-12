@@ -48,6 +48,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequir
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.policy.AbcExemptPolicy
+import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.util.AccountCoordinateParser
@@ -222,7 +223,10 @@ class AttendanceService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        val today = LocalDate.now()
+        // 등록 기준일은 주입 clock 기준 — 같은 메서드가 commuteReportDatetime 도 clock 으로 찍으므로
+        // 자정 경계에서 날짜와 시각의 기준 시계가 갈리지 않게 한다.
+        // 이동매장 요일별 좌표 예외(AccountDayCoordinateOverride) 의 요일 판정도 이 값을 쓴다.
+        val today = LocalDate.now(clock.withZone(SEOUL_ZONE))
 
         // 0. 대휴 날짜 충돌 검증
         if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY)) {
@@ -257,7 +261,7 @@ class AttendanceService(
         val account = teamMemberSchedule.account
         val exemptResult = AbcExemptPolicy.evaluate(account)
         if (!exemptResult.skipped) {
-            validateDistance(latitude, longitude, account, employee.id)
+            validateDistance(latitude, longitude, account, employee.id, today)
         } else {
             log.info(
                 "ATT_GPS_SKIPPED employeeId={} accountId={} reason={}",
@@ -790,30 +794,52 @@ class AttendanceService(
      * 끝났음을 가정한다 (Spec #586). 따라서 본 메서드는 면제 분기를 수행하지 않는다.
      *
      * 1. 사원 현재 좌표 범위 검증 (lat ±90 / lng ±180) → 위반 시 [InvalidCoordsException]
-     * 2. 거래처 위경도 (String?) → Double 파싱 실패/공백/범위 초과 시 [AccountCoordsMissingException]
-     * 3. Haversine 으로 거리(m) 계산 후 임계값 비교 → 초과 시 [DistanceExceededException]
+     * 2. 이동매장 요일별 좌표 예외([AccountDayCoordinateOverride]) 조회 — 매칭 시 그 좌표로 검증
+     * 3. 예외 미매칭 시 거래처 위경도 (String?) → Double 파싱 실패/공백/범위 초과 시 [AccountCoordsMissingException]
+     * 4. Haversine 으로 거리(m) 계산 후 임계값 비교 → 초과 시 [DistanceExceededException]
      *
      * Q4: 거리 값은 응답에 노출하지 않고 서버 로그에만 기록한다.
+     *
+     * @param workingDate 요일 예외 판정 기준일 — 호출자의 등록 기준일(`today`) 을 그대로 받아
+     *                    같은 등록 처리 안에서 날짜 기준이 갈리지 않게 한다.
      */
-    private fun validateDistance(userLat: Double, userLon: Double, account: Account?, employeeId: Long) {
+    private fun validateDistance(
+        userLat: Double,
+        userLon: Double,
+        account: Account?,
+        employeeId: Long,
+        workingDate: LocalDate
+    ) {
         // 1. 사원 현재 위치 좌표 범위 검증
         if (userLat !in LAT_MIN..LAT_MAX || userLon !in LNG_MIN..LNG_MAX) {
             throw InvalidCoordsException()
         }
 
-        // 2. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 온디맨드 보강 1회 시도 후에도 실패하면 등록 거부)
-        val parsed = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
-        val coords = if (parsed is AccountCoordinateParser.Coords.Missing) {
-            resolveCoordsOnDemand(account, employeeId)
+        // 2. 이동매장 요일별 좌표 예외 — 매칭되면 거래처 원본 좌표 대신 그 좌표로 검증한다.
+        // 좌표가 코드에 상수로 있으므로 파싱 누락/온디맨드 지오코딩 경로를 탈 이유가 없어 함께 건너뛴다.
+        val dayOverride = AccountDayCoordinateOverride.resolve(account, workingDate.dayOfWeek)
+
+        // 3. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 온디맨드 보강 1회 시도 후에도 실패하면 등록 거부)
+        val coords = if (dayOverride != null) {
+            log.info(
+                "ATT_GPS_DAY_COORDINATE_OVERRIDE employeeId={} accountId={} externalKey={} day={} label={}",
+                employeeId, account?.id, account?.externalKey, dayOverride.dayOfWeek, dayOverride.label
+            )
+            AccountCoordinateParser.Coords.Valid(dayOverride.latitude, dayOverride.longitude)
         } else {
-            parsed
+            val parsed = AccountCoordinateParser.parse(account?.latitude, account?.longitude)
+            if (parsed is AccountCoordinateParser.Coords.Missing) {
+                resolveCoordsOnDemand(account, employeeId)
+            } else {
+                parsed
+            }
         }
         if (coords is AccountCoordinateParser.Coords.Missing) {
             throw AccountCoordsMissingException()
         }
         coords as AccountCoordinateParser.Coords.Valid
 
-        // 3. Haversine 거리 계산 (m 단위)
+        // 4. Haversine 거리 계산 (m 단위)
         val distanceKm = GeoUtils.calculateDistance(userLat, userLon, coords.latitude, coords.longitude)
         val distanceMeters = distanceKm * 1000.0
         val thresholdMeters = attendanceProperties.gpsThresholdMeters
