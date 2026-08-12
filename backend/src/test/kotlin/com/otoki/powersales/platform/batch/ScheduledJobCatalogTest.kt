@@ -7,7 +7,6 @@ import com.otoki.powersales.platform.batch.TeamMemberScheduleSapOutboundBatch
 import com.otoki.powersales.platform.batch.DisplayMasterLastMonthRevenueBatch
 import com.otoki.powersales.platform.batch.DisplayMasterSapOutboundBatch
 import com.otoki.powersales.platform.batch.ErpOrderRetentionBatch
-import com.otoki.powersales.platform.batch.JMartCoordinateBatch
 import com.otoki.powersales.platform.batch.MfeisThisMonthRevenueBatch
 import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
@@ -53,14 +52,13 @@ class ScheduledJobCatalogTest {
             OroraDailySalesMaterializeBatch.JOB_NAME,
             OroraMonthlySalesMaterializeBatch.JOB_NAME,
             ErpOrderRetentionBatch.JOB_NAME,
-            JMartCoordinateBatch.JOB_NAME,
             ProductExpirationAlertBatch.JOB_NAME,
             SfClaimResendBatch.JOB_NAME,
             RefreshTokenCleanupBatch.JOB_NAME,
         )
 
         assertThat(ScheduledJobCatalog.JOB_NAMES.toSet()).isEqualTo(expected)
-        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(22)
+        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(21)
         assertThat(ScheduledJobCatalog.ENTRIES.map { it.jobName }).doesNotHaveDuplicates()
     }
 
