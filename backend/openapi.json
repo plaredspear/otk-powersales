@@ -39,6 +39,45 @@
         },
         "type" : "object"
       },
+      "AccountDayCoordinateResponse" : {
+        "properties" : {
+          "customized" : {
+            "type" : "boolean"
+          },
+          "dayOfWeek" : {
+            "type" : "string"
+          },
+          "defaultDayOfWeek" : {
+            "type" : "string"
+          },
+          "defaultLabel" : {
+            "type" : "string"
+          },
+          "defaultLatitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "defaultLongitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "externalKey" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "latitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "longitude" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
       "AccountDetailResponse" : {
         "properties" : {
           "abcType" : {
@@ -3969,6 +4008,35 @@
             "type" : "string"
           },
           "date" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAccountDayCoordinateResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AccountDayCoordinateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },
@@ -20218,6 +20286,9 @@
           "productType" : {
             "type" : [ "string", "null" ]
           },
+          "recentlyOrdered" : {
+            "type" : "boolean"
+          },
           "shelfLife" : {
             "type" : "string"
           },
@@ -27611,6 +27682,34 @@
         },
         "type" : "object"
       },
+      "UpdateAccountDayCoordinateRequest" : {
+        "properties" : {
+          "dayOfWeek" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "label" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "pattern" : "^[^\\r\\n|]*$",
+            "type" : "string"
+          },
+          "latitude" : {
+            "format" : "double",
+            "maximum" : 90.0,
+            "minimum" : -90.0,
+            "type" : "number"
+          },
+          "longitude" : {
+            "format" : "double",
+            "maximum" : 180.0,
+            "minimum" : -180.0,
+            "type" : "number"
+          }
+        },
+        "required" : [ "dayOfWeek", "label" ],
+        "type" : "object"
+      },
       "UpdateBranchScopeModeRequest" : {
         "properties" : {
           "mode" : {
@@ -29584,7 +29683,7 @@
     },
     "/api/v1/admin/attendance-log/{id}" : {
       "get" : {
-        "operationId" : "get_4",
+        "operationId" : "get_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -42474,6 +42573,66 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/account-day-coordinate" : {
+      "delete" : {
+        "operationId" : "reset",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountDayCoordinateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-day-coordinate-controller" ]
+      },
+      "get" : {
+        "operationId" : "get_4",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountDayCoordinateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-day-coordinate-controller" ]
+      },
+      "post" : {
+        "operationId" : "update_8",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAccountDayCoordinateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountDayCoordinateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-day-coordinate-controller" ]
       }
     },
     "/api/v1/admin/tools/app-install/uninstalled-female-staff" : {

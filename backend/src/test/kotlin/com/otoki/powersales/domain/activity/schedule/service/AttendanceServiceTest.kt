@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSu
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.config.AttendanceProperties
@@ -94,6 +95,8 @@ class AttendanceServiceTest {
         teamMemberScheduleOwnerResolver,
         accountNaverGeocodeService,
         featureToggleService,
+        // Redis 미주입 store — 코드 기본값(수요일 양구점) 폴백 경로를 그대로 검증한다.
+        AccountDayCoordinateOverrideStore(redisTemplate = null),
         clock,
     )
 

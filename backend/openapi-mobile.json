@@ -5458,6 +5458,9 @@
           "productType" : {
             "type" : [ "string", "null" ]
           },
+          "recentlyOrdered" : {
+            "type" : "boolean"
+          },
           "shelfLife" : {
             "type" : "string"
           },

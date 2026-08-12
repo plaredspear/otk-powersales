@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Alert, Button, Card, Empty, Input, Modal, Space, Switch, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { AxiosError } from 'axios';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
+import { apiErrorMessage as errorMessage } from '@/lib/apiErrorMessage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addFeatureToggleExemptEmployee,
@@ -19,19 +19,6 @@ const { Paragraph, Text } = Typography;
 const { TextArea } = Input;
 
 const QUERY_KEY = ['admin', 'tools', 'feature-toggles'] as const;
-
-/** 서버가 내려준 사유 문구(`error.message`)를 우선 노출한다 — 없는 사번 안내 등이 여기에 담긴다. */
-function errorMessage(err: unknown, fallback: string): string {
-  if (err instanceof AxiosError) {
-    const data = err.response?.data as
-      | { message?: string; error?: { message?: string } }
-      | undefined;
-    const serverMessage = data?.error?.message ?? data?.message;
-    if (serverMessage) return serverMessage;
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return fallback;
-}
 
 /** "홍길동(12345678)" — 사원이 삭제되어 이름을 못 찾으면 사번만 표시. */
 function exemptLabel(employee: FeatureToggleExemptEmployee): string {

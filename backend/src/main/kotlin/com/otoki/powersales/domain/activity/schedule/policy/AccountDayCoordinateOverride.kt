@@ -1,13 +1,16 @@
 package com.otoki.powersales.domain.activity.schedule.policy
 
-import com.otoki.powersales.domain.foundation.account.entity.Account
 import java.time.DayOfWeek
 
 /**
- * 이동매장(요일별로 물리적 위치가 바뀌는 거래처) 의 출근등록 GPS 검증 좌표 오버라이드.
+ * 이동매장(요일별로 물리적 위치가 바뀌는 거래처) 의 출근등록 GPS 검증 좌표 예외 — **코드 기본값 정의**.
  *
  * 대상 거래처는 요일에 따라 다른 장소에서 영업하므로 `account.latitude/longitude` 1쌍만으로는
- * 거리 검증이 성립하지 않는다. 등록 시점의 요일이 등록된 예외에 매칭되면 그 좌표를 기준으로 검증한다.
+ * 거리 검증이 성립하지 않는다. 등록 시점의 요일이 예외에 매칭되면 그 좌표를 기준으로 검증한다.
+ *
+ * 실제 적용 값은 개발자 도구에서 Redis 로 덮어쓸 수 있다 —
+ * 조회는 `AccountDayCoordinateOverrideStore` 를 통하고, 본 object 는 **Redis 키 부재/장애 시의
+ * 폴백 기본값**과 요일 매칭 규칙만 제공한다. 직접 참조하지 말고 store 를 거칠 것.
  *
  * ## 레거시 매핑
  * SF Apex `Batch_JMartLatLong` — 대상 거래처(`ExternalKey__c='1015773'`) 1건을 조회해
@@ -21,11 +24,9 @@ import java.time.DayOfWeek
  * 2. **금요일(원통점) 예외 제외**: 현행 운영 기준으로 수요일 이동만 유효하다는 사용자 확인에 따름.
  * 3. **수요일 좌표 갱신**: 레거시 `38.101772/127.988819` → `38.1018113/127.9886619` (양구읍 청춘로 7).
  *
- * 매칭되는 요일이 없으면 `null` 을 반환해 호출자가 기존 `account` 좌표 경로를 그대로 타게 한다.
- *
  * ## 확장 기준
- * 대상이 3건 이상 누적되면 `@ConfigurationProperties` 또는 마스터 테이블로 외부화한다.
- * 현재는 1건뿐이라 배포 없는 운영 조정 이점보다 코드 자족성이 크다고 판단해 상수로 둔다.
+ * 대상 거래처가 2건 이상으로 늘어나면 단일 키 구조(store)를 거래처별 다건으로 바꾼다.
+ * 현재는 1건뿐이라 개발자 도구 화면도 거래처 고정 + 요일/좌표만 편집하는 형태로 둔다.
  */
 object AccountDayCoordinateOverride {
 
@@ -37,24 +38,29 @@ object AccountDayCoordinateOverride {
         val label: String,
     )
 
-    /**
-     * 거래처 외부키(`account.external_key`) → 요일별 좌표 예외.
-     *
-     * 제이마트(1015773): 수요일에 양구읍 청춘로 7 로 이동 영업. 그 외 요일은 예외 없음(원본 좌표 사용).
-     */
-    private val OVERRIDES: Map<String, List<DayCoordinate>> = mapOf(
-        "1015773" to listOf(
-            DayCoordinate(DayOfWeek.WEDNESDAY, 38.1018113, 127.9886619, "제이마트 양구점"),
-        ),
+    /** 예외 대상 거래처 외부키 (`account.external_key`) — 제이마트 이동매장. */
+    const val TARGET_EXTERNAL_KEY = "1015773"
+
+    /** Redis 미설정 시 적용되는 코드 기본값 — 수요일 양구읍 청춘로 7. */
+    val DEFAULT_COORDINATE = DayCoordinate(
+        dayOfWeek = DayOfWeek.WEDNESDAY,
+        latitude = 38.1018113,
+        longitude = 127.9886619,
+        label = "제이마트 양구점",
     )
 
     /**
-     * 해당 거래처 / 요일에 적용할 좌표 예외를 조회한다.
-     *
-     * @return 매칭된 예외 좌표. 대상 거래처가 아니거나 해당 요일 예외가 없으면 null.
+     * 거래처 외부키가 예외 대상인지 판정한다 (공백 무시).
      */
-    fun resolve(account: Account?, dayOfWeek: DayOfWeek): DayCoordinate? {
-        val externalKey = account?.externalKey?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        return OVERRIDES[externalKey]?.firstOrNull { it.dayOfWeek == dayOfWeek }
-    }
+    fun isTarget(externalKey: String?): Boolean =
+        externalKey?.trim()?.takeIf { it.isNotEmpty() } == TARGET_EXTERNAL_KEY
+
+    /**
+     * 요일 문자열 → [DayOfWeek] (앞뒤 공백/대소문자 무시). 알 수 없는 값이면 null.
+     *
+     * `DayOfWeek` 는 JDK enum 이라 `fromNameOrNull` 을 붙일 수 없으므로 변환 책임을 여기로 모은다
+     * (API 요청 파싱과 Redis 저장값 역직렬화가 같은 규칙을 쓰도록).
+     */
+    fun dayOfWeekOrNull(raw: String?): DayOfWeek? =
+        raw?.trim()?.uppercase()?.let { runCatching { DayOfWeek.valueOf(it) }.getOrNull() }
 }

@@ -48,7 +48,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequir
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.policy.AbcExemptPolicy
-import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
+import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.util.AccountCoordinateParser
@@ -77,6 +77,7 @@ class AttendanceService(
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
     private val accountNaverGeocodeService: AccountNaverGeocodeService,
     private val featureToggleService: FeatureToggleService,
+    private val accountDayCoordinateOverrideStore: AccountDayCoordinateOverrideStore,
     private val clock: Clock
 ) {
 
@@ -816,8 +817,8 @@ class AttendanceService(
         }
 
         // 2. 이동매장 요일별 좌표 예외 — 매칭되면 거래처 원본 좌표 대신 그 좌표로 검증한다.
-        // 좌표가 코드에 상수로 있으므로 파싱 누락/온디맨드 지오코딩 경로를 탈 이유가 없어 함께 건너뛴다.
-        val dayOverride = AccountDayCoordinateOverride.resolve(account, workingDate.dayOfWeek)
+        // 예외 좌표는 설정값(Redis) 또는 코드 상수라 파싱 누락/온디맨드 지오코딩 경로를 탈 이유가 없어 함께 건너뛴다.
+        val dayOverride = accountDayCoordinateOverrideStore.resolve(account, workingDate.dayOfWeek)
 
         // 3. 거래처 위경도 파싱 (누락/공백/파싱실패/범위초과 → 온디맨드 보강 1회 시도 후에도 실패하면 등록 거부)
         val coords = if (dayOverride != null) {
