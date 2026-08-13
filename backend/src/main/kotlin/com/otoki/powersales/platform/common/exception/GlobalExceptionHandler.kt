@@ -217,9 +217,12 @@ class GlobalExceptionHandler {
         ex: BusinessException,
         request: WebRequest
     ): ResponseEntity<ApiResponse<Any>> {
-        // 5xx(서버 결함: STORAGE_WRITE_FAILED 등)는 스택트레이스까지 error 로 남겨 추적 가능하게 한다.
-        // 4xx(클라이언트 요청 오류)는 정상 흐름의 일부라 스택 없이 warn 요약만 남긴다(로그 노이즈 회피).
-        if (ex.httpStatus.is5xxServerError) {
+        // 서버 결함(STORAGE_WRITE_FAILED 등)은 스택트레이스까지 error 로 남겨 추적 가능하게 한다.
+        // 그 외(클라이언트 요청 오류인 4xx, 그리고 외부 시스템이 업무 규칙상 요청을 거부해 5xx 로
+        // 내려가지만 서버 결함은 아닌 케이스)는 정상 흐름의 일부라 스택 없이 warn 요약만 남긴다
+        // (로그 노이즈 회피). 판정 기준은 `BusinessException.serverFault` — 기본값이 5xx 여부라
+        // 명시 선언하지 않은 예외의 동작은 종전과 같다.
+        if (ex.serverFault) {
             log.error("BusinessException {} ({}): {}", ex.errorCode, ex.httpStatus, ex.message, ex)
         } else {
             log.warn("BusinessException {} ({}): {}", ex.errorCode, ex.httpStatus, ex.message)

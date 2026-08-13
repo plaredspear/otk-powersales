@@ -59,6 +59,11 @@ class OrderCancelSapFailedException(
     errorCode = "ORD_CANCEL_SAP_FAILED",
     message = detail ?: "SAP 송신에 실패했습니다",
     httpStatus = HttpStatus.BAD_GATEWAY,
+    // 502 지만 서버 결함이 아니다 — SAP 가 정상 응답으로 업무 규칙상 취소를 거부했거나(예: "판매문서가
+    // 릴리즈중입니다") 일시적 통신 실패이며, 둘 다 사용자 재시도로 해소되는 예상된 흐름이다. 스택트레
+    // 이스는 서블릿 필터 체인만 담겨 진단 가치가 없고, 실패 사유(resultCode/resultMsg)는 이미
+    // `OrderRequestCancelSender` 가 warn 으로 남긴다. → 핸들러에서 warn 요약만 남기도록 한다.
+    serverFault = false,
 )
 
 /**
