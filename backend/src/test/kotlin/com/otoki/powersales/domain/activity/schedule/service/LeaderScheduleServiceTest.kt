@@ -461,6 +461,39 @@ class LeaderScheduleServiceTest {
                 teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(100L))
             }
         }
+
+        @Test
+        @DisplayName("PE 삭제 전 TMS 역방향 참조 차단 - flush 시 TransientPropertyValueException 회피")
+        fun delete_clearsInverseReferenceBeforeDelete() {
+            // Given
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동")
+            val pe = PromotionEmployee(
+                id = 7L, promotionId = 10L, employeeId = target.id, teamMemberScheduleId = 100L
+            )
+            val schedule = TeamMemberSchedule(
+                id = 100L, employee = target,
+                workingCategory1 = WorkingCategory1.EVENT, promotionEmployee = pe
+            )
+
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
+            // delete 호출 시점에 이미 역참조가 끊겨 있어야 flush 에서 dangling reference 가 나지 않는다.
+            every { promotionEmployeeRepository.delete(pe) } answers {
+                assertThat(schedule.promotionEmployee).isNull()
+            }
+            every { promotionEmployeeRepository.flush() } just Runs
+            every {
+                teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(100L))
+            } just Runs
+
+            // When
+            leaderScheduleService.deleteEventAssignment(leader.id, 100L)
+
+            // Then
+            assertThat(schedule.promotionEmployee).isNull()
+            verify { promotionEmployeeRepository.delete(pe) }
+        }
     }
 
     @Nested

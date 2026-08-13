@@ -248,6 +248,14 @@ class LeaderScheduleService(
         // 순서 주의: cascade 내부 refreshIntegration 의 SELECT auto-flush 시점에 PE 가 삭제될
         // schedule 을 참조하면 TransientPropertyValueException — PE 를 먼저 삭제·flush 하여
         // dangling reference 를 제거한 뒤 cascade 한다 (admin deleteEmployee 와 동일 순서).
+        //
+        // PE ↔ 여사원일정은 양방향 연관이라 PE 만 삭제하면 영속성 컨텍스트에 남은 schedule 의
+        // 역방향 `promotionEmployee` 가 삭제된 PE 를 가리켜 flush 시 TransientPropertyValueException 이 난다.
+        // (resolveEventAssignment 가 `schedule.promotionEmployee` 를 dereference 하므로 schedule 은
+        //  항상 managed 상태.) 삭제 전에 역방향 참조를 먼저 끊는다.
+        // schedule 자체는 아래 cascade 에서 hard delete 되므로 이 UPDATE 는 최종 상태에 영향이 없다.
+        schedule.promotionEmployee = null
+
         promotionEmployeeRepository.delete(pe)
         promotionEmployeeRepository.flush()
         teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(schedule.id))
