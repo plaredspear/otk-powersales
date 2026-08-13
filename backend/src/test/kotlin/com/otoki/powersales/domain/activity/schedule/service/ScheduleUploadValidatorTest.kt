@@ -234,7 +234,7 @@ class ScheduleUploadValidatorTest {
         }
 
         @Test
-        @DisplayName("폐업 거래처 예외 허용 (배포처) - 정상")
+        @DisplayName("폐업 거래처 예외 허용 (배포처) - 정상 (SF 원본 면제 유지)")
         fun v3a_closedAccountExemptByDistribution() {
             val exemptAccountMap = mapOf(
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000", distribution = "X")
@@ -249,7 +249,7 @@ class ScheduleUploadValidatorTest {
         }
 
         @Test
-        @DisplayName("폐업 거래처 예외 허용 (ABCTypeCode 3062) - 정상")
+        @DisplayName("폐업 거래처 예외 허용 (ABCTypeCode 3062) - 정상 (SF 원본 면제 유지)")
         fun v3a_closedAccountExemptByAbcTypeCode() {
             val exemptAccountMap = mapOf(
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1010", abcTypeCode = "3062")
@@ -259,6 +259,36 @@ class ScheduleUploadValidatorTest {
             )
 
             val result = validator.validate(rows, employeeMap, exemptAccountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("폐업 거래처 - 당월·전월 매출 보유(면제 id 주입) 시 정상")
+        fun v3a_closedAccountExemptByRecentSales() {
+            val closedAccount = createAccount(
+                "ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "1000"
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(
+                rows, employeeMap, mapOf("ACC001" to closedAccount), emptyList(),
+                salesExemptedAccountIds = setOf(closedAccount.id)
+            )
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("폐업 아닌 거래처는 면제 집합과 무관하게 정상")
+        fun v3a_activeAccountUnaffectedByExemption() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList(), salesExemptedAccountIds = emptySet())
 
             assertThat(result.errors).isEmpty()
         }

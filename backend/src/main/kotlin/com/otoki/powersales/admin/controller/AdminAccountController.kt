@@ -140,9 +140,9 @@ class AdminAccountController(
      * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [AccountListResponse] 재사용
      * (lookupFilter + sharing rule 평가는 `adminAccountService.getAccounts` 가 그대로 적용).
      *
-     * 단, 폐업 거래처는 `excludeClosedAccount=true` 로 distribution 면제 없이 제외한다 —
-     * 폐업 거래처는 행사 등록 대상이 아니므로 조회 후보에서도 일관되게 배제 (운영 정책).
-     * 예외로, 조회 시점 당월·전월에 마감실적(`ClosingAmountSum` > 0)이 있는 폐업 거래처는 노출한다.
+     * 단, 폐업 거래처는 `excludeClosedAccount=true` 로 제외한다 — 폐업 거래처는 행사 등록 대상이
+     * 아니므로 조회 후보에서도 일관되게 배제 (운영 정책). 면제 사유 (SF 원본 `distribution` 비어있지
+     * 않음 / ABC유형 3062, + 당월·전월 마감실적 보유) 는 `ClosedAccountSalesExemption` 참조.
      */
     @GetMapping("/lookup")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -151,8 +151,8 @@ class AdminAccountController(
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
         // 고급 검색 부가 필터 — 거래처유형(accountType) / 거래상태(accountStatusName) 정확 일치.
-        // 폐업은 excludeClosedAccount 로 배제되므로 accountStatusName=폐업 은 당월·전월 매출 보유
-        // 예외 거래처만 남는다 (예외 대상이 없으면 0건).
+        // 폐업은 excludeClosedAccount 로 배제되므로 accountStatusName=폐업 은 면제 사유 충족 거래처만
+        // 남는다 (면제 대상이 없으면 0건).
         @RequestParam(required = false) accountType: String?,
         @RequestParam(required = false) accountStatusName: String?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
@@ -195,9 +195,9 @@ class AdminAccountController(
      * 진열사원스케줄 마스터 등록/수정 화면의 거래처 lookup search.
      *
      * 행사마스터 lookup(`/lookup`)과 동일한 accountGroup ∈ {1000,1010} 필터를 적용하되, 폐업 거래처는
-     * `excludeClosedAccount=true` 로 distribution 면제 없이 제외한다 — 폐업 거래처는 진열사원스케줄
-     * 등록 검증(`ScheduleUploadValidator`)에서 차단되므로 조회 후보에서도 일관되게 제외하기 위함이다.
-     * 예외로, 조회 시점 당월·전월에 마감실적(`ClosingAmountSum` > 0)이 있는 폐업 거래처는 노출한다.
+     * `excludeClosedAccount=true` 로 제외한다 (면제 사유 충족 시 노출).
+     * 진열사원스케줄 등록 검증(`ScheduleUploadValidator` V3a)이 **동일 기준**으로 차단하므로 조회와
+     * 등록의 판정이 어긋나지 않는다 (면제 정의는 `ClosedAccountSalesExemption` 단일 출처).
      * display_work_schedule.READ 권한으로 가드 (Account READ 권한 불요 — SF lookup search 메커니즘 정합).
      */
     @GetMapping("/lookup-for-display-schedule")

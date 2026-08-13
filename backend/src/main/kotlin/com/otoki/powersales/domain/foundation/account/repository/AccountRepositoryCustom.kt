@@ -26,13 +26,13 @@ interface AccountRepositoryCustom {
      *                        + 폐업/distribution 조건) 적용 여부. SF 에서 이 조건은 Promotion 거래처 선택
      *                        Lookup 필드에만 존재하고 메인 거래처 탭 listView(AllAccounts=Everything)에는
      *                        미적용 — 따라서 lookup 진입점은 true, 메인 목록은 false.
-     * @param excludeClosedAccount 폐업(`account_status_name = '폐업'`) 거래처를 distribution 면제 없이
-     *                        제외할지 여부. 행사마스터 / 진열사원스케줄 마스터 등록 거래처 lookup 전용 —
-     *                        폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 일관되게 제외한다.
-     *                        [applyPromotionFilter] 의 distribution 면제 노출보다 우선 (AND 합성).
-     *                        **예외**: 조회 시점 기준 당월·전월에 마감실적(`ClosingAmountSum` > 0)이 있는
-     *                        폐업 거래처는 등록 대상이 될 수 있어 노출한다 (실거래 종료보다 상태 변경이
-     *                        선행하거나 폐업 후 잔여 출고가 남는 케이스).
+     * @param excludeClosedAccount 폐업(`account_status_name = '폐업'`) 거래처 제외 여부. 행사마스터 /
+     *                        진열사원스케줄 마스터 등록 거래처 lookup 전용 — 폐업 거래처는 등록 대상이
+     *                        아니므로 조회 후보에서도 제외한다. 단
+     *                        [com.otoki.powersales.domain.foundation.account.policy.ClosedAccountSalesExemption]
+     *                        의 면제 사유 (SF 원본 `distribution` 비어있지 않음 / ABC유형 3062, + 당월·전월
+     *                        마감실적 `ClosingAmountSum` > 0) 중 하나라도 충족하면 노출한다 — 진열사원스케줄
+     *                        등록 검증 (`ScheduleUploadValidator` V3a) 과 동일 기준이라 조회↔등록이 어긋나지 않는다.
      * @param coordinatesMissing true 면 Naver Geocode batch(#637) 진입 후보와 **동일 조건**을 AND 합성
      *                        ((latitude IS NULL OR longitude IS NULL) AND address1 IS NOT NULL AND
      *                        external_key IS NOT NULL). 거래처 화면에서

@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.RowError
 import com.otoki.powersales.domain.activity.schedule.dto.response.RowPreview
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.ClosedAccountSalesExemption
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -15,6 +16,32 @@ class ScheduleUploadValidator {
         private val VALID_WORK_TYPE3 = setOf("고정", "격고", "순회")
         private val VALID_WORK_TYPE4 = setOf("상온", "냉동/냉장")
         private val VALID_WORK_TYPE5 = setOf("상시", "임시")
+    }
+
+    /**
+     * V3a — 폐업 상태라서 등록을 막아야 하는 거래처인지.
+     *
+     * 면제 사유는 [ClosedAccountSalesExemption] 이 단일 출처이며 **거래처 lookup 게이팅과 동일 기준**이다
+     * ([com.otoki.powersales.domain.foundation.account.repository.AccountRepositoryCustomImpl] 의
+     * `lookupGating`). 기준이 갈라지면 "화면 검색으로는 나오는데 등록하면 반려" 또는 그 반대가 된다:
+     * - `distribution` 비어 있지 않음 OR `abcTypeCode == 3062` — SF 원본 면제
+     *   (`UplExcelBtnSchduleMasterController.cls:325-337` 정합). 종전 검증도 이 두 조건을 썼으나 조회 측이
+     *   이를 반영하지 않아 **엑셀로는 등록되는데 화면에서는 찾을 수 없는** 불일치가 있었고, 조회 측을
+     *   맞추는 것으로 해소했다.
+     * - **당월·전월 마감실적 보유** ([salesExemptedAccountIds]) — 신규 추가 면제.
+     *
+     * SF 원본은 위 면제를 `accountGroup ∈ {1000,1010}` 안에서만 평가하지만, 계정그룹 조건은 V3a 이전에
+     * 거래처 조회 단계에서 이미 걸러지므로 여기서 다시 보지 않는다.
+     *
+     * @param salesExemptedAccountIds 호출 측이
+     *        [com.otoki.powersales.domain.foundation.account.service.ClosedAccountSalesExemptionResolver]
+     *        로 미리 산출한 **매출 기준** 면제 대상 거래처 id 집합
+     */
+    private fun isBlockedClosedAccount(account: Account?, salesExemptedAccountIds: Set<Long>): Boolean {
+        if (account == null) return false
+        if (account.accountStatusName != ClosedAccountSalesExemption.ACCOUNT_STATUS_CLOSED) return false
+        if (ClosedAccountSalesExemption.isExemptByAccountAttributes(account)) return false
+        return account.id !in salesExemptedAccountIds
     }
 
     data class ValidationResult(
@@ -36,11 +63,18 @@ class ScheduleUploadValidator {
         val accountExternalKey: String? = null
     )
 
+    /**
+     * @param salesExemptedAccountIds 폐업이지만 당월·전월 매출 보유로 등록이 허용되는 거래처 id 집합
+     *        ([isBlockedClosedAccount] 참조). 호출 측이 미리 산출해 주입한다. 기본값(빈 집합)은 **매출
+     *        면제만 미적용**이라는 뜻으로, SF 원본 면제(distribution / ABC유형 3062)는 그대로 살아 있다 —
+     *        주입을 빠뜨려도 SF 레거시 수준의 판정으로 떨어질 뿐 과대 차단되지 않는다.
+     */
     fun validate(
         parsedRows: List<ScheduleExcelParser.ParsedRow>,
         usersByEmployeeCode: Map<String, Employee>,
         accountsByExternalKey: Map<String, Account>,
-        existingSchedules: List<DisplayWorkSchedule>
+        existingSchedules: List<DisplayWorkSchedule>,
+        salesExemptedAccountIds: Set<Long> = emptySet()
     ): ValidationResult {
         val errors = mutableListOf<RowError>()
         val previews = mutableListOf<RowPreview>()
@@ -148,20 +182,16 @@ class ScheduleUploadValidator {
             }
 
             // V3a: 거래처 폐업 상태
-            if (account != null && account.accountStatusName == "폐업") {
-                val isExempt = (account.accountGroup == "1000" || account.accountGroup == "1010") &&
-                    (!account.distribution.isNullOrBlank() || account.abcTypeCode == "3062")
-                if (!isExempt) {
-                    rowErrors.add(
-                        RowError(
-                            row.rowNumber,
-                            "E",
-                            "거래처코드",
-                            accountCode,
-                            "거래처코드 $accountCode: 폐업 상태의 거래처입니다"
-                        )
+            if (isBlockedClosedAccount(account, salesExemptedAccountIds)) {
+                rowErrors.add(
+                    RowError(
+                        row.rowNumber,
+                        "E",
+                        "거래처코드",
+                        accountCode,
+                        "거래처코드 $accountCode: 폐업 상태의 거래처입니다"
                     )
-                }
+                )
             }
 
             // V5: 근무형태3 유효성
@@ -347,7 +377,8 @@ class ScheduleUploadValidator {
         account: Account?,
         existingSchedules: List<DisplayWorkSchedule>,
         excludeScheduleId: Long? = null,
-        maxAttendedWorkingDate: LocalDate? = null
+        maxAttendedWorkingDate: LocalDate? = null,
+        salesExemptedAccountIds: Set<Long> = emptySet()
     ): SingleValidationResult {
         // 편집 시나리오에서는 자기 자신을 중복 검사 대상에서 제외 (UC-03 동일 레코드 update)
         val filteredExisting = if (excludeScheduleId != null) {
@@ -377,12 +408,8 @@ class ScheduleUploadValidator {
         }
 
         // V3a: 거래처 폐업 상태
-        if (account != null && account.accountStatusName == "폐업") {
-            val isExempt = (account.accountGroup == "1000" || account.accountGroup == "1010") &&
-                (!account.distribution.isNullOrBlank() || account.abcTypeCode == "3062")
-            if (!isExempt) {
-                messages.add("거래처코드 $accountCode: 폐업 상태의 거래처입니다")
-            }
+        if (isBlockedClosedAccount(account, salesExemptedAccountIds)) {
+            messages.add("거래처코드 $accountCode: 폐업 상태의 거래처입니다")
         }
 
         // V5: 근무형태3 유효성

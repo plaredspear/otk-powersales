@@ -13,6 +13,8 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.foundation.account.repository.AccountDistributionAbcPairRow
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.ClosedAccountSalesExemptionResolver
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.schedule.service.internal.ScheduleDisplayStatusCalculator
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
@@ -110,6 +112,12 @@ class AdminDisplayWorkScheduleServiceTest {
     private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
 
+    /**
+     * 폐업 거래처 최근 매출 예외 판정의 매출 조회원 — 기본은 "매출 없음" ([setUpDefaults] 에서 stub).
+     * 예외 노출 케이스를 검증하는 테스트가 개별적으로 override 한다.
+     */
+    private val monthlySalesHistoryQueryGateway: MonthlySalesHistoryQueryGateway = mockk()
+
     private val adminDisplayWorkScheduleService = AdminDisplayWorkScheduleService(
         employeeRepository,
         accountRepository,
@@ -128,6 +136,7 @@ class AdminDisplayWorkScheduleServiceTest {
         branchCodeExpander,
         policyEvaluator,
         ScheduleDisplayStatusCalculator(),
+        ClosedAccountSalesExemptionResolver(monthlySalesHistoryQueryGateway),
     )
 
     /** SF UplExcelBtnSchduleMasterController 정합 — 기본 scope (`["CC001"]`) + BranchCodeExpander pass-through. */
@@ -149,6 +158,8 @@ class AdminDisplayWorkScheduleServiceTest {
         every { profileRepository.findByName(LEADER_PROFILE_NAME_TEST) } returns Profile(id = LEADER_PROFILE_ID_TEST, name = LEADER_PROFILE_NAME_TEST)
         // owner 등록자 fallback default — 개별 테스트가 override (조장 부재 + 등록자 User 없음 → ownerUser=null).
         every { employeeRepository.findById(any()) } returns Optional.empty()
+        // 폐업 거래처 최근 매출 예외 default — 매출 없음 (폐업이면 종전대로 등록 차단).
+        every { monthlySalesHistoryQueryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
     }
 
     companion object {

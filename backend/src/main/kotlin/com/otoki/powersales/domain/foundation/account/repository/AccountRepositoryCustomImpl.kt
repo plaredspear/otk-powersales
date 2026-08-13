@@ -3,10 +3,9 @@ package com.otoki.powersales.domain.foundation.account.repository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.QAccount
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.policy.ClosedAccountSalesExemption
 import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.domain.sales.entity.QMonthlySalesHistory
-import com.otoki.powersales.domain.sales.enums.SalesMonth
-import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
@@ -14,7 +13,6 @@ import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
-import java.time.LocalDate
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -345,7 +343,7 @@ class AccountRepositoryCustomImpl(
      */
     private fun promotionLookupFilter() = account.accountGroup.`in`(ACCOUNT_GROUP_SALES_VALUES)
         .and(
-            account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED)
+            account.accountStatusName.ne(ClosedAccountSalesExemption.ACCOUNT_STATUS_CLOSED)
                 .or(account.accountStatusName.isNull)
                 .or(
                     account.distribution.isNotNull
@@ -362,49 +360,52 @@ class AccountRepositoryCustomImpl(
      * (물류 클레임 / 유통기한·재고조회 lookup) 까지 폐업 노출이 확대되는 부수 효과가 생긴다.
      *
      * 게이팅 조합별 결과:
-     * - [excludeClosed] = true (행사마스터 / 진열사원스케줄 lookup): 폐업은 `distribution` 면제 없이
-     *   배제하되 **당월·전월 매출 보유 거래처만 예외 노출** ([recentSalesExists]). `distribution` 면제항은
-     *   어차피 뒤이어 폐업 배제로 무효화되므로(`A AND (A OR d)` = `A`) 아예 넣지 않는다.
+     * - [excludeClosed] = true (행사마스터 / 진열사원스케줄 lookup): 폐업 거래처는 배제하되
+     *   [ClosedAccountSalesExemption] 의 면제 사유 (SF 원본 `distribution` 비어있지 않음 / ABC유형 3062,
+     *   + 신규 **당월·전월 매출 보유**) 중 하나라도 충족하면 노출한다. 진열사원스케줄 등록 검증
+     *   (`ScheduleUploadValidator` V3a) 과 동일 기준이라 조회↔등록 판정이 갈라지지 않는다.
      * - [applyPromotion] = true 단독 (물류 클레임 / 유통기한·재고조회 lookup): SF lookupFilter 원본 그대로
      *   — 종전 동작 유지 (매출 예외 미적용).
      */
     private fun lookupGating(applyPromotion: Boolean, excludeClosed: Boolean): BooleanExpression {
         if (!excludeClosed) return promotionLookupFilter()
 
-        val notClosedOrHasRecentSales = account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED)
+        val notClosedOrExempt = account.accountStatusName.ne(ClosedAccountSalesExemption.ACCOUNT_STATUS_CLOSED)
             .or(account.accountStatusName.isNull)
+            .or(closedAccountAttributeExemption())
             .or(recentSalesExists())
 
         return if (applyPromotion) {
-            account.accountGroup.`in`(ACCOUNT_GROUP_SALES_VALUES).and(notClosedOrHasRecentSales)
+            account.accountGroup.`in`(ACCOUNT_GROUP_SALES_VALUES).and(notClosedOrExempt)
         } else {
-            notClosedOrHasRecentSales
+            notClosedOrExempt
         }
     }
 
     /**
+     * SF 원본 폐업 면제의 SQL 동등 — `distribution` 비어 있지 않음 OR `abcTypeCode == 3062`.
+     *
+     * 판정 기준은 [ClosedAccountSalesExemption.isExemptByAccountAttributes] 와 동일하다 (엔티티 기준
+     * 판정은 진열사원스케줄 등록 검증이, SQL predicate 는 여기가 담당 — 두 표현이 갈라지지 않도록
+     * 상수·조건 구성을 정책 object 에 맞춘다).
+     */
+    private fun closedAccountAttributeExemption(): BooleanExpression =
+        account.distribution.isNotNull.and(account.distribution.ne(""))
+            .or(account.abcTypeCode.eq(ClosedAccountSalesExemption.ABC_TYPE_CODE_EXEMPT))
+
+    /**
      * 조회 시점 기준 **당월 또는 전월**에 마감실적(> 0)이 있는 월매출 이력 존재 여부 (EXISTS 서브쿼리).
      *
-     * 기준월은 행사/스케줄의 대상 기간이 아니라 **조회 시점의 시스템 현재월**이다 — lookup 진입점마다
-     * 기준월을 달리 넘기지 않아도 되고, 두 화면(행사마스터 / 진열사원스케줄)이 동일하게 동작한다.
-     *
-     * `monthly_sales_history` 는 (`sales_year`, `sales_month`) picklist 문자열 2컬럼으로 매출월을
-     * 보유하므로, 당월/전월 각각을 (년, 월) 쌍으로 만들어 OR 매칭한다 (연말·연초 경계에서 전월이
-     * 전년도가 되는 케이스를 쌍 단위 매칭으로 흡수 — 년 IN × 월 IN 의 cartesian 오매칭이 없다).
+     * 기준월·판정 축은 [ClosedAccountSalesExemption] 이 단일 출처 — 진열사원스케줄 등록 검증
+     * (`ScheduleUploadValidator`) 이 같은 정책을 쓰므로 조회와 등록의 판정이 갈라지지 않는다.
      * SF soft-delete row (`is_deleted = true`) 는 제외한다.
      */
     private fun recentSalesExists(): BooleanExpression {
-        val today = LocalDate.now()
-        val yearMonthPairs = listOf(today, today.minusMonths(1))
-            .mapNotNull { date ->
-                val year = SalesYear.fromValueOrNull("%04d".format(date.year)) ?: return@mapNotNull null
-                val month = SalesMonth.fromValueOrNull("%02d".format(date.monthValue)) ?: return@mapNotNull null
-                year to month
-            }
+        val yearMonthPairs = ClosedAccountSalesExemption.recentYearMonths()
         // SalesYear picklist 는 2019~2030 범위라 그 밖의 시스템 시각에서는 후보가 비어 예외가 무효화된다.
         // 조용히 꺼지면 "폐업인데 매출이 있는데도 안 나온다" 로만 보이므로 원인을 로그로 남긴다.
         if (yearMonthPairs.isEmpty()) {
-            log.warn("SalesYear picklist 범위 밖 시스템 시각 — 폐업 거래처 최근 매출 예외가 무효화됨: {}", today)
+            log.warn("SalesYear picklist 범위 밖 시스템 시각 — 폐업 거래처 최근 매출 예외가 무효화됨")
             return Expressions.asBoolean(false).isTrue
         }
 
@@ -425,7 +426,6 @@ class AccountRepositoryCustomImpl(
     }
 
     companion object {
-        private const val ACCOUNT_STATUS_CLOSED = "폐업"
         private val ACCOUNT_GROUP_SALES_VALUES = listOf("1000", "1010")
     }
 }

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.policy.ClosedAccountSalesExemption
 import com.otoki.powersales.domain.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.domain.sales.enums.SalesMonth
 import com.otoki.powersales.domain.sales.enums.SalesYear
@@ -20,13 +21,16 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 
 /**
- * 행사마스터 / 진열사원스케줄 마스터 거래처 lookup 의 **폐업 거래처 최근 매출 예외** 검증.
+ * 행사마스터 / 진열사원스케줄 마스터 거래처 lookup 의 **폐업 거래처 면제 노출** 검증
+ * ([AccountRepositoryCustomImpl] 의 `lookupGating` / `closedAccountAttributeExemption` / `recentSalesExists`).
  *
- * `excludeClosedAccount = true` 는 폐업 거래처를 배제하되, 조회 시점 기준 당월·전월에 마감실적
- * (`ClosingAmountSum` = `abc_closing_sum_amount + ship_closing_sum_amount` > 0) 이 있는 거래처는
- * 예외로 노출한다 ([AccountRepositoryCustomImpl.notClosedOrHasRecentSales]).
+ * `excludeClosedAccount = true` 는 폐업 거래처를 배제하되, [ClosedAccountSalesExemption] 의 면제 사유
+ * 중 하나라도 충족하면 노출한다:
+ * - SF 원본 — `distribution` 비어 있지 않음 / `abcTypeCode == 3062`
+ * - 신규 — 조회 시점 당월·전월 마감실적
+ *   (`ClosingAmountSum` = `abc_closing_sum_amount + ship_closing_sum_amount`) > 0
  *
- * 판정 축은 「월 매출(물류배부)」 화면이 실적으로 쓰는 값과 동일하게 **합계 컬럼 2개**이며, 개별
+ * 매출 판정 축은 「월 매출(물류배부)」 화면이 실적으로 쓰는 값과 동일하게 **합계 컬럼 2개**이며, 개별
  * 카테고리 컬럼(abc1~4 / ship1~4) 은 판정에 쓰지 않는다.
  */
 @DataJpaTest
@@ -55,6 +59,7 @@ class AccountRepositoryClosedAccountRecentSalesTest {
         externalKey: String,
         accountStatusName: String,
         distribution: String? = null,
+        abcTypeCode: String? = null,
     ): Account {
         val saved = testEntityManager.persistAndFlush(
             Account(
@@ -63,6 +68,7 @@ class AccountRepositoryClosedAccountRecentSalesTest {
                 accountGroup = "1000",
                 accountStatusName = accountStatusName,
                 distribution = distribution,
+                abcTypeCode = abcTypeCode,
                 isDeleted = false,
             )
         )
@@ -114,11 +120,22 @@ class AccountRepositoryClosedAccountRecentSalesTest {
     }
 
     @Test
-    @DisplayName("distribution 보유 폐업 거래처도 매출 없으면 제외 (excludeClosedAccount 가 면제보다 우선)")
-    fun excludesClosedAccountWithDistributionButNoSales() {
+    @DisplayName("distribution 보유 폐업 거래처는 매출 없어도 노출 (SF 원본 면제)")
+    fun includesClosedAccountWithDistribution() {
         val closed = persistAccount("폐점 A2", "CL-1B", accountStatusName = "폐업", distribution = "10")
 
-        assertThat(lookup().content.map { it.id }).doesNotContain(closed.id)
+        assertThat(lookup().content.map { it.id }).contains(closed.id)
+    }
+
+    @Test
+    @DisplayName("ABC유형 3062 폐업 거래처는 매출 없어도 노출 (SF 원본 면제)")
+    fun includesClosedAccountWithExemptAbcTypeCode() {
+        val closed = persistAccount(
+            "폐점 A3", "CL-1C", accountStatusName = "폐업",
+            abcTypeCode = ClosedAccountSalesExemption.ABC_TYPE_CODE_EXEMPT
+        )
+
+        assertThat(lookup().content.map { it.id }).contains(closed.id)
     }
 
     @Test

@@ -58,4 +58,5 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
         salesYear: SalesYear,
         salesMonth: SalesMonth,
     ): List<MonthlySalesHistory>
+
 }

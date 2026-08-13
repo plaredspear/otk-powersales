@@ -52,6 +52,7 @@ import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.service.ClosedAccountSalesExemptionResolver
 import com.otoki.powersales.domain.org.employee.enums.DismissalPolicy
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
@@ -93,7 +94,17 @@ class AdminDisplayWorkScheduleService(
     private val branchCodeExpander: BranchCodeExpander,
     private val policyEvaluator: SharingRulePolicyEvaluator,
     private val displayStatusCalculator: ScheduleDisplayStatusCalculator,
+    private val closedAccountSalesExemptionResolver: ClosedAccountSalesExemptionResolver,
 ) {
+
+    /**
+     * 단건 등록/수정용 폐업 면제 판정 — 거래처 1건에 대한
+     * [ClosedAccountSalesExemptionResolver.resolveExemptedAccountIds] 축약.
+     *
+     * 거래처가 없거나 폐업이 아니면 resolver 가 매출 조회 없이 빈 집합을 반환하므로 그대로 위임한다.
+     */
+    private fun resolveSalesExemptedAccountIds(account: Account?): Set<Long> =
+        closedAccountSalesExemptionResolver.resolveExemptedAccountIds(listOfNotNull(account))
 
     companion object {
         private const val REDIS_KEY_PREFIX = "schedule:upload:"
@@ -324,9 +335,13 @@ class AdminDisplayWorkScheduleService(
             emptyList()
         }
 
-        // 검증
+        // 검증 — 폐업 거래처는 당월·전월 매출 보유분만 등록 허용 (거래처 lookup 게이팅과 동일 기준).
+        val salesExemptedAccountIds = closedAccountSalesExemptionResolver
+            .resolveExemptedAccountIds(accountsByExternalKey.values)
+
         val validationResult = uploadValidator.validate(
-            parseResult.rows, usersByEmployeeCode, accountsByExternalKey, existingSchedules
+            parseResult.rows, usersByEmployeeCode, accountsByExternalKey, existingSchedules,
+            salesExemptedAccountIds = salesExemptedAccountIds
         )
 
         // UUID 생성 + Redis 저장
@@ -784,7 +799,8 @@ class AdminDisplayWorkScheduleService(
             endDate = request.endDate,
             employee = employee,
             account = account,
-            existingSchedules = existingSchedules
+            existingSchedules = existingSchedules,
+            salesExemptedAccountIds = resolveSalesExemptedAccountIds(account)
         )
 
         if (result.validatedRow == null) {
@@ -929,7 +945,8 @@ class AdminDisplayWorkScheduleService(
             account = account,
             existingSchedules = existingSchedules,
             excludeScheduleId = scheduleId,
-            maxAttendedWorkingDate = maxAttendedWorkingDate
+            maxAttendedWorkingDate = maxAttendedWorkingDate,
+            salesExemptedAccountIds = resolveSalesExemptedAccountIds(account)
         )
 
         if (result.validatedRow == null) {
