@@ -124,7 +124,23 @@ data class OrderLineViolation(
     /** 요청 수량(총 EA). */
     val requestedQuantity: Int? = null,
 ) {
-    enum class Reason { INVALID_UNIT, SUPPLY_LIMIT_EXCEEDED }
+    enum class Reason {
+        INVALID_UNIT,
+        SUPPLY_LIMIT_EXCEEDED,
+
+        /**
+         * SAP `InventorySearch.Message` 가 주문 불가 사유를 반환 — 레거시
+         * `OrderController.java:573` 의 `if (equals("OK", message))` 게이트 복원.
+         * 사유 문자열이 비어 있으면(누락) 차단하지 않고 통과시킨다.
+         */
+        UNAVAILABLE,
+
+        /**
+         * SAP 가 환산수량(`ConversionQuantity`)을 주지 않아 박스 환산 자체가 불가 (비-EA 단위 한정).
+         * 기본값 1 로 대체하면 총 EA 가 그대로 박스 수량으로 승격돼 과다 주문이 되므로 차단한다.
+         */
+        CONVERSION_UNKNOWN,
+    }
 }
 
 /**

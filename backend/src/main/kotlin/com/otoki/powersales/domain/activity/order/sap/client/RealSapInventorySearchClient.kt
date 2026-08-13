@@ -44,8 +44,27 @@ class RealSapInventorySearchClient(
             ?: throw OrderInvalidRequestException("거래처 SAP 코드(external_key)가 없습니다")
 
         // 2. SAP — 재고/공급제한/환산수량 (productCode 키)
-        val sapItems = inventorySearchSender.search(externalKey, productCodes, deliveryDate)
-            .associateBy { it.productCode }
+        val rawItems = inventorySearchSender.search(externalKey, productCodes, deliveryDate)
+        // 동일 productCode 가 2건 이상 오면 associateBy 는 뒤 항목으로 조용히 덮어쓴다 — 결손 행이
+        // 뒤에 오면 정상 행이 사라지므로, 단위/환산수량이 채워진 행을 우선 채택하고 흔적을 남긴다.
+        val sapItems = rawItems.groupBy { it.productCode }
+            .mapValues { (productCode, items) ->
+                if (items.size > 1) {
+                    log.warn(
+                        "sap.inventory.duplicate SAP 응답에 동일 productCode {}건 — externalKey={} productCode={} deliveryDate={}",
+                        items.size, externalKey, productCode, deliveryDate,
+                    )
+                }
+                // 기존 동작(associateBy = 마지막 행 채택)을 그대로 유지하되, **마지막 행이 결손일 때만**
+                // 온전한 행으로 구제한다. 마지막 행이 정상인 평상시 경로는 종전과 100% 동일하다.
+                val last = items.last()
+                if (!last.minOrderingUnit.isNullOrBlank() && !last.conversionQuantity.isNullOrBlank()) {
+                    last
+                } else {
+                    items.lastOrNull { !it.minOrderingUnit.isNullOrBlank() && !it.conversionQuantity.isNullOrBlank() }
+                        ?: last
+                }
+            }
 
         // 3. Product 마스터 — 단가/제품명 보강 (SAP 응답엔 단가 없음)
         val products = productRepository.findByProductCodeIn(productCodes)
@@ -53,13 +72,27 @@ class RealSapInventorySearchClient(
 
         return sapItems.values.associate { item ->
             val product = products[item.productCode]
+            // 레거시 정합: SAP 응답 MinOrderingUnit 으로 단위 강제 (OrderController.java:548,664).
+            // 클라이언트 unit 은 사용하지 않는다.
+            val minOrderingUnit = item.minOrderingUnit?.trim().orEmpty()
+            val conversionQuantity = item.conversionQuantity.toQuantityOrNull()
+
+            // 운영은 external_api_log 본문 캡처가 꺼져 있어(local/dev 만 캡처) SAP 응답 원문이 남지 않는다.
+            // 결손은 곧바로 오주문/차단으로 이어지므로 재현에 필요한 식별자를 여기서 남긴다.
+            if (minOrderingUnit.isEmpty() || conversionQuantity == null) {
+                log.warn(
+                    "sap.inventory.incomplete SAP 발주단위/환산수량 결손 — externalKey={} productCode={} " +
+                        "deliveryDate={} minOrderingUnit='{}' conversionQuantity='{}' message='{}'",
+                    externalKey, item.productCode, deliveryDate,
+                    item.minOrderingUnit, item.conversionQuantity, item.message,
+                )
+            }
+
             item.productCode to InventoryInfo(
                 productCode = item.productCode,
                 productName = product?.name ?: item.productName ?: item.productCode,
-                // 레거시 정합: SAP 응답 MinOrderingUnit 으로 단위 강제 (OrderController.java:548,664).
-                // 공란/누락이면 빈 문자열 그대로 (레거시 setUnit("") 동등) — 클라이언트 unit 은 사용하지 않음.
-                minOrderingUnit = item.minOrderingUnit?.trim().orEmpty(),
-                conversionQuantity = item.conversionQuantity.toQuantity(default = 1).coerceAtLeast(1),
+                minOrderingUnit = minOrderingUnit,
+                conversionQuantity = conversionQuantity,
                 // SupplyLimitQTY 누락/공란 = 공급제한 없음 (레거시는 미표시 시 미차단). Int.MAX_VALUE 로 통과.
                 supplyLimitQuantity = item.supplyLimitQuantity.toQuantity(default = Int.MAX_VALUE),
                 // 레거시 정합: 낱개단가 = 표준단가 + 주세(supertax). 금액 = 낱개단가 × 총 EA.
@@ -69,6 +102,7 @@ class RealSapInventorySearchClient(
                     log.warn("Product 마스터 단가 없음 — unitPrice=0 처리 (productCode={})", item.productCode)
                     BigDecimal.ZERO
                 },
+                message = item.message,
             )
         }
     }
@@ -81,4 +115,11 @@ class RealSapInventorySearchClient(
         if (trimmed.isNullOrEmpty()) return default
         return trimmed.toBigDecimalOrNull()?.toInt() ?: default
     }
+
+    /**
+     * SAP 환산수량 문자열 → Int. **결손(공란/누락/파싱불가/0 이하)은 null** — 기본값으로 대체하지 않는다
+     * ([InventoryInfo.conversionQuantity] 주석의 과다주문 사고 참조).
+     */
+    private fun String?.toQuantityOrNull(): Int? =
+        this?.trim()?.takeIf { it.isNotEmpty() }?.toBigDecimalOrNull()?.toInt()?.takeIf { it > 0 }
 }

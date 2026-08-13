@@ -129,6 +129,60 @@ class OrderRequestCreateServiceTest {
         }
 
         @Test
+        @DisplayName("EA 라인은 SAP 환산수량 결손이어도 종전대로 등록 — 회귀 방지 (EA 는 환산수량 미사용)")
+        fun eaLineWithMissingConversionStillRegisters() {
+            stubAuthAndAccount()
+            // 구 코드는 결손 환산수량을 1 로 메웠고 EA 는 그 값을 쓰지 않아 정상 등록됐다.
+            // 결손 차단이 EA 까지 막으면 기존 주문이 깨지므로 EA 는 예외로 둔다.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = null, supply = 1000, minOrderingUnit = "EA")))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { productRepository.findByProductCodeIn(listOf("P001")) } returns
+                listOf(Product(id = 99L, productCode = "P001"))
+            val savedLines = slot<List<OrderRequestProduct>>()
+            every { orderRequestProductRepository.saveAll(capture(savedLines)) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 7, unit = "EA", quantityPieces = 7, quantityBoxes = 0))
+            )
+
+            service.create(userId, request)
+
+            val saved = savedLines.captured.single()
+            assertThat(saved.unit).isEqualTo("EA")
+            assertThat(saved.quantityPieces).isEqualByComparingTo(BigDecimal.valueOf(7))
+            // 종전과 동일: piecesPerBox=1, EA 는 SAP 로 총 EA(quantityPieces) 가 송신된다.
+            assertThat(saved.piecesPerBox).isEqualTo(1)
+            verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("SAP Message 누락은 등록 통과 — 필드 부재만으로 전 주문이 막히지 않게 (레거시는 차단)")
+        fun sapMessageMissingStillRegisters() {
+            stubAuthAndAccount()
+            stubInventory(
+                mapOf("P001" to inventoryInfo("P001", conv = 4, supply = 1000, minOrderingUnit = "BOX", message = null))
+            )
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { productRepository.findByProductCodeIn(listOf("P001")) } returns
+                listOf(Product(id = 99L, productCode = "P001"))
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 5, unit = "BOX", quantityPieces = 20, quantityBoxes = 5))
+            )
+
+            service.create(userId, request)
+
+            verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
         @DisplayName("박스+낱개 혼합 — 총 EA 가 환산수량 배수면 박스 수로 흡수 저장 (레거시 정합)")
         fun mixedBoxAndPiecesAbsorbed() {
             stubAuthAndAccount()
@@ -312,6 +366,53 @@ class OrderRequestCreateServiceTest {
         }
 
         @Test
+        @DisplayName("SAP Message 가 주문 불가 사유 → 라인 차단 + 원문 노출 (레거시 OrderController:573 게이트)")
+        fun sapMessageNotOkBlocks() {
+            stubAuthAndAccount()
+            stubInventory(
+                mapOf("P001" to inventoryInfo("P001", conv = 4, supply = 1000, minOrderingUnit = "BOX", message = "단가 정보 없음"))
+            )
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 5, unit = "BOX", quantityPieces = 20, quantityBoxes = 5))
+            )
+
+            val thrown = catchThrowableOfType(
+                { service.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(1)
+            assertThat(thrown.violations.first().reason).isEqualTo(OrderLineViolation.Reason.UNAVAILABLE)
+            assertThat(thrown.violations.first().message).isEqualTo("단가 정보 없음")
+            verify(exactly = 0) { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) }
+        }
+
+        @Test
+        @DisplayName("SAP 환산수량 결손 → 라인 차단 (기본값 1 대체 금지 — 총 EA 가 박스로 승격되는 과다주문 방지)")
+        fun conversionQuantityMissingBlocks() {
+            stubAuthAndAccount()
+            // 2026-08-12 OR00001615 재현: SAP 가 MinOrderingUnit·ConversionQuantity 를 함께 비워 응답.
+            // 과거 코드는 conv=1 로 대체해 총 EA 20 을 20 BOX 로 SAP 에 송신했다 (의도는 5 BOX).
+            stubInventory(
+                mapOf("P001" to inventoryInfo("P001", conv = null, supply = 1000, minOrderingUnit = ""))
+            )
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 5, unit = "BOX", quantityPieces = 20, quantityBoxes = 5))
+            )
+
+            val thrown = catchThrowableOfType(
+                { service.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(1)
+            assertThat(thrown.violations.first().reason)
+                .isEqualTo(OrderLineViolation.Reason.CONVERSION_UNKNOWN)
+            assertThat(thrown.violations.first().requestedQuantity).isEqualTo(20)
+            verify(exactly = 0) { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) }
+        }
+
+        @Test
         @DisplayName("공급제한 초과 → ORD_PRODUCT_RESTRICTED")
         fun productRestricted() {
             stubAuthAndAccount()
@@ -471,12 +572,19 @@ class OrderRequestCreateServiceTest {
 
     // minOrderingUnit: 레거시 정합으로 단위는 클라이언트가 아닌 SAP InventorySearch 응답으로 결정됨.
     // 환산검증/공급제한/SAP 송신 단위가 모두 이 값 기준 (line() 의 unit 은 형식 검증용으로만 사용).
-    private fun inventoryInfo(productCode: String, conv: Int, supply: Int, minOrderingUnit: String = "EA") = InventoryInfo(
+    private fun inventoryInfo(
+        productCode: String,
+        conv: Int?,
+        supply: Int,
+        minOrderingUnit: String = "EA",
+        message: String? = "OK",
+    ) = InventoryInfo(
         productCode = productCode,
         productName = "STUB_$productCode",
         minOrderingUnit = minOrderingUnit,
         conversionQuantity = conv,
         supplyLimitQuantity = supply,
         unitPrice = BigDecimal.ZERO,
+        message = message,
     )
 }

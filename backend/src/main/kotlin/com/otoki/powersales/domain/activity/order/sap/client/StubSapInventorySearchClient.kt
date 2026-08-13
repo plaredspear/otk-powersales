@@ -31,6 +31,7 @@ class StubSapInventorySearchClient : SapInventorySearchClient {
                 conversionQuantity = 1,
                 supplyLimitQuantity = Int.MAX_VALUE,
                 unitPrice = BigDecimal.ZERO,
+                message = "OK",
             )
         }
     }

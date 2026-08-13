@@ -35,7 +35,24 @@ data class InventoryInfo(
      * SAP 응답에서 공란/누락이면 빈 문자열 — 레거시는 빈 단위를 그대로 SAP 로 전송한다.
      */
     val minOrderingUnit: String,
-    val conversionQuantity: Int,
+    /**
+     * SAP 환산수량 (`ConversionQuantity`) — 총 EA → 발주단위 수량 환산 분모.
+     *
+     * **응답 공란/누락/0 이면 null 이며, 기본값 1 로 대체하지 않는다.** 1 로 대체하면 총 EA 가 그대로
+     * 박스 수량으로 승격되어 (예: 총 20EA → SAP 로 20 BOX) 입수 배수만큼 과다 주문이 조용히 성립한다
+     * (2026-08-12 OR00001615 실사고). 레거시는 이 자리에 sentinel `-1` 이 들어가 `총EA / -1` 음수가
+     * SAP 단에서 거절되며 등록이 실패했다 (`OrderController.java:548,641`) — null 로 표현하고 호출자가
+     * 라인 차단하는 것이 그 결과와 정합한다.
+     */
+    val conversionQuantity: Int?,
     val supplyLimitQuantity: Int,
     val unitPrice: BigDecimal,
+    /**
+     * SAP 제품별 상태 메시지 (레거시 `Message`). `"OK"` 가 아닌 **사유 문자열이 있으면 주문 불가** —
+     * 레거시 `OrderController.java:573` (`/* 메시지가 OK가 아니면 주문 불가 */`) 게이트.
+     *
+     * 레거시는 기본값 `""` 이라 누락도 차단했으나, 신규는 **누락(null/공백)은 통과 + WARN** 으로 둔다.
+     * SAP 가 필드를 빼고 응답하는 형태 변화 하나로 전 주문이 마비되는 것을 막기 위함.
+     */
+    val message: String?,
 )

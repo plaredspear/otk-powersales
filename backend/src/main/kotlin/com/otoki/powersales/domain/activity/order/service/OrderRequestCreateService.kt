@@ -26,6 +26,7 @@ import com.otoki.powersales.domain.foundation.product.enums.ProductType
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -64,6 +65,8 @@ class OrderRequestCreateService(
     private val entityManager: EntityManager,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
+
+    private val log = LoggerFactory.getLogger(OrderRequestCreateService::class.java)
 
     @Transactional
     fun create(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
@@ -149,9 +152,12 @@ class OrderRequestCreateService(
         // DKRetail__Product__c 조회해 DKRetail__ProductId__c set 한 동등 처리).
         val savedLines = request.lines.map { line ->
             val info = inventoryMap.getValue(line.productCode)
+            // [validateInventory] 가 비-EA 의 환산수량 결손을 이미 차단했으므로, 여기서 null 이 남는 경우는
+            // 환산수량을 쓰지 않는 EA 뿐이다 (종전과 동일하게 1 — piecesPerBox / 박스역산 모두 무해).
+            val conv = info.conversionQuantity ?: 1
             // 레거시 정합: 박스 수량은 총 EA ÷ 환산수량으로 서버가 역산(클라이언트 박스 입력값 비신뢰).
             // 박스+낱개 혼합도 총 EA 가 환산수량 배수면 박스 수로 흡수됨 (예: 박스5+낱개8, 환산8 → 6박스).
-            val derivedBoxes = UnitConverter.toBoxQuantity(line.quantityPieces, info.conversionQuantity)
+            val derivedBoxes = UnitConverter.toBoxQuantity(line.quantityPieces, conv)
             OrderRequestProduct(
                 lineNumber = BigDecimal.valueOf(line.lineNumber.toLong()),
                 productCode = line.productCode,
@@ -162,7 +168,7 @@ class OrderRequestCreateService(
                 unit = info.minOrderingUnit,
                 unitPrice = info.unitPrice,
                 amount = info.unitPrice.multiply(BigDecimal.valueOf(line.quantityPieces.toLong())),
-                piecesPerBox = info.conversionQuantity.coerceAtLeast(1),
+                piecesPerBox = conv,
                 minOrderUnit = 1,
                 supplyQuantity = info.supplyLimitQuantity,
                 dcQuantity = 0,
@@ -217,9 +223,54 @@ class OrderRequestCreateService(
         request.lines.forEach { line ->
             val info = inventoryMap[line.productCode]
                 ?: throw OrderInvalidRequestException("제품 마스터 미등록 (productCode: ${line.productCode})")
-            val conv = info.conversionQuantity.coerceAtLeast(1)
+
             // 레거시 정합: 단위는 클라이언트 unit 이 아니라 SAP MinOrderingUnit 으로 결정 (OrderController.java:548,664).
             val unit = info.minOrderingUnit
+
+            // 레거시 정합 (OrderController.java:573 + `/* 메시지가 OK가 아니면 주문 불가 */`):
+            // SAP 가 제품별 Message 로 주문 불가 사유를 주면 주문을 차단하고 그 사유를 행에 노출한다.
+            //
+            // 단 판정은 "OK 가 아님" 이 아니라 **"OK 가 아닌 사유 문자열이 실제로 있음"** 으로 좁힌다.
+            // 레거시는 기본값 "" 이라 Message 누락도 차단했으나, 그러면 SAP 가 필드를 빼고 응답하는
+            // 형태 변화 하나로 전 주문이 마비된다 — 사유 있는 차단과 성격이 다른 실패 모드다.
+            // 누락은 통과시키고 WARN 으로만 관측한다 (발생하면 SAP 와 인터페이스 확인 후 조정).
+            val sapMessage = info.message?.trim()
+            if (sapMessage.isNullOrEmpty()) {
+                log.warn(
+                    "order.inventory.message_missing SAP Message 누락 — 레거시는 차단했으나 통과시킴 " +
+                        "(productCode={} unit='{}' conversionQuantity={})",
+                    line.productCode, unit, info.conversionQuantity,
+                )
+            } else if (sapMessage != SAP_MESSAGE_OK) {
+                violations += OrderLineViolation(
+                    productCode = line.productCode,
+                    productName = info.productName,
+                    reason = OrderLineViolation.Reason.UNAVAILABLE,
+                    // 레거시는 SAP 원문 사유를 그대로 행에 노출했다 (write.jsp:704 errorList 렌더).
+                    message = sapMessage,
+                    requestedQuantity = line.quantityPieces,
+                )
+                return@forEach
+            }
+
+            // 환산수량 결손은 기본값(1)으로 메우지 않고 차단한다 — 1 로 대체하면 총 EA 가 그대로 박스
+            // 수량이 되어 입수 배수만큼 과다 주문이 성립한다 (2026-08-12 OR00001615: 5BOX→20BOX).
+            //
+            // 단 EA 단위는 환산수량을 **쓰지 않으므로**(배수 검증 없음 / 공급제한 ×1 / SAP 송신은 총 EA)
+            // 결손이어도 수량이 어긋날 수 없다. 레거시도 EA 분기에서는 conversionQuantity 를 참조하지 않았다
+            // (OrderController.java:630-644). 기존 EA 주문의 회귀를 막기 위해 EA 는 종전대로 1 로 채운다.
+            val conv = info.conversionQuantity ?: if (unit == UNIT_EA) {
+                1
+            } else {
+                violations += OrderLineViolation(
+                    productCode = line.productCode,
+                    productName = info.productName,
+                    reason = OrderLineViolation.Reason.CONVERSION_UNKNOWN,
+                    message = "발주단위 정보를 가져오지 못했습니다. 잠시 후 다시 시도해주세요",
+                    requestedQuantity = line.quantityPieces,
+                )
+                return@forEach
+            }
 
             // 단위 환산 정합 검증 — 레거시 OrderController.java:630-632.
             // 박스류(EA 외)는 총 EA(quantityPieces)가 환산수량 배수여야 정합 (박스+낱개 혼합은 총 EA 로 평탄화).
@@ -259,11 +310,12 @@ class OrderRequestCreateService(
 
         if (violations.isEmpty()) return
 
-        // 공급제한 위반이 하나라도 있으면 ORD_PRODUCT_RESTRICTED 로 대표하고, 환산 위반만이면
-        // 기존 ORD_INVALID_UNIT 을 유지한다(라인별 사유는 어느 쪽이든 violations 로 함께 전달).
-        val hasSupplyViolation =
-            violations.any { it.reason == OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED }
-        if (hasSupplyViolation) {
+        // 환산 위반(INVALID_UNIT)만이면 기존 ORD_INVALID_UNIT 을 유지하고, 그 외 사유(공급제한 /
+        // SAP 주문불가 / 환산수량 결손)가 하나라도 섞이면 ORD_PRODUCT_RESTRICTED 로 대표한다
+        // (라인별 사유는 어느 쪽이든 violations 로 함께 전달 — 모바일이 제품 카드마다 표시).
+        val hasNonUnitViolation =
+            violations.any { it.reason != OrderLineViolation.Reason.INVALID_UNIT }
+        if (hasNonUnitViolation) {
             throw OrderProductRestrictedException(violations)
         }
         val single = violations.singleOrNull()
@@ -289,6 +341,9 @@ class OrderRequestCreateService(
     companion object {
         private const val UNIT_EA = "EA"
         private val ALLOWED_UNITS = setOf("BOX", "EA")
+
+        /** SAP InventorySearch 제품별 정상 상태값 (레거시 `StringUtils.equals("OK", message)`). */
+        private const val SAP_MESSAGE_OK = "OK"
 
         /** 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합). */
         private const val EXCLUSIVE_BLOCK_EXEMPT_CODE = "20010042"
