@@ -50,8 +50,10 @@ class AdminAccountService(
      *              적용 여부. 행사/클레임/제품 거래처 lookup 진입점은 true (SF Lookup 필드 정합),
      *              메인 거래처 목록(`GET /api/v1/admin/accounts`)은 false (SF AllAccounts listView=Everything,
      *              추가 필터 없음 — lookupFilter 를 메인 목록에 적용하면 과소노출 GAP).
-     * @param excludeClosedAccount 폐업 거래처 완전 제외 여부. 진열사원스케줄 마스터 등록 거래처 lookup
-     *              진입점만 true — 폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 제외한다.
+     * @param excludeClosedAccount 폐업 거래처 제외 여부. 행사마스터 / 진열사원스케줄 마스터 등록 거래처
+     *              lookup 진입점만 true — 폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 제외한다.
+     *              단, 조회 시점 당월·전월에 마감실적(`ClosingAmountSum` > 0)이 있는 폐업 거래처는 예외로
+     *              노출한다 ([AccountRepositoryCustomImpl.notClosedOrHasRecentSales]).
      * @param myBranchScopePrincipal 비-null 이면 SF 행사마스터(PPTMaster) 거래처 lookup 정합 —
      *              sharing policy(owner/hierarchy) 대신 [myBranchScopePredicate] (지점 화이트리스트 →
      *              `branch_code IN`) 로 가시성을 평가한다. 행사마스터 거래처 lookup 진입점 전용.
