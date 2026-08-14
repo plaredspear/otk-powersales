@@ -237,6 +237,16 @@ app:
       # 누락 시 조용히 이미지가 깨진다(HIKARI_MAX_POOL 등과 동일한 "코드에 못 박기" 판단).
       # base(local/test)는 공백 — SF 사본 업로드를 skip 하고 private key 로 fallback 한다.
       sf-image-bucket: ""
+  order:
+    unit-guard:
+      # SAP 마스터 오염 임시 가드 — SD03070 발주단위가 기준 단위와 다르면 해당 라인 주문 차단.
+      # 2026-08-10~13 오쉐프 냉장 4종의 발주단위가 공란/PAC/EA 로 요동 + 환산수량 1 로 오염되어
+      # 총 EA 가 박스 수로 재해석·×4 과다 등록된 사고의 재발 방어. 제품 추가/해제는 본 목록 수정.
+      expected-units:
+        "25120001": BOX  # 오쉐프_모짜렐라치즈 1KG
+        "25020002": BOX  # 오쉐프_요거트푸딩 1KG
+        "25020003": BOX  # 오쉐프_애플라임푸딩 1KG
+        "25020008": BOX  # 오쉐프_애플망고푸딩 1KG
   domain:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}

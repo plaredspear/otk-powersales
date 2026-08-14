@@ -140,6 +140,13 @@ data class OrderLineViolation(
          * 기본값 1 로 대체하면 총 EA 가 그대로 박스 수량으로 승격돼 과다 주문이 되므로 차단한다.
          */
         CONVERSION_UNKNOWN,
+
+        /**
+         * 사전 지정된 기준 발주단위와 SAP `MinOrderingUnit` 응답이 불일치 — SAP 마스터 오염 방어
+         * 임시 가드 (`app.order.unit-guard.expected-units`). 오염된 단위로 주문이 진행되면 SAP 등록
+         * 단계에서 수량이 박스로 재해석돼 입수 배수만큼 과다 주문이 성립하므로 라인을 차단한다.
+         */
+        UNIT_MISMATCH,
     }
 }
 

@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.order.service
 
+import com.otoki.powersales.domain.activity.order.config.OrderUnitGuardProperties
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestCreateResponse
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
@@ -64,6 +65,7 @@ class OrderRequestCreateService(
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val entityManager: EntityManager,
     private val eventPublisher: ApplicationEventPublisher,
+    private val unitGuardProperties: OrderUnitGuardProperties = OrderUnitGuardProperties(),
 ) {
 
     private val log = LoggerFactory.getLogger(OrderRequestCreateService::class.java)
@@ -226,6 +228,26 @@ class OrderRequestCreateService(
 
             // 레거시 정합: 단위는 클라이언트 unit 이 아니라 SAP MinOrderingUnit 으로 결정 (OrderController.java:548,664).
             val unit = info.minOrderingUnit
+
+            // SAP 마스터 오염 임시 가드 — 사전 지정 제품은 SD03070 발주단위가 기준과 다르면 차단.
+            // 오염된 단위(공란/PAC/EA 요동 + conv=1)로 진행되면 총 EA 가 환산 없이 송신되고 SAP 등록
+            // 단계가 수량을 BOX 로 재해석해 입수 배수만큼 과다 주문이 성립한다 (2026-08 오쉐프 실사고).
+            val expectedUnit = unitGuardProperties.expectedUnits[line.productCode]
+            if (expectedUnit != null && !unit.equals(expectedUnit, ignoreCase = true)) {
+                log.warn(
+                    "order.unit_guard.blocked SAP 발주단위 기준 불일치 — productCode={} sapUnit='{}' " +
+                        "expectedUnit='{}' conversionQuantity={} (SAP 마스터 오염 의심 — 인터페이스 담당 확인 필요)",
+                    line.productCode, unit, expectedUnit, info.conversionQuantity,
+                )
+                violations += OrderLineViolation(
+                    productCode = line.productCode,
+                    productName = info.productName,
+                    reason = OrderLineViolation.Reason.UNIT_MISMATCH,
+                    message = "발주단위 정보 이상이 감지되어 주문할 수 없습니다. 관리자에게 문의해주세요",
+                    requestedQuantity = line.quantityPieces,
+                )
+                return@forEach
+            }
 
             // 레거시 정합 (OrderController.java:573 + `/* 메시지가 OK가 아니면 주문 불가 */`):
             // SAP 가 제품별 Message 로 주문 불가 사유를 주면 주문을 차단하고 그 사유를 행에 노출한다.

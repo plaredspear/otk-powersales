@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.foundation.product.enums.ProductType
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.activity.order.config.OrderUnitGuardProperties
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateLine
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
@@ -510,6 +511,88 @@ class OrderRequestCreateServiceTest {
     }
 
     // ───── Test fixtures ─────
+
+    @Nested
+    @DisplayName("발주단위 가드 — SAP 마스터 오염 임시 방어 (app.order.unit-guard)")
+    inner class UnitGuard {
+
+        // 기준 단위 지정: P001 은 BOX 가 정상. 클래스 상단 공용 service 는 빈 설정(가드 무효)이므로
+        // 가드 동작 검증은 전용 인스턴스로 수행한다.
+        private val guardedService = OrderRequestCreateService(
+            orderRequestRepository,
+            orderRequestProductRepository,
+            productRepository,
+            accountRepository,
+            employeeRepository,
+            inventorySearchClient,
+            loanInquiryClient,
+            orderRequestRegisterSender,
+            orderDeadlineCalculator,
+            entityManager,
+            eventPublisher,
+            OrderUnitGuardProperties(expectedUnits = mapOf("P001" to "BOX")),
+        )
+
+        @Test
+        @DisplayName("지정 제품의 SAP 발주단위가 기준(BOX)과 다르면(PAC) UNIT_MISMATCH 차단 — 2026-08 오쉐프 사고 재현")
+        fun mismatchBlocks() {
+            stubAuthAndAccount()
+            // 사고 재현: SAP 마스터 오염으로 BOX 제품이 PAC + conv=1 로 응답 (OR00001654 실측).
+            // 가드 없이는 총 EA 8 이 8 "BOX" 로 등록돼 ×4 과다가 성립했다.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 1, supply = 1000, minOrderingUnit = "PAC")))
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 2, unit = "BOX", quantityPieces = 8, quantityBoxes = 2))
+            )
+
+            val thrown = catchThrowableOfType(
+                { guardedService.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(1)
+            assertThat(thrown.violations.first().reason).isEqualTo(OrderLineViolation.Reason.UNIT_MISMATCH)
+            verify(exactly = 0) { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) }
+        }
+
+        @Test
+        @DisplayName("지정 제품의 SAP 발주단위가 기준과 일치(BOX)하면 가드 통과 — 후속 검증(공급제한)까지 진행")
+        fun matchPasses() {
+            stubAuthAndAccount()
+            // 정상 마스터 응답 (BOX + conv=4). 공급제한 0 으로 두어 "가드는 통과하고 공급제한에서
+            // 걸리는" 위반 사유로 가드 미발동을 판별한다.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 4, supply = 0, minOrderingUnit = "BOX")))
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 2, unit = "BOX", quantityPieces = 8, quantityBoxes = 2))
+            )
+
+            val thrown = catchThrowableOfType(
+                { guardedService.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(1)
+            assertThat(thrown.violations.first().reason).isEqualTo(OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED)
+        }
+
+        @Test
+        @DisplayName("미지정 제품은 발주단위가 무엇이든 가드 미적용 (라망류 PAC 낱개발주 오탐 방지)")
+        fun unlistedProductNotGuarded() {
+            stubAuthAndAccount()
+            // P002 는 expectedUnits 미등록 — PAC + conv=1 (라망류의 항구 정상 상태) 이어도 차단 금지.
+            stubInventory(mapOf("P002" to inventoryInfo("P002", conv = 1, supply = 0, minOrderingUnit = "PAC")))
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P002", quantity = 8, unit = "EA", quantityPieces = 8, quantityBoxes = 0))
+            )
+
+            val thrown = catchThrowableOfType(
+                { guardedService.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(1)
+            assertThat(thrown.violations.first().reason).isEqualTo(OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED)
+        }
+    }
 
     private fun stubAuthAndAccount() {
         every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
