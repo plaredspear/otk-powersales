@@ -551,6 +551,8 @@ class OrderRequestCreateServiceTest {
             )
             assertThat(thrown.violations).hasSize(1)
             assertThat(thrown.violations.first().reason).isEqualTo(OrderLineViolation.Reason.UNIT_MISMATCH)
+            // 모바일 제품 카드에 그대로 노출되는 사용자 대면 문구 — 임의 변경 방지.
+            assertThat(thrown.violations.first().message).isEqualTo("해당 제품은 일시적으로 주문할 수 없는 상태입니다")
             verify(exactly = 0) { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) }
         }
 

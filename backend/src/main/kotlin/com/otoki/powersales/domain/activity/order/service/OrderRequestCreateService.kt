@@ -243,7 +243,7 @@ class OrderRequestCreateService(
                     productCode = line.productCode,
                     productName = info.productName,
                     reason = OrderLineViolation.Reason.UNIT_MISMATCH,
-                    message = "발주단위 정보 이상이 감지되어 주문할 수 없습니다. 관리자에게 문의해주세요",
+                    message = "해당 제품은 일시적으로 주문할 수 없는 상태입니다",
                     requestedQuantity = line.quantityPieces,
                 )
                 return@forEach
