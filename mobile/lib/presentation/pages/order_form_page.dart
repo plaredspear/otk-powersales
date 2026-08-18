@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/order_deadline.dart';
 import '../../app_router.dart';
 import '../providers/order_form_provider.dart';
 import '../providers/order_form_state.dart';
@@ -173,10 +174,14 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     DateTime? currentDate,
   ) async {
     final now = DateTime.now();
+    // 마감(납기일 전일 13:50)이 이미 지난 날짜는 고르는 순간 주문 불가라, 선택 자체를 막는다.
+    // 레거시 write.jsp:21 의 `min = 오늘+1일` 정합 (13:50 이후면 모레부터).
+    final firstDate = OrderDeadline.earliestDeliveryDate(now: now);
     final picked = await SingleDatePickerSheet.show(
       context,
-      initialDate: currentDate ?? now,
-      firstDate: now,
+      // 복원된 임시저장 납기일이 이미 마감을 넘겼으면 선택 가능한 최초일로 되돌린다.
+      initialDate: currentDate ?? firstDate,
+      firstDate: firstDate,
       lastDate: now.add(const Duration(days: 365)),
       title: '납기일 선택',
     );

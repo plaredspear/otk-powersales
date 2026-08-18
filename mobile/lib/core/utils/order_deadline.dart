@@ -30,4 +30,18 @@ class OrderDeadline {
   static bool isWithinDeadline(DateTime deliveryDate, {DateTime? now}) {
     return (now ?? DateTime.now()).isBefore(deadlineFor(deliveryDate));
   }
+
+  /// 지금(또는 [now]) 기준으로 **아직 주문할 수 있는 가장 이른 납기일** (시각 성분 없음).
+  ///
+  /// 13:50 이전이면 내일, 13:50 이후면 모레다 — 오늘 13:50 이 지나면 내일 납기 주문도
+  /// 이미 마감이기 때문. 오늘 이전(= 오늘 포함)은 어떤 시각에도 주문할 수 없으므로
+  /// 애초에 고를 수 없어야 한다 (레거시 `write.jsp:21` `min = 오늘+1일` 정합).
+  static DateTime earliestDeliveryDate({DateTime? now}) {
+    final current = now ?? DateTime.now();
+    final tomorrow = DateTime(current.year, current.month, current.day + 1);
+    // 내일 납기의 마감(= 오늘 13:50)이 이미 지났으면 하루 더 미룬다.
+    return isWithinDeadline(tomorrow, now: current)
+        ? tomorrow
+        : DateTime(tomorrow.year, tomorrow.month, tomorrow.day + 1);
+  }
 }
