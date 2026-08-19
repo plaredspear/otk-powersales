@@ -1220,6 +1220,110 @@ class ScheduleUploadValidatorTest {
         }
     }
 
+    @Nested
+    @DisplayName("validateSingle - 상시/임시 배타 분기 (레거시 트리거 :166-189 정합)")
+    inner class ValidateSingleCombinationBranch {
+
+        private val employee = createEmployee("20030001", "홍길동", "USR001", "재직")
+        private val account = createAccount("ACC001", "ACC_SF001", "테스트거래처")
+        private val today: LocalDate = LocalDate.now()
+
+        /** 오늘을 포함하는 기간(= ValidData '유효')의 기존 배치 */
+        private fun existing(
+            type3: TypeOfWork3,
+            type5: TypeOfWork5,
+            id: Long
+        ) = DisplayWorkSchedule(
+            id = id,
+            employee = employee,
+            account = createAccount("ACC$id", "ACC_SF$id", "거래처$id", id = id + 10),
+            typeOfWork3 = type3,
+            typeOfWork5 = type5,
+            startDate = today.minusMonths(2),
+            endDate = today.plusMonths(2)
+        )
+
+        private fun register(
+            type3: String,
+            type5: String,
+            existingSchedules: List<DisplayWorkSchedule>
+        ) = validator.validateSingle(
+            employeeCode = "20030001",
+            accountCode = "ACC001",
+            typeOfWork3 = type3,
+            typeOfWork4 = "상온",
+            typeOfWork5 = type5,
+            startDate = today,
+            endDate = today.plusDays(7),
+            employee = employee,
+            account = account,
+            existingSchedules = existingSchedules
+        )
+
+        @Test
+        @DisplayName("고정(상시) 존재 + 임시(순회) 신규 - 허용 (임시는 임시 1건 규칙만 평가)")
+        fun temporaryAllowedDespiteFixed() {
+            val result = register("순회", "임시", listOf(existing(TypeOfWork3.FIXED, TypeOfWork5.REGULAR, 1L)))
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+        }
+
+        @Test
+        @DisplayName("격고 2건(상시) 존재 + 임시(순회) 신규 - 허용")
+        fun temporaryAllowedDespiteAlternates() {
+            val result = register(
+                "순회", "임시",
+                listOf(
+                    existing(TypeOfWork3.GAP, TypeOfWork5.REGULAR, 1L),
+                    existing(TypeOfWork3.GAP, TypeOfWork5.REGULAR, 2L)
+                )
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+        }
+
+        @Test
+        @DisplayName("임시 존재 + 임시(순회) 신규 - 차단 (C3 는 임시에도 적용)")
+        fun temporaryBlockedByTemporary() {
+            val result = register(
+                "순회", "임시",
+                listOf(existing(TypeOfWork3.ROTATION, TypeOfWork5.TEMPORARY, 1L))
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("임시 배치가 이미 존재") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("임시만 존재 + 고정(상시) 신규 - 허용 (레거시 고정 카운트는 상시 건만 :151-160)")
+        fun fixedAllowedWhenOnlyTemporaryExists() {
+            val result = register(
+                "고정", "상시",
+                listOf(existing(TypeOfWork3.ROTATION, TypeOfWork5.TEMPORARY, 1L))
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+        }
+
+        @Test
+        @DisplayName("격고 2건(상시) 존재 + 순회(상시) 신규 - 차단 (레거시 :175-177 은 격고/순회 공통)")
+        fun patrolBlockedByTwoAlternates() {
+            val result = register(
+                "순회", "상시",
+                listOf(
+                    existing(TypeOfWork3.GAP, TypeOfWork5.REGULAR, 1L),
+                    existing(TypeOfWork3.GAP, TypeOfWork5.REGULAR, 2L)
+                )
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("격고 배치가 이미 2개 존재") }
+            assertThat(result.validatedRow).isNull()
+        }
+    }
+
     private fun createEmployee(
         employeeCode: String,
         name: String,

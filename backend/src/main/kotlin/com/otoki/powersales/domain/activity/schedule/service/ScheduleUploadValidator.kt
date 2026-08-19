@@ -479,7 +479,7 @@ class ScheduleUploadValidator {
             // 레거시 트리거는 상시(고정/격고/순회) 카운팅에만 `ValidData__c == '유효'` 를 요구하고
             // (DisplayWorkScheduleMasterTriggerHandler.cls:152,155,158), 임시는 else 분기에서 필터
             // 없이 전건 카운트한다 (같은 파일 :161-163). 이 비대칭을 그대로 재현하기 위해 판정 집합을
-            // 둘로 나눈다: C1/C2/C2a 는 유효 집합, C3 는 필터 없는 원본 집합.
+            // 둘로 나눈다: 상시 카운트는 유효 집합, 임시 카운트는 필터 없는 원본 집합.
             val today = LocalDate.now()
             val existingTypes = sameEmployeeSamePeriod
                 .filter { isValidData(it, today) }
@@ -488,29 +488,8 @@ class ScheduleUploadValidator {
                 Pair(it.typeOfWork3?.displayName, it.typeOfWork5?.displayName)
             }
 
-            val hasFixed = existingTypes.any { it.first == "고정" }
-            if (hasFixed) {
-                messages.add("해당 기간에 고정 배치가 이미 존재합니다")
-            } else if (typeOfWork3 == "고정" && existingTypes.isNotEmpty()) {
-                messages.add("해당 기간에 다른 배치가 존재하여 고정을 추가할 수 없습니다")
-            } else if (typeOfWork3 == "격고") {
-                val existingAlternateCount = existingTypes.count { it.first == "격고" }
-                if (existingAlternateCount >= 2) {
-                    messages.add("격고 배치가 이미 2개 존재합니다")
-                } else {
-                    val hasPatrol = existingTypes.any { it.first == "순회" }
-                    if (hasPatrol && existingAlternateCount >= 1) {
-                        messages.add("순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
-                    }
-                }
-            }
-            // C3: 임시 최대 1건. 레거시 :161-163 이 ValidData 무관하게 카운트하므로 원본 집합 사용.
-            if (typeOfWork5 == "임시") {
-                val existingTempCount = existingTypesUnfiltered.count { it.second == "임시" }
-                if (existingTempCount >= 1) {
-                    messages.add("임시 배치가 이미 존재합니다")
-                }
-            }
+            val counts = countTypes(regularSource = existingTypes, temporarySource = existingTypesUnfiltered)
+            evaluateCombinationRules(typeOfWork3, typeOfWork5, counts)?.let { messages.add(it.message) }
         }
 
         if (messages.isNotEmpty()) {
@@ -611,37 +590,86 @@ class ScheduleUploadValidator {
             }
         }
 
-        // C1: 고정이 존재하면 다른 유형 추가 불가
-        val hasFixed = existingTypes.any { it.first == "고정" }
-        if (hasFixed) {
-            return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
-        }
-        if (newType3 == "고정" && existingTypes.isNotEmpty()) {
-            return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 해당 기간에 고정 배치가 이미 존재")
+        // 레거시 엑셀 경로(UplExcelBtnSchduleMasterController.cls:456-468)는 트리거와 달리
+        // ValidData 필터 없이 전건을 카운트한다. 이 비대칭은 레거시 자체의 것이므로 그대로 둔다.
+        val counts = countTypes(regularSource = existingTypes, temporarySource = existingTypes)
+        val violation = evaluateCombinationRules(newType3, newType5, counts) ?: return null
+        val value = if (violation == CombinationViolation.TEMPORARY_EXISTS) newType5 else newType3
+
+        return RowError(rowNumber, violation.column, violation.fieldName, value, "행 $rowNumber: ${violation.message}")
+    }
+
+    /**
+     * 겹치는 기간의 기존 레코드를 레거시 카운터 4종으로 환산한다.
+     * (DisplayWorkScheduleMasterTriggerHandler.cls:150-164)
+     *
+     * 상시(고정/격고/순회) 카운트와 임시 카운트의 모집단이 경로별로 다르므로 인자로 분리해 받는다.
+     * - 단건 등록: 상시 = ValidData '유효' 집합, 임시 = 원본 집합 (레거시 트리거 :152,155,158 vs :161-163)
+     * - 엑셀 업로드: 양쪽 모두 원본 집합 (레거시 엑셀 컨트롤러 :456-468)
+     */
+    private fun countTypes(
+        regularSource: List<Pair<String?, String?>>,
+        temporarySource: List<Pair<String?, String?>>
+    ): TypeCounts {
+        val regular = regularSource.filter { it.second == "상시" }
+        return TypeCounts(
+            fixed = regular.count { it.first == "고정" },
+            alternate = regular.count { it.first == "격고" },
+            patrol = regular.count { it.first == "순회" },
+            // 레거시는 '상시'가 아닌 전건을 임시로 카운트한다 (:161-163 else 분기)
+            temporary = temporarySource.count { it.second != "상시" }
+        )
+    }
+
+    /**
+     * 근무유형 조합 규칙 (C1~C3) — 레거시 트리거 :166-189 의 분기 구조를 그대로 재현한다.
+     *
+     * **바깥 분기는 신규 레코드의 근무형태5 이며 상시/임시가 배타적이다.** 신규가 '임시' 면
+     * 고정/격고/순회 충돌 규칙(C1/C2/C2a)은 아예 평가되지 않고 '임시 1건' 규칙(C3)만 적용된다.
+     * 즉 같은 기간에 고정 배치가 있어도 임시(순회) 배치는 등록할 수 있다.
+     */
+    private fun evaluateCombinationRules(
+        newType3: String,
+        newType5: String,
+        counts: TypeCounts
+    ): CombinationViolation? {
+        // 레거시 :185-189 — 신규가 임시면 임시 1건 규칙만 본다
+        if (newType5 != "상시") {
+            return if (counts.temporary > 0) CombinationViolation.TEMPORARY_EXISTS else null
         }
 
-        // C2: 격고 최대 2개
-        if (newType3 == "격고") {
-            val existingAlternateCount = existingTypes.count { it.first == "격고" }
-            if (existingAlternateCount >= 2) {
-                return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 격고 배치가 이미 2개 존재")
-            }
-
-            // C2a: 순회가 존재하고 격고가 1건 이상이면 추가 격고 불가
-            val hasPatrol = existingTypes.any { it.first == "순회" }
-            if (hasPatrol && existingAlternateCount >= 1) {
-                return RowError(rowNumber, "G", "근무형태3", newType3, "행 $rowNumber: 순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
-            }
+        // 레거시 :167-171 — 신규가 상시+고정이면 상시 배치가 하나라도 있으면 차단
+        if (newType3 == "고정") {
+            val anyRegular = counts.fixed + counts.alternate + counts.patrol
+            return if (anyRegular > 0) CombinationViolation.FIXED_WITH_OTHERS else null
         }
 
-        // C3: 임시 최대 1개
-        if (newType5 == "임시") {
-            val existingTempCount = existingTypes.count { it.second == "임시" }
-            if (existingTempCount >= 1) {
-                return RowError(rowNumber, "I", "근무형태5", newType5, "행 $rowNumber: 임시 배치가 이미 존재")
-            }
+        // 레거시 :172-184 — 신규가 상시+격고/순회
+        if (counts.fixed > 0) return CombinationViolation.FIXED_EXISTS
+        if (counts.alternate >= 2) return CombinationViolation.ALTERNATE_LIMIT
+        if (newType3 == "격고" && counts.patrol > 0 && counts.alternate >= 1) {
+            return CombinationViolation.ALTERNATE_WITH_PATROL
         }
 
         return null
+    }
+
+    private data class TypeCounts(
+        val fixed: Int,
+        val alternate: Int,
+        val patrol: Int,
+        val temporary: Int
+    )
+
+    private enum class CombinationViolation(
+        val message: String,
+        val column: String,
+        val fieldName: String
+    ) {
+        FIXED_EXISTS("해당 기간에 고정 배치가 이미 존재합니다", "G", "근무형태3"),
+        FIXED_WITH_OTHERS("해당 기간에 다른 배치가 존재하여 고정을 추가할 수 없습니다", "G", "근무형태3"),
+        ALTERNATE_LIMIT("격고 배치가 이미 2개 존재합니다", "G", "근무형태3"),
+        ALTERNATE_WITH_PATROL("순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다", "G", "근무형태3"),
+        TEMPORARY_EXISTS("임시 배치가 이미 존재합니다", "I", "근무형태5")
     }
 }
