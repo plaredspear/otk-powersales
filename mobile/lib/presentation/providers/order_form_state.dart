@@ -1,3 +1,4 @@
+import '../../core/constants/order_limits.dart';
 import '../../core/utils/order_deadline.dart';
 import '../../data/models/order_form/order_draft_response_model.dart';
 import '../../domain/entities/order_draft.dart';
@@ -174,6 +175,10 @@ class OrderFormState {
   /// 여신 잔액이 조회된 경우에만 판정한다(null 이면 미초과로 간주).
   bool get isLoanExceeded =>
       creditBalance != null && totalAmount > creditBalance!;
+
+  /// 승인요청 상한(제품 100개) 초과 여부.
+  /// 담기는 초과해도 허용하고 승인요청만 막는다 — 레거시 write.jsp:556 과 동일 상한.
+  bool get isLineLimitExceeded => items.length > OrderLimits.maxOrderLines;
 
   /// 모든 제품이 선택되었는지 여부
   bool get allItemsSelected => orderDraft.allItemsSelected;

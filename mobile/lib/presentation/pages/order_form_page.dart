@@ -201,7 +201,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   }
 
   /// 제품 추가 모달(공용)에서 선택한 제품들을 주문 라인에 담는다.
-  /// 100개 상한/중복 무시/추가 결과 안내는 여기(호출부)에서 처리한다.
+  /// 담기에는 라인 수 상한이 없다 — 100개 초과는 승인요청 단계에서만 막힌다.
+  /// 중복 무시/추가 결과 안내는 여기(호출부)에서 처리한다.
   Future<void> _handleAddProduct(OrderFormNotifier notifier) async {
     final messenger = ScaffoldMessenger.of(context);
     // 주문서 작성만 전용상품 추가를 막는다(주문 불가 룰). 그 외 화면은 선택 가능.
@@ -215,13 +216,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     if (selected == null || selected.isEmpty || !mounted) return;
 
     int addedCount = 0;
-    bool capped = false;
     for (final product in selected) {
-      // 100개 상한 도달 시 더 이상 담지 않고 중단.
-      if (ref.read(orderFormProvider).items.length >= 100) {
-        capped = true;
-        break;
-      }
       // addProductToOrder 는 중복을 무시한다.
       final beforeCount = ref.read(orderFormProvider).items.length;
       notifier.addProductToOrder(
@@ -240,11 +235,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       }
     }
 
-    if (capped) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('100개 이하로 등록해주세요')),
-      );
-    } else if (addedCount > 0) {
+    if (addedCount > 0) {
       messenger.showSnackBar(
         SnackBar(content: Text('$addedCount개 제품이 추가되었습니다.')),
       );
@@ -508,6 +499,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     isSubmitting: state.isSubmitting,
                     requiredFieldsFilled: state.isReadyForApproval,
                     loanExceeded: state.isLoanExceeded,
+                    lineLimitExceeded: state.isLineLimitExceeded,
                     pastDeadline: state.isPastDeadline,
                     zeroQuantityLineCount: state.zeroQuantityLineCount,
                     onQuantityMissingTap: () =>

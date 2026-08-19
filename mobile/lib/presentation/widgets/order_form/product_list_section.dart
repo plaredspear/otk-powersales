@@ -82,8 +82,8 @@ class ProductListSectionState extends State<ProductListSection> {
   Widget build(BuildContext context) {
     final items = widget.items;
     final hasSelectedItems = items.any((item) => item.isSelected);
-    // 100개 상한 도달 시 제품 추가 차단 (바코드/추가 버튼 비활성화).
-    final canAddMore = items.length < 100;
+    // 담기에는 라인 수 상한이 없다 — 100개를 넘겨 담을 수 있고, 초과 시 승인요청 버튼만
+    // 비활성화된다(하단 고정 바). 그래서 바코드/추가 버튼은 항상 활성 상태로 둔다.
     // 품목이 1개라도 있으면 검색창을 상시 노출한다 (UX 일관성).
     final showSearch = items.isNotEmpty;
 
@@ -122,7 +122,7 @@ class ProductListSectionState extends State<ProductListSection> {
         SliverToBoxAdapter(
           child: Padding(
             padding: AppSpacing.screenHorizontal,
-            child: _buildHeader(canAddMore),
+            child: _buildHeader(),
           ),
         ),
         // ── 목록 위에 고정되는 툴바 (선택 삭제 / 전체 선택 / 검색) ──
@@ -218,7 +218,7 @@ class ProductListSectionState extends State<ProductListSection> {
   }
 
   /// 스크롤되는 헤더 — 제품 라벨 + 바코드/추가 버튼 + 100개 권장 안내
-  Widget _buildHeader(bool canAddMore) {
+  Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,7 +243,7 @@ class ProductListSectionState extends State<ProductListSection> {
             ),
             const Spacer(),
             OutlinedButton.icon(
-              onPressed: canAddMore ? widget.onBarcodeScan : null,
+              onPressed: widget.onBarcodeScan,
               icon: const Icon(Icons.qr_code_scanner, size: 18),
               label: const Text('바코드'),
               style: OutlinedButton.styleFrom(
@@ -260,7 +260,7 @@ class ProductListSectionState extends State<ProductListSection> {
             ),
             const SizedBox(width: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: canAddMore ? widget.onAddProduct : null,
+              onPressed: widget.onAddProduct,
               icon: const Icon(Icons.add, size: 18),
               label: const Text('추가'),
               style: OutlinedButton.styleFrom(

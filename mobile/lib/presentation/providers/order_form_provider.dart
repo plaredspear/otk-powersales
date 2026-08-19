@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/constants/order_limits.dart';
 import '../../core/network/dio_provider.dart';
 import '../../data/datasources/order_form_api_datasource.dart';
 import '../../data/models/order_form/order_draft_request_model.dart';
@@ -360,10 +361,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (isDuplicate) {
       return '이미 추가된 제품입니다.';
     }
-    // (4) 100개 상한 — 담기 단계에서 사전 차단 (제출 검증 (F) 와 동일 상한).
-    if (state.orderDraft.items.length >= 100) {
-      return '100개 이하로 등록해주세요';
-    }
+    // 담기 단계에는 라인 수 상한을 두지 않는다 — 100개 초과도 담을 수 있고,
+    // 초과 상태에서는 승인요청 버튼만 비활성화된다 (제출 검증 (F) 에서 최종 차단).
 
     final newItem = OrderDraftItem(
       productCode: product.productCode,
@@ -412,7 +411,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   /// 바코드 스캔으로 제품을 조회해 주문 라인에 추가한다.
   ///
   /// 스캐너에서 받은 [barcode] 로 제품 검색을 수행하고, 검색된 제품을 (전용상품/시식·증정/
-  /// 중복/100개 상한 차단 룰 적용 후) **전부** 주문 라인에 추가한다 (레거시 write.jsp
+  /// 중복 차단 룰 적용 후) **전부** 주문 라인에 추가한다 (레거시 write.jsp
   /// `barcodeValue` → `$.each` 전건 추가 정합). 추가/차단 결과는 successMessage /
   /// errorMessage 로 표시되며 페이지 listener 가 SnackBar 로 노출한다.
   Future<void> addProductByBarcode(String barcode) async {
@@ -456,10 +455,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (isDuplicate) {
       return;
     }
-    // 100개 상한 — 담기 단계에서 사전 차단 (제출 검증 (F) 와 동일 상한).
-    if (state.orderDraft.items.length >= 100) {
-      return;
-    }
+    // 담기 단계 라인 수 상한 없음 (승인요청 시에만 100개 상한 적용).
 
     final updatedItems = [...state.orderDraft.items, item];
     final totalAmount = updatedItems.fold(0, (sum, i) => sum + i.totalPrice);
@@ -640,9 +636,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (state.orderDraft.items.isEmpty) {
       return '주문할 제품을 추가해주세요';
     }
-    // (F) 라인 100개 초과
-    if (state.orderDraft.items.length > 100) {
-      return '100개 이하로 등록해주세요';
+    // (F) 라인 100개 초과 — 담기는 허용하되 승인요청만 막는다 (버튼도 disabled).
+    //     비-UI 호출 방어 겸 서버 `ORD_INVALID_REQUEST` 상한 정합.
+    if (state.isLineLimitExceeded) {
+      return '${OrderLimits.maxOrderLines}개 이하로 등록해주세요';
     }
     // (G) 여신 한도 초과 / 조회 중 / 실패 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
     final creditBalance = state.creditBalance;

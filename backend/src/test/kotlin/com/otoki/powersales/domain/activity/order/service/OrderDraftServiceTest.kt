@@ -165,14 +165,28 @@ class OrderDraftServiceTest {
         }
 
         @Test
-        @DisplayName("E4 - 라인 101건 → ORD_DRAFT_INVALID_REQUEST (100개 상한 서버 가드)")
-        fun tooManyLines() {
+        @DisplayName("H5 - 라인 101건 임시저장 허용 (100개 상한은 정식 등록에만 적용)")
+        fun overHundredLinesAllowed() {
+            val codes = (1..101).map { "P%03d".format(it) }
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
+            every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
+            every { productRepository.findByProductCodeIn(any()) } returns
+                codes.mapIndexed { idx, code -> Product(id = idx + 1L, productCode = code, name = "제품$code") }
+            val savedSlot = slot<TmpOrder>()
+            every { tmpOrderRepository.save(capture(savedSlot)) } answers {
+                val o = firstArg<TmpOrder>()
+                setId(o, 99L)
+                o
+            }
+
             val request = req(
-                lines = (1..101).map { line(lineNumber = it, productCode = "P%03d".format(it)) },
+                lines = codes.mapIndexed { idx, code -> line(lineNumber = idx + 1, productCode = code) },
             )
-            assertThatThrownBy { service.save(userId, request) }
-                .isInstanceOf(OrderDraftInvalidRequestException::class.java)
-                .hasMessageContaining("100개 이하로 등록해주세요")
+            val response = service.save(userId, request)
+
+            assertThat(response.draftId).isEqualTo(99L)
+            assertThat(savedSlot.captured.products).hasSize(101)
         }
 
         @Test

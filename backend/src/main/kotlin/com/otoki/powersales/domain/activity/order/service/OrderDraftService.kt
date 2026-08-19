@@ -6,7 +6,6 @@ import com.otoki.powersales.domain.activity.order.dto.response.OrderDraftLineRes
 import com.otoki.powersales.domain.activity.order.dto.response.OrderDraftSaveResponse
 import com.otoki.powersales.domain.activity.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.OrderDraftInvalidRequestException
-import com.otoki.powersales.domain.activity.order.util.OrderLineLimits
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrder
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrderProduct
@@ -166,11 +165,9 @@ class OrderDraftService(
     }
 
     private fun validateRequest(request: OrderDraftRequest) {
-        // 라인 수 상한 — 정식 등록과 동일한 100개 상한. 상한을 넘긴 임시저장이 생기면
-        // 복원 후 승인요청이 반드시 실패하므로 저장 시점에 막는다.
-        if (request.lines.size > OrderLineLimits.MAX_ORDER_LINES) {
-            throw OrderDraftInvalidRequestException(OrderLineLimits.MAX_ORDER_LINES_MESSAGE)
-        }
+        // 라인 수 상한 없음 — 100개 상한(OrderLineLimits)은 정식 등록에만 적용한다.
+        // 주문서 화면이 100개 초과 담기를 허용(승인요청 버튼만 비활성)하므로, 작성 중 상태를
+        // 그대로 보관해야 하는 임시저장까지 막으면 담아둔 목록이 유실된다.
         val lineNumbers = request.lines.map { it.lineNumber }
         if (lineNumbers.distinct().size != lineNumbers.size) {
             throw OrderDraftInvalidRequestException("동일 요청 내 lineNumber 가 중복되었습니다")

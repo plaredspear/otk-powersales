@@ -8,6 +8,7 @@ Widget _host({
   bool requiredFieldsFilled = true,
   bool loanExceeded = false,
   bool pastDeadline = false,
+  bool lineLimitExceeded = false,
   int zeroQuantityLineCount = 0,
   VoidCallback? onSubmit,
   VoidCallback? onQuantityMissingTap,
@@ -22,6 +23,7 @@ Widget _host({
         requiredFieldsFilled: requiredFieldsFilled,
         loanExceeded: loanExceeded,
         pastDeadline: pastDeadline,
+        lineLimitExceeded: lineLimitExceeded,
         zeroQuantityLineCount: zeroQuantityLineCount,
         onQuantityMissingTap: onQuantityMissingTap,
       ),
@@ -81,6 +83,37 @@ void main() {
       expect(find.text('여신한도 초과'), findsOneWidget);
       expect(_submitBackground(tester), AppColors.errorLight);
       expect(_labelColor(tester, '여신한도 초과'), AppColors.blockedForeground);
+    });
+
+    testWidgets('제품 100개 초과 → 초과 라벨 + 회색 배경 + 탭 차단', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _host(lineLimitExceeded: true, onSubmit: () => tapped = true),
+      );
+
+      expect(find.text('제품 100개 초과'), findsOneWidget);
+      expect(find.text('승인요청'), findsNothing);
+      expect(
+        _submitBackground(tester),
+        AppColors.surfaceVariant,
+        reason: '품목을 덜어내면 해소되는 상태라 회색을 유지한다',
+      );
+
+      await tester.tap(find.text('제품 100개 초과'));
+      expect(tapped, isFalse, reason: '100개 초과 상태에서는 승인요청이 눌리면 안 된다');
+    });
+
+    testWidgets('제품 100개 초과 + 수량 0 동시 → 라인 수 초과가 우선', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          lineLimitExceeded: true,
+          requiredFieldsFilled: false,
+          zeroQuantityLineCount: 4,
+        ),
+      );
+
+      expect(find.text('제품 100개 초과'), findsOneWidget);
+      expect(find.text('수량 미입력 4건'), findsNothing);
     });
 
     testWidgets('수량 0 라인 존재 → 건수 라벨 + 회색 배경 유지', (tester) async {

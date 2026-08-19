@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/order_limits.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -10,8 +11,8 @@ import '../../../core/theme/app_typography.dart';
 /// 색은 "이 화면에서 해소 가능한가" 를 기준으로 2단계로 나눈다.
 /// - [pastDeadline] · [loanExceeded] = 차단 — 붉은 계열. 상단 마감 안내([AppColors.error])와
 ///   같은 색 언어라 위아래가 같은 사건으로 읽힌다.
-/// - [quantityMissing] = 주의 — 회색 유지. 지금 고칠 수 있는 상태라 경고색으로 위협하지 않고,
-///   활성(노랑)으로 오인되지도 않는다.
+/// - [lineLimitExceeded] · [quantityMissing] = 주의 — 회색 유지. 지금 고칠 수 있는 상태라
+///   경고색으로 위협하지 않고, 활성(노랑)으로 오인되지도 않는다.
 enum SubmitButtonState {
   /// 모든 조건 충족 — 탭 가능.
   ready,
@@ -21,6 +22,9 @@ enum SubmitButtonState {
 
   /// 총 주문금액 > 여신잔액 — 이 화면에서 해소 불가.
   loanExceeded,
+
+  /// 제품 라인이 100개 초과 — 품목을 덜어내면 해소된다.
+  lineLimitExceeded,
 
   /// 총EA 0 인 라인 존재 — 수량을 채우면 해소된다.
   quantityMissing,
@@ -44,6 +48,11 @@ class OrderFormActionButtons extends StatelessWidget {
   /// 경과 시 승인요청을 막는다 — 서버가 `ORD_DEADLINE_PASSED` 로 거부할 요청을 미리 차단한다.
   final bool pastDeadline;
 
+  /// 제품 라인이 100개를 초과했는지 여부.
+  /// 담기 자체는 열려 있으므로(초과 상태로도 목록을 만들 수 있다) 승인요청만 여기서 막는다 —
+  /// 서버가 `ORD_INVALID_REQUEST` 로 거부할 요청을 미리 차단한다.
+  final bool lineLimitExceeded;
+
   /// 총EA 가 0 인 라인 수 — 라벨에 건수를 노출해 어느 정도 규모인지 알린다.
   final int zeroQuantityLineCount;
 
@@ -60,15 +69,18 @@ class OrderFormActionButtons extends StatelessWidget {
     required this.requiredFieldsFilled,
     this.loanExceeded = false,
     this.pastDeadline = false,
+    this.lineLimitExceeded = false,
     this.zeroQuantityLineCount = 0,
     this.onQuantityMissingTap,
   });
 
-  /// 차단 사유 우선순위: 마감 > 여신 > 수량.
-  /// 앞의 둘은 이 화면에서 해소할 수 없으므로, 고쳐도 소용없는 수량 안내보다 먼저 보여준다.
+  /// 차단 사유 우선순위: 마감 > 여신 > 라인 수 > 수량.
+  /// 앞의 둘은 이 화면에서 해소할 수 없으므로, 고쳐도 소용없는 나머지 안내보다 먼저 보여준다.
+  /// 라인 수 초과는 수량보다 먼저 — 품목을 덜어내면 수량 미입력 건수도 함께 줄기 때문.
   SubmitButtonState get _submitState {
     if (pastDeadline) return SubmitButtonState.pastDeadline;
     if (loanExceeded) return SubmitButtonState.loanExceeded;
+    if (lineLimitExceeded) return SubmitButtonState.lineLimitExceeded;
     if (!requiredFieldsFilled && zeroQuantityLineCount > 0) {
       return SubmitButtonState.quantityMissing;
     }
@@ -133,6 +145,8 @@ class OrderFormActionButtons extends StatelessWidget {
         return '마감시간 지남';
       case SubmitButtonState.loanExceeded:
         return '여신한도 초과';
+      case SubmitButtonState.lineLimitExceeded:
+        return '제품 ${OrderLimits.maxOrderLines}개 초과';
       case SubmitButtonState.quantityMissing:
         return '수량 미입력 $zeroQuantityLineCount건';
       case SubmitButtonState.ready:
@@ -146,6 +160,7 @@ class OrderFormActionButtons extends StatelessWidget {
       case SubmitButtonState.pastDeadline:
       case SubmitButtonState.loanExceeded:
         return AppColors.errorLight;
+      case SubmitButtonState.lineLimitExceeded:
       case SubmitButtonState.quantityMissing:
       case SubmitButtonState.ready:
         return AppColors.surfaceVariant;
@@ -159,6 +174,7 @@ class OrderFormActionButtons extends StatelessWidget {
       case SubmitButtonState.pastDeadline:
       case SubmitButtonState.loanExceeded:
         return AppColors.blockedForeground;
+      case SubmitButtonState.lineLimitExceeded:
       case SubmitButtonState.quantityMissing:
       case SubmitButtonState.ready:
         return AppColors.legacyTextSub;

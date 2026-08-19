@@ -559,6 +559,15 @@ void main() {
 
         expect(notifier.state.orderDraft.items, hasLength(1));
       });
+
+      test('100개 초과 담기 허용 — 승인요청만 막고 담기는 열어둔다', () {
+        for (var i = 0; i < 120; i++) {
+          notifier.addProductToOrder(_item('P${i.toString().padLeft(3, '0')}'));
+        }
+
+        expect(notifier.state.orderDraft.items, hasLength(120));
+        expect(notifier.state.isLineLimitExceeded, isTrue);
+      });
     });
 
     // ─── Spec #598 P3-M: addProductLine 차단 룰 3종 ────────────────────
@@ -601,6 +610,24 @@ void main() {
         expect(result, true);
         expect(notifier.state.orderDraft.items, hasLength(1));
         expect(notifier.state.orderDraft.items[0].productCode, 'P004');
+      });
+
+      test('100개 초과여도 담기 성공 (상한은 승인요청 단계에만 적용)', () {
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: List.generate(
+              100,
+              (i) => _item('X${i.toString().padLeft(3, '0')}'),
+            ),
+          ),
+        );
+
+        final result = notifier.addProductLine(_product('P101'));
+
+        expect(result, true);
+        expect(notifier.state.errorMessage, isNull);
+        expect(notifier.state.orderDraft.items, hasLength(101));
+        expect(notifier.state.isLineLimitExceeded, isTrue);
       });
     });
 
