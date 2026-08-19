@@ -178,6 +178,16 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
                 '이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처',
                 '그중 주문 가능한 거래처 유형만 표시됩니다',
               ],
+        // 서버 기능 토글이 비활성이면 실제 기준은 order 와 같아지지만, 폴백은 meta 미제공
+        // (구버전 서버) 상황에서만 쓰이므로 신규 기준 문구를 둔다.
+        MyAccountScope.orderWrite => _isLeader
+            ? const [
+                '소속 지점의 거래처가 표시됩니다',
+              ]
+            : const [
+                '오늘 진열 근무가 확정된 거래처',
+                '그중 주문 가능한 거래처 유형만 표시됩니다',
+              ],
         MyAccountScope.sales => _isLeader
             ? const [
                 '소속 지점의 거래처가 표시됩니다',

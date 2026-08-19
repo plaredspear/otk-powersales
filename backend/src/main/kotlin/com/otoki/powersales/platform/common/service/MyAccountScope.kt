@@ -12,19 +12,29 @@ package com.otoki.powersales.platform.common.service
  *   여사원/yang 예외 경로에 한해 (1) 진열 일정(`selectDisplayMyAccount`) union 추가,
  *   (2) 주문가능 거래처유형(`abctypecode__c IN (...)`) 필터를 추가한다.
  *   일반 조장(`teamleaderAccList`)은 레거시에서 abctype 필터가 주석 처리되어 FIELD 와 동일하다.
+ * - [ORDER_WRITE] : 주문서 **작성** 화면 전용. [ORDER] 와 동일하되, 여사원/yang 예외 경로의 거래처
+ *   후보를 **확정 + 오늘 유효한 진열마스터**로 한정한다
+ *   (`FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 활성 시. 비활성이면 [ORDER] 와 동일 동작).
+ *   주문 조회 필터는 진열 종료 거래처로도 과거 주문을 검색해야 하므로 [ORDER] 를 그대로 쓴다.
  *
  * 여사원/조장 경로는 SALES/FIELD 두 유형 모두 동일하다(team only + 조장 branchCode).
  */
 enum class MyAccountScope {
     SALES,
     FIELD,
-    ORDER;
+    ORDER,
+    ORDER_WRITE;
+
+    /** 주문 계열 여부 — 주문가능 거래처유형(abctypecode) 필터와 진열 일정 union 의 적용 조건. */
+    val isOrder: Boolean
+        get() = this == ORDER || this == ORDER_WRITE
 
     companion object {
         fun from(raw: String?): MyAccountScope =
             when (raw?.lowercase()) {
                 "sales" -> SALES
                 "order" -> ORDER
+                "order_write" -> ORDER_WRITE
                 else -> FIELD
             }
     }

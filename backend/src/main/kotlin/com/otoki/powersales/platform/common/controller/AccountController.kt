@@ -25,7 +25,13 @@ class AccountController(
      *
      * 권한(여사원/조장/부서장)에 따라 레거시 거래처 조회 분기를 재현한다.
      * keyword 파라미터로 거래처명/거래처코드 검색 가능.
-     * scope=sales 인 매출 계열 화면(POS/전산/월매출)에서만 부서장 전체조회 분기가 동작한다.
+     *
+     * scope 값 (미지정/미지의 값은 field):
+     * - `sales` : 매출 계열(POS/전산/월매출). 이 값에서만 부서장 전체조회 분기가 동작한다.
+     * - `field` : 현장 활동 계열(기본값).
+     * - `order` : 주문 조회 필터. 팀멤버스케줄 ∪ 진열 일정 + 주문가능 거래처유형.
+     * - `order_write` : 주문서 작성. 여사원 경로 한정으로 확정·오늘 유효한 진열마스터 거래처만
+     *   (개발자 도구 > 기능 활성화 의 `ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 비활성 시 `order` 와 동일).
      */
     @GetMapping("/my")
     fun getMyAccounts(

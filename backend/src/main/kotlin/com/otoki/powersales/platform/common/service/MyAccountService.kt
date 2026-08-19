@@ -1,5 +1,7 @@
 package com.otoki.powersales.platform.common.service
 
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.dto.response.MyAccountInfo
 import com.otoki.powersales.platform.common.dto.response.MyAccountListResponse
@@ -27,8 +29,12 @@ import java.time.LocalDate
  * | 여사원/그 외 | 본인 팀멤버스케줄 거래처 | `selectMyAccount`(여사원 분기) |
  *
  * 진열스케줄(displayWorkSchedule) union 과 주문가능 거래처유형(abctypecode) 필터는 레거시 주문 셀렉터
- * (`accountSelectList` with `order=order`)에만 존재한다. 따라서 [MyAccountScope.ORDER] 일 때만
- * 여사원/yang 예외 경로에 합치며, 매출/현장 화면(SALES/FIELD)에는 합치지 않는다.
+ * (`accountSelectList` with `order=order`)에만 존재한다. 따라서 주문 계열 scope([MyAccountScope.isOrder])
+ * 일 때만 여사원/yang 예외 경로에 합치며, 매출/현장 화면(SALES/FIELD)에는 합치지 않는다.
+ *
+ * 주문서 **작성** 화면([MyAccountScope.ORDER_WRITE])은 여기서 한 번 더 갈린다 —
+ * [FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY] 가 활성이면 팀멤버스케줄을 쓰지 않고
+ * **확정 + 오늘 유효한 진열마스터**의 거래처만 후보로 삼는다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -36,7 +42,8 @@ class MyAccountService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom,
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom,
+    private val featureToggleService: FeatureToggleService
 ) {
 
     fun getMyAccounts(userId: Long, keyword: String?, scope: MyAccountScope = MyAccountScope.FIELD): MyAccountListResponse {
@@ -55,19 +62,24 @@ class MyAccountService(
         // 조장·지점장: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList).
         // 레거시는 `eq '조장'` 정확 일치였으나 지점장을 조장과 동일 처리하도록 확장 ([AppAuthority.isTeamManager]).
         val isLeader = AppAuthority.isTeamManager(employee.role) && !isLeaderScheduleException
+        // 주문서 작성 화면 + 기능 토글 활성: 거래처 후보를 확정·오늘 유효한 진열마스터로 한정한다.
+        // 토글이 비활성이면 ORDER 와 동일한 이전 동작(팀멤버스케줄 ∪ 진열)으로 되돌아간다.
+        val isDisplayScheduleOnly = scope == MyAccountScope.ORDER_WRITE &&
+            featureToggleService.isEnabled(FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY, userId)
 
         val accounts = when {
             // 전사 거래처는 수천 건이라 keyword 필터 + 상한을 DB 레벨로 푸시다운 (레거시 검색+페이지네이션 정합).
             isAllScheduled -> getAllScheduledAccounts(keyword)
 
             // yang 예외: 본인이 팀장으로 배정된 스케줄 거래처
-            isLeaderScheduleException -> getLeaderScheduleAccounts(employee.id, scope)
+            isLeaderScheduleException -> getLeaderScheduleAccounts(employee.id, scope, isDisplayScheduleOnly)
 
             // 조장 일반. 레거시 주문 셀렉터에서도 abctype 필터가 주석 처리되어 있어 ORDER 여도 분기 동일.
+            // 진열 일정 축이 없는 경로라 ORDER_WRITE 전환의 영향도 받지 않는다.
             isLeader -> getLeaderAccounts(employee.costCenterCode)
 
             // 여사원/그 외(yang 예외 제외): 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기)
-            else -> getEmployeeAccounts(employee.id, scope)
+            else -> getEmployeeAccounts(employee.id, scope, isDisplayScheduleOnly)
         }
 
         val filteredList = if (!keyword.isNullOrBlank()) {
@@ -85,7 +97,12 @@ class MyAccountService(
         return MyAccountListResponse(
             accounts = sortedList,
             totalCount = sortedList.size,
-            meta = buildMeta(isAllScheduled = isAllScheduled, isLeader = isLeader, scope = scope)
+            meta = buildMeta(
+                isAllScheduled = isAllScheduled,
+                isLeader = isLeader,
+                scope = scope,
+                isDisplayScheduleOnly = isDisplayScheduleOnly
+            )
         )
     }
 
@@ -95,7 +112,12 @@ class MyAccountService(
      * 실제 거래처 조회에 사용한 권한·scope 분기와 동일한 기준으로 사용자 문구를 만든다(모바일 하드코딩 분기 대체).
      * yang 예외([isLeaderScheduleException])는 본인 담당 스케줄 기반이라 여사원과 동일 문구로 안내한다.
      */
-    private fun buildMeta(isAllScheduled: Boolean, isLeader: Boolean, scope: MyAccountScope): MyAccountMeta = when {
+    private fun buildMeta(
+        isAllScheduled: Boolean,
+        isLeader: Boolean,
+        scope: MyAccountScope,
+        isDisplayScheduleOnly: Boolean
+    ): MyAccountMeta = when {
         // 부서장 매출 전체조회: 전사 거래처를 DB 검색(최대 ALL_ACCOUNTS_LIMIT 건)으로 노출
         isAllScheduled -> MyAccountMeta(
             criteriaLines = listOf("일정이 등록된 전체 거래처가 표시됩니다"),
@@ -108,8 +130,17 @@ class MyAccountService(
             searchHint = DEFAULT_SEARCH_HINT
         )
 
+        // 여사원/yang 예외 + 주문서 작성(진열마스터 기준): 오늘 확정 진열 거래처 중 주문 가능 유형만
+        isDisplayScheduleOnly -> MyAccountMeta(
+            criteriaLines = listOf(
+                "오늘 진열 근무가 확정된 거래처",
+                "그중 주문 가능한 거래처 유형만 표시됩니다"
+            ),
+            searchHint = DEFAULT_SEARCH_HINT
+        )
+
         // 여사원/yang 예외 + 주문 화면: 담당·진열 거래처 중 주문 가능 유형만
-        scope == MyAccountScope.ORDER -> MyAccountMeta(
+        scope.isOrder -> MyAccountMeta(
             criteriaLines = listOf(
                 "이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처",
                 "그중 주문 가능한 거래처 유형만 표시됩니다"
@@ -139,9 +170,18 @@ class MyAccountService(
 
     /**
      * 일반 사원 거래처 조회: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기).
-     * [MyAccountScope.ORDER] 면 본인 진열 일정(레거시 selectDisplayMyAccount) union + abctype 필터를 적용한다.
+     * 주문 계열 scope 면 본인 진열 일정(레거시 selectDisplayMyAccount) union + abctype 필터를 적용한다.
+     * [isDisplayScheduleOnly] 면 팀멤버스케줄을 조회하지 않고 확정·오늘 유효한 진열마스터만 후보로 삼는다.
      */
-    private fun getEmployeeAccounts(userId: Long, scope: MyAccountScope): List<MyAccountInfo> {
+    private fun getEmployeeAccounts(
+        userId: Long,
+        scope: MyAccountScope,
+        isDisplayScheduleOnly: Boolean
+    ): List<MyAccountInfo> {
+        if (isDisplayScheduleOnly) {
+            return toAccounts(confirmedValidDisplayAccountIds(userId), scope)
+        }
+
         val (fromDate, toDateExclusive) = scheduleDateRange()
 
         val scheduleAccountIds = teamMemberScheduleRepository
@@ -160,7 +200,15 @@ class MyAccountService(
      * 빠져 전체 진열 거래처를 노출하나, 이는 1인 하드코딩 예외의 의도치 않은 동작으로 판단되어
      * 신규에서는 본인 진열 일정 기준으로 한정한다(전사 진열 스캔 회피).
      */
-    private fun getLeaderScheduleAccounts(leaderId: Long, scope: MyAccountScope): List<MyAccountInfo> {
+    private fun getLeaderScheduleAccounts(
+        leaderId: Long,
+        scope: MyAccountScope,
+        isDisplayScheduleOnly: Boolean
+    ): List<MyAccountInfo> {
+        if (isDisplayScheduleOnly) {
+            return toAccounts(confirmedValidDisplayAccountIds(leaderId), scope)
+        }
+
         val (fromDate, toDateExclusive) = scheduleDateRange()
 
         val scheduleAccountIds = teamMemberScheduleRepository
@@ -182,13 +230,23 @@ class MyAccountService(
         fromDate: LocalDate,
         toDateExclusive: LocalDate
     ): List<Long> {
-        if (scope != MyAccountScope.ORDER) return scheduleAccountIds
+        if (!scope.isOrder) return scheduleAccountIds
 
         val displayAccountIds = displayWorkScheduleRepository
             .findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId, fromDate, toDateExclusive)
 
         return (scheduleAccountIds + displayAccountIds).distinct()
     }
+
+    /**
+     * 주문서 작성 전용: 오늘 기준 확정·유효한 진열마스터의 거래처 id.
+     *
+     * 팀멤버스케줄(TMS)을 합치지 않는다 — TMS 는 출근등록 시점에 진열마스터로부터 파생되는 실적
+     * 기록이라 작성 시점의 근무 예정을 담지 못하고, 행사 파생 TMS 까지 후보에 넣기 때문이다.
+     */
+    private fun confirmedValidDisplayAccountIds(employeeId: Long): List<Long> =
+        displayWorkScheduleRepository
+            .findConfirmedValidAccountIdsByEmployeeAndDate(employeeId, LocalDate.now())
 
     /**
      * 부서장(매출 계열) 거래처 조회: 일정이 잡힌 거래처 (레거시 selectAllAccount — 본인/기간 필터 없음).
@@ -201,13 +259,13 @@ class MyAccountService(
     }
 
     /**
-     * accountId 목록 → 거래처 DTO. [MyAccountScope.ORDER] 면 주문가능 거래처유형(abctypecode) 필터를 적용한다
+     * accountId 목록 → 거래처 DTO. 주문 계열 scope 면 주문가능 거래처유형(abctypecode) 필터를 적용한다
      * (레거시 selectMyAccount/selectDisplayMyAccount 의 `order=order` 분기).
      */
     private fun toAccounts(accountIds: List<Long>, scope: MyAccountScope): List<MyAccountInfo> {
         if (accountIds.isEmpty()) return emptyList()
         val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds, true)
-        val filtered = if (scope == MyAccountScope.ORDER) {
+        val filtered = if (scope.isOrder) {
             accounts.filter { it.isOrderableType() }
         } else {
             accounts

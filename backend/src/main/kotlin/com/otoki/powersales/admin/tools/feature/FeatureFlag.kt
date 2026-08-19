@@ -43,6 +43,30 @@ enum class FeatureFlag(val code: String, val label: String) {
         "ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK",
         "출근등록 일정 소유자/일자 검증",
     ),
+
+    /**
+     * 주문서 작성 거래처를 진열마스터 기준으로 한정 (GET /api/v1/mobile/accounts/my?scope=order_write).
+     * 동작 전환형.
+     *
+     * - 활성(기본) = 신규: 여사원 경로에서 **확정(Confirmed) + 오늘이 진열 기간 안**인
+     *   `DisplayWorkScheduleMaster` 의 거래처만 노출한다.
+     * - 비활성 = 이전: 팀멤버스케줄(전월 25일~당월 말일) ∪ 진열 일정 (레거시 `accountSelectList order=order`).
+     *
+     * 팀멤버스케줄(TMS)은 출근등록 시점에 생성되는 **실적 기록**이라 주문 작성 시점의 근무 예정을
+     * 나타내지 못하고, 행사 일정(`Promotion → PromotionEmployee → TMS`) 거래처까지 포함한다.
+     * 행사 근무에는 주문서를 작성하지 않으므로 계획 마스터인 진열마스터를 기준으로 바꾼 것이다.
+     *
+     * 조회 필터(`scope=order`)는 이 전환의 대상이 아니다 — 진열이 끝난 거래처로 과거 주문을
+     * 검색해야 하므로 기존 범위를 유지한다.
+     *
+     * 주의: 이 flag 는 "활성 = 더 좁은 쪽" 이라 Redis 장애 시 활성 폴백이 신규(좁은) 동작이 된다.
+     * 관리자 일정 등록 등으로 진열마스터 없이 TMS 만 존재하는 거래처는 노출되지 않으므로,
+     * 그런 사례가 보고되면 이 flag 를 비활성화해 이전 동작으로 되돌린다.
+     */
+    ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY(
+        "ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY",
+        "주문서 거래처 진열마스터 기준",
+    ),
     ;
 
     companion object {

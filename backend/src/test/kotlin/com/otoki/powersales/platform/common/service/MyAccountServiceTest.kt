@@ -1,5 +1,7 @@
 package com.otoki.powersales.platform.common.service
 
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -26,12 +28,17 @@ class MyAccountServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom = mockk()
+    private val featureToggleService: FeatureToggleService = mockk {
+        // 기본은 활성(신규 동작) — 개별 테스트에서 비활성 시나리오만 덮어쓴다.
+        every { isEnabled(any(), any()) } returns true
+    }
 
     private val myAccountService = MyAccountService(
         employeeRepository,
         accountRepository,
         teamMemberScheduleRepository,
         displayWorkScheduleRepository,
+        featureToggleService,
     )
 
     @Nested
@@ -386,6 +393,113 @@ class MyAccountServiceTest {
     }
 
     @Nested
+    @DisplayName("getMyAccounts - 주문서 작성(ORDER_WRITE) 거래처 조회")
+    inner class OrderWriteScopeTests {
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE + 토글 활성 -> 확정·오늘 유효 진열마스터 거래처만 (팀멤버스케줄 미조회)")
+        fun getMyAccounts_orderWrite_displayScheduleOnly() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(
+                createAccount(id = 3, name = "진열주문마트", externalKey = "1003", abcTypeCode = "5104"),
+                createAccount(id = 4, name = "주문불가식품", externalKey = "1004", abcTypeCode = "9999")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(3, 4)
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 4), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            // 주문가능 abctype 필터는 ORDER 와 동일하게 적용된다
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("진열주문마트")
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
+            }
+            verify(exactly = 0) {
+                displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE + 토글 비활성 -> ORDER 와 동일한 이전 동작(팀멤버스케줄 ∪ 진열)")
+        fun getMyAccounts_orderWrite_toggleDisabled_fallsBackToOrder() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(
+                createAccount(id = 1, name = "주문가능마트", externalKey = "1001", abcTypeCode = "2001"),
+                createAccount(id = 3, name = "진열주문마트", externalKey = "1003", abcTypeCode = "5104")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                featureToggleService.isEnabled(FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY, userId)
+            } returns false
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1)
+            every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(3)
+            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts.map { it.accountName })
+                .containsExactlyInAnyOrder("주문가능마트", "진열주문마트")
+            verify(exactly = 0) {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("yang 예외 조장 + ORDER_WRITE -> 본인 진열마스터 기준 (팀장 스케줄 미조회)")
+        fun getMyAccounts_orderWrite_legacyScheduleExceptionLeader() {
+            val userId = 1L
+            val employee = createEmployee(
+                id = userId, employeeCode = "20030117",
+                role = AppAuthority.LEADER, costCenterCode = "1100",
+                sfid = "a0c1y0000005452AAA"
+            )
+            val accounts = listOf(createAccount(id = 5, name = "사과마을", externalKey = "1014841", abcTypeCode = "2001"))
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(5)
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(5), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts).hasSize(1)
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findDistinctAccountIdsByTeamLeaderIdAndDateRange(any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("일반 조장 + ORDER_WRITE -> 지점 거래처 그대로 (진열 축 없음, 토글 영향 없음)")
+        fun getMyAccounts_orderWrite_leaderUnchanged() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.LEADER, costCenterCode = "1100")
+            val accounts = listOf(createAccount(id = 10, name = "A마트", externalKey = "2001", abcTypeCode = "9999"))
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+            } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.meta.criteriaLines).containsExactly("소속 지점의 거래처가 표시됩니다")
+            verify(exactly = 0) {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(any(), any())
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("getMyAccounts - 표시 기준 메타(meta)")
     inner class MetaTests {
 
@@ -406,6 +520,25 @@ class MyAccountServiceTest {
                 "그중 주문 가능한 거래처 유형만 표시됩니다"
             )
             assertThat(result.meta.searchHint).isEqualTo("검색은 표시된 목록 안에서 이름·코드로 찾습니다.")
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE(토글 활성) -> 오늘 확정 진열 + 주문가능 유형 안내")
+        fun meta_employee_orderWrite() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns emptyList()
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.meta.criteriaLines).containsExactly(
+                "오늘 진열 근무가 확정된 거래처",
+                "그중 주문 가능한 거래처 유형만 표시됩니다"
+            )
         }
 
         @Test

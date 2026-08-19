@@ -79,6 +79,18 @@ interface DisplayWorkScheduleRepositoryCustom {
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
     /**
+     * 사원의 **확정 + 기준일 유효** 진열마스터 거래처 id 목록 (주문서 작성 거래처 셀렉터용).
+     * 조건: employee.id=employeeId, confirmed=true, isDeleted!=true, account NOT NULL,
+     * startDate<=date, (endDate>=date OR endDate IS NULL).
+     *
+     * 기간 겹침이 아니라 **기준일 1일 포함** 판정이라는 점에서
+     * [findDistinctAccountIdsByEmployeeIdAndDateRange] 와 다르다 — 주문서는 오늘 진열 근무가
+     * 확정된 거래처만 후보로 삼는다. 종료일 NULL(무기한)은 [findConfirmedValidByEmployeeAndDate] 및
+     * SF `ValidData__c` 수식과 동일하게 "계속 유효" 로 포함한다.
+     */
+    fun findConfirmedValidAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long>
+
+    /**
      * @param policyPredicate SF `DisplayWorkScheduleMaster__c` 가시 범위 Predicate
      *        ([com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator] 산출 —
      *        OWD Private → owner / role hierarchy / sharing rule(CostCenterCode 코드쌍 + CreatedById) /

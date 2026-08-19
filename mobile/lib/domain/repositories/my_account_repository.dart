@@ -5,18 +5,23 @@ import '../entities/my_account_meta.dart';
 ///
 /// - [sales] : 매출 계열(POS/전산/월매출). 부서장(AccountViewAll)이면 전체 거래처를 노출.
 /// - [field] : 현장 활동 계열(판촉/점검/소비기한/클레임). 부서장 전체조회 분기 없음.
-/// - [order] : 주문 작성 계열. 진열 일정 union + 주문가능 abctypecode 필터(레거시 accountSelectList order=order).
+/// - [order] : 주문 조회 필터 계열. 진열 일정 union + 주문가능 abctypecode 필터(레거시 accountSelectList order=order).
+/// - [orderWrite] : 주문서 작성. [order] 와 같되 여사원 경로 한정으로 확정·오늘 유효한 진열마스터
+///   거래처만 후보가 된다(서버 기능 토글 `ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 비활성 시 [order] 와 동일).
+///   주문 조회 필터는 진열이 끝난 거래처로도 과거 주문을 찾아야 하므로 [order] 를 그대로 쓴다.
 ///
 /// 여사원/조장 경로는 sales/field 두 유형이 동일하다.
 enum MyAccountScope {
   sales,
   field,
-  order;
+  order,
+  orderWrite;
 
   /// 백엔드 `scope` 쿼리 파라미터 값 (field 는 기본값이라 미전송)
   String? get queryValue => switch (this) {
         MyAccountScope.sales => 'sales',
         MyAccountScope.order => 'order',
+        MyAccountScope.orderWrite => 'order_write',
         MyAccountScope.field => null,
       };
 }

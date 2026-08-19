@@ -73,6 +73,22 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findConfirmedValidAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long> {
+        return queryFactory
+            .select(displayWorkSchedule.account.id).distinct()
+            .from(displayWorkSchedule)
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.confirmed.eq(true),
+                displayWorkSchedule.startDate.loe(date),
+                displayWorkSchedule.endDate.goe(date).or(displayWorkSchedule.endDate.isNull),
+                displayWorkSchedule.account.id.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)

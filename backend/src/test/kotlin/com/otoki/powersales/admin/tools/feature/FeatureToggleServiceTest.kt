@@ -50,6 +50,7 @@ class FeatureToggleServiceTest {
                 "LOGISTICS_CLAIM",
                 "ORDER_REQUEST",
                 "ATTENDANCE_SCHEDULE_OWNER_DATE_CHECK",
+                "ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY",
             )
         val order = result.first { it.code == "ORDER_REQUEST" }
         assertThat(order.label).isEqualTo("주문 등록")

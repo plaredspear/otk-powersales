@@ -529,7 +529,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                                   ),
                                   child: AccountSelectorField(
                                     selectedName: state.selectedClientName,
-                                    scope: MyAccountScope.order,
+                                    scope: MyAccountScope.orderWrite,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: AppSpacing.md,
                                       vertical: AppSpacing.md,
