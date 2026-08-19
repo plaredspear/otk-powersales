@@ -231,11 +231,15 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     final messenger = ScaffoldMessenger.of(context);
     // 주문서 작성만 전용상품 추가를 막는다(주문 불가 룰). 그 외 화면은 선택 가능.
     // 주문이력 탭은 현재 선택된 거래처(Account.id) 기준으로 본인 주문이력을 조회한다.
+    final formState = ref.read(orderFormProvider);
     final selected = await AddProductBottomSheet.show(
       context,
       showCategoryFilter: true,
       blockExclusive: true,
-      orderHistoryAccountId: ref.read(orderFormProvider).selectedAccountId,
+      orderHistoryAccountId: formState.selectedAccountId,
+      // 시트 안에서도 누적 개수를 보고 100개 상한을 가늠할 수 있게 한다.
+      addedCount: formState.items.length,
+      highlightAddedCount: formState.isLineLimitExceeded,
     );
     if (selected == null || selected.isEmpty || !mounted) return;
 

@@ -40,6 +40,17 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
   /// 선택된 화면에서만 넘기며, 없으면 주문이력 탭은 비어 있다.
   final int? orderHistoryAccountId;
 
+  /// 호출 화면에 **이미 담겨 있는** 제품 수. null 이면 표시하지 않는다.
+  ///
+  /// 이 시트는 목록만 보여줄 뿐 "지금까지 몇 개를 담았는지" 를 알 수 없어, 사용자가
+  /// 시트를 닫고 뒤 화면을 확인해야만 누적 개수를 알 수 있었다. 호출 화면이 자기 기준
+  /// 개수를 넘기면 헤더에 함께 보여준다.
+  final int? addedCount;
+
+  /// [addedCount] 를 경고색으로 강조할지 여부. 상한 판정은 도메인마다 다르므로
+  /// (주문서는 100개) 이 시트가 아니라 호출 화면이 정한다.
+  final bool highlightAddedCount;
+
   const AddProductBottomSheet({
     super.key,
     this.title = '제품 추가',
@@ -48,6 +59,8 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     this.requireBarcode = false,
     this.blockExclusive = false,
     this.orderHistoryAccountId,
+    this.addedCount,
+    this.highlightAddedCount = false,
   });
 
   /// BottomSheet 표시 — 선택된 제품 목록을 반환(취소 시 null).
@@ -59,6 +72,8 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     bool requireBarcode = false,
     bool blockExclusive = false,
     int? orderHistoryAccountId,
+    int? addedCount,
+    bool highlightAddedCount = false,
   }) {
     return showModalBottomSheet<List<ProductForOrder>>(
       context: context,
@@ -76,6 +91,8 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
         requireBarcode: requireBarcode,
         blockExclusive: blockExclusive,
         orderHistoryAccountId: orderHistoryAccountId,
+        addedCount: addedCount,
+        highlightAddedCount: highlightAddedCount,
       ),
     );
   }
@@ -160,6 +177,22 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                     widget.title,
                     style: AppTypography.headlineMedium,
                   ),
+                  // 이미 담긴 개수 — 시트 안에서 누적 개수를 알 수 있게 한다.
+                  if (widget.addedCount != null) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        '이미 추가됨 ${widget.addedCount}개',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: widget.highlightAddedCount
+                              ? AppColors.error
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
