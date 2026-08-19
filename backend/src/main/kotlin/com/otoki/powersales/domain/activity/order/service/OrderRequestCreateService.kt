@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchC
 import com.otoki.powersales.domain.activity.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
+import com.otoki.powersales.domain.activity.order.util.OrderLineLimits
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.enums.ProductType
@@ -202,6 +203,10 @@ class OrderRequestCreateService(
         // server-side 마감 가드 (레거시 reqOrder dateConfirm 동등) — 모바일 검증 우회 직접 호출 차단.
         if (!orderDeadlineCalculator.isWithinDeadline(request.deliveryDate)) {
             throw OrderDeadlinePassedException()
+        }
+        // 라인 수 상한 — 모바일 주문서 화면(100개 담기/제출 차단)과 동일한 서버 가드.
+        if (request.lines.size > OrderLineLimits.MAX_ORDER_LINES) {
+            throw OrderInvalidRequestException(OrderLineLimits.MAX_ORDER_LINES_MESSAGE)
         }
         val lineNumbers = request.lines.map { it.lineNumber }
         if (lineNumbers.distinct().size != lineNumbers.size) {

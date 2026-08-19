@@ -287,6 +287,40 @@ class OrderRequestCreateServiceTest {
     inner class ErrorCases {
 
         @Test
+        @DisplayName("라인 101건 → ORD_INVALID_REQUEST + SAP 미호출 (100개 상한 서버 가드)")
+        fun tooManyLinesRejectedBeforeSap() {
+            stubAuthAndAccount()
+            val lines = (1..101).map { line(lineNumber = it, productCode = "P%03d".format(it)) }
+
+            assertThatThrownBy { service.create(userId, baseRequest(lines = lines)) }
+                .isInstanceOf(OrderInvalidRequestException::class.java)
+                .hasMessageContaining("100개 이하로 등록해주세요")
+
+            verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("라인 100건(경계) → 상한 통과 (SAP 호출까지 진행)")
+        fun exactlyMaxLinesPassesLimitGuard() {
+            stubAuthAndAccount()
+            val codes = (1..100).map { "P%03d".format(it) }
+            stubInventory(codes.associateWith { inventoryInfo(it, conv = 1, supply = 1000) })
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val lines = codes.mapIndexed { idx, code ->
+                line(lineNumber = idx + 1, productCode = code, quantity = 1, unit = "EA", quantityPieces = 1, quantityBoxes = 0)
+            }
+
+            val response = service.create(userId, baseRequest(lines = lines))
+
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
+        }
+
+        @Test
         @DisplayName("제품 마스터 미존재 productCode → ORD_INVALID_REQUEST + SAP 미호출 (사전 가드)")
         fun unknownProductCodeRejectedBeforeSap() {
             stubAuthAndAccount()

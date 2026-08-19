@@ -165,6 +165,17 @@ class OrderDraftServiceTest {
         }
 
         @Test
+        @DisplayName("E4 - 라인 101건 → ORD_DRAFT_INVALID_REQUEST (100개 상한 서버 가드)")
+        fun tooManyLines() {
+            val request = req(
+                lines = (1..101).map { line(lineNumber = it, productCode = "P%03d".format(it)) },
+            )
+            assertThatThrownBy { service.save(userId, request) }
+                .isInstanceOf(OrderDraftInvalidRequestException::class.java)
+                .hasMessageContaining("100개 이하로 등록해주세요")
+        }
+
+        @Test
         @DisplayName("E2 - 동일 요청 내 lineNumber 중복 → ORD_DRAFT_INVALID_REQUEST")
         fun duplicateLineNumber() {
             val request = req(
