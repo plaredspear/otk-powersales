@@ -95,9 +95,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       case SubmitBlockKind.loanUnavailable:
       case SubmitBlockKind.loanExceeded:
         _scrollToFormField(_creditBalanceKey);
-      // 제품 관련 사유는 제품 섹션 머리(추가 버튼 / 건수 안내 / 선택 삭제)로 데려간다.
-      case SubmitBlockKind.noItems:
+      // 100개 초과는 마지막(가장 나중에 담은) 줄로 — 초과분을 덜어낼 후보가 목록 끝이라
+      // 목록 머리로 보내면 사용자가 다시 끝까지 내려가야 한다.
       case SubmitBlockKind.lineLimit:
+        _scrollToLastProduct(state);
+      // 그 외 제품 사유는 제품 섹션 머리(추가 버튼 / 건수 안내 / 선택 삭제)로 데려간다.
+      case SubmitBlockKind.noItems:
       case SubmitBlockKind.duplicateProduct:
         _scrollToFormField(_productListKey);
       case null:
@@ -140,18 +143,28 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// 수량이 0 인 첫 줄로 스크롤 이동 + 강조.
-  ///
-  /// 목록은 [SliverList.builder] 라 화면 밖 카드는 트리에 없다. 따라서 대상 카드의 키를
-  /// 바로 [Scrollable.ensureVisible] 할 수 없고, 조금씩 내려가며 대상이 build 되기를 기다린 뒤
-  /// 정밀 정렬한다. 카드 높이가 제품명 줄수/에러 유무로 달라 오프셋 산술 계산은 쓰지 않는다.
+  /// 수량이 0 인 첫 줄로 이동.
   Future<void> _scrollToFirstZeroQuantity(OrderFormState state) async {
     final target = state.orderDraft.items
         .cast<OrderDraftItem?>()
         .firstWhere((e) => (e?.totalPieces ?? 1) <= 0, orElse: () => null);
     if (target == null) return;
-    final productCode = target.productCode;
+    await _scrollToProduct(target.productCode);
+  }
 
+  /// 마지막(가장 나중에 담은) 줄로 이동 — 100개 상한 초과 시 덜어낼 후보를 보여준다.
+  Future<void> _scrollToLastProduct(OrderFormState state) async {
+    final items = state.orderDraft.items;
+    if (items.isEmpty) return;
+    await _scrollToProduct(items.last.productCode);
+  }
+
+  /// 지정한 제품 줄로 스크롤 이동 + 강조.
+  ///
+  /// 목록은 [SliverList.builder] 라 화면 밖 카드는 트리에 없다. 따라서 대상 카드의 키를
+  /// 바로 [Scrollable.ensureVisible] 할 수 없고, 조금씩 내려가며 대상이 build 되기를 기다린 뒤
+  /// 정밀 정렬한다. 카드 높이가 제품명 줄수/에러 유무로 달라 오프셋 산술 계산은 쓰지 않는다.
+  Future<void> _scrollToProduct(String productCode) async {
     // 검색 중이면 대상이 필터에서 빠져 있을 수 있으므로 먼저 해제한다.
     _productListKey.currentState?.clearSearch();
     await WidgetsBinding.instance.endOfFrame;

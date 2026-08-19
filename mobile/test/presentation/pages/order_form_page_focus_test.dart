@@ -116,6 +116,48 @@ void main() {
     expect(rect.bottom, lessThanOrEqualTo(screenHeight));
   });
 
+  testWidgets('제품 100개 초과 → 탭하면 마지막 제품 줄로 이동한다', (tester) async {
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    final notifier = container.read(orderFormProvider.notifier);
+    notifier.state = notifier.state.copyWith(
+      selectedAccountId: 5678,
+      orderDraft: notifier.state.orderDraft.copyWith(
+        clientId: 5678,
+        deliveryDate: DateTime.now().add(const Duration(days: 3)),
+        creditBalance: 100000000,
+        items: List.generate(
+          104,
+          (i) => OrderDraftItem(
+            productCode: 'P${i.toString().padLeft(3, '0')}',
+            productName: '테스트제품 $i',
+            quantityBoxes: 1,
+            quantityPieces: 0,
+            unitPrice: 1000,
+            boxSize: 10,
+            totalPrice: 10000,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 목록 맨 위 — 마지막(104번째) 줄은 아직 build 조차 되지 않았다.
+    expect(find.text('104. (P103) 테스트제품 103'), findsNothing);
+
+    await tester.tap(find.text('제품 100개 초과'));
+    await tester.pumpAndSettle();
+
+    final lastCard = find.text('104. (P103) 테스트제품 103');
+    expect(lastCard, findsOneWidget, reason: '초과분을 덜어낼 후보인 마지막 줄로 데려가야 한다');
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final rect = tester.getRect(lastCard);
+    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.bottom, lessThanOrEqualTo(screenHeight));
+  });
+
   testWidgets('거래처 미선택 → 탭하면 거래처 입력으로 이동한다', (tester) async {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
