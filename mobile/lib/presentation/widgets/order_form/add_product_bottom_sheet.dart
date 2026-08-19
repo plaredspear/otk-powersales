@@ -40,16 +40,15 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
   /// 선택된 화면에서만 넘기며, 없으면 주문이력 탭은 비어 있다.
   final int? orderHistoryAccountId;
 
-  /// 호출 화면에 **이미 담겨 있는** 제품 수. null 이면 표시하지 않는다.
+  /// 호출 화면에 **이미 담겨 있는** 제품코드. null 이면 관련 표시를 하지 않는다.
   ///
   /// 이 시트는 목록만 보여줄 뿐 "지금까지 몇 개를 담았는지" 를 알 수 없어, 사용자가
-  /// 시트를 닫고 뒤 화면을 확인해야만 누적 개수를 알 수 있었다. 호출 화면이 자기 기준
-  /// 개수를 넘기면 헤더에 함께 보여준다.
-  final int? addedCount;
-
-  /// [addedCount] 를 경고색으로 강조할지 여부. 상한 판정은 도메인마다 다르므로
-  /// (주문서는 100개) 이 시트가 아니라 호출 화면이 정한다.
-  final bool highlightAddedCount;
+  /// 시트를 닫고 뒤 화면을 확인해야만 누적 개수를 알 수 있었다. 이 값을 받으면 확정
+  /// 버튼이 `제품 추가 (선택 수 / 추가 후 총 수)` 로 결과를 미리 알려준다.
+  ///
+  /// 개수가 아니라 **코드 집합**을 받는 이유: 이미 담긴 제품을 다시 골라도 호출 화면이
+  /// 중복으로 무시하므로, 단순 합산은 실제 결과보다 큰 수를 보여주게 된다.
+  final Set<String>? addedProductCodes;
 
   const AddProductBottomSheet({
     super.key,
@@ -59,8 +58,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     this.requireBarcode = false,
     this.blockExclusive = false,
     this.orderHistoryAccountId,
-    this.addedCount,
-    this.highlightAddedCount = false,
+    this.addedProductCodes,
   });
 
   /// BottomSheet 표시 — 선택된 제품 목록을 반환(취소 시 null).
@@ -72,8 +70,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     bool requireBarcode = false,
     bool blockExclusive = false,
     int? orderHistoryAccountId,
-    int? addedCount,
-    bool highlightAddedCount = false,
+    Set<String>? addedProductCodes,
   }) {
     return showModalBottomSheet<List<ProductForOrder>>(
       context: context,
@@ -91,8 +88,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
         requireBarcode: requireBarcode,
         blockExclusive: blockExclusive,
         orderHistoryAccountId: orderHistoryAccountId,
-        addedCount: addedCount,
-        highlightAddedCount: highlightAddedCount,
+        addedProductCodes: addedProductCodes,
       ),
     );
   }
@@ -132,6 +128,23 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// 확정 버튼 라벨.
+  ///
+  /// [AddProductBottomSheet.addedProductCodes] 를 받은 화면에서는 `선택 수 / 추가 후 총 수`
+  /// 를 보여준다 — 버튼이 곧 행동 지점이라, 누르면 몇 개가 되는지를 여기서 알리는 편이
+  /// 헤더에 누적 개수만 적어두는 것보다 판단에 직접 쓰인다.
+  /// 이미 담긴 제품을 다시 고른 경우는 중복으로 무시되므로 총합에서도 제외한다.
+  String _confirmLabel(AddProductState state) {
+    if (!widget.multiSelect) return '선택';
+
+    final added = widget.addedProductCodes;
+    if (added != null) {
+      final newlyAdded = state.selectedProductCodes.difference(added).length;
+      return '제품 추가 (${state.selectedCount} / ${added.length + newlyAdded})';
+    }
+    return state.hasSelection ? '제품 추가 (${state.selectedCount}개)' : '제품 추가';
   }
 
   /// 선택 확정 — 선택된 제품 목록을 반환하고 닫는다.
@@ -177,22 +190,6 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                     widget.title,
                     style: AppTypography.headlineMedium,
                   ),
-                  // 이미 담긴 개수 — 시트 안에서 누적 개수를 알 수 있게 한다.
-                  if (widget.addedCount != null) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    Flexible(
-                      child: Text(
-                        '이미 추가됨 ${widget.addedCount}개',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: widget.highlightAddedCount
-                              ? AppColors.error
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -261,13 +258,7 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                             BorderRadius.circular(AppSpacing.radiusMd),
                       ),
                     ),
-                    child: Text(
-                      widget.multiSelect
-                          ? (state.hasSelection
-                              ? '제품 추가 (${state.selectedCount}개)'
-                              : '제품 추가')
-                          : '선택',
-                    ),
+                    child: Text(_confirmLabel(state)),
                   ),
                 ),
               ),

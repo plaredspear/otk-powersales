@@ -237,9 +237,9 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       showCategoryFilter: true,
       blockExclusive: true,
       orderHistoryAccountId: formState.selectedAccountId,
-      // 시트 안에서도 누적 개수를 보고 100개 상한을 가늠할 수 있게 한다.
-      addedCount: formState.items.length,
-      highlightAddedCount: formState.isLineLimitExceeded,
+      // 확정 버튼이 `선택 수 / 추가 후 총 수` 로 결과를 미리 알려주게 한다
+      // (시트 안에서도 100개 상한에 얼마나 근접했는지 가늠할 수 있다).
+      addedProductCodes: formState.items.map((e) => e.productCode).toSet(),
     );
     if (selected == null || selected.isEmpty || !mounted) return;
 
