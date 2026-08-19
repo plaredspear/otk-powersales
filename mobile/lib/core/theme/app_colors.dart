@@ -64,9 +64,9 @@ abstract final class AppColors {
   /// "아직 해결되지 않았고 재확인이 필요한" 상태 표시용 (초록·파랑 = 정상 과 구분).
   static const Color warningLight = Color(0xFFFFF3E0);
 
-  /// 차단(사용자가 이 화면에서 해소할 수 없는) 상태의 전경색 — [errorLight] 배경 위 전용.
-  /// [error] 는 같은 배경에서 대비비 4.36:1 로 WCAG AA(4.5:1) 미달이라 red800 을 쓴다 (5.75:1).
-  static const Color blockedForeground = Color(0xFFB71C1C);
+  /// [errorLight] 배경 위 전경색 — [error] 는 같은 배경에서 대비비 4.36:1 로
+  /// WCAG AA(4.5:1) 미달이라 red800 을 쓴다 (5.75:1).
+  static const Color onErrorLight = Color(0xFFB71C1C);
 
   /// 정보성 메시지
   static const Color info = Color(0xFF1976D2);

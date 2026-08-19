@@ -6,18 +6,17 @@ import '../../providers/order_form_state.dart';
 
 /// 주문서 작성 액션 버튼 (삭제/임시저장/승인요청)
 ///
-/// 하단 고정 바는 스크롤 밖에 있고 마감/여신 안내는 스크롤 안 상단에 있어, 버튼만 회색으로
-/// 죽어 있으면 사용자가 이유를 알 수 없다. 그래서 버튼 자신이 사유를 라벨과 색으로 말한다.
+/// 하단 고정 바는 스크롤 밖에 있고 사유 안내는 스크롤 안 상단에 있어, 버튼만 죽어 있으면
+/// 사용자가 이유를 알 수 없다. 그래서 버튼 자신이 사유를 **라벨로** 말한다.
 ///
 /// 사유 판정은 하지 않는다 — [blockKind] 를 그대로 그린다. 화면이 자체 조건으로 라벨을
 /// 다시 계산하면 검증 순서와 어긋나(거래처 미선택인데 `제품 100개 초과` 라벨) 토스트와
 /// 딴소리를 하게 된다.
 ///
-/// 색은 "이 화면에서 해소 가능한가" 를 기준으로 2단계로 나눈다.
-/// - 마감 · 여신 초과 = 차단 — 붉은 계열. 상단 마감 안내([AppColors.error])와 같은 색
-///   언어라 위아래가 같은 사건으로 읽힌다.
-/// - 그 외 = 주의 — 회색 유지. 지금 고칠 수 있는 상태라 경고색으로 위협하지 않고,
-///   활성(노랑)으로 오인되지도 않는다.
+/// **비활성 색은 사유와 무관하게 하나(회색)다.** 예전에는 "이 화면에서 해소 가능한가" 로
+/// 마감·여신만 붉게 칠했지만, 차단 사유는 전부 이 화면에서 고칠 수 있다 — 마감은 납기일을
+/// 바꾸면 되고, 여신 초과·100개 초과는 품목을 덜어내면 된다. 색으로 등급을 나눌 근거가
+/// 없어져 라벨이 사유를, 토스트가 조치를 맡고 색은 '지금은 누를 수 없음' 만 뜻한다.
 class OrderFormActionButtons extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onSaveDraft;
@@ -95,11 +94,10 @@ class OrderFormActionButtons extends StatelessWidget {
               label: _label,
               backgroundColor: AppColors.legacyYellow,
               foregroundColor: AppColors.onPrimary,
-              disabledBackgroundColor:
-                  _isHardBlock ? AppColors.errorLight : AppColors.surfaceVariant,
-              disabledForegroundColor: _isHardBlock
-                  ? AppColors.blockedForeground
-                  : AppColors.legacyTextSub,
+              // 회색 배경 위 전경색은 AppColors.textTertiary(2.35:1) 대신
+              // legacyTextSub(11.09:1) 를 써서 disabled 라벨 가독성을 확보한다.
+              disabledBackgroundColor: AppColors.surfaceVariant,
+              disabledForegroundColor: AppColors.legacyTextSub,
               loading: isSubmitting,
               onPressed: submitEnabled ? onSubmit : null,
               inactiveOnPressed: isSubmitting ? null : onDisabledTap,
@@ -135,13 +133,6 @@ class OrderFormActionButtons extends StatelessWidget {
         return '승인요청';
     }
   }
-
-  /// 이 화면에서 해소할 수 없는 차단 2종만 붉은 배경. 나머지는 회색을 유지한다.
-  /// (회색 배경 위 전경색은 [AppColors.textTertiary](2.35:1) 대신
-  /// [AppColors.legacyTextSub](11.09:1) 를 써서 disabled 라벨 가독성을 확보한다.)
-  bool get _isHardBlock =>
-      blockKind == SubmitBlockKind.deadline ||
-      blockKind == SubmitBlockKind.loanExceeded;
 }
 
 /// 하단 고정 바의 단일 세그먼트 (풀-블리드, 모서리 없음).
