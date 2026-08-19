@@ -171,6 +171,16 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     if (!mounted) return;
 
     final targetKey = ValueKey('order-product-$productCode');
+
+    // 탐색은 아래로만 내려가므로, 대상이 현재 위치보다 **위**에 있으면 영영 못 찾는다
+    // (목록 끝에서 '수량 미입력' 을 눌렀을 때 첫 미입력 줄로 가지 않던 원인).
+    // 지금 트리에 없으면 맨 위로 되돌린 뒤 내려오며 찾는다.
+    if (_findCardContext(targetKey) == null && _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+
     // 최대 60프레임(≈1초)까지 내려가며 대상이 트리에 올라오길 기다린다.
     for (var attempt = 0; attempt < 60; attempt++) {
       // 직전 프레임에서 트리를 훑어 찾은 context 이므로 이 시점엔 유효하다

@@ -116,6 +116,51 @@ void main() {
     expect(rect.bottom, lessThanOrEqualTo(screenHeight));
   });
 
+  testWidgets('수량 미입력 → 목록 끝에 있어도 위쪽 첫 미입력 줄로 이동한다', (tester) async {
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    final notifier = container.read(orderFormProvider.notifier);
+    notifier.state = notifier.state.copyWith(
+      selectedAccountId: 5678,
+      orderDraft: notifier.state.orderDraft.copyWith(
+        clientId: 5678,
+        deliveryDate: DateTime.now().add(const Duration(days: 3)),
+        creditBalance: 100000000,
+        items: List.generate(
+          60,
+          // 첫 줄만 수량 0 — 대상이 목록 맨 위에 있다.
+          (i) => OrderDraftItem(
+            productCode: 'P${i.toString().padLeft(3, '0')}',
+            productName: '테스트제품 $i',
+            quantityBoxes: i == 0 ? 0 : 1,
+            quantityPieces: 0,
+            unitPrice: 1000,
+            boxSize: 10,
+            totalPrice: i == 0 ? 0 : 10000,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 목록 끝까지 내려간 상태에서 누른다 — 대상은 현재 위치보다 위에 있다.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -6000));
+    await tester.pumpAndSettle();
+    expect(find.text('1. (P000) 테스트제품 0'), findsNothing);
+
+    await tester.tap(find.text('수량 미입력 1건'));
+    await tester.pumpAndSettle();
+
+    final firstCard = find.text('1. (P000) 테스트제품 0');
+    expect(firstCard, findsOneWidget, reason: '위쪽에 있는 미입력 줄도 찾아가야 한다');
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final rect = tester.getRect(firstCard);
+    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.bottom, lessThanOrEqualTo(screenHeight));
+  });
+
   testWidgets('제품 100개 초과 → 탭하면 마지막 제품 줄로 이동한다', (tester) async {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
