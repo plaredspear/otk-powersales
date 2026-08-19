@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/presentation/widgets/order_form/product_list_section.dart';
 
@@ -130,6 +131,68 @@ void main() {
 
       expect(find.text('1개 표시 중 (전체 30개)'), findsOneWidget);
       expect(find.textContaining('테스트제품 7'), findsOneWidget);
+    });
+  });
+
+  group('ProductListSection 담긴 건수 표시', () {
+    testWidgets('검색 중이 아니어도 전체 건수를 상시 노출한다', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(_host(List.generate(30, _item), controller));
+
+      expect(find.text('전체 30개'), findsOneWidget);
+    });
+
+    testWidgets('100개 이하면 초과 안내가 붙지 않고 회색으로 표시된다', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(_host(List.generate(100, _item), controller));
+
+      expect(find.text('전체 100개'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text('전체 100개')).style!.color,
+        AppColors.textSecondary,
+      );
+    });
+
+    testWidgets('100개 초과 시 초과 건수 + 빨강으로 알린다', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(_host(List.generate(105, _item), controller));
+
+      const label = '전체 105개 · 5개 초과 — 100개 이하만 승인요청 가능';
+      expect(find.text(label), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text(label)).style!.color,
+        AppColors.error,
+      );
+    });
+
+    testWidgets('초과 상태에서 검색하면 표시 건수와 초과 안내가 함께 보인다', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(_host(List.generate(105, _item), controller));
+      await tester.enterText(find.byType(TextField).first, '제품 77');
+      await tester.pump();
+
+      expect(
+        find.text('1개 표시 중 (전체 105개) · 5개 초과 — 100개 이하만 승인요청 가능'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('제품이 없으면 건수 줄 자체가 없다', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(_host(const [], controller));
+
+      // '전체 선택' 체크박스 라벨과 섞이지 않도록 건수 패턴으로 확인한다.
+      expect(find.textContaining(RegExp(r'전체 \d+개')), findsNothing);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/order_limits.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -376,17 +377,43 @@ class ProductListSectionState extends State<ProductListSection> {
               ),
             ),
           ),
-          if (isSearching) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '$filteredCount개 표시 중 (전체 $totalCount개)',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
+        ],
+        // 담긴 건수는 상시 노출한다 — 담기에 상한이 없어 사용자가 100개를 넘긴 것을
+        // 하단 승인요청 버튼에 가서야 알게 되던 사각지대를 메운다. 초과분은 빨강으로 알린다.
+        if (totalCount > 0) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            _countLabel(
+              isSearching: isSearching,
+              filteredCount: filteredCount,
+              totalCount: totalCount,
             ),
-          ],
+            style: AppTypography.bodySmall.copyWith(
+              color: totalCount > OrderLimits.maxOrderLines
+                  ? AppColors.error
+                  : AppColors.textSecondary,
+            ),
+          ),
         ],
       ],
     );
+  }
+
+  /// 담긴 건수 안내 문구.
+  ///
+  /// 검색 중에는 "몇 건이 걸러져 보이는가" 가 먼저 필요하고, 평소에는 전체 건수만 필요하다.
+  /// 상한을 넘긴 경우엔 몇 개를 덜어내야 하는지까지 알려준다 — 승인요청 버튼 라벨
+  /// (`제품 100개 초과`) 은 초과분을 말하지 못하기 때문.
+  String _countLabel({
+    required bool isSearching,
+    required int filteredCount,
+    required int totalCount,
+  }) {
+    final base = isSearching
+        ? '$filteredCount개 표시 중 (전체 $totalCount개)'
+        : '전체 $totalCount개';
+    final over = totalCount - OrderLimits.maxOrderLines;
+    if (over <= 0) return base;
+    return '$base · $over개 초과 — ${OrderLimits.maxOrderLines}개 이하만 승인요청 가능';
   }
 }
