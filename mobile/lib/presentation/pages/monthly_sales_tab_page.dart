@@ -193,8 +193,15 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       '기준 진도율 : ${monthlySales.baseRate.toStringAsFixed(0)}%',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.legacyDanger),
+                      // 당월 매출 진도율이 기준 진도율을 초과하면 파란색,
+                      // 그 외(미달·동일)는 레거시 base-rate-note 기본 적색.
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            monthlySales.achievementRate > monthlySales.baseRate
+                                ? AppColors.info
+                                : AppColors.legacyDanger,
+                      ),
                     ),
                   ),
                 ],
