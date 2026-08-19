@@ -61,6 +61,24 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
   }
 
+  /// 비활성 상태의 승인요청 버튼 탭 — 막힌 사유를 토스트로 알린다.
+  ///
+  /// 사유 문구는 제출 검증([OrderFormNotifier.submitBlockReason])을 그대로 쓴다. 버튼 라벨은
+  /// 폭이 좁아 사유를 한 단어로만 말하므로(예: `제품 100개 초과`), "무엇을 해야 하는가" 는
+  /// 여기서 채운다. 수량 미입력이면 안내와 함께 첫 미입력 줄로 이동시킨다(종전 동작).
+  void _handleDisabledSubmitTap(
+    OrderFormState state,
+    OrderFormNotifier notifier,
+  ) {
+    final reason = notifier.submitBlockReason ?? '승인요청에 필요한 항목을 확인해 주세요';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(reason)));
+    if (state.zeroQuantityLineCount > 0) {
+      _scrollToFirstZeroQuantity(state);
+    }
+  }
+
   /// 수량이 0 인 첫 줄로 스크롤 이동 + 강조.
   ///
   /// 목록은 [SliverList.builder] 라 화면 밖 카드는 트리에 없다. 따라서 대상 카드의 키를
@@ -502,8 +520,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     lineLimitExceeded: state.isLineLimitExceeded,
                     pastDeadline: state.isPastDeadline,
                     zeroQuantityLineCount: state.zeroQuantityLineCount,
-                    onQuantityMissingTap: () =>
-                        _scrollToFirstZeroQuantity(state),
+                    onDisabledTap: () =>
+                        _handleDisabledSubmitTap(state, notifier),
                   ),
                 ],
               ),

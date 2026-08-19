@@ -56,9 +56,12 @@ class OrderFormActionButtons extends StatelessWidget {
   /// 총EA 가 0 인 라인 수 — 라벨에 건수를 노출해 어느 정도 규모인지 알린다.
   final int zeroQuantityLineCount;
 
-  /// "수량 미입력" 상태에서 버튼을 눌렀을 때 — 해당 줄로 이동시킨다.
-  /// 이 상태만 탭이 살아 있다: 차단(마감/여신)과 달리 사용자가 지금 해소할 수 있기 때문.
-  final VoidCallback? onQuantityMissingTap;
+  /// 비활성 상태의 승인요청 버튼을 눌렀을 때 — 막힌 사유를 안내한다.
+  ///
+  /// 버튼 라벨은 사유를 한 단어로만 말할 수 있어(예: `제품 100개 초과`) 무엇을 해야 하는지는
+  /// 전달하지 못한다. 그래서 비활성 상태에서도 탭은 살려 두고 사유를 토스트로 알린다.
+  /// (전송 중에는 탭하지 않는다 — 사유가 아니라 진행 중 상태이기 때문.)
+  final VoidCallback? onDisabledTap;
 
   const OrderFormActionButtons({
     super.key,
@@ -71,7 +74,7 @@ class OrderFormActionButtons extends StatelessWidget {
     this.pastDeadline = false,
     this.lineLimitExceeded = false,
     this.zeroQuantityLineCount = 0,
-    this.onQuantityMissingTap,
+    this.onDisabledTap,
   });
 
   /// 차단 사유 우선순위: 마감 > 여신 > 라인 수 > 수량.
@@ -117,8 +120,8 @@ class OrderFormActionButtons extends StatelessWidget {
               loading: isSubmitting,
               onPressed: isSubmitting ? null : onSaveDraft,
             ),
-            // 승인요청 — 비활성 시 사유를 라벨/색으로 표현한다.
-            // 수량 미입력은 탭을 살려 해당 줄로 이동시킨다 (색은 비활성 그대로).
+            // 승인요청 — 비활성 시 사유를 라벨/색으로 표현하고,
+            // 탭은 살려 두어 [onDisabledTap] 이 사유를 안내하게 한다 (색은 비활성 그대로).
             _Segment(
               flex: 3,
               label: _labelFor(submitState),
@@ -128,10 +131,7 @@ class OrderFormActionButtons extends StatelessWidget {
               disabledForegroundColor: _disabledForegroundFor(submitState),
               loading: isSubmitting,
               onPressed: submitEnabled ? onSubmit : null,
-              inactiveOnPressed:
-                  (!isSubmitting && submitState == SubmitButtonState.quantityMissing)
-                      ? onQuantityMissingTap
-                      : null,
+              inactiveOnPressed: isSubmitting ? null : onDisabledTap,
             ),
           ],
         ),

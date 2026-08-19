@@ -606,6 +606,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     state = state.copyWith(clearRequiresDeliveryDateConfirm: true);
   }
 
+  /// 승인요청이 막혀 있는 사유 — 막혀 있지 않으면 null.
+  ///
+  /// 비활성 승인요청 버튼을 탭했을 때 사유를 안내하는 데 쓴다. 제출 검증과 같은 함수를
+  /// 그대로 쓰므로 "버튼이 막힌 이유" 와 "제출이 거부된 이유" 가 어긋날 수 없다.
+  /// 상태를 바꾸지 않는 순수 조회다.
+  String? get submitBlockReason => _runBlockingValidations();
+
   /// 검증 (A)~(H) — 차단되면 SnackBar 메시지를 반환.
   String? _runBlockingValidations() {
     // (A) 거래처 미선택

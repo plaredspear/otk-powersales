@@ -11,7 +11,7 @@ Widget _host({
   bool lineLimitExceeded = false,
   int zeroQuantityLineCount = 0,
   VoidCallback? onSubmit,
-  VoidCallback? onQuantityMissingTap,
+  VoidCallback? onDisabledTap,
 }) {
   return MaterialApp(
     home: Scaffold(
@@ -25,7 +25,7 @@ Widget _host({
         pastDeadline: pastDeadline,
         lineLimitExceeded: lineLimitExceeded,
         zeroQuantityLineCount: zeroQuantityLineCount,
-        onQuantityMissingTap: onQuantityMissingTap,
+        onDisabledTap: onDisabledTap,
       ),
     ),
   );
@@ -179,36 +179,78 @@ void main() {
       expect(tapped, isFalse);
     });
 
-    testWidgets('수량 미입력 → 탭하면 이동 콜백 호출 (제출은 되지 않음)', (tester) async {
-      var jumped = false;
+    testWidgets('수량 미입력 → 탭하면 사유 콜백 호출 (제출은 되지 않음)', (tester) async {
+      var notified = false;
       var submitted = false;
       await tester.pumpWidget(
         _host(
           requiredFieldsFilled: false,
           zeroQuantityLineCount: 1,
           onSubmit: () => submitted = true,
-          onQuantityMissingTap: () => jumped = true,
+          onDisabledTap: () => notified = true,
         ),
       );
 
       await tester.tap(find.text('수량 미입력 1건'));
-      expect(jumped, isTrue, reason: '해당 줄로 이동시켜야 한다');
+      expect(notified, isTrue, reason: '사유를 알리고 해당 줄로 이동시켜야 한다');
       expect(submitted, isFalse, reason: '수량이 0이므로 제출하면 안 된다');
     });
 
-    testWidgets('차단(마감) → 탭해도 이동 콜백조차 호출되지 않는다', (tester) async {
-      var jumped = false;
+    testWidgets('차단(마감) → 탭하면 사유 콜백 호출 (제출은 되지 않음)', (tester) async {
+      var notified = false;
+      var submitted = false;
       await tester.pumpWidget(
         _host(
           pastDeadline: true,
           requiredFieldsFilled: false,
           zeroQuantityLineCount: 1,
-          onQuantityMissingTap: () => jumped = true,
+          onSubmit: () => submitted = true,
+          onDisabledTap: () => notified = true,
         ),
       );
 
       await tester.tap(find.text('마감시간 지남'));
-      expect(jumped, isFalse, reason: '마감은 줄을 고쳐도 해소되지 않는다');
+      expect(notified, isTrue, reason: '해소 불가 사유도 왜 막혔는지는 알려야 한다');
+      expect(submitted, isFalse);
+    });
+
+    testWidgets('제품 100개 초과 → 탭하면 사유 콜백 호출', (tester) async {
+      var notified = false;
+      await tester.pumpWidget(
+        _host(lineLimitExceeded: true, onDisabledTap: () => notified = true),
+      );
+
+      await tester.tap(find.text('제품 100개 초과'));
+      expect(notified, isTrue);
+    });
+
+    testWidgets('필수 항목 미입력(수량 0 아님) → 탭하면 사유 콜백 호출', (tester) async {
+      var notified = false;
+      await tester.pumpWidget(
+        _host(
+          requiredFieldsFilled: false,
+          zeroQuantityLineCount: 0,
+          onDisabledTap: () => notified = true,
+        ),
+      );
+
+      await tester.tap(find.text('승인요청'));
+      expect(notified, isTrue, reason: '거래처/납기일 미선택도 사유를 알려야 한다');
+    });
+
+    testWidgets('활성 상태 → 사유 콜백이 아니라 제출이 호출된다', (tester) async {
+      var notified = false;
+      var submitted = false;
+      await tester.pumpWidget(
+        _host(
+          onSubmit: () => submitted = true,
+          onDisabledTap: () => notified = true,
+        ),
+      );
+
+      await tester.tap(find.text('승인요청'));
+      expect(submitted, isTrue);
+      expect(notified, isFalse);
     });
 
     testWidgets('제출 중 → 인디케이터로 대체되고 라벨은 사라진다', (tester) async {
@@ -216,6 +258,16 @@ void main() {
 
       expect(find.text('승인요청'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsWidgets);
+    });
+
+    testWidgets('제출 중 → 탭해도 사유 콜백이 호출되지 않는다', (tester) async {
+      var notified = false;
+      await tester.pumpWidget(
+        _host(isSubmitting: true, onDisabledTap: () => notified = true),
+      );
+
+      await tester.tap(find.byType(CircularProgressIndicator).last);
+      expect(notified, isFalse, reason: '전송 중은 차단 사유가 아니다');
     });
   });
 }

@@ -693,6 +693,33 @@ void main() {
         expect(notifier.state.errorMessage, '100개 이하로 등록해주세요');
       });
 
+      test('submitBlockReason — 비활성 버튼 탭 안내용 사유를 제출 검증과 동일하게 반환', () async {
+        // 라인 101개 → (F) 와 같은 문구
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            items: List.generate(
+              101,
+              (i) => _item('P${i.toString().padLeft(3, '0')}', boxes: 1, pieces: 20),
+            ),
+          ),
+        );
+        expect(notifier.submitBlockReason, '100개 이하로 등록해주세요');
+
+        // 거래처 미선택 → (A)
+        notifier.state = notifier.state.copyWith(clearSelectedAccountId: true);
+        expect(notifier.submitBlockReason, '거래처를 선택해 주세요');
+      });
+
+      test('submitBlockReason — 막힌 사유가 없으면 null', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        expect(notifier.submitBlockReason, isNull);
+      });
+
       test('E6 (G) — 여신 호출 중 (creditBalance null + externalKey 있음)', () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
