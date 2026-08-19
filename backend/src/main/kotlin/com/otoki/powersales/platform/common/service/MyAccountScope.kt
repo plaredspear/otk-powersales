@@ -12,7 +12,8 @@ package com.otoki.powersales.platform.common.service
  *   여사원/yang 예외 경로에 한해 (1) 진열 일정(`selectDisplayMyAccount`) union 추가,
  *   (2) 주문가능 거래처유형(`abctypecode__c IN (...)`) 필터를 추가한다.
  *   일반 조장(`teamleaderAccList`)은 레거시에서 abctype 필터가 주석 처리되어 FIELD 와 동일하다.
- * - [ORDER_WRITE] : 주문서 **작성** 화면 전용. [ORDER] 와 동일하되, 여사원/yang 예외 경로의 거래처
+ * - [ORDER_WRITE] : 주문서 **작성** 화면 전용 (`scope=order` + `purpose=write`).
+ *   [ORDER] 와 동일하되, 여사원/yang 예외 경로의 거래처
  *   후보를 **확정 + 오늘 유효한 진열마스터**로 한정한다
  *   (`FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 활성 시. 비활성이면 [ORDER] 와 동일 동작).
  *   주문 조회 필터는 진열 종료 거래처로도 과거 주문을 검색해야 하므로 [ORDER] 를 그대로 쓴다.
@@ -30,12 +31,28 @@ enum class MyAccountScope {
         get() = this == ORDER || this == ORDER_WRITE
 
     companion object {
-        fun from(raw: String?): MyAccountScope =
-            when (raw?.lowercase()) {
+        /**
+         * 요청 파라미터 → scope 해석.
+         *
+         * [ORDER_WRITE] 는 `scope=order` + `purpose=write` 조합으로 표현한다. `scope=order_write`
+         * 라는 새 값으로 만들지 않는 이유는 **모바일 앱 하위/상위 호환** 때문이다 — 신규 앱이
+         * 구버전(롤백된) 서버에 붙었을 때 모르는 scope 값은 [FIELD] 로 떨어져 주문가능 유형 필터와
+         * 진열 union 이 통째로 빠지지만, 모르는 **파라미터**는 무시되므로 `purpose` 방식은
+         * [ORDER](= 이전 동작)로 안전하게 폴백한다.
+         *
+         * `scope=order_write` 문자열도 계속 받아준다(호출 측이 한 값으로 보내도 동작하도록).
+         */
+        fun from(raw: String?, purpose: String? = null): MyAccountScope {
+            val scope = when (raw?.lowercase()) {
                 "sales" -> SALES
                 "order" -> ORDER
                 "order_write" -> ORDER_WRITE
                 else -> FIELD
             }
+            return if (scope == ORDER && purpose?.lowercase() == PURPOSE_WRITE) ORDER_WRITE else scope
+        }
+
+        /** 주문서 **작성** 화면임을 알리는 `purpose` 값. */
+        private const val PURPOSE_WRITE = "write"
     }
 }

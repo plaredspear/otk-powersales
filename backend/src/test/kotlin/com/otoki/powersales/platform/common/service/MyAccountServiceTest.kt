@@ -393,6 +393,43 @@ class MyAccountServiceTest {
     }
 
     @Nested
+    @DisplayName("MyAccountScope.from - 요청 파라미터 해석 (앱 하위 호환 계약)")
+    inner class ScopeResolutionTests {
+
+        @Test
+        @DisplayName("scope=order + purpose=write -> ORDER_WRITE")
+        fun from_orderWithWritePurpose() {
+            assertThat(MyAccountScope.from("order", "write")).isEqualTo(MyAccountScope.ORDER_WRITE)
+        }
+
+        @Test
+        @DisplayName("purpose 미전송(구버전 앱) -> ORDER (이전 동작 유지)")
+        fun from_orderWithoutPurpose() {
+            assertThat(MyAccountScope.from("order")).isEqualTo(MyAccountScope.ORDER)
+            assertThat(MyAccountScope.from("order", null)).isEqualTo(MyAccountScope.ORDER)
+        }
+
+        @Test
+        @DisplayName("purpose 는 order 계열에만 적용 — sales/field 는 그대로")
+        fun from_purposeIgnoredOnNonOrderScope() {
+            assertThat(MyAccountScope.from("sales", "write")).isEqualTo(MyAccountScope.SALES)
+            assertThat(MyAccountScope.from(null, "write")).isEqualTo(MyAccountScope.FIELD)
+        }
+
+        @Test
+        @DisplayName("scope=order_write 단일 값도 허용")
+        fun from_orderWriteScopeValue() {
+            assertThat(MyAccountScope.from("order_write")).isEqualTo(MyAccountScope.ORDER_WRITE)
+        }
+
+        @Test
+        @DisplayName("미지의 scope -> FIELD (기존 계약 유지)")
+        fun from_unknownScope() {
+            assertThat(MyAccountScope.from("unknown")).isEqualTo(MyAccountScope.FIELD)
+        }
+    }
+
+    @Nested
     @DisplayName("getMyAccounts - 주문서 작성(ORDER_WRITE) 거래처 조회")
     inner class OrderWriteScopeTests {
 

@@ -17,13 +17,21 @@ enum MyAccountScope {
   order,
   orderWrite;
 
-  /// 백엔드 `scope` 쿼리 파라미터 값 (field 는 기본값이라 미전송)
+  /// 백엔드 `scope` 쿼리 파라미터 값 (field 는 기본값이라 미전송).
+  ///
+  /// [orderWrite] 도 `order` 를 보낸다 — 좁힘 요청은 [purposeValue] 로 분리해 전달한다.
+  /// 새 scope 값을 쓰면 이 값을 모르는 구버전(롤백된) 서버가 `field` 로 떨어뜨려 주문가능 유형
+  /// 필터와 진열 union 이 통째로 빠지지만, 모르는 파라미터는 무시되므로 이 방식은 `order`
+  /// (= 이전 동작)로 안전하게 폴백한다.
   String? get queryValue => switch (this) {
         MyAccountScope.sales => 'sales',
-        MyAccountScope.order => 'order',
-        MyAccountScope.orderWrite => 'order_write',
+        MyAccountScope.order || MyAccountScope.orderWrite => 'order',
         MyAccountScope.field => null,
       };
+
+  /// 백엔드 `purpose` 쿼리 파라미터 값 — 주문서 작성 화면일 때만 전송.
+  String? get purposeValue =>
+      this == MyAccountScope.orderWrite ? 'write' : null;
 }
 
 /// 내 거래처 목록 결과 값 객체

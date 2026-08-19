@@ -24,6 +24,10 @@ class MyAccountApiDataSource implements MyAccountRemoteDataSource {
     if (scopeValue != null) {
       queryParameters['scope'] = scopeValue;
     }
+    final purposeValue = scope.purposeValue;
+    if (purposeValue != null) {
+      queryParameters['purpose'] = purposeValue;
+    }
 
     final response = await _dio.get(
       '/api/v1/mobile/accounts/my',
