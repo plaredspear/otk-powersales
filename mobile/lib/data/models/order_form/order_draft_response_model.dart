@@ -4,7 +4,8 @@
 /// `data` 가 null 이면 임시저장 없음.
 class OrderDraftResponseModel {
   final int draftId;
-  final int accountId;
+  /// 거래처 — 미선택 상태로 저장된 임시저장이면 null.
+  final int? accountId;
   final String accountName;
 
   /// 거래처 SF external_key. 백엔드 계약상 nullable —
@@ -18,7 +19,7 @@ class OrderDraftResponseModel {
 
   const OrderDraftResponseModel({
     required this.draftId,
-    required this.accountId,
+    this.accountId,
     required this.accountName,
     this.accountExternalKey,
     this.deliveryDate,
@@ -30,7 +31,7 @@ class OrderDraftResponseModel {
   factory OrderDraftResponseModel.fromJson(Map<String, dynamic> json) {
     return OrderDraftResponseModel(
       draftId: (json['draftId'] as num).toInt(),
-      accountId: (json['accountId'] as num).toInt(),
+      accountId: (json['accountId'] as num?)?.toInt(),
       accountName: json['accountName'] as String? ?? '',
       accountExternalKey: json['accountExternalKey'] as String?,
       deliveryDate: json['deliveryDate'] as String?,

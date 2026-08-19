@@ -71,6 +71,7 @@ class OrderDraftServiceTest {
     private fun req(
         lines: List<OrderDraftLineRequest> = listOf(line()),
         deliveryDate: LocalDate? = LocalDate.of(2026, 5, 10),
+        accountId: Long? = this.accountId,
     ) = OrderDraftRequest(
         accountId = accountId,
         deliveryDate = deliveryDate,
@@ -162,6 +163,29 @@ class OrderDraftServiceTest {
             val request = req(lines = listOf(line(unit = "CASE")))
             assertThatThrownBy { service.save(userId, request) }
                 .isInstanceOf(OrderDraftInvalidRequestException::class.java)
+        }
+
+        @Test
+        @DisplayName("H6 - 거래처 미지정 임시저장 허용 (레거시 정합) — 거래처 조회 없이 저장")
+        fun saveWithoutAccount() {
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
+            every { productRepository.findByProductCodeIn(any()) } returns
+                listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
+            val savedSlot = slot<TmpOrder>()
+            every { tmpOrderRepository.save(capture(savedSlot)) } answers {
+                val o = firstArg<TmpOrder>()
+                setId(o, 99L)
+                o
+            }
+
+            val response = service.save(userId, req(accountId = null))
+
+            assertThat(response.draftId).isEqualTo(99L)
+            assertThat(savedSlot.captured.accountId).isNull()
+            assertThat(savedSlot.captured.tmpAccountCode).isNull()
+            // 거래처 미지정이면 조회 자체를 하지 않는다 (미존재 거부 로직에 걸리지 않아야 한다).
+            verify(exactly = 0) { accountRepository.findById(any()) }
         }
 
         @Test

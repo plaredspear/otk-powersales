@@ -323,10 +323,21 @@ void main() {
         expect(formRepo.lastSavedDraftRequest!.lines, hasLength(1));
       });
 
-      test('거래처 미선택 시 거부', () async {
+      // 레거시 write.jsp 임시저장 버튼은 제품 1건 이상이면 활성이고 거래처/납기일을
+      // 검증하지 않았다 (거래처·납기일 필수는 승인요청 경로에만 존재).
+      test('거래처 미선택도 그대로 저장 (레거시 정합) — accountId 미전송', () async {
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: [_item('P001')],
+          ),
+        );
+
         final saved = await notifier.saveDraft();
-        expect(saved, isFalse);
-        expect(notifier.state.errorMessage, '거래처를 선택해주세요.');
+
+        expect(saved, isTrue);
+        expect(notifier.state.errorMessage, isNull);
+        expect(formRepo.lastSavedDraftRequest!.accountId, isNull);
+        expect(formRepo.lastSavedDraftRequest!.toJson().containsKey('accountId'), isFalse);
       });
 
       test('E5 — 403 ORD_DRAFT_ACCOUNT_FORBIDDEN → 한국어 SnackBar', () async {

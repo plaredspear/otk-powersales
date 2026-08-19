@@ -21,8 +21,16 @@ import java.time.LocalDate
  * `lines.size() ≥ 1` 강제는 폐기. 부분 적재 방지는 단일 `@Transactional` 로 충분하다.
  */
 data class OrderDraftRequest(
+    /**
+     * 거래처 — **선택 항목** (레거시 정합).
+     *
+     * 레거시 Heroku `write.jsp` 의 임시저장 버튼은 제품 1건 이상이면 활성이고, 클릭 시
+     * 거래처/납기일을 검증하지 않은 채 `tmpAccountcode` 를 빈 값 그대로 보냈다
+     * (거래처·납기일 필수 검증은 승인요청 경로에만 있다). 작성 중 상태를 그대로 보관하는
+     * 임시저장의 성격과도 맞아 필수 강제를 폐기했다.
+     */
     @field:Min(value = 1, message = "accountId 는 1 이상이어야 합니다")
-    val accountId: Long,
+    val accountId: Long? = null,
 
     /** 납기일(ISO `yyyy-MM-dd`). 임시저장은 검증 없이 그대로 보관. */
     val deliveryDate: LocalDate? = null,

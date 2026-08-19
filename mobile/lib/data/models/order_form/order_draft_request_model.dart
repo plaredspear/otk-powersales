@@ -2,8 +2,9 @@
 ///
 /// API: `POST /api/v1/mobile/orders/draft`
 class OrderDraftRequestModel {
-  /// 본인 담당 거래처 PK
-  final int accountId;
+  /// 본인 담당 거래처 PK — **선택 항목**.
+  /// 레거시 임시저장은 거래처 미선택 상태도 그대로 저장했다(승인요청에서만 필수).
+  final int? accountId;
 
   /// 납기일 (ISO 8601 `YYYY-MM-DD`, nullable — 전달 시 ≥ today)
   final String? deliveryDate;
@@ -15,7 +16,7 @@ class OrderDraftRequestModel {
   final List<OrderDraftRequestLineModel> lines;
 
   const OrderDraftRequestModel({
-    required this.accountId,
+    this.accountId,
     this.deliveryDate,
     required this.totalAmount,
     required this.lines,
@@ -23,7 +24,7 @@ class OrderDraftRequestModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'accountId': accountId,
+      if (accountId != null) 'accountId': accountId,
       if (deliveryDate != null) 'deliveryDate': deliveryDate,
       'totalAmount': totalAmount,
       'lines': lines.map((e) => e.toJson()).toList(),

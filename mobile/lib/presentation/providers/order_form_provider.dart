@@ -195,7 +195,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       orderDraft: filledDraft,
       hasDraft: false,
       draftId: pending.draftId,
+      // 거래처 미선택으로 저장된 임시저장이면 선택 상태도 비워 복원한다
+      // (copyWith 는 null 을 "변경 없음" 으로 보므로 명시적 clear 가 필요하다).
       selectedAccountId: pending.accountId,
+      clearSelectedAccountId: pending.accountId == null,
       selectedExternalKey: pending.accountExternalKey,
       clearPendingDraft: true,
       // 서버 임시저장을 그대로 복원한 직후라 저장본과 동일 — 아직 변경 없음.
@@ -874,17 +877,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       clearSuccess: true,
     );
 
-    final accountId = state.selectedAccountId;
-    if (accountId == null) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: '거래처를 선택해주세요.',
-      );
-      return false;
-    }
-
+    // 거래처 미선택 상태도 그대로 저장한다 (레거시 정합 — write.jsp 임시저장 버튼은
+    // 제품 1건 이상이면 활성이고, 거래처/납기일은 승인요청에서만 필수였다).
     final request = OrderDraftRequestModel(
-      accountId: accountId,
+      accountId: state.selectedAccountId,
       deliveryDate: state.orderDraft.deliveryDate?.toIso8601String().substring(0, 10),
       totalAmount: state.totalAmount,
       lines: state.orderDraft.items.map((item) {

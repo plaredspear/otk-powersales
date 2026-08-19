@@ -54,8 +54,11 @@ class OrderDraftService(
 
         val employee = employeeRepository.findById(userId)
             .orElseThrow { OrderDraftAccountForbiddenException() }
-        val account = accountRepository.findById(request.accountId)
-            .orElseThrow { OrderDraftInvalidRequestException("거래처를 찾을 수 없습니다") }
+        // 거래처 미지정 임시저장 허용 (레거시 정합) — 지정된 경우에만 실재 여부를 확인한다.
+        val account = request.accountId?.let { accountId ->
+            accountRepository.findById(accountId)
+                .orElseThrow { OrderDraftInvalidRequestException("거래처를 찾을 수 없습니다") }
+        }
 
         // 거래처 담당(owner) 재검증은 하지 않는다 (레거시 정합 — 주문 등록과 동일 정책).
         // 거래처 후보는 일정 기반 셀렉터(`/accounts/my` scope=order)로만 결정되며,
@@ -71,7 +74,7 @@ class OrderDraftService(
 
         val draft = TmpOrder(
             tmpEmployeeCode = employee.employeeCode,
-            tmpAccountCode = account.externalKey,
+            tmpAccountCode = account?.externalKey,
             // 레거시 정합: tmp_orderdate 컬럼에 실제로는 납기일(DeliveryRequestDate)을 저장했다.
             tmpOrderDate = request.deliveryDate,
             tmpTotalAmount = request.totalAmount.toString(),
@@ -143,7 +146,7 @@ class OrderDraftService(
             }
         return OrderDraftDetailResponse(
             draftId = draft.id,
-            accountId = draft.accountId ?: 0,
+            accountId = draft.accountId,
             accountName = account?.name.orEmpty(),
             // 거래처 행이 없거나(삭제) 레거시 이관 draft 의 account_id 가 비어 있으면
             // 저장 시 함께 적재한 account_code(= account.externalKey, [save] 참조) 로 복원한다.

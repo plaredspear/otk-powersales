@@ -20,7 +20,8 @@ data class OrderDraftSaveResponse(
  */
 data class OrderDraftDetailResponse(
     val draftId: Long,
-    val accountId: Long,
+    /** 거래처 — 미지정 임시저장(레거시 정합)이면 null. */
+    val accountId: Long?,
     val accountName: String,
     val accountExternalKey: String?,
     val deliveryDate: LocalDate?,
