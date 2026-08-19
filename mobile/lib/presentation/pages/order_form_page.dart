@@ -47,6 +47,11 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   final GlobalKey<ProductListSectionState> _productListKey =
       GlobalKey<ProductListSectionState>();
 
+  /// 차단 사유가 가리키는 입력 항목으로 이동하기 위한 키.
+  /// 상단 폼은 지연 생성되지 않아(단일 SliverToBoxAdapter) 화면 밖이어도 context 가 살아 있다.
+  final GlobalKey _accountFieldKey = GlobalKey();
+  final GlobalKey _deliveryDateFieldKey = GlobalKey();
+
   /// 현재 강조 중인 제품코드 — 수량 미입력 줄로 이동한 직후 잠시 유지된다.
   String? _highlightedProductCode;
 
@@ -73,9 +78,54 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   ) {
     final block = notifier.submitBlock;
     _showToast(block?.message ?? '승인요청에 필요한 항목을 확인해 주세요');
-    if (block?.kind == SubmitBlockKind.zeroQuantity) {
-      _scrollToFirstZeroQuantity(state);
+
+    // 토스트만으로는 "어디를 고쳐야 하는지" 를 못 찾는다 — 사유가 가리키는 항목으로 데려간다.
+    switch (block?.kind) {
+      case SubmitBlockKind.zeroQuantity:
+        _scrollToFirstZeroQuantity(state);
+      case SubmitBlockKind.account:
+        _scrollToFormField(_accountFieldKey);
+      case SubmitBlockKind.deliveryDate:
+      case SubmitBlockKind.deadline:
+      case SubmitBlockKind.pastDeliveryDate:
+        _scrollToFormField(_deliveryDateFieldKey);
+      // 제품 관련 사유(0건/100개 초과)는 목록 자체가 이미 화면에 있어 이동시키지 않는다.
+      case SubmitBlockKind.noItems:
+      case SubmitBlockKind.lineLimit:
+      case SubmitBlockKind.duplicateProduct:
+      case SubmitBlockKind.loanUnavailable:
+      case SubmitBlockKind.loanExceeded:
+      case null:
+        break;
     }
+  }
+
+  /// 상단 폼의 특정 입력 항목이 보이도록 스크롤한다.
+  ///
+  /// 목록을 충분히 내리면 상단 폼 sliver 가 폐기돼 [GlobalKey.currentContext] 가 null 이 된다
+  /// (그 상태에서 `ensureVisible` 만 부르면 아무 일도 일어나지 않는다 — 실제 신고 상황).
+  /// 그래서 context 가 없으면 먼저 맨 위로 올려 폼을 되살린 뒤 정밀 정렬한다.
+  Future<void> _scrollToFormField(GlobalKey key) async {
+    if (key.currentContext == null) {
+      if (!_scrollController.hasClients) return;
+      await _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+
+    final target = key.currentContext;
+    if (target == null) return;
+    await Scrollable.ensureVisible(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      // 상단에 딱 붙이지 않고 조금 여유를 둬 라벨(`납기일 *`)까지 함께 보이게 한다.
+      alignment: 0.1,
+    );
   }
 
   /// 하단 고정 바에서 띄우는 안내 토스트 — 직전 것을 지우고 하나만 보여준다.
@@ -418,6 +468,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                               const SizedBox(height: AppSpacing.lg),
                             // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
                             Column(
+                              key: _accountFieldKey,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text.rich(
@@ -474,6 +525,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                             ),
                             const SizedBox(height: AppSpacing.lg),
                             DeliveryDatePicker(
+                              key: _deliveryDateFieldKey,
                               selectedDate: state.deliveryDate,
                               onTap: () => _showDatePicker(
                                 context,
