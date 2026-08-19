@@ -650,7 +650,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (state.isPastDeadline) {
       return const SubmitBlock(
         SubmitBlockKind.deadline,
-        '마감시간이 지났습니다. 납기일 하루 전 13:50까지 주문할 수 있습니다.',
+        '선택한 납기일은 주문 마감이 지났습니다. 납기일을 변경해 주세요 (납기일 하루 전 13:50까지 주문 가능).',
       );
     }
     // (E) 라인 0개

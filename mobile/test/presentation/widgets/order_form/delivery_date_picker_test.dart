@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      expect(find.text('마감시간이 지났습니다. (주문 마감: 7/25(토) 13:50)'), findsOneWidget);
+      expect(find.text('이 납기일은 주문할 수 없습니다. (주문 마감: 7/25(토) 13:50)'), findsOneWidget);
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 

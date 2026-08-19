@@ -37,7 +37,9 @@ class DeliveryDatePicker extends StatelessWidget {
     if (deadline == null) return '납기일 하루 전 13:50까지 주문할 수 있습니다.';
     final label =
         '${DateFormat('M/d').format(deadline)}(${_dayNames[deadline.weekday - 1]}) 13:50';
-    if (isPassed) return '마감시간이 지났습니다. (주문 마감: $label)';
+    // 마감이 지난 납기일은 "다른 날짜를 고르라" 는 뜻이므로 그렇게 안내한다
+    // (당일 마감으로 오인하면 사용자는 손쓸 게 없다고 판단해 버린다).
+    if (isPassed) return '이 납기일은 주문할 수 없습니다. (주문 마감: $label)';
     return '주문 마감: $label 까지';
   }
 

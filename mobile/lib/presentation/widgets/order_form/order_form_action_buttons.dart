@@ -116,7 +116,9 @@ class OrderFormActionButtons extends StatelessWidget {
   String get _label {
     switch (blockKind) {
       case SubmitBlockKind.deadline:
-        return '마감시간 지남';
+        // "마감시간 지남" 은 당일 주문 마감으로 읽혀 사용자가 손쓸 게 없다고 느낀다.
+        // 실제로 해야 할 일은 납기일을 주문 가능한 날짜로 바꾸는 것이라 그렇게 부른다.
+        return '납기일 확인필요';
       case SubmitBlockKind.loanExceeded:
         return '여신한도 초과';
       case SubmitBlockKind.lineLimit:

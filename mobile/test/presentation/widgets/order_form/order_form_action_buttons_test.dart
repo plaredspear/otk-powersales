@@ -62,18 +62,18 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('마감 경과 → 마감시간 지남 라벨 + 붉은 배경 + 탭 차단', (tester) async {
+    testWidgets('마감 경과 → 납기일 확인필요 라벨 + 붉은 배경 + 탭 차단', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
         _host(blockKind: SubmitBlockKind.deadline, onSubmit: () => tapped = true),
       );
 
-      expect(find.text('마감시간 지남'), findsOneWidget);
+      expect(find.text('납기일 확인필요'), findsOneWidget);
       expect(find.text('승인요청'), findsNothing);
       expect(_submitBackground(tester), AppColors.errorLight);
-      expect(_labelColor(tester, '마감시간 지남'), AppColors.blockedForeground);
+      expect(_labelColor(tester, '납기일 확인필요'), AppColors.blockedForeground);
 
-      await tester.tap(find.text('마감시간 지남'));
+      await tester.tap(find.text('납기일 확인필요'));
       expect(tapped, isFalse, reason: '마감 후에는 승인요청이 눌리면 안 된다');
     });
 
@@ -177,7 +177,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('마감시간 지남'));
+      await tester.tap(find.text('납기일 확인필요'));
       expect(notified, isTrue, reason: '해소 불가 사유도 왜 막혔는지는 알려야 한다');
       expect(submitted, isFalse);
     });
