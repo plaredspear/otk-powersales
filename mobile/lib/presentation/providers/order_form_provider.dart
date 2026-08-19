@@ -877,8 +877,17 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       clearSuccess: true,
     );
 
-    // 거래처 미선택 상태도 그대로 저장한다 (레거시 정합 — write.jsp 임시저장 버튼은
-    // 제품 1건 이상이면 활성이고, 거래처/납기일은 승인요청에서만 필수였다).
+    // 제품 0건 차단 (레거시 정합 — 임시저장 버튼 활성 조건이 `제품 1건 이상` 이었다).
+    // 버튼도 비활성이지만 비-UI 호출 방어를 위해 여기서도 막는다.
+    if (state.orderDraft.items.isEmpty) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: '주문할 제품을 추가해주세요',
+      );
+      return false;
+    }
+
+    // 거래처 미선택 상태는 그대로 저장한다 (레거시 정합 — 거래처/납기일은 승인요청에서만 필수).
     final request = OrderDraftRequestModel(
       accountId: state.selectedAccountId,
       deliveryDate: state.orderDraft.deliveryDate?.toIso8601String().substring(0, 10),

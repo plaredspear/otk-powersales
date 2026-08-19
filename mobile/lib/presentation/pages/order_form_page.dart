@@ -72,14 +72,17 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     OrderFormNotifier notifier,
   ) {
     final block = notifier.submitBlock;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(block?.message ?? '승인요청에 필요한 항목을 확인해 주세요')),
-      );
+    _showToast(block?.message ?? '승인요청에 필요한 항목을 확인해 주세요');
     if (block?.kind == SubmitBlockKind.zeroQuantity) {
       _scrollToFirstZeroQuantity(state);
     }
+  }
+
+  /// 하단 고정 바에서 띄우는 안내 토스트 — 직전 것을 지우고 하나만 보여준다.
+  void _showToast(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// 수량이 0 인 첫 줄로 스크롤 이동 + 강조.
@@ -271,6 +274,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   void _handlePopAttempt(BuildContext context, OrderFormNotifier notifier) {
     ExitConfirmDialog.show(
       context,
+      // 제품 0건이면 임시저장 자체가 불가하므로 그 선택지를 권하지 않는다.
+      canSaveDraft: ref.read(orderFormProvider).hasItems,
       onDiscard: () {
         notifier.discardForm();
         Navigator.of(context).pop();
@@ -521,8 +526,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     // 라벨/색/활성 여부는 제출 검증과 같은 판정에서만 파생시킨다.
                     blockKind: notifier.submitBlock?.kind,
                     zeroQuantityLineCount: state.zeroQuantityLineCount,
+                    hasItems: state.hasItems,
                     onDisabledTap: () =>
                         _handleDisabledSubmitTap(state, notifier),
+                    onSaveDraftDisabledTap: () => _showToast('주문할 제품을 추가해주세요'),
                   ),
                 ],
               ),

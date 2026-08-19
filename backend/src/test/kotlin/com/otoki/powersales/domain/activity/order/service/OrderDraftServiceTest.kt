@@ -158,6 +158,14 @@ class OrderDraftServiceTest {
         }
 
         @Test
+        @DisplayName("E5 - 제품 0건 → ORD_DRAFT_INVALID_REQUEST (레거시 버튼 활성 조건 정합)")
+        fun emptyLines() {
+            assertThatThrownBy { service.save(userId, req(lines = emptyList())) }
+                .isInstanceOf(OrderDraftInvalidRequestException::class.java)
+                .hasMessageContaining("주문할 제품을 추가해주세요")
+        }
+
+        @Test
         @DisplayName("E3 - 단위 잘못된 값 → ORD_DRAFT_INVALID_REQUEST")
         fun invalidUnit() {
             val request = req(lines = listOf(line(unit = "CASE")))

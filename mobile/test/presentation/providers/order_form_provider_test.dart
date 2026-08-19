@@ -340,6 +340,17 @@ void main() {
         expect(formRepo.lastSavedDraftRequest!.toJson().containsKey('accountId'), isFalse);
       });
 
+      // 레거시 write.jsp 임시저장 버튼 활성 조건: `$('.req-order-list').length > 0`.
+      test('제품 0건이면 저장 거부 (레거시 정합)', () async {
+        notifier.state = notifier.state.copyWith(selectedAccountId: 5678);
+
+        final saved = await notifier.saveDraft();
+
+        expect(saved, isFalse);
+        expect(notifier.state.errorMessage, '주문할 제품을 추가해주세요');
+        expect(formRepo.lastSavedDraftRequest, isNull);
+      });
+
       test('E5 — 403 ORD_DRAFT_ACCOUNT_FORBIDDEN → 한국어 SnackBar', () async {
         formRepo.exceptionToThrow = Exception('ORD_DRAFT_ACCOUNT_FORBIDDEN');
         notifier.state = notifier.state.copyWith(

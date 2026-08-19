@@ -16,9 +16,10 @@ import java.time.LocalDate
  * `tmp_orderdate` 컬럼에 저장·복원했던 것과 정합 — `tmp_order.order_date` 로 보관한다.
  * 임시저장은 정식 등록의 납기일 필수/유효성 검증을 거치지 않으므로 nullable.
  *
- * **빈 라인 허용 (레거시 정합)**: 레거시 Heroku `saveTemp` 는 품목 0건 임시저장을 허용했다.
- * 신규도 거래처만 선택한 상태로 저장할 수 있도록 `lines` 빈 배열을 허용 — Spec #596 의
- * `lines.size() ≥ 1` 강제는 폐기. 부분 적재 방지는 단일 `@Transactional` 로 충분하다.
+ * **제품 1건 이상 필수 (레거시 정합)**: 레거시 Heroku `write.jsp` 의 임시저장 버튼은
+ * `$('.req-order-list').length > 0` 일 때만 활성이라 품목 0건 임시저장은 도달할 수 없었다
+ * (서버 `saveTemp` 자체는 무검증이었을 뿐). 거래처만 선택한 빈 임시저장은 복원해도 얻을 것이
+ * 없으므로 화면·서버 양쪽에서 막는다.
  */
 data class OrderDraftRequest(
     /**

@@ -31,6 +31,13 @@ class OrderFormActionButtons extends StatelessWidget {
   /// 총EA 가 0 인 라인 수 — 라벨에 건수를 노출해 어느 정도 규모인지 알린다.
   final int zeroQuantityLineCount;
 
+  /// 담긴 제품이 1건이라도 있는지 — 임시저장 활성 조건.
+  /// 레거시 write.jsp 의 임시저장 버튼도 `제품 1건 이상` 일 때만 활성이었다.
+  final bool hasItems;
+
+  /// 비활성 상태의 임시저장 버튼을 눌렀을 때 — 사유를 안내한다.
+  final VoidCallback? onSaveDraftDisabledTap;
+
   /// 비활성 상태의 승인요청 버튼을 눌렀을 때 — 막힌 사유를 안내한다.
   ///
   /// 버튼 라벨은 사유를 한 단어로만 말할 수 있어(예: `제품 100개 초과`) 무엇을 해야 하는지는
@@ -46,7 +53,9 @@ class OrderFormActionButtons extends StatelessWidget {
     required this.isSubmitting,
     this.blockKind,
     this.zeroQuantityLineCount = 0,
+    this.hasItems = true,
     this.onDisabledTap,
+    this.onSaveDraftDisabledTap,
   });
 
   @override
@@ -67,13 +76,17 @@ class OrderFormActionButtons extends StatelessWidget {
               foregroundColor: AppColors.textSecondary,
               onPressed: isSubmitting ? null : onDelete,
             ),
+            // 임시저장 — 담긴 제품이 없으면 비활성 (레거시 write.jsp 버튼 활성 조건 정합).
             _Segment(
               flex: 3,
               label: '임시저장',
               backgroundColor: AppColors.legacyTextSub,
               foregroundColor: AppColors.white,
+              disabledBackgroundColor: AppColors.surfaceVariant,
+              disabledForegroundColor: AppColors.legacyTextSub,
               loading: isSubmitting,
-              onPressed: isSubmitting ? null : onSaveDraft,
+              onPressed: (isSubmitting || !hasItems) ? null : onSaveDraft,
+              inactiveOnPressed: isSubmitting ? null : onSaveDraftDisabledTap,
             ),
             // 승인요청 — 비활성 시 사유를 라벨/색으로 표현하고,
             // 탭은 살려 두어 [onDisabledTap] 이 사유를 안내하게 한다 (색은 비활성 그대로).

@@ -8,19 +8,24 @@ Widget _host({
   bool isSubmitting = false,
   SubmitBlockKind? blockKind,
   int zeroQuantityLineCount = 0,
+  bool hasItems = true,
   VoidCallback? onSubmit,
+  VoidCallback? onSaveDraft,
   VoidCallback? onDisabledTap,
+  VoidCallback? onSaveDraftDisabledTap,
 }) {
   return MaterialApp(
     home: Scaffold(
       body: OrderFormActionButtons(
         onDelete: () {},
-        onSaveDraft: () {},
+        onSaveDraft: onSaveDraft ?? () {},
         onSubmit: onSubmit ?? () {},
         isSubmitting: isSubmitting,
         blockKind: blockKind,
         zeroQuantityLineCount: zeroQuantityLineCount,
+        hasItems: hasItems,
         onDisabledTap: onDisabledTap,
+        onSaveDraftDisabledTap: onSaveDraftDisabledTap,
       ),
     ),
   );
@@ -213,6 +218,31 @@ void main() {
       await tester.tap(find.text('승인요청'));
       expect(submitted, isTrue);
       expect(notified, isFalse);
+    });
+
+    testWidgets('제품 0건 → 임시저장 비활성 + 탭하면 사유 콜백 호출 (레거시 정합)', (tester) async {
+      var saved = false;
+      var notified = false;
+      await tester.pumpWidget(
+        _host(
+          hasItems: false,
+          blockKind: SubmitBlockKind.noItems,
+          onSaveDraft: () => saved = true,
+          onSaveDraftDisabledTap: () => notified = true,
+        ),
+      );
+
+      await tester.tap(find.text('임시저장'));
+      expect(saved, isFalse, reason: '담긴 제품이 없으면 임시저장되면 안 된다');
+      expect(notified, isTrue);
+    });
+
+    testWidgets('제품 1건 이상 → 임시저장 활성', (tester) async {
+      var saved = false;
+      await tester.pumpWidget(_host(onSaveDraft: () => saved = true));
+
+      await tester.tap(find.text('임시저장'));
+      expect(saved, isTrue);
     });
 
     testWidgets('제출 중 → 인디케이터로 대체되고 라벨은 사라진다', (tester) async {

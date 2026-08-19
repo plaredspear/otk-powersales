@@ -168,6 +168,10 @@ class OrderDraftService(
     }
 
     private fun validateRequest(request: OrderDraftRequest) {
+        // 제품 0건 차단 (레거시 정합) — write.jsp 임시저장 버튼은 제품 1건 이상일 때만 활성이었다.
+        if (request.lines.isEmpty()) {
+            throw OrderDraftInvalidRequestException("주문할 제품을 추가해주세요")
+        }
         // 라인 수 상한 없음 — 100개 상한(OrderLineLimits)은 정식 등록에만 적용한다.
         // 주문서 화면이 100개 초과 담기를 허용(승인요청 버튼만 비활성)하므로, 작성 중 상태를
         // 그대로 보관해야 하는 임시저장까지 막으면 담아둔 목록이 유실된다.
