@@ -5231,7 +5231,7 @@
           },
           "accountId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "accountName" : {
             "type" : "string"
@@ -5345,7 +5345,7 @@
           "accountId" : {
             "format" : "int64",
             "minimum" : 1,
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "deliveryDate" : {
             "format" : "date",
