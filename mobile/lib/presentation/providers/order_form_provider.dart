@@ -566,9 +566,9 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   /// (I) 납기일 +10일 케이스에서는 [requiresDeliveryDateConfirm] 가 true 가 되어
   /// 사용자가 다이얼로그 [예] 클릭 시 [confirmDeliveryDateAndSubmit] 호출하여 진행.
   Future<void> validateAndSubmitOrder() async {
-    final blocker = _runBlockingValidations();
+    final blocker = _findSubmitBlock();
     if (blocker != null) {
-      state = state.copyWith(errorMessage: blocker);
+      state = state.copyWith(errorMessage: blocker.message);
       return;
     }
 
@@ -608,57 +608,77 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
   /// 승인요청이 막혀 있는 사유 — 막혀 있지 않으면 null.
   ///
-  /// 비활성 승인요청 버튼을 탭했을 때 사유를 안내하는 데 쓴다. 제출 검증과 같은 함수를
-  /// 그대로 쓰므로 "버튼이 막힌 이유" 와 "제출이 거부된 이유" 가 어긋날 수 없다.
+  /// 승인요청 버튼의 활성 여부·라벨·색, 비활성 탭 시 토스트 문구가 모두 이 값에서 파생된다.
+  /// 제출 검증과 같은 함수를 쓰므로 "버튼이 막힌 이유" 와 "제출이 거부된 이유" 가 어긋날 수 없다.
   /// 상태를 바꾸지 않는 순수 조회다.
-  String? get submitBlockReason => _runBlockingValidations();
+  SubmitBlock? get submitBlock => _findSubmitBlock();
 
-  /// 검증 (A)~(H) — 차단되면 SnackBar 메시지를 반환.
-  String? _runBlockingValidations() {
+  /// 검증 (A)~(H) — 첫 번째 차단 사유를 반환 (통과 시 null).
+  ///
+  /// **순서가 곧 우선순위다.** 화면(버튼 라벨)도 이 순서를 그대로 따라야 한다.
+  SubmitBlock? _findSubmitBlock() {
     // (A) 거래처 미선택
     if (state.selectedAccountId == null) {
-      return '거래처를 선택해 주세요';
+      return const SubmitBlock(SubmitBlockKind.account, '거래처를 선택해 주세요');
     }
     // (B) 납기일 미선택
     if (state.deliveryDate == null) {
-      return '납기일을 선택해 주세요';
+      return const SubmitBlock(SubmitBlockKind.deliveryDate, '납기일을 선택해 주세요');
     }
     // (C) 라인 productCode 중복 (방어)
     final codes = state.orderDraft.items.map((e) => e.productCode).toList();
     if (codes.toSet().length != codes.length) {
-      return '중복된 제품이 있습니다. 라인을 정리해주세요';
+      return const SubmitBlock(
+        SubmitBlockKind.duplicateProduct,
+        '중복된 제품이 있습니다. 라인을 정리해주세요',
+      );
     }
     // (D) 납기일 < 오늘 (방어)
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     if (state.deliveryDate!.isBefore(todayDate)) {
-      return '납기일은 오늘 이후여야 합니다.';
+      return const SubmitBlock(
+        SubmitBlockKind.pastDeliveryDate,
+        '납기일은 오늘 이후여야 합니다.',
+      );
     }
     // (D-2) 주문 마감(납기일 전일 13:50) 경과 — 서버 `ORD_DEADLINE_PASSED` 정합.
     // 승인요청 버튼은 마감 시 disabled 이지만, 비-UI 호출 방어를 위해 여기서도 차단한다.
     if (state.isPastDeadline) {
-      return '마감시간이 지났습니다. 납기일 하루 전 13:50까지 주문할 수 있습니다.';
+      return const SubmitBlock(
+        SubmitBlockKind.deadline,
+        '마감시간이 지났습니다. 납기일 하루 전 13:50까지 주문할 수 있습니다.',
+      );
     }
     // (E) 라인 0개
     if (state.orderDraft.items.isEmpty) {
-      return '주문할 제품을 추가해주세요';
+      return const SubmitBlock(SubmitBlockKind.noItems, '주문할 제품을 추가해주세요');
     }
     // (F) 라인 100개 초과 — 담기는 허용하되 승인요청만 막는다 (버튼도 disabled).
     //     비-UI 호출 방어 겸 서버 `ORD_INVALID_REQUEST` 상한 정합.
     if (state.isLineLimitExceeded) {
-      return '${OrderLimits.maxOrderLines}개 이하로 등록해주세요';
+      return SubmitBlock(
+        SubmitBlockKind.lineLimit,
+        '${OrderLimits.maxOrderLines}개 이하로 등록해주세요',
+      );
     }
     // (G) 여신 한도 초과 / 조회 중 / 실패 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
     final creditBalance = state.creditBalance;
     if (creditBalance == null && state.selectedExternalKey != null) {
       // 실패와 조회중을 구분해 안내 — 실패 시엔 재조회를 유도한다.
-      return state.isLoanInquiryFailed
-          ? '여신 조회에 실패했습니다. 여신 잔액을 다시 조회해주세요'
-          : '여신 조회 중입니다. 잠시 후 다시 시도해주세요';
+      return SubmitBlock(
+        SubmitBlockKind.loanUnavailable,
+        state.isLoanInquiryFailed
+            ? '여신 조회에 실패했습니다. 여신 잔액을 다시 조회해주세요'
+            : '여신 조회 중입니다. 잠시 후 다시 시도해주세요',
+      );
     }
     if (creditBalance != null && state.totalAmount > creditBalance) {
       // 승인요청 버튼은 한도 초과 시 disabled 이지만, 비-UI 호출 방어를 위해 여기서도 차단한다.
-      return '총 주문금액이 여신잔액을 초과했습니다.';
+      return const SubmitBlock(
+        SubmitBlockKind.loanExceeded,
+        '총 주문금액이 여신잔액을 초과했습니다.',
+      );
     }
     // (H) 라인 총EA <= 0 — 레거시 write.jsp:219 `tot-quantity-each(총EA) <= 0` 정합.
     // 총EA = (박스 × 입수) + 낱개. 박스만 입력(낱개 0)해도 총EA > 0 이면 통과해야 한다.
@@ -666,7 +686,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       (e) => (e.quantityBoxes * e.boxSize).round() + e.quantityPieces <= 0,
     );
     if (hasZeroLine) {
-      return '수량이 0인 라인이 있습니다.';
+      return const SubmitBlock(SubmitBlockKind.zeroQuantity, '수량이 0인 라인이 있습니다.');
     }
     return null;
   }

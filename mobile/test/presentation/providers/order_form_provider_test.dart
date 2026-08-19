@@ -693,8 +693,8 @@ void main() {
         expect(notifier.state.errorMessage, '100개 이하로 등록해주세요');
       });
 
-      test('submitBlockReason — 비활성 버튼 탭 안내용 사유를 제출 검증과 동일하게 반환', () async {
-        // 라인 101개 → (F) 와 같은 문구
+      test('submitBlock — 비활성 버튼 안내용 사유를 제출 검증과 동일하게 반환', () async {
+        // 라인 101개 → (F)
         notifier.state = notifier.state.copyWith(
           selectedAccountId: 5678,
           orderDraft: notifier.state.orderDraft.copyWith(
@@ -705,19 +705,45 @@ void main() {
             ),
           ),
         );
-        expect(notifier.submitBlockReason, '100개 이하로 등록해주세요');
-
-        // 거래처 미선택 → (A)
-        notifier.state = notifier.state.copyWith(clearSelectedAccountId: true);
-        expect(notifier.submitBlockReason, '거래처를 선택해 주세요');
+        expect(notifier.submitBlock?.kind, SubmitBlockKind.lineLimit);
+        expect(notifier.submitBlock?.message, '100개 이하로 등록해주세요');
       });
 
-      test('submitBlockReason — 막힌 사유가 없으면 null', () async {
+      test('submitBlock 우선순위 — 거래처 미선택이 라인 수 초과보다 먼저 (버튼 라벨 오표기 회귀)', () async {
+        // 제품 101개 + 수량 0 + 거래처 미선택 상태. 화면이 자체 조건으로 라벨을 계산하던 시절
+        // 버튼은 '제품 100개 초과' 인데 토스트는 '거래처를 선택해 주세요' 로 어긋났다.
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: List.generate(
+              101,
+              (i) => _item('P${i.toString().padLeft(3, '0')}', boxes: 0, pieces: 0),
+            ),
+          ),
+        );
+
+        expect(notifier.submitBlock?.kind, SubmitBlockKind.account);
+        expect(notifier.submitBlock?.message, '거래처를 선택해 주세요');
+      });
+
+      test('submitBlock 우선순위 — 마감 경과가 수량 미입력보다 먼저', () async {
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          orderDraft: notifier.state.orderDraft.copyWith(
+            // 오늘 납기 = 전일 13:50 마감이 이미 지난 상태.
+            deliveryDate: DateTime.now(),
+            items: [_item('P001', boxes: 0, pieces: 0)],
+          ),
+        );
+
+        expect(notifier.submitBlock?.kind, SubmitBlockKind.deadline);
+      });
+
+      test('submitBlock — 막힌 사유가 없으면 null', () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
           orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
         );
-        expect(notifier.submitBlockReason, isNull);
+        expect(notifier.submitBlock, isNull);
       });
 
       test('E6 (G) — 여신 호출 중 (creditBalance null + externalKey 있음)', () async {

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/presentation/providers/order_form_state.dart';
 import 'package:mobile/presentation/widgets/order_form/order_form_action_buttons.dart';
 
 Widget _host({
   bool isSubmitting = false,
-  bool requiredFieldsFilled = true,
-  bool loanExceeded = false,
-  bool pastDeadline = false,
-  bool lineLimitExceeded = false,
+  SubmitBlockKind? blockKind,
   int zeroQuantityLineCount = 0,
   VoidCallback? onSubmit,
   VoidCallback? onDisabledTap,
@@ -20,10 +18,7 @@ Widget _host({
         onSaveDraft: () {},
         onSubmit: onSubmit ?? () {},
         isSubmitting: isSubmitting,
-        requiredFieldsFilled: requiredFieldsFilled,
-        loanExceeded: loanExceeded,
-        pastDeadline: pastDeadline,
-        lineLimitExceeded: lineLimitExceeded,
+        blockKind: blockKind,
         zeroQuantityLineCount: zeroQuantityLineCount,
         onDisabledTap: onDisabledTap,
       ),
@@ -65,7 +60,7 @@ void main() {
     testWidgets('마감 경과 → 마감시간 지남 라벨 + 붉은 배경 + 탭 차단', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
-        _host(pastDeadline: true, onSubmit: () => tapped = true),
+        _host(blockKind: SubmitBlockKind.deadline, onSubmit: () => tapped = true),
       );
 
       expect(find.text('마감시간 지남'), findsOneWidget);
@@ -78,7 +73,7 @@ void main() {
     });
 
     testWidgets('여신 초과 → 여신한도 초과 라벨 + 붉은 배경', (tester) async {
-      await tester.pumpWidget(_host(loanExceeded: true));
+      await tester.pumpWidget(_host(blockKind: SubmitBlockKind.loanExceeded));
 
       expect(find.text('여신한도 초과'), findsOneWidget);
       expect(_submitBackground(tester), AppColors.errorLight);
@@ -88,7 +83,7 @@ void main() {
     testWidgets('제품 100개 초과 → 초과 라벨 + 회색 배경 + 탭 차단', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
-        _host(lineLimitExceeded: true, onSubmit: () => tapped = true),
+        _host(blockKind: SubmitBlockKind.lineLimit, onSubmit: () => tapped = true),
       );
 
       expect(find.text('제품 100개 초과'), findsOneWidget);
@@ -103,22 +98,9 @@ void main() {
       expect(tapped, isFalse, reason: '100개 초과 상태에서는 승인요청이 눌리면 안 된다');
     });
 
-    testWidgets('제품 100개 초과 + 수량 0 동시 → 라인 수 초과가 우선', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          lineLimitExceeded: true,
-          requiredFieldsFilled: false,
-          zeroQuantityLineCount: 4,
-        ),
-      );
-
-      expect(find.text('제품 100개 초과'), findsOneWidget);
-      expect(find.text('수량 미입력 4건'), findsNothing);
-    });
-
     testWidgets('수량 0 라인 존재 → 건수 라벨 + 회색 배경 유지', (tester) async {
       await tester.pumpWidget(
-        _host(requiredFieldsFilled: false, zeroQuantityLineCount: 1),
+        _host(blockKind: SubmitBlockKind.zeroQuantity, zeroQuantityLineCount: 1),
       );
 
       expect(find.text('수량 미입력 1건'), findsOneWidget);
@@ -136,38 +118,20 @@ void main() {
 
     testWidgets('수량 0 라인 다건 → 건수를 그대로 노출', (tester) async {
       await tester.pumpWidget(
-        _host(requiredFieldsFilled: false, zeroQuantityLineCount: 3),
+        _host(blockKind: SubmitBlockKind.zeroQuantity, zeroQuantityLineCount: 3),
       );
 
       expect(find.text('수량 미입력 3건'), findsOneWidget);
     });
 
-    testWidgets('마감 + 수량 0 동시 → 마감이 우선 (해소 불가가 먼저)', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          pastDeadline: true,
-          requiredFieldsFilled: false,
-          zeroQuantityLineCount: 2,
-        ),
-      );
+    // 차단 사유 사이의 우선순위는 위젯이 아니라 제출 검증(OrderFormNotifier.submitBlock)이
+    // 정한다. 우선순위 회귀는 order_form_provider_test 의 "submitBlock 우선순위" 가 지킨다.
 
-      expect(find.text('마감시간 지남'), findsOneWidget);
-      expect(find.text('수량 미입력 2건'), findsNothing);
-    });
-
-    testWidgets('마감 + 여신 초과 동시 → 마감이 우선', (tester) async {
-      await tester.pumpWidget(_host(pastDeadline: true, loanExceeded: true));
-
-      expect(find.text('마감시간 지남'), findsOneWidget);
-      expect(find.text('여신한도 초과'), findsNothing);
-    });
-
-    testWidgets('필수 항목 미입력(수량 0 아님) → 승인요청 라벨 유지 + 탭 차단', (tester) async {
+    testWidgets('거래처 미선택 등 요약 불가 사유 → 승인요청 라벨 유지 + 탭 차단', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
         _host(
-          requiredFieldsFilled: false,
-          zeroQuantityLineCount: 0,
+          blockKind: SubmitBlockKind.account,
           onSubmit: () => tapped = true,
         ),
       );
@@ -184,7 +148,7 @@ void main() {
       var submitted = false;
       await tester.pumpWidget(
         _host(
-          requiredFieldsFilled: false,
+          blockKind: SubmitBlockKind.zeroQuantity,
           zeroQuantityLineCount: 1,
           onSubmit: () => submitted = true,
           onDisabledTap: () => notified = true,
@@ -201,8 +165,7 @@ void main() {
       var submitted = false;
       await tester.pumpWidget(
         _host(
-          pastDeadline: true,
-          requiredFieldsFilled: false,
+          blockKind: SubmitBlockKind.deadline,
           zeroQuantityLineCount: 1,
           onSubmit: () => submitted = true,
           onDisabledTap: () => notified = true,
@@ -217,7 +180,7 @@ void main() {
     testWidgets('제품 100개 초과 → 탭하면 사유 콜백 호출', (tester) async {
       var notified = false;
       await tester.pumpWidget(
-        _host(lineLimitExceeded: true, onDisabledTap: () => notified = true),
+        _host(blockKind: SubmitBlockKind.lineLimit, onDisabledTap: () => notified = true),
       );
 
       await tester.tap(find.text('제품 100개 초과'));
@@ -228,8 +191,7 @@ void main() {
       var notified = false;
       await tester.pumpWidget(
         _host(
-          requiredFieldsFilled: false,
-          zeroQuantityLineCount: 0,
+          blockKind: SubmitBlockKind.account,
           onDisabledTap: () => notified = true,
         ),
       );

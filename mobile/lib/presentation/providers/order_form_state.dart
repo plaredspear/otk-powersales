@@ -23,6 +23,51 @@ enum LoanInquiryStatus {
   failed,
 }
 
+/// 승인요청이 막힌 사유 종류 — 제출 검증 (A)~(H) 와 1:1 대응.
+///
+/// 버튼 라벨 / 색 / 토스트 문구 / 탭 시 부가 동작(수량 줄로 이동)이 **모두 이 하나의 판정에서**
+/// 파생된다. 화면이 별도 조건으로 라벨을 다시 계산하면 "거래처 미선택인데 `제품 100개 초과`
+/// 라벨" 처럼 사유가 어긋난다 (실제 발생한 버그).
+enum SubmitBlockKind {
+  /// (A) 거래처 미선택
+  account,
+
+  /// (B) 납기일 미선택
+  deliveryDate,
+
+  /// (C) 제품코드 중복
+  duplicateProduct,
+
+  /// (D) 납기일이 과거
+  pastDeliveryDate,
+
+  /// (D-2) 주문 마감 경과
+  deadline,
+
+  /// (E) 제품 0건
+  noItems,
+
+  /// (F) 제품 100개 초과
+  lineLimit,
+
+  /// (G) 여신 조회 중 / 실패 — 아직 판정할 수 없음
+  loanUnavailable,
+
+  /// (G) 여신 한도 초과
+  loanExceeded,
+
+  /// (H) 총EA 가 0 인 라인 존재
+  zeroQuantity,
+}
+
+/// 승인요청 차단 사유 — 종류와 사용자 안내 문구를 함께 나른다.
+class SubmitBlock {
+  final SubmitBlockKind kind;
+  final String message;
+
+  const SubmitBlock(this.kind, this.message);
+}
+
 /// 주문서 작성 화면 상태
 ///
 /// 작성 중인 주문서, 거래처 목록, 유효성 검증 결과, 로딩/에러 상태를 포함합니다.

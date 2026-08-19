@@ -63,18 +63,21 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
   /// 비활성 상태의 승인요청 버튼 탭 — 막힌 사유를 토스트로 알린다.
   ///
-  /// 사유 문구는 제출 검증([OrderFormNotifier.submitBlockReason])을 그대로 쓴다. 버튼 라벨은
-  /// 폭이 좁아 사유를 한 단어로만 말하므로(예: `제품 100개 초과`), "무엇을 해야 하는가" 는
-  /// 여기서 채운다. 수량 미입력이면 안내와 함께 첫 미입력 줄로 이동시킨다(종전 동작).
+  /// 사유는 제출 검증([OrderFormNotifier.submitBlock])을 그대로 쓴다. 버튼 라벨은 폭이 좁아
+  /// 사유를 한 단어로만 말하므로(예: `제품 100개 초과`), "무엇을 해야 하는가" 는 여기서 채운다.
+  /// 첫 미입력 줄로의 이동은 **차단 사유가 수량일 때만** 한다 — 거래처 미선택처럼 목록과
+  /// 무관한 사유에서 제품 줄로 끌고 가면 안내와 화면 이동이 서로 딴소리를 한다.
   void _handleDisabledSubmitTap(
     OrderFormState state,
     OrderFormNotifier notifier,
   ) {
-    final reason = notifier.submitBlockReason ?? '승인요청에 필요한 항목을 확인해 주세요';
+    final block = notifier.submitBlock;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(reason)));
-    if (state.zeroQuantityLineCount > 0) {
+      ..showSnackBar(
+        SnackBar(content: Text(block?.message ?? '승인요청에 필요한 항목을 확인해 주세요')),
+      );
+    if (block?.kind == SubmitBlockKind.zeroQuantity) {
       _scrollToFirstZeroQuantity(state);
     }
   }
@@ -515,10 +518,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     onSaveDraft: () => notifier.saveDraft(),
                     onSubmit: () => notifier.validateAndSubmitOrder(),
                     isSubmitting: state.isSubmitting,
-                    requiredFieldsFilled: state.isReadyForApproval,
-                    loanExceeded: state.isLoanExceeded,
-                    lineLimitExceeded: state.isLineLimitExceeded,
-                    pastDeadline: state.isPastDeadline,
+                    // 라벨/색/활성 여부는 제출 검증과 같은 판정에서만 파생시킨다.
+                    blockKind: notifier.submitBlock?.kind,
                     zeroQuantityLineCount: state.zeroQuantityLineCount,
                     onDisabledTap: () =>
                         _handleDisabledSubmitTap(state, notifier),
