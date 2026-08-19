@@ -51,6 +51,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   /// 상단 폼은 지연 생성되지 않아(단일 SliverToBoxAdapter) 화면 밖이어도 context 가 살아 있다.
   final GlobalKey _accountFieldKey = GlobalKey();
   final GlobalKey _deliveryDateFieldKey = GlobalKey();
+  final GlobalKey _creditBalanceKey = GlobalKey();
 
   /// 현재 강조 중인 제품코드 — 수량 미입력 줄로 이동한 직후 잠시 유지된다.
   String? _highlightedProductCode;
@@ -70,8 +71,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   ///
   /// 사유는 제출 검증([OrderFormNotifier.submitBlock])을 그대로 쓴다. 버튼 라벨은 폭이 좁아
   /// 사유를 한 단어로만 말하므로(예: `제품 100개 초과`), "무엇을 해야 하는가" 는 여기서 채운다.
-  /// 첫 미입력 줄로의 이동은 **차단 사유가 수량일 때만** 한다 — 거래처 미선택처럼 목록과
-  /// 무관한 사유에서 제품 줄로 끌고 가면 안내와 화면 이동이 서로 딴소리를 한다.
+  /// 이동 대상은 **사유마다 다르다** — 거래처 미선택인데 제품 줄로 끌고 가면 안내와 화면
+  /// 이동이 서로 딴소리를 한다. 사유별 대상은 아래 switch 가 전부를 열거한다(누락 시 컴파일 실패).
   void _handleDisabledSubmitTap(
     OrderFormState state,
     OrderFormNotifier notifier,
@@ -89,12 +90,16 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       case SubmitBlockKind.deadline:
       case SubmitBlockKind.pastDeliveryDate:
         _scrollToFormField(_deliveryDateFieldKey);
-      // 제품 관련 사유(0건/100개 초과)는 목록 자체가 이미 화면에 있어 이동시키지 않는다.
+      // 여신은 잔액 표시 영역이 곧 조치 지점이다 — 조회 실패 시 '다시 조회' 버튼이 거기 있고,
+      // 한도 초과는 잔액과 총 주문금액을 견줘야 얼마를 덜어낼지 판단할 수 있다.
+      case SubmitBlockKind.loanUnavailable:
+      case SubmitBlockKind.loanExceeded:
+        _scrollToFormField(_creditBalanceKey);
+      // 제품 관련 사유는 제품 섹션 머리(추가 버튼 / 건수 안내 / 선택 삭제)로 데려간다.
       case SubmitBlockKind.noItems:
       case SubmitBlockKind.lineLimit:
       case SubmitBlockKind.duplicateProduct:
-      case SubmitBlockKind.loanUnavailable:
-      case SubmitBlockKind.loanExceeded:
+        _scrollToFormField(_productListKey);
       case null:
         break;
     }
@@ -518,6 +523,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                             ),
                             const SizedBox(height: AppSpacing.lg),
                             CreditBalanceDisplay(
+                              key: _creditBalanceKey,
                               creditBalance: state.creditBalance,
                               isLoading: state.isLoanInquiryLoading,
                               isFailed: state.isLoanInquiryFailed,

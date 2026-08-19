@@ -5,6 +5,7 @@ import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/presentation/pages/order_form_page.dart';
 import 'package:mobile/presentation/widgets/account/account_selector_field.dart';
 import 'package:mobile/presentation/providers/order_form_provider.dart';
+import 'package:mobile/presentation/widgets/order_form/credit_balance_display.dart';
 import 'package:mobile/presentation/widgets/order_form/delivery_date_picker.dart';
 
 import '../../helpers/fake_order_form_repository.dart';
@@ -83,6 +84,34 @@ void main() {
     await tester.pumpAndSettle();
 
     final rect = tester.getRect(find.byType(DeliveryDatePicker));
+    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.bottom, lessThanOrEqualTo(screenHeight));
+  });
+
+  testWidgets('여신한도 초과 → 탭하면 여신 잔액 영역으로 이동한다', (tester) async {
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    seedPastDeadlineForm();
+    final notifier = container.read(orderFormProvider.notifier);
+    notifier.state = notifier.state.copyWith(
+      orderDraft: notifier.state.orderDraft.copyWith(
+        // 마감 사유보다 뒤에 오도록 납기일은 주문 가능한 날짜로 둔다.
+        deliveryDate: DateTime.now().add(const Duration(days: 3)),
+        creditBalance: 1,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('여신한도 초과'));
+    await tester.pumpAndSettle();
+
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final rect = tester.getRect(find.byType(CreditBalanceDisplay));
     expect(rect.top, greaterThanOrEqualTo(0));
     expect(rect.bottom, lessThanOrEqualTo(screenHeight));
   });
