@@ -1,21 +1,9 @@
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_colors.dart';
-
-/// 안드로이드 카메라 초기 줌 (CameraX `setLinearZoom` 의 선형 스케일 0.0~1.0).
-///
-/// 팔 길이 거리에서 제품 바코드가 프레임에 작게 잡히면 디코딩이 늦어진다. 살짝
-/// 당겨 두면 바코드가 차지하는 픽셀 수가 늘어 720p 로 낮춘 분석 해상도를 보완한다.
-/// 0.3 은 기기 최대 배율에 따라 대략 1.1~1.5배로, 화각을 크게 잃지 않는 범위다.
-///
-/// **iOS 에는 적용하지 않는다** — 같은 파라미터가 iOS 에서는 `videoZoomFactor =
-/// scale * 4 + 1` 로 해석돼 0.3 이 2.2배가 된다. 지연 리포트도 안드로이드 한정이라
-/// 정상 동작 중인 iOS 화각을 건드리지 않는다.
-const double kAndroidInitialZoom = 0.3;
 
 /// 스캔 가이드 프레임 크기 — 화면 폭 비례(상한 [kBarcodeGuideMaxWidth]).
 ///
@@ -117,7 +105,9 @@ double _distanceFromImageCenter(Barcode barcode, Offset imageCenter) {
 ///   중저가 기기에서 프레임당 처리시간이 커지고 실효 프레임률이 떨어진다.
 /// - `formats` 4종: 취급 제품 바코드에 쓰이지 않는 포맷까지 켜두면 프레임마다
 ///   1D 디코더를 불필요하게 더 돌린다.
-/// - `initialZoom`: [kAndroidInitialZoom] 참조 (안드로이드 한정).
+/// - `initialZoom` 미사용: 초기 줌을 주면 프레임 픽셀 수는 늘지만 안드로이드의
+///   디지털 줌은 센서 크롭이라 화면이 흐려 보이고, 확대된 화각에서 오토포커스가
+///   더 오래 헤맨다. 현장에서 "흐려서 잘 안 된다" 는 피드백이 나와 되돌렸다.
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
 
@@ -136,7 +126,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.unrestricted,
     cameraResolution: const Size(1280, 720),
-    initialZoom: Platform.isAndroid ? kAndroidInitialZoom : null,
     formats: const [
       BarcodeFormat.ean13,
       BarcodeFormat.ean8,
