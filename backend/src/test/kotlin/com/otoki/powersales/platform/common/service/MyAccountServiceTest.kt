@@ -434,7 +434,7 @@ class MyAccountServiceTest {
     inner class OrderWriteScopeTests {
 
         @Test
-        @DisplayName("여사원 + ORDER_WRITE + 토글 활성 -> 확정·오늘 유효 진열마스터 거래처만 (팀멤버스케줄 미조회)")
+        @DisplayName("여사원 + ORDER_WRITE + 토글 활성 -> 확정·오늘 유효 진열마스터 거래처만 (팀멤버스케줄 기간조회 미수행)")
         fun getMyAccounts_orderWrite_displayScheduleOnly() {
             val userId = 1L
             val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
@@ -447,6 +447,9 @@ class MyAccountServiceTest {
             every {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3, 4)
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns emptyList()
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 4), true) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
@@ -459,6 +462,95 @@ class MyAccountServiceTest {
             }
             verify(exactly = 0) {
                 displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE + 토글 활성 -> 오늘 확정 행사 거래처도 후보에 합친다")
+        fun getMyAccounts_orderWrite_unionsTodayPromotionAccounts() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(
+                createAccount(id = 3, name = "진열주문마트", externalKey = "1003", abcTypeCode = "5104"),
+                createAccount(id = 7, name = "행사주문마트", externalKey = "1007", abcTypeCode = "2001")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(3)
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(7)
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 7), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts.map { it.accountName })
+                .containsExactlyInAnyOrder("진열주문마트", "행사주문마트")
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE -> 진열·행사 양쪽에 걸린 거래처는 1건으로 중복 제거된다")
+        fun getMyAccounts_orderWrite_deduplicatesAcrossAxes() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(
+                createAccount(id = 3, name = "진열행사겸용마트", externalKey = "1003", abcTypeCode = "5104")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(3)
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(3)
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER_WRITE -> 진열 0건이어도 오늘 확정 행사만으로 후보가 나온다")
+        fun getMyAccounts_orderWrite_promotionOnly() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(
+                createAccount(id = 7, name = "행사주문마트", externalKey = "1007", abcTypeCode = "2001")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
+            } returns emptyList()
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns listOf(7)
+            every { accountRepository.findByIdInAndIsDeletedNot(listOf(7), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
+
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("행사주문마트")
+        }
+
+        @Test
+        @DisplayName("여사원 + ORDER(조회) -> 행사 축 조회는 하지 않는다 (작성 전용)")
+        fun getMyAccounts_order_doesNotQueryPromotionAxis() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns emptyList()
+
+            myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
+
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(any(), any())
             }
         }
 
@@ -487,10 +579,13 @@ class MyAccountServiceTest {
             verify(exactly = 0) {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(any(), any())
             }
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(any(), any())
+            }
         }
 
         @Test
-        @DisplayName("yang 예외 조장 + ORDER_WRITE -> 본인 진열마스터 기준 (팀장 스케줄 미조회)")
+        @DisplayName("yang 예외 조장 + ORDER_WRITE -> 본인 오늘 확정 근무 기준 (팀장 스케줄 미조회)")
         fun getMyAccounts_orderWrite_legacyScheduleExceptionLeader() {
             val userId = 1L
             val employee = createEmployee(
@@ -504,6 +599,9 @@ class MyAccountServiceTest {
             every {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(5)
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns emptyList()
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(5), true) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
@@ -560,7 +658,7 @@ class MyAccountServiceTest {
         }
 
         @Test
-        @DisplayName("여사원 + ORDER_WRITE(토글 활성) -> 오늘 확정 진열 + 주문가능 유형 안내")
+        @DisplayName("여사원 + ORDER_WRITE(토글 활성) -> 오늘 확정 진열·행사 + 주문가능 유형 안내")
         fun meta_employee_orderWrite() {
             val userId = 1L
             val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
@@ -569,11 +667,14 @@ class MyAccountServiceTest {
             every {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
+            every {
+                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+            } returns emptyList()
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
             assertThat(result.meta.criteriaLines).containsExactly(
-                "오늘 진열 근무가 확정된 거래처",
+                "오늘 진열·행사 근무가 확정된 거래처",
                 "그중 주문 가능한 거래처 유형만 표시됩니다"
             )
         }

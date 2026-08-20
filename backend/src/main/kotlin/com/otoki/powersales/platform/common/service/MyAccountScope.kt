@@ -14,7 +14,7 @@ package com.otoki.powersales.platform.common.service
  *   일반 조장(`teamleaderAccList`)은 레거시에서 abctype 필터가 주석 처리되어 FIELD 와 동일하다.
  * - [ORDER_WRITE] : 주문서 **작성** 화면 전용 (`scope=order` + `purpose=write`).
  *   [ORDER] 와 동일하되, 여사원/yang 예외 경로의 거래처
- *   후보를 **확정 + 오늘 유효한 진열마스터**로 한정한다
+ *   후보를 **오늘 확정된 근무**(확정 + 오늘 유효한 진열마스터 ∪ 오늘자 확정 행사)로 한정한다
  *   (`FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 활성 시. 비활성이면 [ORDER] 와 동일 동작).
  *   주문 조회 필터는 진열 종료 거래처로도 과거 주문을 검색해야 하므로 [ORDER] 를 그대로 쓴다.
  *

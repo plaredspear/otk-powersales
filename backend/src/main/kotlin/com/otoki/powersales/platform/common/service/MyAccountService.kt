@@ -33,8 +33,8 @@ import java.time.LocalDate
  * 일 때만 여사원/yang 예외 경로에 합치며, 매출/현장 화면(SALES/FIELD)에는 합치지 않는다.
  *
  * 주문서 **작성** 화면([MyAccountScope.ORDER_WRITE])은 여기서 한 번 더 갈린다 —
- * [FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY] 가 활성이면 팀멤버스케줄을 쓰지 않고
- * **확정 + 오늘 유효한 진열마스터**의 거래처만 후보로 삼는다.
+ * [FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY] 가 활성이면 팀멤버스케줄 전 기간을 쓰지 않고
+ * **오늘 확정된 근무**(진열마스터 ∪ 확정 행사)의 거래처만 후보로 삼는다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -62,7 +62,7 @@ class MyAccountService(
         // 조장·지점장: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList).
         // 레거시는 `eq '조장'` 정확 일치였으나 지점장을 조장과 동일 처리하도록 확장 ([AppAuthority.isTeamManager]).
         val isLeader = AppAuthority.isTeamManager(employee.role) && !isLeaderScheduleException
-        // 주문서 작성 화면 + 기능 토글 활성: 거래처 후보를 확정·오늘 유효한 진열마스터로 한정한다.
+        // 주문서 작성 화면 + 기능 토글 활성: 거래처 후보를 오늘 확정된 근무(진열마스터 ∪ 행사)로 한정한다.
         // 토글이 비활성이면 ORDER 와 동일한 이전 동작(팀멤버스케줄 ∪ 진열)으로 되돌아간다.
         val isDisplayScheduleOnly = scope == MyAccountScope.ORDER_WRITE &&
             featureToggleService.isEnabled(FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY, userId)
@@ -130,10 +130,10 @@ class MyAccountService(
             searchHint = DEFAULT_SEARCH_HINT
         )
 
-        // 여사원/yang 예외 + 주문서 작성(진열마스터 기준): 오늘 확정 진열 거래처 중 주문 가능 유형만
+        // 여사원/yang 예외 + 주문서 작성(오늘 확정 근무 기준): 진열·행사 확정 거래처 중 주문 가능 유형만
         isDisplayScheduleOnly -> MyAccountMeta(
             criteriaLines = listOf(
-                "오늘 진열 근무가 확정된 거래처",
+                "오늘 진열·행사 근무가 확정된 거래처",
                 "그중 주문 가능한 거래처 유형만 표시됩니다"
             ),
             searchHint = DEFAULT_SEARCH_HINT
@@ -171,7 +171,7 @@ class MyAccountService(
     /**
      * 일반 사원 거래처 조회: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기).
      * 주문 계열 scope 면 본인 진열 일정(레거시 selectDisplayMyAccount) union + abctype 필터를 적용한다.
-     * [isDisplayScheduleOnly] 면 팀멤버스케줄을 조회하지 않고 확정·오늘 유효한 진열마스터만 후보로 삼는다.
+     * [isDisplayScheduleOnly] 면 기간 기반 팀멤버스케줄을 조회하지 않고 오늘 확정된 근무(진열 ∪ 행사)만 후보로 삼는다.
      */
     private fun getEmployeeAccounts(
         userId: Long,
@@ -179,7 +179,7 @@ class MyAccountService(
         isDisplayScheduleOnly: Boolean
     ): List<MyAccountInfo> {
         if (isDisplayScheduleOnly) {
-            return toAccounts(confirmedValidDisplayAccountIds(userId), scope)
+            return toAccounts(todayConfirmedWorkAccountIds(userId), scope)
         }
 
         val (fromDate, toDateExclusive) = scheduleDateRange()
@@ -206,7 +206,7 @@ class MyAccountService(
         isDisplayScheduleOnly: Boolean
     ): List<MyAccountInfo> {
         if (isDisplayScheduleOnly) {
-            return toAccounts(confirmedValidDisplayAccountIds(leaderId), scope)
+            return toAccounts(todayConfirmedWorkAccountIds(leaderId), scope)
         }
 
         val (fromDate, toDateExclusive) = scheduleDateRange()
@@ -239,14 +239,24 @@ class MyAccountService(
     }
 
     /**
-     * 주문서 작성 전용: 오늘 기준 확정·유효한 진열마스터의 거래처 id.
+     * 주문서 작성 전용: 오늘 근무가 확정된 거래처 id — 진열 축 ∪ 행사 축.
      *
-     * 팀멤버스케줄(TMS)을 합치지 않는다 — TMS 는 출근등록 시점에 진열마스터로부터 파생되는 실적
-     * 기록이라 작성 시점의 근무 예정을 담지 못하고, 행사 파생 TMS 까지 후보에 넣기 때문이다.
+     * - 진열 축: 확정(confirmed) + 오늘이 기간 안인 진열마스터의 거래처.
+     * - 행사 축: 관리자 "행사 확정" 으로 생성된 오늘자 행사 파생 TMS 의 거래처
+     *   ([TeamMemberScheduleRepositoryCustom.findConfirmedPromotionAccountIdsByEmployeeAndDate]).
+     *
+     * 진열 축에서 팀멤버스케줄(TMS)을 쓰지 않는 이유는 진열 TMS 가 **출근등록 시점**에 생성되는 실적
+     * 기록이라 작성 시점의 근무 예정을 담지 못하기 때문이다. 반면 행사 TMS 는 생성 시점이 달라
+     * (행사 확정 시점, 근무일 이전) 그 자체가 확정된 근무 예정이므로 행사 축의 정본으로 쓴다.
      */
-    private fun confirmedValidDisplayAccountIds(employeeId: Long): List<Long> =
-        displayWorkScheduleRepository
-            .findConfirmedValidAccountIdsByEmployeeAndDate(employeeId, LocalDate.now())
+    private fun todayConfirmedWorkAccountIds(employeeId: Long): List<Long> {
+        val today = LocalDate.now()
+        val displayAccountIds = displayWorkScheduleRepository
+            .findConfirmedValidAccountIdsByEmployeeAndDate(employeeId, today)
+        val promotionAccountIds = teamMemberScheduleRepository
+            .findConfirmedPromotionAccountIdsByEmployeeAndDate(employeeId, today)
+        return (displayAccountIds + promotionAccountIds).distinct()
+    }
 
     /**
      * 부서장(매출 계열) 거래처 조회: 일정이 잡힌 거래처 (레거시 selectAllAccount — 본인/기간 필터 없음).

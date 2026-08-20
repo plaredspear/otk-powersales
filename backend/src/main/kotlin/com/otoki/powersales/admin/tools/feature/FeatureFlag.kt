@@ -45,27 +45,32 @@ enum class FeatureFlag(val code: String, val label: String) {
     ),
 
     /**
-     * 주문서 작성 거래처를 진열마스터 기준으로 한정 (GET /api/v1/mobile/accounts/my?scope=order_write).
+     * 주문서 작성 거래처를 **오늘 확정된 근무** 기준으로 한정 (GET /api/v1/mobile/accounts/my?scope=order_write).
      * 동작 전환형.
      *
-     * - 활성(기본) = 신규: 여사원 경로에서 **확정(Confirmed) + 오늘이 진열 기간 안**인
-     *   `DisplayWorkScheduleMaster` 의 거래처만 노출한다.
+     * - 활성(기본) = 신규: 여사원 경로에서 오늘 확정된 근무의 거래처만 노출한다 — 두 축의 합집합이다.
+     *   - **진열 축**: **확정(Confirmed) + 오늘이 진열 기간 안**인 `DisplayWorkScheduleMaster` 의 거래처.
+     *   - **행사 축**: 관리자 "행사 확정" 으로 생성된 오늘자 행사 파생 TMS(`promotionEmployee` FK 존재
+     *     + `workingType=근무`) 의 거래처.
      * - 비활성 = 이전: 팀멤버스케줄(전월 25일~당월 말일) ∪ 진열 일정 (레거시 `accountSelectList order=order`).
      *
-     * 팀멤버스케줄(TMS)은 출근등록 시점에 생성되는 **실적 기록**이라 주문 작성 시점의 근무 예정을
-     * 나타내지 못하고, 행사 일정(`Promotion → PromotionEmployee → TMS`) 거래처까지 포함한다.
-     * 행사 근무에는 주문서를 작성하지 않으므로 계획 마스터인 진열마스터를 기준으로 바꾼 것이다.
+     * 기간 기반 팀멤버스케줄(TMS) 조회를 끊은 이유는 **진열** TMS 가 출근등록 시점에 생성되는 실적
+     * 기록이라 주문 작성 시점의 근무 예정을 나타내지 못하고, 조회 범위가 한 달치라 오늘 근무와 무관한
+     * 거래처까지 후보에 들어오기 때문이다. 반면 **행사** TMS 는 생성 시점이 다르다 —
+     * `PromotionSchedulesUpsertHelper.upsert` 가 관리자 행사 확정 시점(근무일 이전)에 만들고,
+     * 행사 삭제/핵심필드 변경 시 `TeamMemberScheduleCascadeHelper` 가 함께 삭제하므로 그 자체가
+     * 확정된 근무 예정이다. 그래서 행사는 오늘자 TMS 를 정본으로 삼아 후보에 포함한다.
      *
      * 조회 필터(`scope=order`)는 이 전환의 대상이 아니다 — 진열이 끝난 거래처로 과거 주문을
      * 검색해야 하므로 기존 범위를 유지한다.
      *
      * 주의: 이 flag 는 "활성 = 더 좁은 쪽" 이라 Redis 장애 시 활성 폴백이 신규(좁은) 동작이 된다.
-     * 관리자 일정 등록 등으로 진열마스터 없이 TMS 만 존재하는 거래처는 노출되지 않으므로,
+     * 관리자 일정 등록 등으로 진열마스터도 행사 확정도 없이 TMS 만 존재하는 거래처는 노출되지 않으므로,
      * 그런 사례가 보고되면 이 flag 를 비활성화해 이전 동작으로 되돌린다.
      */
     ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY(
         "ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY",
-        "주문서 거래처 진열마스터 기준",
+        "주문서 거래처 오늘 확정 근무 기준",
     ),
     ;
 

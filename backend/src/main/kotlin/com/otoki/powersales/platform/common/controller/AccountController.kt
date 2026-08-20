@@ -32,7 +32,7 @@ class AccountController(
      * - `order` : 주문 계열(작성/조회 필터). 팀멤버스케줄 ∪ 진열 일정 + 주문가능 거래처유형.
      *
      * `purpose=write` 를 함께 보내면 주문서 **작성** 기준으로 좁힌다 — 여사원 경로 한정으로
-     * 확정·오늘 유효한 진열마스터 거래처만 (개발자 도구 > 기능 활성화 의
+     * 오늘 확정된 근무(진열마스터 ∪ 확정 행사) 거래처만 (개발자 도구 > 기능 활성화 의
      * `ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY` 비활성 시 `order` 와 동일). 별도 scope 값이 아니라
      * 부가 파라미터인 이유는 [MyAccountScope.from] KDoc 참조 (앱↔서버 버전 스큐 시 안전 폴백).
      */

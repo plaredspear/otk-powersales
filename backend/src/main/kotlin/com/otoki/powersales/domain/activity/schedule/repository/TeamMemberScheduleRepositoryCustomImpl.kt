@@ -382,6 +382,24 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findConfirmedPromotionAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long> {
+        return queryFactory
+            .select(teamMemberSchedule.account.id).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.workingDate.eq(date),
+                // 행사 확정으로 생성된 row 만 (진열 출근/연차 인바운드/조장 대리등록 row 배제)
+                teamMemberSchedule.promotionEmployee.isNotNull,
+                // 같은 행사의 연차/대휴 row 에도 행사 거래처가 복사되므로 근무 row 만 남긴다
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                teamMemberSchedule.account.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     override fun findDistinctScheduledAccounts(
         keyword: String?,
         limit: Int

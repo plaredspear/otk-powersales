@@ -451,6 +451,110 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findConfirmedPromotionAccountIdsByEmployeeAndDate - 주문서 작성 행사 축")
+    inner class FindConfirmedPromotionAccountIds {
+
+        private val today: LocalDate = LocalDate.now()
+
+        private fun promotionEmployeeFor(number: String): PromotionEmployee {
+            val promotion = testEntityManager.persistAndFlush(
+                Promotion(promotionNumber = number, startDate = today, endDate = today)
+            )
+            return testEntityManager.persistAndFlush(PromotionEmployee(promotionId = promotion.id))
+        }
+
+        private fun promotionSchedule(
+            account: Account?,
+            date: LocalDate = today,
+            workingType: WorkingType = WorkingType.WORK,
+            employee: Employee = testEmployee,
+            promotionEmployee: PromotionEmployee? = promotionEmployeeFor("PM-ORD-${account?.externalKey ?: "NA"}-$date"),
+            isDeleted: Boolean? = false,
+        ) {
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = employee,
+                    account = account,
+                    workingDate = date,
+                    workingType = workingType,
+                    workingCategory1 = WorkingCategory1.EVENT,
+                    promotionEmployee = promotionEmployee,
+                    isDeleted = isDeleted,
+                )
+            )
+        }
+
+        @Test
+        @DisplayName("본인의 오늘자 확정 행사 근무 거래처를 중복 제거해 반환한다")
+        fun returnsTodayPromotionAccounts() {
+            val account = testEntityManager.persistAndFlush(Account(name = "행사거래처", externalKey = "PRM001"))
+            promotionSchedule(account)
+            // 같은 거래처에 행사 2건 → distinct 검증
+            promotionSchedule(account, promotionEmployee = promotionEmployeeFor("PM-ORD-DUP"))
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findConfirmedPromotionAccountIdsByEmployeeAndDate(testEmployee.id, today)
+
+            assertThat(result).containsExactly(account.id)
+        }
+
+        @Test
+        @DisplayName("연차/대휴 행사 일정은 거래처가 붙어 있어도 제외한다")
+        fun excludesLeaveRows() {
+            val account = testEntityManager.persistAndFlush(Account(name = "연차행사거래처", externalKey = "PRM002"))
+            promotionSchedule(account, workingType = WorkingType.ANNUAL_LEAVE)
+            promotionSchedule(account, workingType = WorkingType.ALT_HOLIDAY, promotionEmployee = promotionEmployeeFor("PM-ORD-ALT"))
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findConfirmedPromotionAccountIdsByEmployeeAndDate(testEmployee.id, today)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("행사 파생이 아닌 일정(진열 출근 등)은 제외한다")
+        fun excludesNonPromotionRows() {
+            val account = testEntityManager.persistAndFlush(Account(name = "진열거래처", externalKey = "PRM003"))
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    account = account,
+                    workingDate = today,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = WorkingCategory1.DISPLAY,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findConfirmedPromotionAccountIdsByEmployeeAndDate(testEmployee.id, today)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("다른 날짜 / 다른 사원 / 삭제된 일정은 제외한다")
+        fun excludesOtherDateEmployeeAndDeleted() {
+            val otherDateAccount = testEntityManager.persistAndFlush(Account(name = "내일행사", externalKey = "PRM004"))
+            val otherEmployeeAccount = testEntityManager.persistAndFlush(Account(name = "타인행사", externalKey = "PRM005"))
+            val deletedAccount = testEntityManager.persistAndFlush(Account(name = "삭제행사", externalKey = "PRM006"))
+            val otherEmployee = testEntityManager.persistAndFlush(Employee(employeeCode = "EMP002", name = "다른사원"))
+
+            promotionSchedule(otherDateAccount, date = today.plusDays(1))
+            promotionSchedule(otherEmployeeAccount, employee = otherEmployee)
+            promotionSchedule(deletedAccount, isDeleted = true)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findConfirmedPromotionAccountIdsByEmployeeAndDate(testEmployee.id, today)
+
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
     @DisplayName("findMonthlyBy* — promotionEmployee fetch join")
     inner class MonthlyPromotionEmployeeFetchJoin {
 

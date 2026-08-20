@@ -112,6 +112,25 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
     /**
+     * 주문서 작성 거래처 후보 중 **행사 축** — 본인의 해당 일자 확정 행사 근무 거래처 id (중복 제거).
+     *
+     * "확정" 판정은 **행사 파생 TMS row 의 존재 자체**다. 행사 파생 row 는 관리자 "행사 확정"
+     * ([com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper.upsert])
+     * 시점에 `promotionEmployee` FK 와 함께 생성되며, 행사 삭제/핵심필드 변경 시
+     * [com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper] 가
+     * 함께 hard delete 하므로 취소분이 남지 않는다. 진열 축의 `confirmed=true`
+     * ([DisplayWorkScheduleRepositoryCustom.findConfirmedValidAccountIdsByEmployeeAndDate]) 와 대응한다.
+     *
+     * 필터: employee.id = 본인, workingDate = date, promotionEmployee IS NOT NULL(행사 파생 row 식별),
+     *       workingType = 근무, account IS NOT NULL, soft-delete 제외.
+     *
+     * `workingType = 근무` 는 필수다 — 확정 시 행사마스터 거래처를 `workStatus` 와 무관하게 복사하므로
+     * 같은 행사의 연차/대휴 row 에도 거래처가 붙어 있다. 걸러내지 않으면 연차 당일에 그 거래처가
+     * 주문 후보로 노출된다.
+     */
+    fun findConfirmedPromotionAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long>
+
+    /**
      * 팀멤버스케줄에 등록된 거래처 (중복 제거) — 거래처명/코드 keyword 필터 + 결과 상한(limit).
      * 레거시 `accountMapper.selectAllAccount` 정합 — 부서장(AppAuthority.ACCOUNT_VIEW_ALL) 매출 조회.
      * 레거시 드롭다운이 `keyvalue` 검색 + `LIMIT/OFFSET` 페이지네이션을 쓰던 것과 동일하게,
