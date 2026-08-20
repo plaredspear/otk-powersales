@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,29 +6,17 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// 바코드 스캔 화면.
+/// 안드로이드 카메라 초기 줌 (CameraX `setLinearZoom` 의 선형 스케일 0.0~1.0).
 ///
-/// 레거시 `posmain.jsp` 의 `powersales://barcode` 딥링크(네이티브 스캐너) 동등 — 카메라로 제품
-/// 바코드를 스캔해 그 값을 문자열로 반환한다. 취소 시 null.
+/// 팔 길이 거리에서 제품 바코드가 프레임에 작게 잡히면 디코딩이 늦어진다. 살짝
+/// 당겨 두면 바코드가 차지하는 픽셀 수가 늘어 720p 로 낮춘 분석 해상도를 보완한다.
+/// 0.3 은 기기 최대 배율에 따라 대략 1.1~1.5배로, 화각을 크게 잃지 않는 범위다.
 ///
-/// ## 안드로이드 인식 지연 대응 (mobile_scanner 7.2.0)
-///
-/// 안드로이드(CameraX + ML Kit) 와 iOS(AVCapture + Vision) 의 구현 차이 때문에
-/// 아래 설정은 안드로이드 기준으로 잡혀 있다.
-///
-/// - `scanWindow` 미사용: 안드로이드는 **전체 프레임을 검출한 뒤** 창 밖 결과를
-///   버리는데, ① 중복 판정(`noDuplicates`) 이 이 필터보다 먼저 실행돼 창 밖에서
-///   한 번 잡힌 값이 이후 계속 "중복" 으로 폐기되고, ② 판정이 "네 꼭짓점 전부
-///   포함" 이라 조금만 걸쳐도 탈락하며, ③ 창 좌표가 preview 가 아닌 analysis
-///   해상도 기준이라 기기에 따라 보이는 사각형과 실제 인식 영역이 어긋난다.
-///   iOS 는 `regionOfInterest` 로 검출 전에 잘라내 이런 문제가 없다.
-///   대신 [centerMostBarcodeValue] 로 화면 중앙에 가장 가까운 바코드를 고른다.
-/// - [DetectionSpeed.unrestricted]: 1회 스캔 후 즉시 화면을 닫으므로 중복 제거가
-///   불필요하다. 중복 방지는 [_handled] 가드가 담당한다.
-/// - `cameraResolution` 720p 고정: 미지정 시 안드로이드 기본값이 1920x1080 이라
-///   중저가 기기에서 프레임당 처리시간이 커지고 실효 프레임률이 떨어진다.
-/// - `formats` 4종: 취급 제품 바코드에 쓰이지 않는 포맷까지 켜두면 프레임마다
-///   1D 디코더를 불필요하게 더 돌린다.
+/// **iOS 에는 적용하지 않는다** — 같은 파라미터가 iOS 에서는 `videoZoomFactor =
+/// scale * 4 + 1` 로 해석돼 0.3 이 2.2배가 된다. 지연 리포트도 안드로이드 한정이라
+/// 정상 동작 중인 iOS 화각을 건드리지 않는다.
+const double kAndroidInitialZoom = 0.3;
+
 /// 스캔 가이드 프레임 크기 — 화면 폭 비례(상한 [kBarcodeGuideMaxWidth]).
 ///
 /// 고정 폭(260) 으로 두면 고밀도 대화면 안드로이드에서 프레임이 상대적으로 좁아
@@ -105,6 +94,30 @@ double _distanceFromImageCenter(Barcode barcode, Offset imageCenter) {
   return (centroid - imageCenter).distance;
 }
 
+/// 바코드 스캔 화면.
+///
+/// 레거시 `posmain.jsp` 의 `powersales://barcode` 딥링크(네이티브 스캐너) 동등 — 카메라로 제품
+/// 바코드를 스캔해 그 값을 문자열로 반환한다. 취소 시 null.
+///
+/// ## 안드로이드 인식 지연 대응 (mobile_scanner 7.2.0)
+///
+/// 안드로이드(CameraX + ML Kit) 와 iOS(AVCapture + Vision) 의 구현 차이 때문에
+/// 아래 설정은 안드로이드 기준으로 잡혀 있다.
+///
+/// - `scanWindow` 미사용: 안드로이드는 **전체 프레임을 검출한 뒤** 창 밖 결과를
+///   버리는데, ① 중복 판정(`noDuplicates`) 이 이 필터보다 먼저 실행돼 창 밖에서
+///   한 번 잡힌 값이 이후 계속 "중복" 으로 폐기되고, ② 판정이 "네 꼭짓점 전부
+///   포함" 이라 조금만 걸쳐도 탈락하며, ③ 창 좌표가 preview 가 아닌 analysis
+///   해상도 기준이라 기기에 따라 보이는 사각형과 실제 인식 영역이 어긋난다.
+///   iOS 는 `regionOfInterest` 로 검출 전에 잘라내 이런 문제가 없다.
+///   대신 [centerMostBarcodeValue] 로 화면 중앙에 가장 가까운 바코드를 고른다.
+/// - [DetectionSpeed.unrestricted]: 1회 스캔 후 즉시 화면을 닫으므로 중복 제거가
+///   불필요하다. 중복 방지는 `_handled` 가드가 담당한다.
+/// - `cameraResolution` 720p 고정: 미지정 시 안드로이드 기본값이 1920x1080 이라
+///   중저가 기기에서 프레임당 처리시간이 커지고 실효 프레임률이 떨어진다.
+/// - `formats` 4종: 취급 제품 바코드에 쓰이지 않는 포맷까지 켜두면 프레임마다
+///   1D 디코더를 불필요하게 더 돌린다.
+/// - `initialZoom`: [kAndroidInitialZoom] 참조 (안드로이드 한정).
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
 
@@ -123,6 +136,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.unrestricted,
     cameraResolution: const Size(1280, 720),
+    initialZoom: Platform.isAndroid ? kAndroidInitialZoom : null,
     formats: const [
       BarcodeFormat.ean13,
       BarcodeFormat.ean8,
