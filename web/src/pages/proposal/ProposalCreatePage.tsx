@@ -168,16 +168,19 @@ export default function ProposalCreatePage() {
           >
             {({ getFieldValue }) => {
               const category = getFieldValue('category') as SuggestionCategory;
-              // 기존제품 상품가치 향상은 제품 필수, 신제품 제안은 선택. (레거시 정합)
-              const productRequired = category === 'EXISTING_PRODUCT';
               // 거래처는 분류 무관 선택 가능, 물류 클레임만 필수. (레거시 정합)
               const accountRequired = category === 'LOGISTICS_CLAIM';
               return (
                 <>
+                  {/*
+                    제품은 분류 무관 필수 — 레거시 write.jsp#send:372-373 의 제품 검증만
+                    카테고리 조건이 없고, SF IF_REST_MOBILE_ProposalRegist.cls:136-142 도
+                    Category 분기 없이 ProductCode 로 제품을 조회해 없으면 등록을 거부한다.
+                  */}
                   <Form.Item
                     name="productCode"
                     label="제품"
-                    rules={productRequired ? [{ required: true, message: '제품을 선택해주세요' }] : undefined}
+                    rules={[{ required: true, message: '제품을 선택해주세요' }]}
                   >
                     <Select
                       showSearch

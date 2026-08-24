@@ -156,7 +156,15 @@ export default function SuggestionCreatePage() {
               allowClear
             />
           </Form.Item>
-          <Form.Item name="productCode" label="제품">
+          {/*
+            제품은 분류 무관 필수 — SF IF_REST_MOBILE_ProposalRegist.cls:136-142 가
+            Category 분기 없이 ProductCode 로 제품을 조회해 없으면 등록을 거부한다.
+          */}
+          <Form.Item
+            name="productCode"
+            label="제품"
+            rules={[{ required: true, message: '제품을 선택해주세요' }]}
+          >
             <Select
               showSearch
               filterOption={false}
