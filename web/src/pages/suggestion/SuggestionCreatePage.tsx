@@ -146,7 +146,17 @@ export default function SuggestionCreatePage() {
           <Form.Item name="content" label="제안내용" rules={[{ required: true, message: '내용을 입력해주세요' }]}>
             <Input.TextArea rows={6} placeholder="제안 본문" />
           </Form.Item>
-          <Form.Item name="accountId" label="거래처">
+          {/*
+            거래처는 물류 클레임에서만 필수 — 이 화면은 물류 클레임 고정이라 항상 필수다
+            (레거시 write.jsp:378 의 `거래처 미선택 && category == "claim"` 게이트 정합).
+            SF 는 거래처를 검증하지 않고 조회 실패 시 AccountId__c 를 null 로 두므로
+            (IF_REST_MOBILE_ProposalRegist.cls:223-239), 필수 판정은 화면에만 존재한다.
+          */}
+          <Form.Item
+            name="accountId"
+            label="거래처"
+            rules={[{ required: true, message: '거래처를 선택해주세요' }]}
+          >
             <Select
               showSearch
               filterOption={false}
