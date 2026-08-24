@@ -8,6 +8,7 @@ import '../../domain/repositories/my_account_repository.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/pos_sales_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/copyable_value.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/range_calendar_picker.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
@@ -301,8 +302,11 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
               ),
               title: Text(p.productName,
                   style: const TextStyle(fontSize: 14)),
-              subtitle: Text(
-                p.barcode.isEmpty ? '바코드 없음' : '바코드 ${p.barcode}',
+              subtitle: CopyableValue(
+                value: p.barcode,
+                copyLabel: '바코드',
+                displayText:
+                    p.barcode.isEmpty ? '바코드 없음' : '바코드 ${p.barcode}',
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -370,7 +374,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
         children: [
           _detailLine('제품명', item.productName),
           _detailLine('제품코드', _stripZero(item.productCode)),
-          _detailLine('바코드', item.barcode ?? '-'),
+          _detailLine('바코드', item.barcode ?? '-', copyable: true),
           _detailLine('납품 수량', '${item.quantity}EA'),
           _detailLine('금액', '${_currency(item.amount)}원'),
         ],
@@ -378,7 +382,9 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
     );
   }
 
-  Widget _detailLine(String label, String value) {
+  Widget _detailLine(String label, String value, {bool copyable = false}) {
+    const valueStyle = TextStyle(fontSize: 13);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -391,7 +397,16 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
                     fontSize: 13, color: AppColors.textSecondary)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
+            child: copyable
+                ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: CopyableValue(
+                      value: value,
+                      copyLabel: label,
+                      style: valueStyle,
+                    ),
+                  )
+                : Text(value, style: valueStyle),
           ),
         ],
       ),

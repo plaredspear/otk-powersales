@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/electronic_sales.dart';
+import '../common/copyable_value.dart';
 
 /// 전산매출 조회 결과 카드 리스트.
 ///
@@ -54,7 +55,7 @@ class _SalesCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           _row('제품코드', sales.productCode),
-          _row('바코드', sales.barcode),
+          _row('바코드', sales.barcode, copyable: true),
           _row('납품 수량', '${ElectronicSalesResultList._numberFormat.format(sales.quantity)}개'),
           _row(
             '금액',
@@ -69,7 +70,14 @@ class _SalesCard extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value, {TextStyle? valueStyle}) {
+  Widget _row(
+    String label,
+    String value, {
+    TextStyle? valueStyle,
+    bool copyable = false,
+  }) {
+    final style = valueStyle ?? AppTypography.bodyMedium;
+
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xs),
       child: Row(
@@ -84,10 +92,16 @@ class _SalesCard extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: valueStyle ?? AppTypography.bodyMedium,
-            ),
+            child: copyable
+                ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: CopyableValue(
+                      value: value,
+                      copyLabel: label,
+                      style: style,
+                    ),
+                  )
+                : Text(value, style: style),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_for_order.dart';
+import '../common/copyable_value.dart';
 
 /// 제품 추가용 카드 위젯
 ///
@@ -113,8 +114,12 @@ class ProductCardForAdd extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '바코드: ${product.barcode}',
+                    // 바코드 — 카드 탭은 선택 동작이므로 복사 아이콘만 탭 대상
+                    CopyableValue(
+                      value: product.barcode,
+                      copyLabel: '바코드',
+                      displayText: '바코드: ${product.barcode}',
+                      iconOnly: true,
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),

@@ -13,6 +13,7 @@ import '../providers/my_accounts_provider.dart';
 import '../providers/product_add_provider.dart';
 import '../providers/product_add_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/copyable_value.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/range_calendar_picker.dart';
@@ -483,8 +484,10 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '바코드 : ${product.barcode}',
+                CopyableValue(
+                  value: product.barcode,
+                  copyLabel: '바코드',
+                  displayText: '바코드 : ${product.barcode}',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textSecondary),
                 ),

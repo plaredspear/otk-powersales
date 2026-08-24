@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product.dart';
+import '../common/copyable_value.dart';
 
 /// 제품 카드 위젯
 ///
@@ -74,8 +75,8 @@ class ProductCard extends StatelessWidget {
                   _buildInfoRow('제품코드', product.productCode),
                   const SizedBox(height: AppSpacing.xxs),
 
-                  // 바코드
-                  _buildInfoRow('바코드', product.barcode),
+                  // 바코드 (탭하면 복사 — 거래처 앱 등 외부 입력용)
+                  _buildInfoRow('바코드', product.barcode, copyable: true),
                   const SizedBox(height: AppSpacing.xxs),
 
                   // 보관조건 | 소비기한
@@ -170,7 +171,11 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {bool copyable = false}) {
+    final valueStyle = AppTypography.bodySmall.copyWith(
+      color: AppColors.textSecondary,
+    );
+
     return Row(
       children: [
         Text(
@@ -181,12 +186,16 @@ class ProductCard extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Text(
-            value,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          child: copyable
+              ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: CopyableValue(
+                    value: value,
+                    copyLabel: label,
+                    style: valueStyle,
+                  ),
+                )
+              : Text(value, style: valueStyle),
         ),
       ],
     );

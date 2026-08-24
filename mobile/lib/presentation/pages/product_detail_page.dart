@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/product_detail.dart';
 import '../providers/product_search_provider.dart';
+import '../widgets/common/copyable_value.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 
@@ -60,7 +61,8 @@ class ProductDetailPage extends ConsumerWidget {
       _InfoEntry('단위', detail.unit ?? '-'),
       _InfoEntry('출시일', detail.launchDate ?? '-'),
       _InfoEntry('소비기한', detail.shelfLifeDisplay),
-      _InfoEntry('바코드', detail.barcode ?? '-'),
+      // 바코드는 탭하면 복사 — 거래처 앱 등 외부에 옮겨 적는 용도
+      _InfoEntry('바코드', detail.barcode ?? '-', copyable: true),
       _InfoEntry('박스규격', _formatNumber(detail.boxReceivingQuantity)),
       _InfoEntry('출고가', _formatNumber(detail.standardUnitPrice)),
       // 설명형 정보 — 값이 있을 때만 노출
@@ -174,7 +176,35 @@ class _InfoEntry {
   final String label;
   final String value;
 
-  const _InfoEntry(this.label, this.value);
+  /// 값 탭 시 클립보드 복사 제공 여부
+  final bool copyable;
+
+  const _InfoEntry(this.label, this.value, {this.copyable = false});
+}
+
+/// 정보 테이블의 값 셀 — copyable 항목은 탭하면 클립보드로 복사된다.
+class _ValueCell extends StatelessWidget {
+  final _InfoEntry entry;
+
+  const _ValueCell({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final value = entry.value.isEmpty ? '-' : entry.value;
+    final style = AppTypography.bodyMedium.copyWith(
+      color: AppColors.textPrimary,
+      height: 1.4,
+    );
+
+    if (!entry.copyable) return Text(value, style: style);
+
+    return CopyableValue(
+      value: value,
+      copyLabel: entry.label,
+      style: style,
+      iconSize: 16,
+    );
+  }
 }
 
 /// 라벨(좌) + 값(우) 셀을 보더로 구분한 정보 테이블
@@ -240,13 +270,7 @@ class _InfoTable extends StatelessWidget {
                           vertical: AppSpacing.sm + 2,
                         ),
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          entries[i].value.isEmpty ? '-' : entries[i].value,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            height: 1.4,
-                          ),
-                        ),
+                        child: _ValueCell(entry: entries[i]),
                       ),
                     ),
                   ],
