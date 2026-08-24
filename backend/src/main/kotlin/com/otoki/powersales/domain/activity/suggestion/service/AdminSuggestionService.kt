@@ -196,6 +196,9 @@ class AdminSuggestionService(
             duplicateProposalNum = request.duplicateProposalNum,
             actionStatus = actionStatus
         )
+        // BR8 — 제품 필수(분류 무관). admin 등록도 커밋 후 SF `/ProposalRegist` 로 릴레이되므로
+        // 제품 없이 저장하면 전건 SEND_FAILED 로 쌓인다(mobile 등록 정합).
+        validator.validateProductRequired(request.productCode)
 
         if ((photos?.size ?: 0) > MAX_PHOTO_COUNT) {
             throw IllegalArgumentException("첨부 파일은 최대 ${MAX_PHOTO_COUNT}건 입니다")

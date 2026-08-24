@@ -50,9 +50,12 @@ File _createMockFile(String path) {
   return File(path);
 }
 
+/// 제품은 신제품 제안에서도 필수(레거시 정합)라 유효 폼에 채운다.
 SuggestionRegisterForm _createValidNewProductForm() {
   return SuggestionRegisterForm(
     category: SuggestionCategory.newProduct,
+    productCode: '12345678',
+    productName: '진라면',
     title: '저당 라면 시리즈 출시 제안',
     content: '건강을 생각하는 저당 라면 시리즈를 출시하면 좋을 것 같습니다.',
   );
@@ -129,6 +132,8 @@ void main() {
         // Given
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.newProduct,
+          productCode: '12345678',
+          productName: '진라면',
           title: '신제품 제안',
           content: '제안 내용',
           photos: [
@@ -186,6 +191,8 @@ void main() {
         // Given
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.newProduct,
+          productCode: '12345678',
+          productName: '진라면',
           title: '', // Invalid
           content: '제안 내용',
         );
@@ -204,6 +211,8 @@ void main() {
         // Given
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.newProduct,
+          productCode: '12345678',
+          productName: '진라면',
           title: '제목',
           content: '', // Invalid
         );
@@ -224,6 +233,26 @@ void main() {
         // Given
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.existingProduct,
+          // productCode, productName missing
+          title: '제목',
+          content: '제안 내용',
+        );
+
+        // When & Then
+        expect(
+          () => useCase.call(form),
+          throwsA(
+            predicate((e) =>
+                e is Exception && e.toString().contains('제품을 선택해주세요')),
+          ),
+        );
+      });
+
+      /// 레거시 `write.jsp#send:372-373` 의 제품 검증은 카테고리 조건이 없다.
+      test('신제품 제안 선택 시에도 제품이 없으면 예외를 던진다', () async {
+        // Given
+        final form = SuggestionRegisterForm(
+          category: SuggestionCategory.newProduct,
           // productCode, productName missing
           title: '제목',
           content: '제안 내용',
@@ -265,6 +294,8 @@ void main() {
         // Given
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.newProduct,
+          productCode: '12345678',
+          productName: '진라면',
           title: '제목',
           content: '제안 내용',
           photos: [

@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 
 import 'suggestion_logistics_claim_fields.dart';
 
-/// 제안하기 제품 선택 필드 (레거시 suggestWrite.jsp 정합)
+/// 제안하기 제품 선택 필드 (레거시 write.jsp 정합)
 ///
-/// - 신제품 제안: [enabled] = false → "신제품 제안 시 선택 불필요" 안내, 버튼 비활성
-/// - 기존제품 / 물류 클레임: 바코드·선택 pill 버튼 활성, [required] = true ("대표 제품 *")
+/// 제품 선택은 **분류 무관 전 분기 필수**다 — 레거시 `write.jsp#send:372-373` 의 제품
+/// 검증만 카테고리 조건이 없고(거래처/사진/발생일자 검증은 물류 클레임 전용),
+/// SF `IF_REST_MOBILE_ProposalRegist.cls:136-142` 도 Category 분기 없이 ProductCode 로
+/// 제품을 조회해 없으면 등록을 거부한다.
 ///
 /// 레거시는 라벨 우측에 바코드/+선택 pill 버튼을 두고, 미선택 시 빨간 안내만
 /// 노출한다(별도 입력 박스 없음). 선택 시 제품명/코드를 평면 텍스트로 보여준다.
 class SuggestionProductField extends StatelessWidget {
   const SuggestionProductField({
     super.key,
-    required this.enabled,
     this.label = '제품',
-    this.required = false,
+    this.required = true,
     this.guideText,
     this.productName,
     this.productCode,
@@ -22,7 +23,6 @@ class SuggestionProductField extends StatelessWidget {
     this.onSelectPressed,
   });
 
-  final bool enabled;
   final String label;
   final bool required;
 
@@ -47,13 +47,13 @@ class SuggestionProductField extends StatelessWidget {
           SuggestionPillButton(
             icon: Icons.qr_code_scanner,
             label: '바코드',
-            onPressed: enabled ? onBarcodePressed : null,
+            onPressed: onBarcodePressed,
           ),
           const SizedBox(width: 8),
           SuggestionPillButton(
             icon: Icons.add,
             label: '선택',
-            onPressed: enabled ? onSelectPressed : null,
+            onPressed: onSelectPressed,
           ),
         ],
       ),
@@ -86,14 +86,7 @@ class SuggestionProductField extends StatelessWidget {
         ],
       );
     }
-    // 신제품 제안 — 선택 불필요 안내
-    if (!enabled) {
-      return const Text(
-        '신제품 제안 시 선택 불필요',
-        style: TextStyle(fontSize: 15, color: kSuggestionPlaceholderColor),
-      );
-    }
-    // 선택 가능하나 미선택 — 레거시처럼 빨간 안내(guideText)만 노출, 별도 값 없음
+    // 미선택 — 레거시처럼 빨간 안내(guideText)만 노출, 별도 값 없음
     return null;
   }
 }

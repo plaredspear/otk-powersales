@@ -156,6 +156,10 @@ class SuggestionService(
             duplicateProposalNum = request.duplicateProposalNum,
             actionStatus = SuggestionActionStatus.UNCONFIRMED
         )
+        // BR8 — 제품 필수(분류 무관). SF 가 ProductCode 로 제품을 못 찾으면 Category 분기 없이
+        // '잘못된 값입니다. (ProductCode)' 로 거부하므로(IF_REST_MOBILE_ProposalRegist.cls:136-142),
+        // 등록 채번/INSERT/S3 업로드 전에 막는다.
+        validator.validateProductRequired(request.productCode)
 
         if ((photos?.size ?: 0) > MAX_PHOTO_COUNT) {
             throw IllegalArgumentException("첨부 파일은 최대 ${MAX_PHOTO_COUNT}건 입니다")

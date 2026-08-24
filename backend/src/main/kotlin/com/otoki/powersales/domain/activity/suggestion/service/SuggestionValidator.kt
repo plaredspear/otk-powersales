@@ -26,9 +26,35 @@ import java.time.LocalDate
  * | BR5 | != LOGISTICS_CLAIM (insert/update) | claim_date null 의무 | "제안구분이 물류 클레임이 아닐 경우 물류 클레임 발생일자를 기입할 수 없습니다." |
  * | BR6 | != LOGISTICS_CLAIM (insert/update) | car_number null 의무 | "제안구분이 물류 클레임이 아닐 경우 물류 차량번호를 기입할 수 없습니다." |
  * | BR7 | != LOGISTICS_CLAIM (insert/afterUpdate) | duplicate_proposal_num null 의무 | "제안구분이 물류 클레임이 아닐 경우 중복 제안번호를 기입할 수 없습니다." |
+ *
+ * ## 등록 전용 — 제품 필수 (BR8)
+ * [validateProductRequired] 는 SF Trigger 가 아니라 **레거시 Heroku 화면 검증**(`write.jsp:372-373`)
+ * 을 서버로 승격한 룰이라 등록 경로에서만 호출한다 ([validate] 와 분리한 이유).
  */
 @Component
 class SuggestionValidator {
+
+    /**
+     * BR8 — 등록 시 제품(productCode) 필수. **분류 무관 전 분기 적용**.
+     *
+     * ## 레거시 매핑
+     * - Heroku: `write.jsp#send:372-373` (`if ($('.productNmCd').val() == '' || ... ) alert("제품을 선택하세요.")`)
+     * - SF Apex: `IF_REST_MOBILE_ProposalRegist.cls:136-142`
+     *
+     * ## 레거시 동작 요약
+     * 레거시 화면의 전송 버튼 검증 중 **제품 선택만 카테고리 조건이 없다** — 거래처/사진/발생일자 검증은
+     * 모두 `&& category == "claim"` 이 붙지만 제품은 무조건이다. 원래는 신제품 제안 시 필수 표시(`*`)를
+     * 지웠으나(`write.jsp:648-657` 주석 이력), 2022-11-07 영업지원실 요청으로 전 분기 필수가 되었다.
+     *
+     * SF 는 등록 payload 의 `ProductCode` 로 `DKRetail__Product__c` 를 조회해 **없으면 Category 분기 없이**
+     * `RESULT_MSG='잘못된 값입니다. (ProductCode)'` 로 거부한다. 레거시는 이 검증이 화면에만 있어 우회 시
+     * SF 원문 오류가 사용자에게 그대로 노출됐다 — 신규는 SF 호출 전에 서버에서 막는다.
+     */
+    fun validateProductRequired(productCode: String?) {
+        if (productCode.isNullOrBlank()) {
+            throw SuggestionValidationException("제품을 선택해주세요.")
+        }
+    }
 
     fun validate(
         category: SuggestionCategory,

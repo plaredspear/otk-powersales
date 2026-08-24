@@ -113,8 +113,13 @@ class SuggestionRegisterForm {
   /// 물류 클레임 여부
   bool get isLogisticsClaim => category == SuggestionCategory.logisticsClaim;
 
-  /// 대표 제품 선택 필수 여부 — 신제품 제안 외 분류는 필수 (레거시 정합)
-  bool get requiresProduct => !isNewProduct;
+  /// 대표 제품 선택 필수 여부 — 분류 무관 전 분기 필수 (레거시 정합)
+  ///
+  /// 레거시 `write.jsp#send:372-373` 의 제품 검증만 카테고리 조건이 없다(거래처/사진/발생일자
+  /// 검증은 물류 클레임 전용). 신제품 제안도 필수인 것은 2022-11-07 영업지원실 요청으로
+  /// 확정된 정책이며(`write.jsp:648-657` 주석 이력), SF `IF_REST_MOBILE_ProposalRegist.cls:136-142`
+  /// 도 Category 분기 없이 ProductCode 로 제품을 조회해 없으면 등록을 거부한다.
+  bool get requiresProduct => true;
 
   /// 제품 선택 여부
   bool get hasProduct =>

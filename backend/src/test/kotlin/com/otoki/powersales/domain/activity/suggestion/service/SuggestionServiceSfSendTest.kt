@@ -27,6 +27,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionSfRegistFailedException
+import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionValidationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -291,6 +292,32 @@ class SuggestionServiceSfSendTest {
             verify(exactly = 0) { suggestionRepository.delete(any<Suggestion>()) }
         }
 
+        /**
+         * BR8 — SF 는 Category 분기 없이 ProductCode 로 제품을 조회해 없으면 거부한다
+         * (`IF_REST_MOBILE_ProposalRegist.cls:136-142`). 채번/INSERT/S3 업로드 후 보상 삭제로
+         * 되돌리는 대신, 서버 검증으로 선차단해 낭비를 없앤다.
+         */
+        @Test
+        fun `productCode 없으면 SF 호출 전에 등록을 거부한다`() {
+            stubCreateFlow(sfKey = "1750000000000E777", sfSuccess = true)
+            every { validator.validateProductRequired(null) } throws
+                SuggestionValidationException("제품을 선택해주세요.")
+
+            val noProduct = SuggestionCreateRequest(
+                category = SuggestionCategory.NEW_PRODUCT,
+                title = "제목",
+                content = "내용",
+                productCode = null,
+            )
+
+            assertThatThrownBy { service.create(1L, noProduct, null) }
+                .isInstanceOf(SuggestionValidationException::class.java)
+                .hasMessage("제품을 선택해주세요.")
+
+            verify(exactly = 0) { suggestionRepository.save(any<Suggestion>()) }
+            verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
+        }
+
         /** 보상 삭제 경로가 조회하는 첨부/제안 stub. */
         private fun stubRollbackLookups(): List<UploadFile> {
             val files = listOf(
@@ -313,6 +340,7 @@ class SuggestionServiceSfSendTest {
 
         private fun stubCreateFlow(sfKey: String?, sfSuccess: Boolean = true): CapturingSlot<Map<String, Any?>> {
             every { validator.validate(any(), any(), any(), any(), any(), any()) } just Runs
+            every { validator.validateProductRequired(any()) } just Runs
             every { employeeRepository.findById(1L) } returns
                 Optional.of(Employee(id = 1L, employeeCode = "E777", name = "사원"))
             every { productRepository.findByProductCode(any()) } returns null

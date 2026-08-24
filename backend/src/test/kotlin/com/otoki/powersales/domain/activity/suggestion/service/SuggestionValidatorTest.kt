@@ -179,4 +179,31 @@ class SuggestionValidatorTest {
             }.doesNotThrowAnyException()
         }
     }
+
+    @Nested
+    @DisplayName("BR8 — 등록 시 제품 필수 (분류 무관)")
+    inner class ProductRequired {
+
+        @Test
+        @DisplayName("null 이면 예외")
+        fun nullProductCode() {
+            assertThatThrownBy { validator.validateProductRequired(null) }
+                .isInstanceOf(SuggestionValidationException::class.java)
+                .hasMessage("제품을 선택해주세요.")
+        }
+
+        @Test
+        @DisplayName("빈 문자열이면 예외")
+        fun blankProductCode() {
+            assertThatThrownBy { validator.validateProductRequired("   ") }
+                .isInstanceOf(SuggestionValidationException::class.java)
+                .hasMessage("제품을 선택해주세요.")
+        }
+
+        @Test
+        @DisplayName("값이 있으면 통과")
+        fun validProductCode() {
+            assertThatCode { validator.validateProductRequired("P001") }.doesNotThrowAnyException()
+        }
+    }
 }

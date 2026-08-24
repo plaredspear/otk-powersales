@@ -42,18 +42,21 @@ void main() {
     final testPhoto1 = File('test_photo1.jpg');
     final testPhoto2 = File('test_photo2.jpg');
 
+    /// 제품은 분류 무관 필수(레거시 정합)라 기본값으로 채운다.
+    /// 미선택 상태를 검증하려면 [clearProduct] 를 true 로 준다.
     SuggestionRegisterForm createValidForm({
       SuggestionCategory? category,
       String? productCode,
       String? productName,
+      bool clearProduct = false,
       String? title,
       String? content,
       List<File>? photos,
     }) {
       return SuggestionRegisterForm(
         category: category ?? SuggestionCategory.newProduct,
-        productCode: productCode,
-        productName: productName,
+        productCode: clearProduct ? null : (productCode ?? '12345678'),
+        productName: clearProduct ? null : (productName ?? '진라면'),
         title: title ?? '저당 라면 시리즈 출시 제안',
         content: content ?? '건강을 생각하는 저당 라면 시리즈를 출시하면 좋을 것 같습니다.',
         photos: photos ?? [],
@@ -62,13 +65,13 @@ void main() {
 
     group('생성 테스트', () {
       test('신제품 제안 폼이 올바르게 생성된다', () {
-        // Given & When
+        // Given & When — 제품은 신제품 제안에서도 필수(레거시 정합)
         final form = createValidForm();
 
         // Then
         expect(form.category, SuggestionCategory.newProduct);
-        expect(form.productCode, null);
-        expect(form.productName, null);
+        expect(form.productCode, '12345678');
+        expect(form.productName, '진라면');
         expect(form.title, '저당 라면 시리즈 출시 제안');
         expect(form.content, '건강을 생각하는 저당 라면 시리즈를 출시하면 좋을 것 같습니다.');
         expect(form.photos, isEmpty);
@@ -132,7 +135,7 @@ void main() {
 
       test('hasProduct가 올바르게 동작한다', () {
         // Given
-        final formWithoutProduct = createValidForm();
+        final formWithoutProduct = createValidForm(clearProduct: true);
         final formWithProduct = createValidForm(
           productCode: '12345678',
           productName: '진라면',
@@ -219,8 +222,24 @@ void main() {
         // Given
         final form = createValidForm(
           category: SuggestionCategory.existingProduct,
-          productCode: null,
-          productName: null,
+          clearProduct: true,
+        );
+
+        // When
+        final errors = form.validate();
+
+        // Then
+        expect(errors, contains('제품을 선택해주세요'));
+        expect(form.isValid, false);
+      });
+
+      /// 레거시 `write.jsp#send:372-373` 의 제품 검증만 카테고리 조건이 없다.
+      /// SF `IF_REST_MOBILE_ProposalRegist.cls:136-142` 도 Category 분기 없이 거부한다.
+      test('신제품 제안도 제품이 없으면 에러를 반환한다', () {
+        // Given
+        final form = createValidForm(
+          category: SuggestionCategory.newProduct,
+          clearProduct: true,
         );
 
         // When
@@ -249,6 +268,7 @@ void main() {
         // Given
         final form = createValidForm(
           category: SuggestionCategory.logisticsClaim,
+          clearProduct: true,
         );
 
         // When
@@ -293,7 +313,7 @@ void main() {
           title: '',
           content: '',
           category: SuggestionCategory.existingProduct,
-          productCode: null,
+          clearProduct: true,
         );
 
         // When

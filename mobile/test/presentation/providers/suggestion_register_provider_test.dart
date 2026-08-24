@@ -108,7 +108,8 @@ void main() {
         expect(notifier.state.isNewProduct, false);
       });
 
-      test('기존제품에서 신제품으로 변경하면 제품 정보가 초기화된다', () {
+      /// 제품은 분류 무관 필수라(레거시 정합) 신제품 제안으로 바꿔도 지우지 않는다.
+      test('기존제품에서 신제품으로 변경해도 제품 정보는 유지된다', () {
         // Given
         notifier.changeCategory(SuggestionCategory.existingProduct);
         notifier.selectProduct('12345678', '진라면');
@@ -119,10 +120,10 @@ void main() {
 
         // Then
         expect(notifier.state.category, SuggestionCategory.newProduct);
-        expect(notifier.state.hasProduct, false);
-        expect(notifier.state.form.productCode, null);
-        expect(notifier.state.form.productName, null);
-        expect(notifier.state.selectedProductName, null);
+        expect(notifier.state.hasProduct, true);
+        expect(notifier.state.form.productCode, '12345678');
+        expect(notifier.state.form.productName, '진라면');
+        expect(notifier.state.selectedProductName, '진라면');
       });
     });
 
@@ -141,7 +142,7 @@ void main() {
         expect(notifier.state.hasProduct, true);
       });
 
-      test('신제품 선택 시 제품 선택이 무시된다', () {
+      test('신제품 제안에서도 제품을 설정한다', () {
         // Given - 신제품 제안 전환
         notifier.changeCategory(SuggestionCategory.newProduct);
 
@@ -149,8 +150,9 @@ void main() {
         notifier.selectProduct('12345678', '진라면');
 
         // Then
-        expect(notifier.state.form.productCode, null);
-        expect(notifier.state.hasProduct, false);
+        expect(notifier.state.form.productCode, '12345678');
+        expect(notifier.state.form.productName, '진라면');
+        expect(notifier.state.hasProduct, true);
       });
 
       test('물류 클레임 선택 시 대표 제품을 설정한다', () {
@@ -242,8 +244,9 @@ void main() {
 
     group('제안 등록', () {
       test('유효한 신제품 제안을 등록한다', () async {
-        // Given
+        // Given — 제품은 신제품 제안에서도 필수(레거시 정합)
         notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.selectProduct('12345678', '진라면');
         notifier.updateTitle('신제품 제안');
         notifier.updateContent('제안 내용');
 
@@ -297,6 +300,7 @@ void main() {
       test('필수 항목 누락 시 에러가 발생한다 (제목)', () async {
         // Given - 신제품 제안 + 제목 없음
         notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.selectProduct('12345678', '진라면');
         notifier.updateContent('제안 내용');
 
         // When
@@ -310,6 +314,7 @@ void main() {
       test('필수 항목 누락 시 에러가 발생한다 (내용)', () async {
         // Given - 신제품 제안 + 내용 없음
         notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.selectProduct('12345678', '진라면');
         notifier.updateTitle('신제품 제안');
 
         // When
@@ -333,9 +338,25 @@ void main() {
         expect(notifier.state.errorMessage, '제품을 선택해주세요');
       });
 
+      /// SF 는 Category 분기 없이 ProductCode 로 제품을 조회해 없으면 거부한다.
+      test('신제품 제안도 제품 미선택하면 에러가 발생한다', () async {
+        // Given
+        notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.updateTitle('신제품 제안');
+        notifier.updateContent('제안 내용');
+        // 제품 미선택
+
+        // When
+        await notifier.submit();
+
+        // Then
+        expect(notifier.state.errorMessage, '제품을 선택해주세요');
+      });
+
       test('UseCase에서 에러 발생 시 에러 상태가 된다', () async {
         // Given
         notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.selectProduct('12345678', '진라면');
         notifier.updateTitle('신제품 제안');
         notifier.updateContent('제안 내용');
         mockUseCase.shouldFail = true;
@@ -385,6 +406,7 @@ void main() {
       test('clearSuccess()로 성공 메시지를 지운다', () async {
         // Given
         notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.selectProduct('12345678', '진라면');
         notifier.updateTitle('제목');
         notifier.updateContent('내용');
         await notifier.submit();
@@ -414,7 +436,7 @@ void main() {
         expect(notifier.state.form.productName, '진라면');
       });
 
-      test('물류 클레임에서 신제품으로 전환하면 분기 입력이 초기화된다', () {
+      test('물류 클레임에서 신제품으로 전환하면 물류 전용 입력만 초기화된다', () {
         // Given
         notifier.changeCategory(SuggestionCategory.logisticsClaim);
         notifier.selectProduct('12345678', '진라면');
@@ -430,10 +452,10 @@ void main() {
         // When
         notifier.changeCategory(SuggestionCategory.newProduct);
 
-        // Then — 신제품 제안은 제품 + 물류 클레임 필드 모두 제거
+        // Then — 물류 클레임 전용 필드만 제거하고, 공통 필수인 제품은 유지
         expect(notifier.state.isNewProduct, true);
-        expect(notifier.state.form.productCode, null);
-        expect(notifier.state.form.productName, null);
+        expect(notifier.state.form.productCode, '12345678');
+        expect(notifier.state.form.productName, '진라면');
         expect(notifier.state.form.accountId, null);
         expect(notifier.state.form.accountName, null);
         expect(notifier.state.form.sapAccountCode, null);

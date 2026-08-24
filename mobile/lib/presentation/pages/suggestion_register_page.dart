@@ -212,7 +212,6 @@ class _SuggestionRegisterPageState
           onSelect: _showAccountSelector,
         ),
         SuggestionProductField(
-          enabled: true,
           label: '대표 제품',
           required: true,
           guideText: '제안내용과 관련된 당사 유사제품을 선택해주세요.',
@@ -255,8 +254,8 @@ class _SuggestionRegisterPageState
     // 신제품 제안 / 기존제품 상품가치향상
     return [
       SuggestionProductField(
-        enabled: state.isExistingProduct,
-        required: state.isExistingProduct,
+        required: true,
+        guideText: '제안내용과 관련된 당사 유사제품을 선택해주세요.',
         productName: state.form.productName,
         productCode: state.form.productCode,
         onBarcodePressed: _handleBarcodeScan,

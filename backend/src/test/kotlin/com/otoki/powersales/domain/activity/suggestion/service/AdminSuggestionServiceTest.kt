@@ -27,6 +27,7 @@ import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggesti
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionPhotoIdException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhotoNotFoundException
+import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionValidationException
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.activity.suggestion.service.AdminSuggestionFilterParams
 import com.otoki.powersales.domain.activity.suggestion.service.AdminSuggestionService
@@ -380,6 +381,7 @@ class AdminSuggestionServiceTest {
             val photo: MultipartFile = MockMultipartFile("photos", "p.jpg", "image/jpeg", byteArrayOf(1, 2))
             val request = AdminSuggestionCreateRequest(
                 category = SuggestionCategory.NEW_PRODUCT,
+                productCode = "P001",
                 title = "제목", content = "본문",
                 employeeId = targetEmployeeId
             )
@@ -399,6 +401,7 @@ class AdminSuggestionServiceTest {
 
             val request = AdminSuggestionCreateRequest(
                 category = SuggestionCategory.NEW_PRODUCT,
+                productCode = "P001",
                 title = "제목", content = "본문"
             )
             service.create(adminId, request, null)
@@ -418,6 +421,7 @@ class AdminSuggestionServiceTest {
 
             val request = AdminSuggestionCreateRequest(
                 category = SuggestionCategory.NEW_PRODUCT,
+                productCode = "P001",
                 title = "제목", content = "본문"
             )
             service.create(adminId, request, null)
@@ -438,6 +442,7 @@ class AdminSuggestionServiceTest {
 
             val request = AdminSuggestionCreateRequest(
                 category = SuggestionCategory.LOGISTICS_CLAIM,
+                productCode = "P001",
                 title = "제목", content = "본문",
                 claimType = "배송시간 지연", claimDate = LocalDate.of(2026, 7, 1)
             )
@@ -451,11 +456,31 @@ class AdminSuggestionServiceTest {
         fun rejectsTooManyPhotos() {
             val photos = (1..3).map { MockMultipartFile("p", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
             val request = AdminSuggestionCreateRequest(
-                category = SuggestionCategory.NEW_PRODUCT, title = "x", content = "y"
+                category = SuggestionCategory.NEW_PRODUCT,
+                productCode = "P001",
+                title = "x", content = "y"
             )
             assertThatThrownBy { service.create(adminId, request, photos) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("최대 2")
+        }
+
+        @Test
+        @DisplayName("BR8 — 신제품 제안도 productCode 없으면 등록 거부 (SF ProductCode 거부 선차단)")
+        fun rejectsMissingProductCode() {
+            // validator 는 relaxUnitFun mock 이라 BR8 만 실제 룰로 stub 한다.
+            every { validator.validateProductRequired(null) } throws
+                SuggestionValidationException("제품을 선택해주세요.")
+
+            val request = AdminSuggestionCreateRequest(
+                category = SuggestionCategory.NEW_PRODUCT,
+                title = "제목", content = "본문"
+            )
+            assertThatThrownBy { service.create(adminId, request, null) }
+                .isInstanceOf(SuggestionValidationException::class.java)
+                .hasMessage("제품을 선택해주세요.")
+
+            verify(exactly = 0) { suggestionRepository.save(any<Suggestion>()) }
         }
     }
 

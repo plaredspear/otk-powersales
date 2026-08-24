@@ -88,17 +88,14 @@ class SuggestionRegisterNotifier
   /// 분류 변경
   ///
   /// 카테고리 전환 시 다른 카테고리 전용 입력 필드를 초기화한다.
-  /// 대표 제품은 신제품/기존제품/물류 클레임 공통 개념이라(레거시 정합) 신제품
-  /// 제안으로 전환할 때만 제거하고, 기존제품 ↔ 물류 클레임 전환 시에는 유지한다.
+  /// 대표 제품은 신제품/기존제품/물류 클레임 공통 필수 항목이라(레거시 정합) 분류를
+  /// 바꿔도 유지한다.
   /// 물류 클레임 전용 필드(거래처/클레임항목/발생일자/차량번호)는 물류 클레임이
   /// 아닌 분류로 전환 시 제거한다.
   void changeCategory(SuggestionCategory category) {
     final updatedForm = state.form.copyWith(category: category);
 
-    final clearProduct = category == SuggestionCategory.newProduct;
     final cleared = updatedForm.copyWithNull(
-      productCode: clearProduct,
-      productName: clearProduct,
       accountId: category != SuggestionCategory.logisticsClaim,
       accountName: category != SuggestionCategory.logisticsClaim,
       sapAccountCode: category != SuggestionCategory.logisticsClaim,
@@ -109,15 +106,12 @@ class SuggestionRegisterNotifier
 
     state = state.copyWith(
       form: cleared,
-      clearProductName: clearProduct,
       clearErrorMessage: true,
     );
   }
 
-  /// 제품 선택 (신제품 제안 외 분류에서 대표 제품 지정)
+  /// 제품 선택 (분류 무관 — 대표 제품 지정)
   void selectProduct(String productCode, String productName) {
-    if (state.isNewProduct) return;
-
     final updatedForm = state.form.copyWith(
       productCode: productCode,
       productName: productName,
