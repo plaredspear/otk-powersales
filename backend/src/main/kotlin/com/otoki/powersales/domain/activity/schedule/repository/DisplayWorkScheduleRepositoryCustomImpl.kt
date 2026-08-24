@@ -814,25 +814,32 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     }
 
     /**
-     * 지점 스코프 — 스케줄 owner(조장 User)의 소속 지점(`ownerUser.costCenterCode`) IN 필터.
+     * 지점 스코프 — 대상 여사원의 현재 소속 지점(`employee.costCenterCode`) IN 필터.
      * null 이면 미적용(가시 범위 전건), emptyList(NoAccess 산출값) 이면 매칭 0건(IDOR 차단).
      *
-     * ## SF 정합 근거 (지점 판정 축)
-     * SF `DisplayWorkScheduleMaster__c` 리스트뷰는 지점 필터 기능 자체가 없고, 조회 가시성은
-     * OWD Private + Owner sharing 으로만 결정된다 (owner = 저장 시점 사원의 현재 소속 조직 조장 User,
-     * SF `setOwner`). 지점명 표시(`BranchName__c` formula)도 스케줄 필드가 아니라 사원의 현재 조직명이다.
+     * ## SF 정합 근거 (지점 판정 축 = 여사원 소속)
+     * SF 는 이 오브젝트의 지점 축을 **대상 여사원(`FullName__r`)** 단일 출처로 잡는다. 지점 관련 필드가
+     * 2개뿐이고 둘 다 여사원에서 파생된다:
+     *  - 표시: `BranchName__c` formula = `FullName__r.DKRetail__OrgName__c` (여사원 현재 조직명).
+     *    리스트뷰 10개 전부 이 필드를 지점 컬럼으로 쓴다.
+     *  - 가시성: `CostCenterCode__c` — Trigger `setCostCenterCode` 가 여사원의 CostCenterCode 를 복사하며,
+     *    sharing rule 68건 중 66건이 이 필드를 criteria 로 쓴다 (조장 role Edit / 영업사원 role Read).
+     * owner(`OwnerId`) 는 독립 축이 아니라 파생물이다 — Trigger `setOwner` 가 "여사원 CC 와 동일한 CC 의
+     * 조장" 을 역산해 넣으므로, 저장 시점엔 owner CC == 여사원 CC 가 구조적으로 보장된다.
      *
-     * 신규는 운영 요구로 지점 셀렉터(UI 필터)를 추가했는데, 그 필터 축을 **스케줄의 `costCenterCode`**
-     * (= 저장 시점 사원 조직코드 스냅샷) 로 잡으면, 사원이 전출/발령된 뒤에도 스냅샷은 옛 조직코드로
-     * 고정되어(SF `setCostCenterCode` 스냅샷 성격), 현재 지점 관리자가 지점 필터로 조회할 때 owner 는
-     * 현재 지점(발령 후 조장)인데도 스케줄 스냅샷 코드가 달라 목록에서 누락되는 문제가 있었다.
-     * SF 의 지점 귀속 기준(owner 조장의 소속 지점)에 맞춰 owner 의 `costCenterCode` 로 판정한다.
-     * (owner_user_id 는 발령 시 재계산되어 항상 현재 조직 조장을 가리킨다 — SF `setOwner` before update.)
+     * 따라서 owner 축으로 필터하면 SF 에 없던 판정 기준이 되고, owner 조장이 발령되면 표시 지점(여사원)과
+     * 필터 지점(owner)이 어긋나 "화면엔 A지점으로 보이는데 A지점 관리자에겐 안 보이는" 누락이 발생한다.
+     * 스냅샷(`displayWorkSchedule.costCenterCode`) 축도 쓰지 않는다 — SF 는 저장마다 `setCostCenterCode` 로
+     * 재동기화하지만 신규엔 그 재계산이 없어 전출/발령 후 옛 코드로 고정되기 때문이다.
+     * 표시축과 필터축을 일치시키기 위해 여사원의 **현재** `costCenterCode` 로 판정한다.
      */
     private fun buildBranchCodesCondition(branchCodes: List<String>?): BooleanExpression? {
         if (branchCodes == null) return null
         if (branchCodes.isEmpty()) return Expressions.FALSE.isTrue // NoAccess — 매칭 0건
-        return displayWorkSchedule.ownerUser.costCenterCode.`in`(branchCodes)
+        // 경로 표현식(displayWorkSchedule.employee.*) 이 아닌 조인 alias 로 참조한다 — 경로 표현식은
+        // implicit inner join 을 유발해 목록(leftJoin)과 count 쿼리의 모수가 갈린다
+        // ([buildEmploymentStatusCondition] 주석 참조).
+        return employee.costCenterCode.`in`(branchCodes)
     }
 
     override fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean {

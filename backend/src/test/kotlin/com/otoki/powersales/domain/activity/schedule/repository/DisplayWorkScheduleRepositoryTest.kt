@@ -669,12 +669,17 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findScheduleList - 지점 필터(branchCodes) 는 owner 소속 지점 기준")
+    @DisplayName("findScheduleList - 지점 필터(branchCodes) 는 여사원 소속 지점 기준 (SF CostCenterCode__c 정합)")
     inner class FindScheduleListBranchScope {
 
         private fun ownerWithCostCenter(costCenterCode: String?): User =
             testEntityManager.persistAndFlush(
                 User(username = "owner-$costCenterCode-${System.nanoTime()}", employeeCode = null, password = "x", costCenterCode = costCenterCode)
+            )
+
+        private fun employeeWithCostCenter(name: String, costCenterCode: String?): Employee =
+            testEntityManager.persistAndFlush(
+                Employee(employeeCode = "E-$name-${System.nanoTime()}", name = name, costCenterCode = costCenterCode)
             )
 
         private fun scheduleOwnedBy(
@@ -699,25 +704,38 @@ class DisplayWorkScheduleRepositoryTest {
             ).content.map { it.employeeName }
 
         @Test
-        @DisplayName("스케줄 costCenterCode 가 옛 지점(5453)이라도 owner 소속(5816)이 필터에 포함되면 조회됨")
-        fun matchByOwnerBranchNotScheduleSnapshot() {
-            // 사원 전출 후: 스케줄 costCenterCode 는 저장 시점 스냅샷(5453)으로 고정,
-            // owner 는 현재 조직 조장(5816) 으로 재계산된 상태 (홍유미/임연숙 운영 케이스 재현).
-            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+        @DisplayName("owner 소속(5847)이 달라도 여사원 소속(5851)이 필터에 포함되면 조회됨")
+        fun matchByEmployeeBranchNotOwnerBranch() {
+            // 운영 케이스 재현 (장미정): 여사원은 창원1지점(5851) 소속인데 owner 조장은 대구3지점(5847),
+            // 스케줄 스냅샷은 창원1지점 구코드(5481). SF 는 여사원 CC 기준이므로 5851 로 조회되어야 한다.
+            val emp = employeeWithCostCenter("장미정", "5851")
+            val owner = ownerWithCostCenter("5847")
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5481"))
+            testEntityManager.clear()
+
+            assertThat(searchByBranch(listOf("5851"))).containsExactly("장미정")
+        }
+
+        @Test
+        @DisplayName("스케줄 costCenterCode 가 옛 지점(5453)이라도 여사원 현재 소속(5816)이 필터에 포함되면 조회됨")
+        fun matchByEmployeeBranchNotScheduleSnapshot() {
+            // 사원 전출 후: 스케줄 스냅샷은 저장 시점(5453)으로 고정, 여사원은 발령으로 5816 소속.
+            // SF 는 저장마다 setCostCenterCode 로 재동기화하나 신규엔 재계산이 없으므로,
+            // 여사원의 현재 CC 를 필터 축으로 삼아 발령을 자동 추종한다.
+            val emp = employeeWithCostCenter("홍유미", "5816")
             val owner = ownerWithCostCenter("5816")
             testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5453"))
             testEntityManager.clear()
 
-            // 지점 5816 으로 필터 → owner 소속이 5816 이므로 조회되어야 함 (스케줄 스냅샷 5453 무관).
             assertThat(searchByBranch(listOf("5816"))).containsExactly("홍유미")
         }
 
         @Test
-        @DisplayName("owner 소속 지점이 필터 밖이면 제외 (스케줄 costCenterCode 가 필터에 있어도)")
-        fun excludeWhenOwnerBranchOutsideEvenIfScheduleSnapshotInside() {
-            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
-            val owner = ownerWithCostCenter("9999")
-            // 스케줄 스냅샷은 필터(5816)에 들어가지만 owner 소속(9999)은 밖 → 제외되어야 함.
+        @DisplayName("여사원 소속 지점이 필터 밖이면 제외 (스케줄 스냅샷/owner 가 필터에 있어도)")
+        fun excludeWhenEmployeeBranchOutside() {
+            // 스냅샷(5816)과 owner(5816)는 필터에 들어가지만 여사원 소속(9999)은 밖 → 제외.
+            val emp = employeeWithCostCenter("홍유미", "9999")
+            val owner = ownerWithCostCenter("5816")
             testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5816"))
             testEntityManager.clear()
 
@@ -725,19 +743,32 @@ class DisplayWorkScheduleRepositoryTest {
         }
 
         @Test
-        @DisplayName("owner 가 없으면(null) 지점 필터 적용 시 제외")
-        fun excludeWhenOwnerNull() {
-            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
-            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner = null, scheduleCostCenterCode = "5816"))
+        @DisplayName("여사원 소속이 없으면(null) 지점 필터 적용 시 제외")
+        fun excludeWhenEmployeeCostCenterNull() {
+            val emp = employeeWithCostCenter("홍유미", null)
+            val owner = ownerWithCostCenter("5816")
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5816"))
             testEntityManager.clear()
 
             assertThat(searchByBranch(listOf("5816"))).isEmpty()
         }
 
         @Test
-        @DisplayName("branchCodes=null 이면 지점 필터 미적용 (owner 무관 전건)")
+        @DisplayName("owner 가 없어도(null) 여사원 소속이 필터에 있으면 조회됨")
+        fun matchWhenOwnerNullButEmployeeBranchInside() {
+            // owner 는 SF setOwner 가 조장 미배정 조직에서 null 로 남기는 파생물일 뿐이므로,
+            // 지점 판정에 영향을 주어서는 안 된다.
+            val emp = employeeWithCostCenter("홍유미", "5816")
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner = null, scheduleCostCenterCode = "5453"))
+            testEntityManager.clear()
+
+            assertThat(searchByBranch(listOf("5816"))).containsExactly("홍유미")
+        }
+
+        @Test
+        @DisplayName("branchCodes=null 이면 지점 필터 미적용 (여사원 소속 무관 전건)")
         fun noBranchFilterReturnsAll() {
-            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+            val emp = employeeWithCostCenter("홍유미", "9999")
             val owner = ownerWithCostCenter("5816")
             testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5453"))
             testEntityManager.clear()
