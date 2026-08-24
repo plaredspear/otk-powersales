@@ -1345,6 +1345,8 @@ class AdminDisplayWorkScheduleServiceTest {
     @DisplayName("batchConfirm - 일괄 확정")
     inner class BatchConfirmTests {
 
+        private fun scope(): DataScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
         @Test
         @DisplayName("정상 확정 - confirmed=false 3건 → updated_count: 3")
         fun batchConfirm_success() {
@@ -1355,7 +1357,7 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             every { scheduleRepository.findAllById(listOf(1L, 2L, 3L)) } returns schedules
 
-            val result = adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L, 3L))
+            val result = adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 2L, 3L))
 
             assertThat(result.updatedCount).isEqualTo(3)
             assertThat(schedules.all { it.confirmed == true }).isTrue()
@@ -1371,7 +1373,7 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             every { scheduleRepository.findAllById(listOf(1L, 2L, 3L)) } returns schedules
 
-            val result = adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L, 3L))
+            val result = adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 2L, 3L))
 
             assertThat(result.updatedCount).isEqualTo(2)
         }
@@ -1385,7 +1387,7 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
-            val result = adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L))
+            val result = adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 2L))
 
             assertThat(result.updatedCount).isEqualTo(0)
         }
@@ -1393,11 +1395,11 @@ class AdminDisplayWorkScheduleServiceTest {
         @Test
         @DisplayName("미존재 ID 포함 - ScheduleNotFoundException")
         fun batchConfirm_notFound() {
-            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns 
+            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns
                 listOf(createSchedule(id = 1L))
-            
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 999L)) }
+
+            assertThatThrownBy { adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 999L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
         }
 
@@ -1410,8 +1412,25 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L)) }
+            assertThatThrownBy { adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 2L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("가시 범위 밖 레코드 포함 - ScheduleForbiddenException (전건 미반영)")
+        fun batchConfirm_outsideScope() {
+            // SF OWD Private + CostCenterCode Sharing 정합 — 본인 담당 사업소 외 레코드는 확정 불가.
+            val s1 = createSchedule(id = 1L, confirmed = false)
+            val s2 = createSchedule(id = 2L, confirmed = false)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns listOf(s1, s2)
+            every { scheduleRepository.existsVisibleById(2L, any()) } returns false
+
+            assertThatThrownBy { adminDisplayWorkScheduleService.batchConfirm(scope(), listOf(1L, 2L)) }
+                .isInstanceOf(ScheduleForbiddenException::class.java)
+
+            // 전건 실패 — 가시 범위 안이던 1L 도 반영되지 않아야 한다.
+            assertThat(s1.confirmed).isFalse()
+            assertThat(s2.confirmed).isFalse()
         }
     }
 

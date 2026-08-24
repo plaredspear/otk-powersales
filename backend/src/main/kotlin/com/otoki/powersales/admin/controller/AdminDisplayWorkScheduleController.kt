@@ -175,9 +175,11 @@ class AdminDisplayWorkScheduleController(
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.EDIT)
     @PatchMapping("/confirm")
     fun batchConfirm(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
-        val result = adminDisplayWorkScheduleService.batchConfirm(request.ids)
+        val result = adminDisplayWorkScheduleService.batchConfirm(scope, request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정되었습니다"))
     }
 

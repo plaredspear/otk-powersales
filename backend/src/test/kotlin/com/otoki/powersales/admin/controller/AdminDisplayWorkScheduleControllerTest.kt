@@ -483,7 +483,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 3건 확정")
         fun confirm_success() {
             val result = ScheduleBatchConfirmResultDto(updatedCount = 3)
-            every { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L, 3L)) } returns result
+            every { adminDisplayWorkScheduleService.batchConfirm(any(), listOf(1L, 2L, 3L)) } returns result
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/confirm")
@@ -510,7 +510,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 ID 포함")
         fun confirm_notFound() {
-            every { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
+            every { adminDisplayWorkScheduleService.batchConfirm(any(), listOf(1L, 999L)) } throws ScheduleNotFoundException()
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/confirm")

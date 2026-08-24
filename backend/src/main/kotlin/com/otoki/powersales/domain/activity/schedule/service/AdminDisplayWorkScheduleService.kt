@@ -679,10 +679,30 @@ class AdminDisplayWorkScheduleService(
         )
     }
 
+    /**
+     * 일괄 확정 — 전건 실패(all-or-nothing).
+     *
+     * 사업소 가시 범위 검증: SF OWD Private + CostCenterCode Sharing 정합 — 본인 담당 사업소 외
+     * 레코드는 확정할 수 없다. SF 는 리스트뷰/퀵액션이 sharing 을 통과한 레코드만 다루므로 별도
+     * 필터 없이도 범위 밖 확정이 불가능하지만, 신규는 sharing 을 명시적 WHERE 로 재구현하므로
+     * 이 경로에도 동일 Predicate 를 적용해야 한다.
+     *
+     * partial success 인 [batchUnconfirm]/[batchDelete] 와 달리 전건 실패로 처리한다 — 화면은
+     * 목록(가시 범위 적용)에서 선택한 id 만 보내므로 범위 밖 id 가 섞이면 비정상 요청이고,
+     * 기존 [validateScheduleIds] 도 미존재/삭제 건을 전건 실패로 다루고 있어 일관된다.
+     */
     @Transactional
-    fun batchConfirm(ids: List<Long>): ScheduleBatchConfirmResultDto {
+    fun batchConfirm(scope: DataScope, ids: List<Long>): ScheduleBatchConfirmResultDto {
         val schedules = scheduleRepository.findAllById(ids)
         validateScheduleIds(ids, schedules)
+        // 목록과 동일한 evaluator Predicate (루프 밖 1회 산출)
+        val policyPredicate = schedulePolicyPredicate(scope)
+
+        // 검증을 먼저 전건 수행한 뒤 반영한다 — 반영 중 예외는 @Transactional 롤백으로도 처리되나,
+        // 검증/반영 단계를 분리해 "일부 반영 후 중단" 상태가 코드상 발생하지 않도록 한다.
+        if (schedules.any { !scheduleRepository.existsVisibleById(it.id, policyPredicate) }) {
+            throw ScheduleForbiddenException()
+        }
 
         var updatedCount = 0
         for (schedule in schedules) {
