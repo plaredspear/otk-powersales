@@ -51,11 +51,21 @@ class SafetyCheckRequiredException : BusinessException(
 /**
  * GPS 거리 초과 (Spec #585).
  *
- * 거리 값은 응답에 노출하지 않는다 (Q4). 서버 로그/감사 로그에만 기록한다.
+ * **거리/기준 위치 노출** — Spec #585 Q4 는 거리를 "보안상 은닉" 하기로 결정했으나(2026-05-04),
+ * 운영 중 그 은닉이 정상 사원의 자가 진단을 막는 비용이 더 크다고 판단해 2026-08-26 사용자 결정으로
+ * 뒤집었다. 실제 사건: 이동매장 좌표 예외가 적용된 거래처(원통점 표시 / 양구점 좌표 검증)에서
+ * 등록이 반복 실패했는데, 화면에 "거리 초과" 만 떠서 사원도 운영자도 원인을 알 수 없었고 서버 로그를
+ * 여러 차례 확인한 뒤에야 사원 위치가 기준점에서 35.8km 떨어져 있었음이 드러났다.
+ *
+ * 노출 범위는 **기준 위치명 + 주소 + 실제 거리 + 허용 범위**다. 기준 위치를 함께 싣는 이유는,
+ * 요일별 좌표 예외가 적용되면 화면에 보이는 거래처와 검증 기준 장소가 달라져 거리만으로는
+ * 사원이 상황을 해석할 수 없기 때문이다.
  */
-class DistanceExceededException : BusinessException(
+class DistanceExceededException(
+    message: String = "거래처와의 거리가 허용 범위를 초과했습니다.",
+) : BusinessException(
     errorCode = "ATT_GPS_DISTANCE_EXCEEDED",
-    message = "거래처와의 거리가 허용 범위를 초과했습니다.",
+    message = message,
     httpStatus = HttpStatus.BAD_REQUEST
 )
 

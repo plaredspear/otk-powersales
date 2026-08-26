@@ -126,9 +126,12 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
       if (next.errorMessage != null && previous?.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.errorMessage!),
+            // GPS 거리 초과 안내는 기준 위치/주소/거리까지 담은 여러 줄 문구다.
+            // SnackBar 기본값(1줄)이면 정작 원인을 알려주는 뒷부분이 잘려나간다.
+            content: Text(next.errorMessage!, maxLines: 5),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
             action: SnackBarAction(
               label: '확인',
               textColor: AppColors.white,

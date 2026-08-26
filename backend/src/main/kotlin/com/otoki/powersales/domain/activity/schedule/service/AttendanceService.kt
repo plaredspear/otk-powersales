@@ -48,6 +48,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequir
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDateMismatchException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.policy.AbcExemptPolicy
+import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -61,6 +62,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import kotlin.math.roundToInt
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -847,16 +849,66 @@ class AttendanceService(
 
         if (distanceMeters > thresholdMeters) {
             log.info(
-                "ATT_GPS_DISTANCE_EXCEEDED employeeId={} accountId={} distanceMeters={} thresholdMeters={}",
-                employeeId, account?.id, distanceMeters, thresholdMeters
+                "ATT_GPS_DISTANCE_EXCEEDED employeeId={} accountId={} distanceMeters={} thresholdMeters={} userLat={} userLon={}",
+                employeeId, account?.id, distanceMeters, thresholdMeters, userLat, userLon
             )
-            throw DistanceExceededException()
+            throw DistanceExceededException(
+                buildDistanceExceededMessage(account, dayOverride, distanceMeters, thresholdMeters)
+            )
         }
 
         log.debug(
             "ATT_GPS_DISTANCE_OK employeeId={} accountId={} distanceMeters={} thresholdMeters={}",
             employeeId, account?.id, distanceMeters, thresholdMeters
         )
+    }
+
+    /**
+     * 거리 초과 안내 문구 구성 — 기준 위치 + 실제 거리 + 허용 범위.
+     *
+     * Spec #585 Q4(거리 은닉) 를 뒤집은 2026-08-26 결정에 따른다 ([DistanceExceededException] 주석).
+     *
+     * **기준 위치를 함께 싣는 이유**: 요일별 좌표 예외([AccountDayCoordinateOverride]) 가 적용되면
+     * 사원이 화면에서 고른 거래처와 실제 검증 기준 장소가 다르다(예: 원통점을 선택했는데 양구점 좌표로
+     * 검증). 이때 거리만 보여주면 사원은 "거래처 앞에 서 있는데 왜 35km 냐" 로 해석해 원인을 찾지 못한다.
+     *
+     * 예외 적용 시에는 예외의 라벨을, 아닐 때는 거래처명 + 주소를 쓴다 — 예외 좌표는 거래처 주소와
+     * 무관한 장소라 `account.address1` 을 함께 보여주면 오히려 어긋난 정보가 된다.
+     */
+    private fun buildDistanceExceededMessage(
+        account: Account?,
+        dayOverride: AccountDayCoordinateOverride.DayCoordinate?,
+        distanceMeters: Double,
+        thresholdMeters: Int,
+    ): String = buildString {
+        append("거래처와의 거리가 허용 범위를 초과했습니다.")
+
+        val referenceName = dayOverride?.label ?: account?.name
+        if (!referenceName.isNullOrBlank()) {
+            append("\n기준 위치: ").append(referenceName)
+            // 주소는 거래처 원본 좌표로 검증할 때만 유효하다 (예외 좌표는 다른 장소).
+            val address = account?.address1?.trim()
+            if (dayOverride == null && !address.isNullOrBlank()) {
+                append("\n(").append(address).append(")")
+            }
+        }
+
+        append("\n현재 거리 ").append(formatDistance(distanceMeters))
+            .append(" (허용 ").append(formatDistance(thresholdMeters.toDouble())).append(")")
+    }
+
+    /**
+     * 거리(m) → 안내 문구용 표기. 1km 미만은 m, 이상은 km 로 쓰되 정수 km 는 소수점을 생략한다.
+     *
+     * 사원이 "얼마나 벗어났는지" 를 가늠하는 용도라 정밀도보다 가독성을 택한다
+     * (35820.0m 보다 "약 35.8km" 가 즉시 읽히고, 임계값 1000m 는 "1.0km" 보다 "1km" 가 자연스럽다).
+     */
+    private fun formatDistance(meters: Double): String {
+        if (meters < 1000) return "약 ${meters.roundToInt()}m"
+        val km = meters / 1000
+        // 소수 1자리로 반올림했을 때 정수면 ".0" 을 떼어 임계값 표기(1km / 5km)를 깔끔하게 유지한다.
+        val rounded = (km * 10).roundToInt() / 10.0
+        return if (rounded % 1.0 == 0.0) "약 ${rounded.toInt()}km" else "약 ${String.format("%.1f", km)}km"
     }
 
     /**

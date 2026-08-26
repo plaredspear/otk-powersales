@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSu
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
@@ -1449,6 +1450,42 @@ class AttendanceServiceTest {
             }.isInstanceOf(DistanceExceededException::class.java)
             // 에러코드 검증
             assertThat(DistanceExceededException().errorCode).isEqualTo("ATT_GPS_DISTANCE_EXCEEDED")
+
+            // 예외 미적용 경로 — 기준은 거래처 자신이므로 거래처명 + 주소 + 거리/허용을 안내한다
+            // (Spec #585 Q4 거리 은닉을 뒤집은 2026-08-26 결정).
+            ex.hasMessageContaining("이마트 강남점")
+                .hasMessageContaining("서울시 강남구")
+                .hasMessageContaining("현재 거리 약 1.2km")
+                .hasMessageContaining("허용 약 500m")
+        }
+
+        @Test
+        @DisplayName("거리 초과 메시지 — 1km 미만은 m 단위로 표기")
+        fun register_overThreshold_messageUsesMetersUnderOneKm() {
+            // Given — 거리 ~277m, 임계값 200m → 초과. km 로 반올림하면 "약 0.3km" 로 뭉개지는 구간.
+            every { attendanceProperties.gpsThresholdMeters } returns 200
+            val userId = 1L
+            val scheduleId = 10L
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogSfid = null,
+                accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(id = userId, sfid = "USR001"))
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }
+                .isInstanceOf(DistanceExceededException::class.java)
+                .hasMessageContaining("현재 거리 약 277m")
+                .hasMessageContaining("허용 약 200m")
         }
 
         @Test
@@ -1565,6 +1602,31 @@ class AttendanceServiceTest {
             assertThatThrownBy {
                 attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DistanceExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("이동매장(1015773) 수요일 거리 초과 — 메시지에 예외 라벨 + 거리/허용 범위 표기 (거래처 주소 미표기)")
+        fun register_movingStore_wednesday_exceeded_messageShowsOverrideLabel() {
+            // Given — 예외 좌표(양구)가 기준이므로 서울 거래처 인근은 거리 초과.
+            val today = fixClockToDayOfWeek(DayOfWeek.WEDNESDAY)
+            every { attendanceProperties.gpsThresholdMeters } returns 1000
+
+            val userId = 1L
+            val scheduleId = 10L
+            val teamMemberSchedule = createMovingStoreSchedule(scheduleId, userId, today)
+            stubRegisterFlow(userId, scheduleId, today, teamMemberSchedule)
+
+            // When & Then — 기준이 거래처가 아닌 예외 장소임을 문구가 드러내야 한다.
+            assertThatThrownBy {
+                attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+            }
+                .isInstanceOf(DistanceExceededException::class.java)
+                .hasMessageContaining(AccountDayCoordinateOverride.DEFAULT_COORDINATE.label)
+                // 정수 km 는 ".0" 을 떼고 표기한다.
+                .hasMessageContaining("허용 약 1km")
+                .hasMessageContaining("현재 거리 약")
+                // 예외 좌표는 거래처 주소와 무관한 장소라 주소를 실으면 어긋난 정보가 된다.
+                .hasMessageNotContaining("서울")
         }
 
         @Test
