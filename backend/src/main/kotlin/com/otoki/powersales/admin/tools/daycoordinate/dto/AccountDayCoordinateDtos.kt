@@ -25,6 +25,33 @@ data class AccountDayCoordinateResponse(
 )
 
 /**
+ * 주소 → 좌표 변환 요청 (저장 전 미리보기).
+ *
+ * 좌표를 수기 입력하면 실제 영업 위치와 어긋난 값이 저장될 수 있고, 그 경우 해당 요일 출근등록이
+ * 거리 초과로 전면 실패한다. 주소로 좌표를 확정한 뒤 저장하도록 변환 단계를 분리한다.
+ */
+data class GeocodeAccountDayCoordinateRequest(
+    @field:NotBlank(message = "주소는 필수입니다")
+    @field:Size(max = 200, message = "주소는 200자 이하여야 합니다")
+    val address: String,
+)
+
+/**
+ * 주소 → 좌표 변환 결과.
+ *
+ * 변환만 수행하고 저장하지 않는다 — 운영자가 좌표를 확인한 뒤 별도로 저장(POST) 한다.
+ *
+ * @param roadAddress / @param jibunAddress Naver 가 해석한 주소. 입력 주소가 의도한 장소로
+ *        해석됐는지 운영자가 눈으로 대조하는 용도 (좌표 숫자만으로는 판별이 불가능하다).
+ */
+data class GeocodeAccountDayCoordinateResponse(
+    val latitude: Double,
+    val longitude: Double,
+    val roadAddress: String?,
+    val jibunAddress: String?,
+)
+
+/**
  * 좌표 예외 변경 요청.
  *
  * `latitude`/`longitude` 는 non-null 로 선언해 필드 누락 자체를 Jackson 역직렬화 단계에서 400 으로

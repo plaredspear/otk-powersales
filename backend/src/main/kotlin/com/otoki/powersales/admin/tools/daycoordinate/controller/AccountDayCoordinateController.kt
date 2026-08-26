@@ -1,14 +1,20 @@
 package com.otoki.powersales.admin.tools.daycoordinate.controller
 
 import com.otoki.powersales.admin.tools.daycoordinate.dto.AccountDayCoordinateResponse
+import com.otoki.powersales.admin.tools.daycoordinate.dto.GeocodeAccountDayCoordinateRequest
+import com.otoki.powersales.admin.tools.daycoordinate.dto.GeocodeAccountDayCoordinateResponse
 import com.otoki.powersales.admin.tools.daycoordinate.dto.UpdateAccountDayCoordinateRequest
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
+import com.otoki.powersales.domain.activity.schedule.util.AccountCoordinateParser
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.exception.BusinessException
+import com.otoki.powersales.platform.common.naver.NaverApiException
+import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -33,7 +39,10 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/tools/account-day-coordinate")
 class AccountDayCoordinateController(
     private val store: AccountDayCoordinateOverrideStore,
+    private val naverGeocodeClient: NaverGeocodeClient,
 ) {
+
+    private val log = LoggerFactory.getLogger(AccountDayCoordinateController::class.java)
 
     @GetMapping
     fun get(
@@ -65,6 +74,55 @@ class AccountDayCoordinateController(
         )
         return ResponseEntity.ok(
             ApiResponse.success(currentResponse(), "이동매장 좌표 예외가 변경되었습니다"),
+        )
+    }
+
+    /**
+     * 주소 → 좌표 변환 (저장하지 않음).
+     *
+     * 거래처 주소 수정 시의 좌표 재조회([AccountNaverGeocodeService.refreshSingleAccount]) 와 같은
+     * Naver Geocode API 를 쓰되, **결과를 저장하지 않고 돌려주기만 한다**. 잘못된 좌표가 저장되면
+     * 해당 요일 출근등록이 거리 초과로 전면 실패하므로, 운영자가 변환 결과를 확인한 뒤 저장하도록
+     * 변환과 저장을 분리했다.
+     */
+    @PostMapping("/geocode")
+    fun geocode(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @Valid @RequestBody request: GeocodeAccountDayCoordinateRequest,
+    ): ResponseEntity<ApiResponse<GeocodeAccountDayCoordinateResponse>> {
+        requireSystemAdmin(principal)
+        val address = request.address.trim()
+
+        // client 는 실패 시 예외 대신 null 을 반환한다 (배치 진행을 막지 않기 위한 정책).
+        // 여기서는 운영자 대면 단건 변환이라 실패를 그대로 502 로 노출해야 한다.
+        val response = naverGeocodeClient.geocode(address) ?: throw NaverApiException()
+
+        val first = response.addresses.firstOrNull()
+        // 호출은 성공했으나 그 주소로 좌표를 확정하지 못한 경우 — 오타/미등록 주소가 대부분이라
+        // 외부 API 장애(502) 와 구분해 400 으로 돌린다.
+        val coords = AccountCoordinateParser.parse(first?.y, first?.x)
+        if (coords !is AccountCoordinateParser.Coords.Valid) {
+            log.info("ACCOUNT_DAY_COORDINATE_GEOCODE_NOT_FOUND user={} address={}", principal.requireEmployeeId(), address)
+            throw BusinessException(
+                errorCode = "GEOCODE_ADDRESS_NOT_FOUND",
+                message = "해당 주소의 좌표를 찾을 수 없습니다. 주소를 확인해 주세요",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+
+        log.info(
+            "ACCOUNT_DAY_COORDINATE_GEOCODE user={} address={} lat={} lng={}",
+            principal.requireEmployeeId(), address, coords.latitude, coords.longitude,
+        )
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                GeocodeAccountDayCoordinateResponse(
+                    latitude = coords.latitude,
+                    longitude = coords.longitude,
+                    roadAddress = first?.roadAddress,
+                    jibunAddress = first?.jibunAddress,
+                ),
+            ),
         )
     }
 

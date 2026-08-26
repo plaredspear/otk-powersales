@@ -45,6 +45,14 @@ export interface AccountDayCoordinateResponse {
   defaultLabel: string;
 }
 
+export interface GeocodeAccountDayCoordinateResponse {
+  latitude: number;
+  longitude: number;
+  /** Naver 가 해석한 주소 — 의도한 장소로 변환됐는지 대조용. */
+  roadAddress: string | null;
+  jibunAddress: string | null;
+}
+
 export interface UpdateAccountDayCoordinateParams {
   dayOfWeek: DayOfWeekCode;
   latitude: number;
@@ -69,6 +77,25 @@ export async function updateAccountDayCoordinate(
   const res = await client.post<ApiResponse<AccountDayCoordinateResponse>>(BASE_URL, params);
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '이동매장 좌표 예외 변경에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 주소를 좌표로 변환한다 (저장하지 않음).
+ *
+ * 변환 결과를 폼에 채운 뒤 운영자가 확인하고 저장하는 흐름 — 잘못된 좌표가 저장되면 해당 요일
+ * 출근등록이 거리 초과로 전면 실패하므로 변환과 저장을 분리했다.
+ */
+export async function geocodeAccountDayCoordinate(
+  address: string,
+): Promise<GeocodeAccountDayCoordinateResponse> {
+  const res = await client.post<ApiResponse<GeocodeAccountDayCoordinateResponse>>(
+    `${BASE_URL}/geocode`,
+    { address },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '주소 좌표 변환에 실패했습니다');
   }
   return res.data.data;
 }

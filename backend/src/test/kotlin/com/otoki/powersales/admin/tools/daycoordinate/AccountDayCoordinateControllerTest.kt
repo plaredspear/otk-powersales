@@ -4,6 +4,8 @@ import com.otoki.powersales.admin.tools.daycoordinate.controller.AccountDayCoord
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverride
 import com.otoki.powersales.domain.activity.schedule.policy.AccountDayCoordinateOverrideStore
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
+import com.otoki.powersales.platform.common.naver.NaverGeocodeResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -34,6 +36,9 @@ class AccountDayCoordinateControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var store: AccountDayCoordinateOverrideStore
+
+    @MockkBean
+    private lateinit var naverGeocodeClient: NaverGeocodeClient
 
     private val url = "/api/v1/admin/tools/account-day-coordinate"
     private val default = AccountDayCoordinateOverride.DEFAULT_COORDINATE
@@ -201,6 +206,122 @@ class AccountDayCoordinateControllerTest : AdminControllerTestSupport() {
         ).andExpect(status().isBadRequest)
 
         verify(exactly = 0) { store.setCoordinate(any()) }
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 시스템 관리자는 200 + 변환 좌표 반환 (저장 미수행)")
+    fun geocode_systemAdmin_ok() {
+        asSystemAdmin()
+        every { naverGeocodeClient.geocode("강원특별자치도 양구군 양구읍 청춘로 7") } returns
+            NaverGeocodeResponse(
+                addresses = listOf(
+                    NaverGeocodeResponse.Address(
+                        x = "127.9886619",
+                        y = "38.1018113",
+                        roadAddress = "강원특별자치도 양구군 양구읍 청춘로 7",
+                        jibunAddress = "강원특별자치도 양구군 양구읍 상리 123",
+                    ),
+                ),
+            )
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"강원특별자치도 양구군 양구읍 청춘로 7"}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.latitude").value(38.1018113))
+            .andExpect(jsonPath("$.data.longitude").value(127.9886619))
+            .andExpect(jsonPath("$.data.roadAddress").value("강원특별자치도 양구군 양구읍 청춘로 7"))
+
+        // 변환은 미리보기 — 저장까지 하면 확인 없이 적용되어 해당 요일 출근등록이 깨질 수 있다.
+        verify(exactly = 0) { store.setCoordinate(any()) }
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 주소 앞뒤 공백은 trim 후 조회")
+    fun geocode_trimsAddress() {
+        asSystemAdmin()
+        every { naverGeocodeClient.geocode("양구읍 청춘로 7") } returns
+            NaverGeocodeResponse(
+                addresses = listOf(NaverGeocodeResponse.Address(x = "127.98", y = "38.10")),
+            )
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"  양구읍 청춘로 7  "}"""),
+        ).andExpect(status().isOk)
+
+        verify(exactly = 1) { naverGeocodeClient.geocode("양구읍 청춘로 7") }
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 좌표 미확정(빈 결과)은 400 GEOCODE_ADDRESS_NOT_FOUND")
+    fun geocode_addressNotFound_badRequest() {
+        asSystemAdmin()
+        every { naverGeocodeClient.geocode(any()) } returns NaverGeocodeResponse(addresses = emptyList())
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"없는주소 999"}"""),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code").value("GEOCODE_ADDRESS_NOT_FOUND"))
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 파싱 불가 좌표는 400 (외부 장애와 구분)")
+    fun geocode_unparsableCoords_badRequest() {
+        asSystemAdmin()
+        every { naverGeocodeClient.geocode(any()) } returns
+            NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "abc", y = "38.1")))
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"양구읍 청춘로 7"}"""),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code").value("GEOCODE_ADDRESS_NOT_FOUND"))
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 외부 호출 실패는 502 NAVER_GEOCODE_API_FAILED")
+    fun geocode_callFailed_badGateway() {
+        asSystemAdmin()
+        every { naverGeocodeClient.geocode(any()) } returns null
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"양구읍 청춘로 7"}"""),
+        )
+            .andExpect(status().isBadGateway)
+            .andExpect(jsonPath("$.error.code").value("NAVER_GEOCODE_API_FAILED"))
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 주소 공백은 400 (@Valid, 외부 미호출)")
+    fun geocode_blankAddress_badRequest() {
+        asSystemAdmin()
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON).content("""{"address":"   "}"""),
+        ).andExpect(status().isBadRequest)
+
+        verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+    }
+
+    @Test
+    @DisplayName("POST /geocode - 비 시스템 관리자는 403 (외부 미호출)")
+    fun geocode_nonAdmin_forbidden() {
+        asNonAdmin()
+
+        mockMvc.perform(
+            post("$url/geocode").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"address":"양구읍 청춘로 7"}"""),
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error.code").value("PERMISSION_DENIED"))
+
+        verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
     }
 
     @Test
