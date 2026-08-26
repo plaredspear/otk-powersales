@@ -49,6 +49,8 @@ export interface UserDetail {
   mobilePhone: string | null;
   phone: string | null;
   hrCode: string | null;
+  /** 프로파일 변경 모달의 셀렉트 초기값. */
+  profileId: number | null;
   profileName: string | null;
   isSalesSupport: boolean;
   isActive: boolean;
@@ -154,5 +156,23 @@ export async function updateUserActiveStatus(id: number, isActive: boolean): Pro
   );
   if (!res.data.success) {
     throw new Error(res.data.message || '사용자 상태 변경에 실패했습니다');
+  }
+}
+
+/**
+ * web admin User 프로파일 수동 변경 — 시스템 관리자 전용.
+ *
+ * 평시 프로파일은 SAP 발령 후처리가 산출한다. 본 호출의 수동 변경은 대상 사원의 다음 발령이
+ * 인입되기 전까지만 유효하며, 발령이 오면 재산출 값으로 덮어써진다.
+ *
+ * 시스템 관리자가 아니거나 자기 자신을 대상으로 하면 backend 가 각각 403 / 400 으로 거절한다.
+ */
+export async function updateUserProfile(id: number, profileId: number): Promise<void> {
+  const res = await client.put<ApiResponse<unknown>>(
+    `/api/v1/admin/users/${id}/profile`,
+    { profileId }
+  );
+  if (!res.data.success) {
+    throw new Error(res.data.message || '프로파일 변경에 실패했습니다');
   }
 }

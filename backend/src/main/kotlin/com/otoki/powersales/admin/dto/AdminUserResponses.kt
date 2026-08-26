@@ -64,6 +64,8 @@ data class AdminUserDetailResponse(
     val mobilePhone: String?,
     val phone: String?,
     val hrCode: String?,
+    /** 프로파일 수동 변경 화면의 셀렉트 초기값 — 이름만으로는 동명 프로파일 식별이 불가하다. */
+    val profileId: Long? = null,
     val profileName: String? = null,
     val isSalesSupport: Boolean,
     val isActive: Boolean,
@@ -90,6 +92,7 @@ data class AdminUserDetailResponse(
             phone = user.phone,
             hrCode = user.hrCode,
             // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
+            profileId = user.profileId,
             profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
             isActive = user.isActive,

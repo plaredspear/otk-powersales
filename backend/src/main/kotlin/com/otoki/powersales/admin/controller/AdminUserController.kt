@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
+import com.otoki.powersales.admin.dto.UpdateUserProfileRequest
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
  * - GET /api/v1/admin/users/{userId} — 상세 (USER_READ)
  * - POST /api/v1/admin/users/{userId}/reset-password — 임시 비밀번호 리셋 (USER_WRITE)
  * - PUT  /api/v1/admin/users/{userId}/active — 활성/비활성 토글 (USER_WRITE)
+ * - PUT  /api/v1/admin/users/{userId}/profile — 프로파일 수동 변경 (USER_WRITE + 시스템 관리자)
  */
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -108,5 +110,31 @@ class AdminUserController(
         )
         val message = if (request.isActive) "사용자가 활성화되었습니다" else "사용자가 비활성화되었습니다"
         return ResponseEntity.ok(ApiResponse.success(Unit, message))
+    }
+
+    /**
+     * User 프로파일 수동 변경 — 시스템 관리자 전용.
+     *
+     * `user:EDIT` 가드 위에 서비스 단에서 시스템 관리자 판정을 한 겹 더 둔다
+     * ([AdminUserService.updateProfile]) — 프로파일은 권한 모델의 최상위 입력이라
+     * `user:EDIT` 만으로 열면 권한 자가 상승 경로가 된다.
+     *
+     * 평시 프로파일은 SAP 발령 후처리가 산출하며, 본 경로의 수동 변경은 다음 발령 인입 전까지만
+     * 유효하다 (발령이 재산출 값으로 덮어씀).
+     */
+    @PutMapping("/{userId}/profile")
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.EDIT)
+    fun updateProfile(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable userId: Long,
+        @RequestBody request: UpdateUserProfileRequest
+    ): ResponseEntity<ApiResponse<Unit>> {
+        adminUserService.updateProfile(
+            targetUserId = userId,
+            requesterUserId = principal.userId,
+            requesterProfileName = principal.profileName,
+            profileId = request.profileId
+        )
+        return ResponseEntity.ok(ApiResponse.success(Unit, "프로파일이 변경되었습니다"))
     }
 }

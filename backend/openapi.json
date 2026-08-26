@@ -3694,6 +3694,10 @@
           "phone" : {
             "type" : [ "string", "null" ]
           },
+          "profileId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "profileName" : {
             "type" : [ "string", "null" ]
           },
@@ -6918,6 +6922,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/FemaleEmployeeWorkHistoryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseGeocodeAccountDayCoordinateResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GeocodeAccountDayCoordinateResponse"
             }, {
               "type" : "null"
             } ]
@@ -17381,6 +17414,36 @@
         },
         "type" : "object"
       },
+      "GeocodeAccountDayCoordinateRequest" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "address" ],
+        "type" : "object"
+      },
+      "GeocodeAccountDayCoordinateResponse" : {
+        "properties" : {
+          "jibunAddress" : {
+            "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "longitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "roadAddress" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "GpsConsentRecordResponse" : {
         "properties" : {
           "accessToken" : {
@@ -27777,6 +27840,15 @@
         },
         "type" : "object"
       },
+      "UpdateUserProfileRequest" : {
+        "properties" : {
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "UserDryRunRow" : {
         "properties" : {
           "checks" : {
@@ -30400,6 +30472,14 @@
     "/api/v1/admin/display-work-schedule/confirm" : {
       "patch" : {
         "operationId" : "batchConfirm",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -42635,6 +42715,34 @@
         "tags" : [ "account-day-coordinate-controller" ]
       }
     },
+    "/api/v1/admin/tools/account-day-coordinate/geocode" : {
+      "post" : {
+        "operationId" : "geocode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GeocodeAccountDayCoordinateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseGeocodeAccountDayCoordinateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-day-coordinate-controller" ]
+      }
+    },
     "/api/v1/admin/tools/app-install/uninstalled-female-staff" : {
       "get" : {
         "operationId" : "getUninstalledFemaleStaffSummary",
@@ -43063,6 +43171,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/UpdateUserActiveStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-user-controller" ]
+      }
+    },
+    "/api/v1/admin/users/{userId}/profile" : {
+      "put" : {
+        "operationId" : "updateProfile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateUserProfileRequest"
               }
             }
           },

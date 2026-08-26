@@ -18,7 +18,8 @@ import {
   useUpdateUserActiveStatus,
 } from '@/hooks/user/useUserMutation';
 import { useAuthStore } from '@/stores/authStore';
-import { usePermission } from '@/hooks/usePermission';
+import { usePermission, SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
+import UserProfileModal from '@/pages/users/components/UserProfileModal';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import { temporaryPasswordFor } from '@/lib/temporaryPassword';
@@ -32,6 +33,7 @@ export default function UserDetailPage() {
   const navigate = useNavigate();
   const userId = Number(id) || 0;
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const currentProfileName = useAuthStore((state) => state.user?.profileName);
   const { setDynamicTitle } = useContext(BreadcrumbContext);
 
   const { data: user, isLoading, error } = useUserDetail(userId);
@@ -43,6 +45,7 @@ export default function UserDetailPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [activeOpen, setActiveOpen] = useState(false);
   const [impersonateOpen, setImpersonateOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     setDynamicTitle(user?.name ?? user?.username ?? null);
@@ -73,6 +76,9 @@ export default function UserDetailPage() {
   const blockSelfDeactivate = isSelf && user.isActive;
   // 대행 로그인 버튼 노출: MANAGE_USERS 보유 + 본인 아님 + 활성 사용자 (Spec #851)
   const canImpersonate = hasSystemPermission('MANAGE_USERS') && !isSelf && user.isActive;
+  // 프로파일 변경 노출: 시스템 관리자 + 본인 아님. backend 도 동일 조건으로 거절하므로 화면은
+  // 누를 수 없는 버튼을 감추는 역할만 한다 (권한 판정의 SoT 는 backend).
+  const canChangeProfile = currentProfileName === SYSTEM_ADMIN_PROFILE_NAME && !isSelf;
 
   const handleImpersonateConfirm = async () => {
     try {
@@ -134,6 +140,9 @@ export default function UserDetailPage() {
         <Space>
           {canImpersonate && (
             <Button onClick={() => setImpersonateOpen(true)}>대행 로그인</Button>
+          )}
+          {canChangeProfile && (
+            <Button onClick={() => setProfileOpen(true)}>프로파일 변경</Button>
           )}
           <Button danger onClick={() => setResetOpen(true)}>
             비밀번호 초기화
@@ -266,6 +275,14 @@ export default function UserDetailPage() {
           <Text strong>이름:</Text> {user.name ?? '-'}
         </Paragraph>
       </Modal>
+
+      {canChangeProfile && (
+        <UserProfileModal
+          user={user}
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }

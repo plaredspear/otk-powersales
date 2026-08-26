@@ -6,8 +6,12 @@ import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
+import com.otoki.powersales.admin.dto.UpdateUserProfileRequest
+import com.otoki.powersales.admin.exception.AdminProfileNotFoundException
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
+import com.otoki.powersales.admin.exception.CannotChangeOwnProfileException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
+import com.otoki.powersales.admin.exception.ProfileChangeForbiddenException
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
@@ -328,6 +332,119 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
 
             mockMvc.perform(
                 put("/api/v1/admin/users/99999/active")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/v1/admin/users/{userId}/profile - 프로파일 수동 변경")
+    inner class UpdateProfile {
+
+        @Test
+        @DisplayName("성공 - 프로파일 변경")
+        fun updateProfile_success() {
+            val request = UpdateUserProfileRequest(profileId = 25L)
+            every { adminUserService.updateProfile(any(), any(), any(), any()) } just Runs
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/profile")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.message").value("프로파일이 변경되었습니다"))
+        }
+
+        @Test
+        @DisplayName("요청자 principal 의 userId / profileName 을 서비스로 전달한다")
+        fun updateProfile_passesRequesterContext() {
+            val request = UpdateUserProfileRequest(profileId = 25L)
+            every { adminUserService.updateProfile(any(), any(), any(), any()) } just Runs
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/profile")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+
+            // 시스템 관리자 판정과 자기 자신 가드는 서비스가 수행하므로, 컨트롤러가 두 입력을
+            // 누락 없이 넘기는지가 이 계층의 계약이다.
+            verify {
+                adminUserService.updateProfile(
+                    targetUserId = eq(5L),
+                    requesterUserId = any(),
+                    requesterProfileName = eq("시스템 관리자"),
+                    profileId = eq(25L),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("실패 - 시스템 관리자 아님 → 403")
+        fun updateProfile_forbidden() {
+            val request = UpdateUserProfileRequest(profileId = 25L)
+            every {
+                adminUserService.updateProfile(any(), any(), any(), any())
+            } throws ProfileChangeForbiddenException()
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/profile")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.error.code").value("PROFILE_CHANGE_FORBIDDEN"))
+        }
+
+        @Test
+        @DisplayName("실패 - 자기 자신 대상 → 400")
+        fun updateProfile_self_blocked() {
+            val request = UpdateUserProfileRequest(profileId = 25L)
+            every {
+                adminUserService.updateProfile(any(), any(), any(), any())
+            } throws CannotChangeOwnProfileException()
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/100/profile")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("CANNOT_CHANGE_OWN_PROFILE"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 프로파일 → 404")
+        fun updateProfile_profileNotFound() {
+            val request = UpdateUserProfileRequest(profileId = 99999L)
+            every {
+                adminUserService.updateProfile(any(), any(), any(), any())
+            } throws AdminProfileNotFoundException(99999L)
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/profile")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("PROFILE_NOT_FOUND"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 사용자 → 404")
+        fun updateProfile_userNotFound() {
+            val request = UpdateUserProfileRequest(profileId = 25L)
+            every {
+                adminUserService.updateProfile(any(), any(), any(), any())
+            } throws AdminUserNotFoundException(99999L)
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/99999/profile")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
