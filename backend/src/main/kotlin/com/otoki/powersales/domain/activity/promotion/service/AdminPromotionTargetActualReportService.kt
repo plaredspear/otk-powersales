@@ -5,8 +5,8 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTarg
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportGroup
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportRow
-import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionTargetActualReportRecord
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.usermodel.Row
@@ -22,7 +22,7 @@ import java.time.LocalDate
  * 레거시 매핑: SF Report `new_report_AtQ` (영업지원실용·Summary·도넛 차트·INTERVAL_CUSTOM·scope=organization).
  * 동작: ScheduleDate 기간 내 PromotionEmployee 를 전사 조회 (promotion/account/product/employee/teamMemberSchedule 조인).
  *       행사명(promotion.name) 그룹 + 그룹별 소계(목표/실적/수량 Sum) + 전체 합계 + 행사명별 실적금액 차트 데이터 산출.
- *       목표금액 = dkDailyTargetAmount(목표갯수×기준단가), 실적금액 = dailyTotalActualSalesAmount(총 실적 = 대표금액+기타금액)
+ *       목표금액 = 목표갯수×기준단가, 실적금액 = 총 실적(대표금액+기타금액)
  *       — SF Report 컬럼(DailyTargetAmount__c/DailyActualSalesAmount__c) formula 재현.
  * 부수 효과: 없음 (조회 전용).
  *
@@ -35,23 +35,39 @@ class AdminPromotionTargetActualReportService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
 ) {
 
+    companion object {
+        /**
+         * 화면 표시 상세 행 상한 — SF 리포트 실행 화면의 플랫폼 고정 표시 제한(2,000행) 정합.
+         * 소계/합계/차트는 전량 기준으로 산출하고 상세 행만 앞에서부터 상한까지 내려준다. 전량은 엑셀 export.
+         */
+        const val WEB_DISPLAY_ROW_LIMIT = 2_000
+    }
+
     /**
      * 행사사원 목표/실적 조회 — 행사명 그룹 + 소계 + 전체 합계 + 차트.
      *
      * startDate/endDate 필수 (미입력 시 IllegalArgumentException).
      * 지점 스코프: branchScope(여사원일정 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
      * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
+     * 상세 행은 [WEB_DISPLAY_ROW_LIMIT] 까지만 응답에 포함 (SF 리포트 화면 2,000행 표시 제한 정합).
      */
     fun getReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
+    ): PromotionTargetActualReportResponse = buildReport(startDate, endDate, branchScope, WEB_DISPLAY_ROW_LIMIT)
+
+    private fun buildReport(
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        branchScope: EffectiveBranchResult,
+        displayRowLimit: Int?,
     ): PromotionTargetActualReportResponse {
         require(startDate != null && endDate != null) {
             "조회 기간(startDate, endDate)은 필수입니다"
         }
 
-        val rows = when (branchScope) {
+        val records = when (branchScope) {
             is EffectiveBranchResult.All -> promotionEmployeeRepository.findTargetActualReport(startDate, endDate, emptyList())
             is EffectiveBranchResult.Filtered ->
                 promotionEmployeeRepository.findTargetActualReport(startDate, endDate, branchScope.codes)
@@ -59,22 +75,26 @@ class AdminPromotionTargetActualReportService(
         }
 
         // 행사명 그룹핑 (SF Promotion.Name = promotionNumber. 조회 정렬이 promotionNumber asc 이므로 순서 보존)
-        val grouped = rows.groupBy { it.promotion?.promotionNumber }
-        val groups = grouped.map { (promotionName, pes) ->
-            val mappedRows = pes.map { toRow(it) }
+        // 소계/합계/차트는 전량 기준, 상세 행만 표시 상한까지 그룹 순서대로 채운다 (SF 리포트 표시 제한 동작 정합).
+        var remaining = displayRowLimit ?: Int.MAX_VALUE
+        val grouped = records.groupBy { it.promotionName }
+        val groups = grouped.map { (promotionName, recs) ->
+            val visible = if (recs.size <= remaining) recs else recs.subList(0, remaining)
+            remaining -= visible.size
             PromotionTargetActualReportGroup(
                 promotionName = promotionName,
-                subtotalTargetAmount = pes.sumOf { it.dkDailyTargetAmount ?: BigDecimal.ZERO },
-                subtotalActualAmount = pes.sumOf { it.dailyTotalActualSalesAmount ?: BigDecimal.ZERO },
-                subtotalPrimaryQuantity = pes.sumOf { it.primarySalesQuantity ?: BigDecimal.ZERO },
-                subtotalPrimaryAmount = pes.sumOf { it.primaryProductAmount ?: BigDecimal.ZERO },
-                subtotalOtherQuantity = pes.sumOf { it.otherSalesQuantity ?: BigDecimal.ZERO },
-                subtotalOtherAmount = pes.sumOf { it.otherSalesAmount ?: BigDecimal.ZERO },
-                rows = mappedRows,
+                subtotalTargetAmount = recs.sumOf { it.targetAmount ?: BigDecimal.ZERO },
+                subtotalActualAmount = recs.sumOf { it.actualAmount ?: BigDecimal.ZERO },
+                subtotalPrimaryQuantity = recs.sumOf { it.primarySalesQuantity ?: BigDecimal.ZERO },
+                subtotalPrimaryAmount = recs.sumOf { it.primaryProductAmount ?: BigDecimal.ZERO },
+                subtotalOtherQuantity = recs.sumOf { it.otherSalesQuantity ?: BigDecimal.ZERO },
+                subtotalOtherAmount = recs.sumOf { it.otherSalesAmount ?: BigDecimal.ZERO },
+                rows = visible.map { toRow(it) },
             )
         }
 
         val chart = groups.map { PromotionTargetActualChartItem(it.promotionName, it.subtotalActualAmount) }
+        val displayedRowCount = groups.sumOf { it.rows.size }
 
         return PromotionTargetActualReportResponse(
             startDate = startDate.toString(),
@@ -87,18 +107,22 @@ class AdminPromotionTargetActualReportService(
             totalOtherQuantity = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalOtherQuantity },
             totalOtherAmount = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalOtherAmount },
             chart = chart,
+            totalRowCount = records.size,
+            displayedRowCount = displayedRowCount,
+            truncated = displayedRowCount < records.size,
         )
     }
 
     /**
      * 목표/실적 엑셀 export — 행사명 그룹 헤더/소계 행 포함 24컬럼 + 전체 합계 행 (Summary 재현).
+     * 화면 표시 상한과 무관하게 전량 추출.
      */
     fun exportReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
     ): ExcelResult {
-        val response = getReport(startDate, endDate, branchScope)
+        val response = buildReport(startDate, endDate, branchScope, null)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("행사사원목표대비실적")
@@ -180,43 +204,33 @@ class AdminPromotionTargetActualReportService(
         row.createCell(23).setCellValue(item.commuteDate ?: "")
     }
 
-    /** PromotionEmployee 1건 → 23컬럼 행. enum 은 displayName, 목표/실적 금액은 SF Report 컬럼 formula 파생. */
-    private fun toRow(pe: PromotionEmployee): PromotionTargetActualReportRow {
-        val promo = pe.promotion
-        val acc = promo?.account
-        val emp = pe.employee
-        val sch = pe.teamMemberSchedule
+    /** projection record 1건 → 23컬럼 행. enum 은 displayName, 목표/실적 금액은 SF Report 컬럼 formula 파생. */
+    private fun toRow(rec: PromotionTargetActualReportRecord): PromotionTargetActualReportRow {
         return PromotionTargetActualReportRow(
-            promotionName = promo?.promotionNumber,
-            branchName = acc?.branchName,
-            accountName = acc?.name,
-            // SF AccCode__c = AccId__r.ExternalKey__c (SAP 거래처코드)
-            accountCode = acc?.externalKey,
-            primaryProductName = promo?.primaryProduct?.name,
-            category1 = promo?.category1,
-            otherProduct = promo?.otherProduct,
-            employeeCode = emp?.employeeCode,
-            employeeOrgName = emp?.orgName,
-            employeeName = emp?.name,
-            // SF(임철민팀장용 변형) 전문행사조(현재) = 사원 마스터의 현재 소속 조
-            professionalPromotionTeamCurrent = emp?.professionalPromotionTeam?.displayName,
-            // SF(영업지원실용) 전문행사조 컬럼 = 조원일정에 기록된 투입 당시 값
-            professionalPromotionTeam = sch?.professionalPromotionTeam,
-            scheduleDate = pe.scheduleDate?.toString(),
-            // SF Report 목표금액 컬럼 = DKRetail__DailyTargetAmount__c formula (목표갯수×기준단가)
-            targetAmount = pe.dkDailyTargetAmount,
-            // SF Report 총 실적 컬럼 = DailyActualSalesAmount__c formula (대표금액+기타금액)
-            actualAmount = pe.dailyTotalActualSalesAmount,
-            standLocation = promo?.standLocation?.displayName,
-            primarySalesQuantity = pe.primarySalesQuantity,
-            primaryProductAmount = pe.primaryProductAmount,
-            otherSalesQuantity = pe.otherSalesQuantity,
-            otherSalesAmount = pe.otherSalesAmount,
-            workType2 = pe.dkWorkType2?.displayName,
-            workType3 = pe.workType3?.displayName,
-            // isWorkReport / commuteDate 는 TeamMemberSchedule 소유
-            isWorkReport = sch?.isWorkReport,
-            commuteDate = sch?.commuteDate?.toString(),
+            promotionName = rec.promotionName,
+            branchName = rec.branchName,
+            accountName = rec.accountName,
+            accountCode = rec.accountCode,
+            primaryProductName = rec.primaryProductName,
+            category1 = rec.category1,
+            otherProduct = rec.otherProduct,
+            employeeCode = rec.employeeCode,
+            employeeOrgName = rec.employeeOrgName,
+            employeeName = rec.employeeName,
+            professionalPromotionTeamCurrent = rec.professionalPromotionTeamCurrent?.displayName,
+            professionalPromotionTeam = rec.professionalPromotionTeam,
+            scheduleDate = rec.scheduleDate?.toString(),
+            targetAmount = rec.targetAmount,
+            actualAmount = rec.actualAmount,
+            standLocation = rec.standLocation?.displayName,
+            primarySalesQuantity = rec.primarySalesQuantity,
+            primaryProductAmount = rec.primaryProductAmount,
+            otherSalesQuantity = rec.otherSalesQuantity,
+            otherSalesAmount = rec.otherSalesAmount,
+            workType2 = rec.workType2?.displayName,
+            workType3 = rec.workType3?.displayName,
+            isWorkReport = rec.isWorkReport,
+            commuteDate = rec.commuteDate?.toString(),
         )
     }
 }

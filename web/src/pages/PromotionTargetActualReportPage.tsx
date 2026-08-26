@@ -140,6 +140,15 @@ export default function PromotionTargetActualReportPage() {
 
       {query.data && query.data.groups.length > 0 ? (
         <>
+          {query.data.truncated && (
+            <Alert
+              type="info"
+              showIcon
+              message={`조회 결과 총 ${query.data.totalRowCount.toLocaleString()}행 중 앞 ${query.data.displayedRowCount.toLocaleString()}행까지만 화면에 표시합니다. 소계/합계/차트는 전체 기준이며, 전체 내역은 엑셀 다운로드를 이용해 주세요.`}
+              style={{ marginBottom: 8 }}
+            />
+          )}
+
           <Card size="small" style={{ marginBottom: 16 }}>
             <PromotionActualDonutChart data={query.data.chart} />
           </Card>
@@ -155,15 +164,21 @@ export default function PromotionTargetActualReportPage() {
                 {group.subtotalOtherQuantity.toLocaleString()} / 기타금액{' '}
                 {group.subtotalOtherAmount.toLocaleString()}
               </Text>
-              <ResizableTable
-                rowKey={(r, idx) => `${r.employeeCode ?? ''}-${r.scheduleDate ?? ''}-${idx}`}
-                size="small"
-                columns={columns}
-                dataSource={group.rows}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-                style={{ marginTop: 6 }}
-              />
+              {group.rows.length > 0 ? (
+                <ResizableTable
+                  rowKey={(r, idx) => `${r.employeeCode ?? ''}-${r.scheduleDate ?? ''}-${idx}`}
+                  size="small"
+                  columns={columns}
+                  dataSource={group.rows}
+                  pagination={false}
+                  scroll={{ x: 'max-content' }}
+                  style={{ marginTop: 6 }}
+                />
+              ) : (
+                <div style={{ marginTop: 6 }}>
+                  <Text type="secondary">상세 행은 표시 상한을 초과하여 생략되었습니다 (엑셀 다운로드로 확인).</Text>
+                </div>
+              )}
             </div>
           ))}
 

@@ -1,12 +1,8 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
-import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.domain.activity.promotion.entity.Promotion
-import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
-import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionTargetActualReportRecord
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -24,45 +20,43 @@ class AdminPromotionTargetActualReportServiceTest {
     private val repository: PromotionEmployeeRepository = mockk()
     private val service = AdminPromotionTargetActualReportService(repository)
 
-    private fun promotion(name: String): Promotion {
-        // SF Promotion.Name = promotionNumber (별도 name 필드 없음)
-        val p = Promotion(
-            promotionNumber = name,
-            startDate = LocalDate.of(2026, 3, 1),
-            endDate = LocalDate.of(2026, 5, 31),
-        )
-        p.account = Account(id = 1, externalKey = "B001").apply {
-            this.name = "○○점"
-            branchName = "서울지점"
-            branchCode = "B001"
-        }
-        return p
-    }
-
-    private fun employee(): Employee = Employee(employeeCode = "12345", name = "홍길동", orgName = "영업1팀")
-
-    private fun pe(
+    private fun record(
         promotionName: String,
         scheduleDate: LocalDate,
-        targetCount: BigDecimal,
-        basePrice: BigDecimal,
-        primaryQty: BigDecimal,
-        otherQty: BigDecimal,
+        targetCount: BigDecimal? = null,
+        basePrice: BigDecimal? = null,
+        primaryQty: BigDecimal? = null,
+        otherQty: BigDecimal? = null,
         primaryAmount: BigDecimal? = null,
         otherAmount: BigDecimal? = null,
-    ): PromotionEmployee {
-        val e = PromotionEmployee(
+        professionalPromotionTeam: String? = null,
+    ): PromotionTargetActualReportRecord {
+        return PromotionTargetActualReportRecord(
+            promotionName = promotionName,
+            branchName = "서울지점",
+            accountName = "○○점",
+            accountCode = "B001",
+            primaryProductName = null,
+            category1 = null,
+            otherProduct = null,
+            standLocation = null,
+            employeeCode = "12345",
+            employeeOrgName = "영업1팀",
+            employeeName = "홍길동",
+            professionalPromotionTeamCurrent = null,
+            professionalPromotionTeam = professionalPromotionTeam,
             scheduleDate = scheduleDate,
             dailyTargetCount = targetCount,
             basePrice = basePrice,
             primarySalesQuantity = primaryQty,
-            otherSalesQuantity = otherQty,
             primaryProductAmount = primaryAmount,
+            otherSalesQuantity = otherQty,
             otherSalesAmount = otherAmount,
+            workType2 = null,
+            workType3 = null,
+            attendanceLogId = null,
+            commuteDate = null,
         )
-        e.promotion = promotion(promotionName)
-        e.employee = employee()
-        return e
     }
 
     @Nested
@@ -74,9 +68,9 @@ class AdminPromotionTargetActualReportServiceTest {
         fun groupsAndSubtotals() {
             // A행사: 목표 (10×10)+(20×10), 대표수량 2+3, 기타수량 1+1 / B행사: 목표 5×10
             every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                pe("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
-                pe("A행사", LocalDate.of(2026, 3, 2), BigDecimal(20), BigDecimal.TEN, BigDecimal(3), BigDecimal.ONE),
-                pe("B행사", LocalDate.of(2026, 3, 3), BigDecimal(5), BigDecimal.TEN, BigDecimal(1), BigDecimal.ZERO),
+                record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
+                record("A행사", LocalDate.of(2026, 3, 2), BigDecimal(20), BigDecimal.TEN, BigDecimal(3), BigDecimal.ONE),
+                record("B행사", LocalDate.of(2026, 3, 3), BigDecimal(5), BigDecimal.TEN, BigDecimal(1), BigDecimal.ZERO),
             )
 
             val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
@@ -91,6 +85,10 @@ class AdminPromotionTargetActualReportServiceTest {
             assertThat(res.totalTargetAmount).isEqualByComparingTo(BigDecimal(350))
             // 차트 = 행사명별 실적금액 합계 (2항목)
             assertThat(res.chart).hasSize(2)
+            // 표시 상한 미달 — 잘림 없음
+            assertThat(res.totalRowCount).isEqualTo(3)
+            assertThat(res.displayedRowCount).isEqualTo(3)
+            assertThat(res.truncated).isFalse()
         }
 
         @Test
@@ -98,7 +96,7 @@ class AdminPromotionTargetActualReportServiceTest {
         fun targetAndActualAmountFormula() {
             // 목표 = 10×100 = 1000, 실적(총 실적) = 300 + 70 = 370
             every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                pe(
+                record(
                     "A행사", LocalDate.of(2026, 3, 1),
                     targetCount = BigDecimal(10), basePrice = BigDecimal(100),
                     primaryQty = BigDecimal(2), otherQty = BigDecimal(3),
@@ -116,9 +114,14 @@ class AdminPromotionTargetActualReportServiceTest {
         @Test
         @DisplayName("거래처코드 = ExternalKey, 전문행사조 = 조원일정(투입 당시) 값")
         fun accountCodeAndPptMapping() {
-            val row = pe("A행사", LocalDate.of(2026, 3, 1), BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO)
-            row.teamMemberSchedule = TeamMemberSchedule(professionalPromotionTeam = "라면세일조")
-            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(row)
+            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
+                record(
+                    "A행사", LocalDate.of(2026, 3, 1),
+                    targetCount = BigDecimal.ONE, basePrice = BigDecimal.TEN,
+                    primaryQty = BigDecimal.ONE, otherQty = BigDecimal.ZERO,
+                    professionalPromotionTeam = "라면세일조",
+                ),
+            )
 
             val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
@@ -149,6 +152,46 @@ class AdminPromotionTargetActualReportServiceTest {
     }
 
     @Nested
+    @DisplayName("화면 표시 상한 (SF 리포트 2,000행 표시 제한 정합)")
+    inner class DisplayRowLimit {
+
+        @Test
+        @DisplayName("상세 행은 상한까지만 포함 — 소계/합계는 전량 기준 유지")
+        fun truncatesRowsButKeepsFullSubtotals() {
+            // A행사 1,500행 + B행사 1,000행 = 2,500행 > 상한 2,000행
+            val records =
+                (1..1500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) } +
+                    (1..1000).map { record("B행사", LocalDate.of(2026, 6, 2), BigDecimal.ONE, BigDecimal.TEN) }
+            every { repository.findTargetActualReport(any(), any(), any()) } returns records
+
+            val res = service.getReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+
+            assertThat(res.totalRowCount).isEqualTo(2500)
+            assertThat(res.displayedRowCount).isEqualTo(AdminPromotionTargetActualReportService.WEB_DISPLAY_ROW_LIMIT)
+            assertThat(res.truncated).isTrue()
+            // 그룹 순서대로 앞에서부터 채움 — A행사 전량 + B행사 잔여분
+            assertThat(res.groups[0].rows).hasSize(1500)
+            assertThat(res.groups[1].rows).hasSize(500)
+            // 소계/합계는 잘림과 무관하게 전량 기준
+            assertThat(res.groups[1].subtotalTargetAmount).isEqualByComparingTo(BigDecimal(10_000))
+            assertThat(res.totalTargetAmount).isEqualByComparingTo(BigDecimal(25_000))
+        }
+
+        @Test
+        @DisplayName("엑셀 export 는 상한 없이 전량 추출")
+        fun exportIsNotTruncated() {
+            val records = (1..2500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) }
+            every { repository.findTargetActualReport(any(), any(), any()) } returns records
+
+            val result = service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+
+            // 헤더 1 + 상세 2,500 + 소계 1 + 합계 1 = 2,503행
+            val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(result.bytes.inputStream())
+            assertThat(workbook.getSheetAt(0).lastRowNum + 1).isEqualTo(2503)
+        }
+    }
+
+    @Nested
     @DisplayName("엑셀 export")
     inner class Export {
 
@@ -156,7 +199,7 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("그룹/소계/합계 행 포함 xlsx + 파일명")
         fun exportsXlsx() {
             every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                pe("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
+                record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
             )
 
             val result = service.exportReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)

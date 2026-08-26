@@ -59,6 +59,12 @@ export interface PromotionTargetActualReportResponse {
   totalOtherQuantity: number;
   totalOtherAmount: number;
   chart: PromotionTargetActualChartItem[];
+  /** 조회 조건에 걸린 전체 상세 행 수 (소계/합계/차트 산출 모수). */
+  totalRowCount: number;
+  /** 응답에 실제 포함된 상세 행 수 — 표시 상한(2,000행, SF 리포트 제한 정합) 적용 후. */
+  displayedRowCount: number;
+  /** 표시 상한으로 상세 행이 잘렸는지 여부 — true 면 전량은 엑셀 다운로드 안내. */
+  truncated: boolean;
 }
 
 /** 지점 셀렉터 옵션 — 현재 사용자 권한별 조회 허용 지점 화이트리스트. */

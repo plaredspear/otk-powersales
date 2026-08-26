@@ -1,8 +1,14 @@
 package com.otoki.powersales.domain.activity.promotion.repository
 
 import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.enums.StandLocation
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.querydsl.core.types.Predicate
+import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 interface PromotionEmployeeRepositoryCustom {
 
@@ -34,17 +40,21 @@ interface PromotionEmployeeRepositoryCustom {
 
     /**
      * 행사사원 목표 대비 실적 보고서 조회 (Spec #845 — SF Report `new_report_AtQ` 이식).
-     * `promotion_employee` ⋈ promotion ⋈ promotion.account ⋈ promotion.primaryProduct ⋈ employee ⋈ teamMemberSchedule.
+     * `promotion_employee` ⋈ promotion ⋈ promotion.account ⋈ promotion.primaryProduct ⋈ employee ⋈ teamMemberSchedule ⋈ attendanceLog.
      * 필터: scheduleDate ∈ [startDate, endDate], soft-delete 제외.
      * 지점 스코프: branchScopeCodes 비어있지 않으면 여사원일정 소속 지점(teamMemberSchedule.costCenterCode) IN. 빈 목록 = 전사.
      *   teamMemberSchedule 은 leftJoin 이라 미연결 행은 스코프 적용 시 제외된다(지점 판별 불가).
      * 정렬: 행사명(promotion.promotionNumber = SF Name) 오름차순 + scheduleDate 오름차순 (Summary 그룹 재현).
+     *
+     * DTO projection — 보고서에 쓰는 컬럼만 select (entity fetchJoin 대비 행 폭 ~1/8, hydration 회피).
+     * isWorkReport/commuteDate 는 TeamMemberSchedule 파생 프로퍼티가 attendanceLog LAZY 관계를 읽는 구조라
+     * entity 반환 시 행마다 N+1 로딩이 발생 → attendanceLog 를 조인에 포함해 컬럼으로 직접 select 한다.
      */
     fun findTargetActualReport(
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
-    ): List<PromotionEmployee>
+    ): List<PromotionTargetActualReportRecord>
 
     /**
      * 로그인 여사원의 특정 일자 담당 행사 일람 (홈 "행사매출 등록" → 일 매출 등록 진입화면용).
@@ -68,4 +78,63 @@ interface PromotionEmployeeRepositoryCustom {
 
     /** 행사사원 중복 등록 여부 — soft-delete 제외 (SF 정합). */
     fun existsByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): Boolean
+}
+
+/**
+ * 목표 대비 실적 보고서 1행 projection ([PromotionEmployeeRepositoryCustom.findTargetActualReport]).
+ *
+ * SF Formula 컬럼 2종은 원천 컬럼을 select 해 파생 프로퍼티로 재현한다 (entity 파생 getter 와 동일 null 의미론):
+ * - [targetAmount] = `DKRetail__DailyTargetAmount__c` (목표갯수×기준단가)
+ * - [actualAmount] = `DailyActualSalesAmount__c` (총 실적 = 대표금액+기타금액)
+ */
+data class PromotionTargetActualReportRecord(
+    val promotionName: String?,
+    val branchName: String?,
+    val accountName: String?,
+    /** SF AccCode__c = AccId__r.ExternalKey__c (SAP 거래처코드). */
+    val accountCode: String?,
+    val primaryProductName: String?,
+    /** SF formula Category1__c = 대표제품 storeConditionText. */
+    val category1: String?,
+    val otherProduct: String?,
+    val standLocation: StandLocation?,
+    val employeeCode: String?,
+    val employeeOrgName: String?,
+    val employeeName: String?,
+    /** 사원 마스터의 현재 소속 조 (SF 임철민팀장용 변형 "전문행사조(현재)"). */
+    val professionalPromotionTeamCurrent: ProfessionalPromotionTeamType?,
+    /** 조원일정에 기록된 투입 당시 값 (SF 영업지원실용 "전문행사조"). */
+    val professionalPromotionTeam: String?,
+    val scheduleDate: LocalDate?,
+    val dailyTargetCount: BigDecimal?,
+    val basePrice: BigDecimal?,
+    val primarySalesQuantity: BigDecimal?,
+    val primaryProductAmount: BigDecimal?,
+    val otherSalesQuantity: BigDecimal?,
+    val otherSalesAmount: BigDecimal?,
+    val workType2: WorkingCategory2?,
+    val workType3: WorkingCategory3?,
+    /** 출퇴근 로그 FK — isWorkReport(존재 시 "근무등록") 판정용. */
+    val attendanceLogId: Long?,
+    /** 출퇴근 로그의 출근일시 (SF formula DKRetail__CommuteDate__c). */
+    val commuteDate: LocalDateTime?,
+) {
+
+    /** SF Formula `DKRetail__DailyTargetAmount__c` 재현 — PromotionEmployee.dkDailyTargetAmount 와 동일 공식. */
+    val targetAmount: BigDecimal?
+        get() {
+            if (dailyTargetCount == null && basePrice == null) return null
+            return (dailyTargetCount ?: BigDecimal.ZERO) * (basePrice ?: BigDecimal.ZERO)
+        }
+
+    /** SF Formula `DailyActualSalesAmount__c`(총 실적) 재현 — PromotionEmployee.dailyTotalActualSalesAmount 와 동일 공식. */
+    val actualAmount: BigDecimal?
+        get() {
+            if (primaryProductAmount == null && otherSalesAmount == null) return null
+            return (primaryProductAmount ?: BigDecimal.ZERO) + (otherSalesAmount ?: BigDecimal.ZERO)
+        }
+
+    /** SF formula `isworkreport__c` 재현 — 출퇴근 로그 존재 시 "근무등록", 부재 시 빈 문자열. */
+    val isWorkReport: String
+        get() = if (attendanceLogId != null) "근무등록" else ""
 }

@@ -6,8 +6,10 @@ import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.NumberExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.math.BigDecimal
@@ -111,15 +113,47 @@ class PromotionEmployeeRepositoryCustomImpl(
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
-    ): List<PromotionEmployee> {
+    ): List<PromotionTargetActualReportRecord> {
+        // DTO projection — 기간 조회 행 수가 수만 건 규모라 entity fetchJoin(6 entity 전 컬럼) 대신 사용 컬럼만 select.
+        // attendanceLog 는 TeamMemberSchedule 파생 프로퍼티(isWorkReport/commuteDate)의 원천 — 조인에 포함해 N+1 회피.
         return queryFactory
-            .selectFrom(promotionEmployee)
-            .join(promotionEmployee.promotion, promotion).fetchJoin()
-            .leftJoin(promotion.account, account).fetchJoin()
-            .leftJoin(promotion.primaryProduct, product).fetchJoin()
-            .leftJoin(promotionEmployee.employee, employee).fetchJoin()
-            // isWorkReport / commuteDate 컬럼은 TeamMemberSchedule 소유 (PromotionEmployee→schedule 조인)
-            .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule).fetchJoin()
+            .select(
+                Projections.constructor(
+                    PromotionTargetActualReportRecord::class.java,
+                    promotion.promotionNumber,
+                    account.branchName,
+                    account.name,
+                    account.externalKey,
+                    product.name,
+                    product.storeConditionText,
+                    promotion.otherProduct,
+                    promotion.standLocation,
+                    employee.employeeCode,
+                    employee.orgName,
+                    employee.name,
+                    employee.professionalPromotionTeam,
+                    teamMemberSchedule.professionalPromotionTeam,
+                    promotionEmployee.scheduleDate,
+                    promotionEmployee.dailyTargetCount,
+                    promotionEmployee.basePrice,
+                    promotionEmployee.primarySalesQuantity,
+                    promotionEmployee.primaryProductAmount,
+                    promotionEmployee.otherSalesQuantity,
+                    promotionEmployee.otherSalesAmount,
+                    promotionEmployee.dkWorkType2,
+                    promotionEmployee.workType3,
+                    attendanceLog.id,
+                    attendanceLog.attendanceDate,
+                ),
+            )
+            .from(promotionEmployee)
+            .join(promotionEmployee.promotion, promotion)
+            .leftJoin(promotion.account, account)
+            .leftJoin(promotion.primaryProduct, product)
+            .leftJoin(promotionEmployee.employee, employee)
+            // isWorkReport / commuteDate 원천 컬럼은 TeamMemberSchedule→AttendanceLog 소유
+            .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog)
             .where(
                 promotionEmployee.scheduleDate.between(startDate, endDate),
                 notDeleted, // soft-delete 제외
