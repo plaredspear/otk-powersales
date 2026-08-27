@@ -178,16 +178,38 @@ class AdminPromotionTargetActualReportServiceTest {
         }
 
         @Test
-        @DisplayName("엑셀 export 는 상한 없이 전량 추출")
-        fun exportIsNotTruncated() {
+        @DisplayName("엑셀 export 는 화면 상한(2,000행)과 무관 — 캡 이내면 전량 추출")
+        fun exportIsNotTruncatedByDisplayLimit() {
             val records = (1..2500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) }
             every { repository.findTargetActualReport(any(), any(), any()) } returns records
 
             val result = service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
 
-            // 헤더 1 + 상세 2,500 + 소계 1 + 합계 1 = 2,503행
+            // 헤더 1 + 상세 2,500 + 소계 1 + 합계 1 = 2,503행 (안내 행 없음)
             val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(result.bytes.inputStream())
-            assertThat(workbook.getSheetAt(0).lastRowNum + 1).isEqualTo(2503)
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum + 1).isEqualTo(2503)
+            assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("행사명")
+        }
+
+        @Test
+        @DisplayName("엑셀 export 는 EXPORT_MAX_ROWS(50,000행) 캡 — 초과 시 안내 행 + 소계/합계 전량 기준")
+        fun exportIsCappedAtExportMaxRows() {
+            val over = AdminPromotionTargetActualReportService.EXPORT_MAX_ROWS + 100
+            val records = (1..over).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) }
+            every { repository.findTargetActualReport(any(), any(), any()) } returns records
+
+            val result = service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+
+            // 안내 1 + 헤더 1 + 상세 50,000 + 소계 1 + 합계 1
+            val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(result.bytes.inputStream())
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum + 1)
+                .isEqualTo(AdminPromotionTargetActualReportService.EXPORT_MAX_ROWS + 4)
+            assertThat(sheet.getRow(0).getCell(0).stringCellValue).contains("[안내]")
+            // 소계는 잘림과 무관하게 전량(50,100행 × 목표 1×10) 기준
+            assertThat(sheet.getRow(sheet.lastRowNum - 1).getCell(13).numericCellValue)
+                .isEqualTo(over * 10.0)
         }
     }
 

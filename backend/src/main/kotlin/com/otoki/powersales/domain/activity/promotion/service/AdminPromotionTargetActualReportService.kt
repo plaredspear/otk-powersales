@@ -10,7 +10,7 @@ import com.otoki.powersales.domain.activity.promotion.repository.PromotionTarget
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.xssf.streaming.SXSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -26,8 +26,9 @@ import java.time.LocalDate
  *       — SF Report 컬럼(DailyTargetAmount__c/DailyActualSalesAmount__c) formula 재현.
  * 부수 효과: 없음 (조회 전용).
  *
- * 신규 차이: 기존 행사마스터 화면(PromotionController CRUD)과 별개 보고서 — ScheduleDate 기간 + 전량 추출 +
+ * 신규 차이: 기존 행사마스터 화면(PromotionController CRUD)과 별개 보고서 — ScheduleDate 기간 조회 +
  *   Summary 그룹/소계/차트 + 엑셀. SF scope=organization = 전사(영업지원실용, DataScope 미적용).
+ *   상세 행 상한: 화면 [WEB_DISPLAY_ROW_LIMIT] / 엑셀 [EXPORT_MAX_ROWS] (소계/합계/차트는 전량 기준).
  */
 @Service
 @Transactional(readOnly = true)
@@ -41,6 +42,19 @@ class AdminPromotionTargetActualReportService(
          * 소계/합계/차트는 전량 기준으로 산출하고 상세 행만 앞에서부터 상한까지 내려준다. 전량은 엑셀 export.
          */
         const val WEB_DISPLAY_ROW_LIMIT = 2_000
+
+        /**
+         * 엑셀 export 상세 행 상한 — SF 리포트 export 도 플랫폼 고정 행 수 상한(100,000행)으로 보호되었고
+         * (기간 길이 제한은 레거시에 없음), 신규는 타 export 관례(EXPORT_MAX_ROWS) 정합으로 50,000행.
+         * 초과 시 소계/합계는 전량 기준 유지 + 시트 최상단에 잘림 안내 행 추가.
+         */
+        const val EXPORT_MAX_ROWS = 50_000
+
+        /** export 24컬럼 고정 폭(문자 수) — autoSizeColumn 은 전 행 실측이라 수만 행에서 timeout 주범이 되어 미사용. */
+        private val EXPORT_COLUMN_WIDTHS = intArrayOf(
+            20, 12, 20, 12, 18, 12, 16, 10, 14, 10, 16, 18, 12,
+            14, 14, 12, 10, 14, 10, 14, 10, 10, 12, 20,
+        )
     }
 
     /**
@@ -115,16 +129,17 @@ class AdminPromotionTargetActualReportService(
 
     /**
      * 목표/실적 엑셀 export — 행사명 그룹 헤더/소계 행 포함 24컬럼 + 전체 합계 행 (Summary 재현).
-     * 화면 표시 상한과 무관하게 전량 추출.
+     * 상세 행은 [EXPORT_MAX_ROWS] 까지 (소계/합계는 전량 기준, 초과 시 최상단 안내 행).
+     * SXSSF 스트리밍 + 고정 컬럼 폭 — 수만 행 export 의 메모리/시간 병목(XSSF 전량 메모리 + autoSizeColumn 전 행 실측) 회피.
      */
     fun exportReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
     ): ExcelResult {
-        val response = buildReport(startDate, endDate, branchScope, null)
+        val response = buildReport(startDate, endDate, branchScope, EXPORT_MAX_ROWS)
 
-        val workbook = XSSFWorkbook()
+        val workbook = SXSSFWorkbook()
         val sheet = workbook.createSheet("행사사원목표대비실적")
         val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
@@ -134,16 +149,23 @@ class AdminPromotionTargetActualReportService(
             "목표금액", "실적금액", "매대위치", "대표수량", "대표금액", "기타수량", "기타금액",
             "근무구분2", "근무구분3", "근무보고여부", "출근일자",
         )
-        val headerRow = sheet.createRow(0)
+        EXPORT_COLUMN_WIDTHS.forEachIndexed { i, w -> sheet.setColumnWidth(i, w * 256) }
+
+        var rowIdx = 0
+        if (response.truncated) {
+            sheet.createRow(rowIdx++).createCell(0).setCellValue(
+                "[안내] 조회 결과 총 ${response.totalRowCount}행 중 앞 ${EXPORT_MAX_ROWS}행까지만 포함됩니다. " +
+                    "소계/합계는 전체 기준입니다. 기간을 나눠 다시 내려받아 주세요.",
+            )
+        }
+        val headerRow = sheet.createRow(rowIdx++)
         headers.forEachIndexed { i, h ->
             headerRow.createCell(i).apply {
                 setCellValue(h)
                 cellStyle = headerStyle
             }
         }
-        sheet.createFreezePane(0, 1)
-
-        var rowIdx = 1
+        sheet.createFreezePane(0, rowIdx)
         response.groups.forEach { group ->
             group.rows.forEach { item ->
                 val row = sheet.createRow(rowIdx++)
@@ -169,8 +191,6 @@ class AdminPromotionTargetActualReportService(
         totalRow.createCell(17).setCellValue(response.totalPrimaryAmount.toDouble())
         totalRow.createCell(18).setCellValue(response.totalOtherQuantity.toDouble())
         totalRow.createCell(19).setCellValue(response.totalOtherAmount.toDouble())
-
-        headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val filename = "행사사원목표대비실적_%s_%s.xlsx".format(response.startDate, response.endDate)

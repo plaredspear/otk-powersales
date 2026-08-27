@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.common.util.excel
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.xssf.streaming.SXSSFWorkbook
 import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -46,10 +47,22 @@ object ExcelStyleSupport {
         })
     }
 
+    /** 표준 헤더 스타일 — SXSSF(스트리밍) 워크북용 오버로드. 스타일은 내부 XSSF 워크북 소유라 SXSSF 행에 그대로 적용 가능. */
+    fun primaryHeaderStyle(workbook: SXSSFWorkbook): XSSFCellStyle = primaryHeaderStyle(workbook.xssfWorkbook)
+
     /** 워크북 → ByteArray 직렬화 + close. */
     fun workbookToBytes(workbook: XSSFWorkbook): ByteArray =
         ByteArrayOutputStream().use { out ->
             workbook.write(out)
+            workbook.close()
+            out.toByteArray()
+        }
+
+    /** SXSSF(스트리밍) 워크북 → ByteArray 직렬화 + 임시파일 정리(dispose) + close. */
+    fun workbookToBytes(workbook: SXSSFWorkbook): ByteArray =
+        ByteArrayOutputStream().use { out ->
+            workbook.write(out)
+            workbook.dispose()
             workbook.close()
             out.toByteArray()
         }
