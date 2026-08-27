@@ -11,3 +11,6 @@ CLAUDE.local.md
 
 # db-tunnel 환경 설정 (RDS endpoint + Secret ARN)
 scripts/db-tunnel.*.env
+
+# playwright
+.playwright-mcp
