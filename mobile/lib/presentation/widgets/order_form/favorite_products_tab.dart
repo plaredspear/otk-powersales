@@ -76,12 +76,11 @@ class _FavoriteProductsTabState extends ConsumerState<FavoriteProductsTab> {
     final products = _applyKeyword(favorites);
 
     // 전체 선택 대상 — 필터된 목록 중 선택이 차단된 제품(전용상품)은 제외한다.
-    final selectableCodes = products
+    final selectableProducts = products
         .where((p) => !(widget.blockExclusive && p.isExclusiveBlocked))
-        .map((p) => p.productCode)
         .toList();
-    final allSelected = selectableCodes.isNotEmpty &&
-        selectableCodes.every(state.isProductSelected);
+    final allSelected = selectableProducts.isNotEmpty &&
+        selectableProducts.every((p) => state.isProductSelected(p.productCode));
 
     return Column(
       children: [
@@ -132,12 +131,12 @@ class _FavoriteProductsTabState extends ConsumerState<FavoriteProductsTab> {
           ),
         ),
         // 전체 선택 (다건 선택 모드에서만 노출)
-        if (state.multiSelect && selectableCodes.isNotEmpty)
+        if (state.multiSelect && selectableProducts.isNotEmpty)
           _SelectAllBar(
             isSelected: allSelected,
-            count: selectableCodes.length,
+            count: selectableProducts.length,
             onChanged: (selected) {
-              notifier.setSelectionForCodes(selectableCodes, selected);
+              notifier.setSelectionForProducts(selectableProducts, selected);
             },
           ),
         Expanded(
@@ -156,7 +155,7 @@ class _FavoriteProductsTabState extends ConsumerState<FavoriteProductsTab> {
                       product: product,
                       isSelected: state.isProductSelected(product.productCode),
                       onSelectionChanged: (_) {
-                        notifier.toggleProductSelection(product.productCode);
+                        notifier.toggleProductSelection(product);
                       },
                       onFavoriteToggle: () {
                         notifier.removeFromFavorites(product.productCode);

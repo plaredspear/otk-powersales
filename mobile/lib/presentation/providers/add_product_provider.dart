@@ -309,46 +309,73 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   ///
   /// 단건 선택 모드(`multiSelect == false`)에서는 새 제품을 고르면
   /// 기존 선택을 대체하고, 같은 제품을 다시 누르면 선택 해제한다.
-  void toggleProductSelection(String productCode) {
+  ///
+  /// [product] 는 선택 시점의 제품 실체 — 검색어를 바꿔 목록이 교체돼도
+  /// 확정 시 되찾을 수 있도록 함께 보관한다([AddProductState.selectedProducts]).
+  void toggleProductSelection(ProductForOrder product) {
+    final productCode = product.productCode;
     final isSelected = state.selectedProductCodes.contains(productCode);
 
     if (!state.multiSelect) {
       state = state.copyWith(
         selectedProductCodes: isSelected ? const {} : {productCode},
+        selectedProducts: isSelected ? const {} : {productCode: product},
       );
       return;
     }
 
     final updatedSelection = Set<String>.from(state.selectedProductCodes);
+    final updatedProducts =
+        Map<String, ProductForOrder>.from(state.selectedProducts);
     if (isSelected) {
       updatedSelection.remove(productCode);
+      updatedProducts.remove(productCode);
     } else {
       updatedSelection.add(productCode);
+      updatedProducts[productCode] = product;
     }
 
-    state = state.copyWith(selectedProductCodes: updatedSelection);
+    state = state.copyWith(
+      selectedProductCodes: updatedSelection,
+      selectedProducts: updatedProducts,
+    );
   }
 
-  /// 전체 선택/해제 — 지정한 제품 코드들을 한 번에 선택하거나 해제한다.
+  /// 전체 선택/해제 — 지정한 제품들을 한 번에 선택하거나 해제한다.
   ///
   /// 다건 선택 모드에서만 동작한다(단건 모드에는 전체 선택이 없다).
-  /// 차단 제품(전용상품 등) 제외는 호출 측에서 코드 목록을 걸러 전달한다.
-  void setSelectionForCodes(Iterable<String> productCodes, bool selected) {
+  /// 차단 제품(전용상품 등) 제외는 호출 측에서 목록을 걸러 전달한다.
+  void setSelectionForProducts(
+    Iterable<ProductForOrder> products,
+    bool selected,
+  ) {
     if (!state.multiSelect) return;
 
     final updatedSelection = Set<String>.from(state.selectedProductCodes);
-    if (selected) {
-      updatedSelection.addAll(productCodes);
-    } else {
-      updatedSelection.removeAll(productCodes);
+    final updatedProducts =
+        Map<String, ProductForOrder>.from(state.selectedProducts);
+    for (final product in products) {
+      if (selected) {
+        updatedSelection.add(product.productCode);
+        updatedProducts[product.productCode] = product;
+      } else {
+        updatedSelection.remove(product.productCode);
+        updatedProducts.remove(product.productCode);
+      }
     }
 
-    state = state.copyWith(selectedProductCodes: updatedSelection);
+    state = state.copyWith(
+      selectedProductCodes: updatedSelection,
+      selectedProducts: updatedProducts,
+    );
   }
 
   /// 선택 초기화
   void clearSelection() {
-    state = state.copyWith(selectedProductCodes: const {});
+    state = state.copyWith(
+      selectedProductCodes: const {},
+      selectedProducts: const {},
+    );
   }
 
   /// 즐겨찾기 추가
@@ -407,13 +434,17 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
 
   /// 선택된 제품들을 [ProductForOrder] 목록으로 반환
   ///
-  /// 모든 탭의 제품을 productCode 기준으로 통합하여 선택된 것만 반환한다.
+  /// 선택 시점에 보관해 둔 제품([AddProductState.selectedProducts])을 우선 쓴다.
+  /// 검색어를 바꾸면 이전 검색 결과가 통째로 교체되므로, 확정 시점의 탭 목록에서
+  /// 되찾는 방식은 먼저 고른 제품을 조용히 누락시킨다.
+  /// 현재 탭 목록은 보조 출처로만 참조한다(선택 코드가 외부에서 주입된 경우 대비).
+  ///
   /// 주문/클레임/매출조회 등 호출 화면이 이 결과를 각자 필요한 모델로
   /// 매핑해서 사용한다(모달은 주문 도메인에 결합되지 않는다).
   List<ProductForOrder> getSelectedProducts() {
     final allProducts = <String, ProductForOrder>{};
 
-    // 모든 탭의 제품을 productCode 기준으로 수집
+    // 모든 탭의 제품을 productCode 기준으로 수집(보조 출처)
     for (final product in state.favoriteProducts) {
       allProducts[product.productCode] = product;
     }
@@ -425,6 +456,8 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         allProducts[product.productCode] = product;
       }
     }
+    // 선택 시점 스냅샷이 항상 우선한다.
+    allProducts.addAll(state.selectedProducts);
 
     return state.selectedProductCodes
         .where((code) => allProducts.containsKey(code))

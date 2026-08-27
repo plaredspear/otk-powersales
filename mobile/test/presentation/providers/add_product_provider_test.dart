@@ -446,64 +446,114 @@ void main() {
     group('toggleProductSelection', () {
       test('제품 코드 추가', () {
         // Act
-        notifier.toggleProductSelection('P001');
+        notifier.toggleProductSelection(_createTestProduct(productCode: 'P001'));
 
         // Assert
         expect(notifier.state.selectedProductCodes, {'P001'});
 
         // Act
-        notifier.toggleProductSelection('P002');
+        notifier.toggleProductSelection(_createTestProduct(productCode: 'P002'));
 
         // Assert
         expect(notifier.state.selectedProductCodes, {'P001', 'P002'});
       });
 
-      test('이미 선택된 코드면 제거', () {
-        // Arrange
-        notifier.state = notifier.state.copyWith(
-          selectedProductCodes: {'P001', 'P002'},
+      test('선택 시 제품 실체도 함께 보관', () {
+        // Act
+        notifier.toggleProductSelection(
+          _createTestProduct(productCode: 'P001', productName: '토마토케찹'),
         );
 
-        // Act
-        notifier.toggleProductSelection('P001');
+        // Assert - 목록 교체와 무관하게 되찾을 수 있도록 스냅샷 보관
+        expect(notifier.state.selectedProducts.keys, {'P001'});
+        expect(notifier.state.selectedProducts['P001']!.productName, '토마토케찹');
+      });
 
-        // Assert
+      test('이미 선택된 코드면 제거', () {
+        // Arrange
+        final p1 = _createTestProduct(productCode: 'P001');
+        final p2 = _createTestProduct(productCode: 'P002');
+        notifier.toggleProductSelection(p1);
+        notifier.toggleProductSelection(p2);
+
+        // Act
+        notifier.toggleProductSelection(p1);
+
+        // Assert - 코드와 보관 제품이 함께 제거된다
         expect(notifier.state.selectedProductCodes, {'P002'});
+        expect(notifier.state.selectedProducts.keys, {'P002'});
       });
 
       test('단건 선택 모드면 새 제품이 기존 선택을 대체', () {
         // Arrange - 단건 선택 모드 + 기존 선택
-        notifier.state = notifier.state.copyWith(
-          multiSelect: false,
-          selectedProductCodes: {'P001'},
-        );
+        final p2 = _createTestProduct(productCode: 'P002');
+        notifier.state = notifier.state.copyWith(multiSelect: false);
+        notifier.toggleProductSelection(_createTestProduct(productCode: 'P001'));
 
         // Act - 다른 제품 선택
-        notifier.toggleProductSelection('P002');
+        notifier.toggleProductSelection(p2);
 
         // Assert - 기존 선택은 대체되고 1건만 유지
         expect(notifier.state.selectedProductCodes, {'P002'});
+        expect(notifier.state.selectedProducts.keys, {'P002'});
 
         // Act - 같은 제품 다시 탭하면 해제
-        notifier.toggleProductSelection('P002');
+        notifier.toggleProductSelection(p2);
 
         // Assert
         expect(notifier.state.selectedProductCodes, isEmpty);
+        expect(notifier.state.selectedProducts, isEmpty);
+      });
+    });
+
+    group('setSelectionForProducts', () {
+      test('전체 선택 시 제품 실체도 함께 보관', () {
+        // Arrange
+        final products = [
+          _createTestProduct(productCode: 'P001'),
+          _createTestProduct(productCode: 'P002'),
+        ];
+
+        // Act
+        notifier.setSelectionForProducts(products, true);
+
+        // Assert
+        expect(notifier.state.selectedProductCodes, {'P001', 'P002'});
+        expect(notifier.state.selectedProducts.keys, {'P001', 'P002'});
+      });
+
+      test('전체 해제 시 보관 제품도 제거', () {
+        // Arrange
+        final products = [
+          _createTestProduct(productCode: 'P001'),
+          _createTestProduct(productCode: 'P002'),
+        ];
+        notifier.setSelectionForProducts(products, true);
+
+        // Act
+        notifier.setSelectionForProducts(products, false);
+
+        // Assert
+        expect(notifier.state.selectedProductCodes, isEmpty);
+        expect(notifier.state.selectedProducts, isEmpty);
       });
     });
 
     group('clearSelection', () {
       test('모든 선택 제거', () {
         // Arrange
-        notifier.state = notifier.state.copyWith(
-          selectedProductCodes: {'P001', 'P002', 'P003'},
-        );
+        notifier.setSelectionForProducts([
+          _createTestProduct(productCode: 'P001'),
+          _createTestProduct(productCode: 'P002'),
+          _createTestProduct(productCode: 'P003'),
+        ], true);
 
         // Act
         notifier.clearSelection();
 
         // Assert
         expect(notifier.state.selectedProductCodes, isEmpty);
+        expect(notifier.state.selectedProducts, isEmpty);
       });
     });
 
@@ -801,6 +851,42 @@ void main() {
         // Assert
         expect(items.length, 1);
         expect(items[0].productCode, 'P001');
+      });
+
+      test('검색어를 바꿔도 이전 검색에서 고른 제품이 유지된다', () async {
+        // Arrange - "케찹" 검색 결과 3건을 모두 선택
+        final ketchup = [
+          _createTestProduct(productCode: '11110001', productName: '토마토케찹(미니튜브) 65G'),
+          _createTestProduct(productCode: '11110002', productName: '토마토케찹 300G'),
+          _createTestProduct(productCode: '11110003', productName: '토마토케찹 500G'),
+        ];
+        fakeRepo.searchProductsResult = ketchup;
+        await notifier.searchProducts(query: '케찹');
+        notifier.setSelectionForProducts(ketchup, true);
+
+        // Act - 검색어를 "진라면" 으로 바꾸면 이전 검색 결과 목록은 교체된다
+        final ramen = [
+          _createTestProduct(productCode: '18010008', productName: '진라면_순한맛 120G'),
+          _createTestProduct(productCode: '18010009', productName: '진라면_매운맛 120G'),
+        ];
+        fakeRepo.searchProductsResult = ramen;
+        await notifier.searchProducts(query: '진라면');
+        notifier.setSelectionForProducts(ramen, true);
+
+        // Assert - 5건 모두 반환(교체된 케찹 3건이 누락되지 않는다)
+        final items = notifier.getSelectedProducts();
+        expect(items.length, 5);
+        expect(items.map((e) => e.productCode).toSet(), {
+          '11110001',
+          '11110002',
+          '11110003',
+          '18010008',
+          '18010009',
+        });
+        expect(
+          items.firstWhere((e) => e.productCode == '11110002').productName,
+          '토마토케찹 300G',
+        );
       });
 
       test('중복 제품 코드는 한 번만 포함', () {

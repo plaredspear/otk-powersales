@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/presentation/providers/add_product_provider.dart';
 import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 import 'package:mobile/presentation/widgets/order_form/add_product_bottom_sheet.dart';
@@ -36,10 +37,24 @@ void main() {
 
   tearDown(() => container.dispose());
 
+  /// 선택 API 가 제품 실체를 받으므로 코드만으로 최소 제품을 만든다.
+  ProductForOrder testProduct(String code) => ProductForOrder(
+        productCode: code,
+        productName: '제품 $code',
+        barcode: '',
+        storageType: '상온',
+        shelfLife: '12개월',
+        unitPrice: 1000,
+        boxSize: 10,
+        isFavorite: false,
+      );
+
   /// 시트 밖에서 선택 상태를 만든다 (탭 목록 로딩에 의존하지 않기 위함).
   void select(List<String> productCodes) {
     for (final code in productCodes) {
-      container.read(addProductProvider.notifier).toggleProductSelection(code);
+      container
+          .read(addProductProvider.notifier)
+          .toggleProductSelection(testProduct(code));
     }
   }
 

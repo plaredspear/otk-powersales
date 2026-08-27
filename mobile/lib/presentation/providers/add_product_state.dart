@@ -82,6 +82,14 @@ class AddProductState {
   /// 선택된 제품 코드 Set (탭과 무관하게 통합 관리)
   final Set<String> selectedProductCodes;
 
+  /// 선택된 제품 실체(productCode → 제품). 선택 시점에 함께 보관한다.
+  ///
+  /// 코드만 들고 있다가 확정 시점에 탭 목록에서 되찾는 방식은, 검색어를 바꾸면
+  /// 직전 검색 결과가 통째로 교체되어 **이미 선택해 둔 제품을 찾지 못해 조용히
+  /// 누락**된다(케찹 3개 선택 → "진라면" 재검색 → 진라면 2개만 추가되던 문제).
+  /// 목록 교체와 무관하게 살아남도록 선택 순간의 제품을 여기에 붙잡아 둔다.
+  final Map<String, ProductForOrder> selectedProducts;
+
   /// 다건 선택 여부. false 면 단건 선택(선택 시 기존 선택 대체).
   final bool multiSelect;
 
@@ -121,6 +129,7 @@ class AddProductState {
     this.isLoadingMore = false,
     this.orderHistoryGroups = const [],
     this.selectedProductCodes = const {},
+    this.selectedProducts = const {},
     this.multiSelect = true,
     this.searchQuery = '',
     this.historyDateFrom,
@@ -194,6 +203,7 @@ class AddProductState {
     bool? isLoadingMore,
     List<OrderHistoryGroup>? orderHistoryGroups,
     Set<String>? selectedProductCodes,
+    Map<String, ProductForOrder>? selectedProducts,
     bool? multiSelect,
     String? searchQuery,
     DateTime? historyDateFrom,
@@ -218,6 +228,7 @@ class AddProductState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       orderHistoryGroups: orderHistoryGroups ?? this.orderHistoryGroups,
       selectedProductCodes: selectedProductCodes ?? this.selectedProductCodes,
+      selectedProducts: selectedProducts ?? this.selectedProducts,
       multiSelect: multiSelect ?? this.multiSelect,
       searchQuery: searchQuery ?? this.searchQuery,
       historyDateFrom: historyDateFrom ?? this.historyDateFrom,

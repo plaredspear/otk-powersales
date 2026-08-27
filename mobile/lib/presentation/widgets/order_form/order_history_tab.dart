@@ -110,14 +110,14 @@ class OrderHistoryTab extends ConsumerWidget {
                 .toList()
             : group.products;
         // 주문별 전체 선택 대상 — 선택이 차단된 제품(전용상품)은 제외한다.
-        final selectableCodes = groupProducts
+        final selectableProducts = groupProducts
             .where((p) => !(blockExclusive && p.isExclusiveBlocked))
-            .map((p) => p.productCode)
             .toList();
-        final allSelected = selectableCodes.isNotEmpty &&
-            selectableCodes.every((code) => state.isProductSelected(code));
-        final anySelected =
-            selectableCodes.any((code) => state.isProductSelected(code));
+        final allSelected = selectableProducts.isNotEmpty &&
+            selectableProducts
+                .every((p) => state.isProductSelected(p.productCode));
+        final anySelected = selectableProducts
+            .any((p) => state.isProductSelected(p.productCode));
         return Card(
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           shape: RoundedRectangleBorder(
@@ -133,14 +133,14 @@ class OrderHistoryTab extends ConsumerWidget {
               notifier.toggleOrderHistoryExpansion(group.orderId);
             },
             // 주문별 전체 선택(다건 선택 모드에서만 노출). 일부만 선택되면 중간 상태로 표시.
-            leading: state.multiSelect && selectableCodes.isNotEmpty
+            leading: state.multiSelect && selectableProducts.isNotEmpty
                 ? Checkbox(
                     tristate: true,
                     value: allSelected ? true : (anySelected ? null : false),
                     activeColor: AppColors.primary,
                     onChanged: (_) {
-                      notifier.setSelectionForCodes(
-                        selectableCodes,
+                      notifier.setSelectionForProducts(
+                        selectableProducts,
                         !allSelected,
                       );
                     },
@@ -165,7 +165,7 @@ class OrderHistoryTab extends ConsumerWidget {
                 onSelectionChanged: (_) {
                   ref
                       .read(addProductProvider.notifier)
-                      .toggleProductSelection(product.productCode);
+                      .toggleProductSelection(product);
                 },
                 onFavoriteToggle: null,
                 isFavoriteTab: false,

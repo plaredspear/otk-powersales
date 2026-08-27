@@ -291,7 +291,7 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
           onSelectionChanged: (_) {
             ref
                 .read(addProductProvider.notifier)
-                .toggleProductSelection(product.productCode);
+                .toggleProductSelection(product);
           },
           onFavoriteToggle: () {
             if (product.isFavorite) {
