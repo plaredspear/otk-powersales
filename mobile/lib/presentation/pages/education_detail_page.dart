@@ -10,6 +10,7 @@ import '../../domain/entities/education_post_detail.dart';
 import '../providers/education_post_detail_provider.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/common/rich_content_html.dart';
 
 /// 교육 자료 상세 화면
 ///
@@ -126,15 +127,11 @@ class EducationDetailPage extends ConsumerWidget {
 
                 const Divider(height: AppSpacing.xl, color: AppColors.border),
 
-                // 본문
-                if (detail.content.isNotEmpty)
-                  Text(
-                    detail.content,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      height: 1.6,
-                    ),
-                  ),
+                // 본문 (HTML 렌더링)
+                // 웹 에디터(Quill)가 저장한 HTML 이므로 평문으로 그리면 태그가 그대로 노출된다.
+                // 본문을 비워도 `<p></p>` 가 저장되므로 isNotEmpty 가 아니라 가시 내용으로 판정한다.
+                if (hasVisibleHtmlContent(detail.content))
+                  RichContentHtml(html: detail.content),
 
                 // 첨부 이미지 (인라인 갤러리) — 레거시 f00001
                 if (detail.attachments.any((a) => a.isImage)) ...[

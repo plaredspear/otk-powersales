@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/presentation/widgets/notice/notice_content_html.dart';
+import 'package:mobile/presentation/widgets/common/rich_content_html.dart';
 
 /// 렌더된 본문의 전체 텍스트.
 ///
@@ -19,13 +19,13 @@ Future<double> _renderHeight(WidgetTester tester, String html) async {
     MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
-          child: NoticeContentHtml(html: html),
+          child: RichContentHtml(html: html),
         ),
       ),
     ),
   );
   await tester.pump();
-  return tester.getSize(find.byType(NoticeContentHtml)).height;
+  return tester.getSize(find.byType(RichContentHtml)).height;
 }
 
 void main() {
@@ -38,7 +38,7 @@ void main() {
     'p_nbsp': '<p>&nbsp;</p>',
   };
 
-  group('NoticeContentHtml 빈 줄 보존', () {
+  group('RichContentHtml 빈 줄 보존', () {
     blankForms.forEach((name, blank) {
       testWidgets('[$name] 빈 줄을 늘린 만큼 본문 높이가 누적된다', (tester) async {
         // 빈 줄 1개 → 3개로 늘리면, 늘린 2개만큼 높이가 커져야 한다.
@@ -56,7 +56,7 @@ void main() {
           greaterThan(one),
           reason: '빈 줄을 3개 넣었는데 1개일 때와 높이가 같으면 줄바꿈이 사라진 것',
         );
-        expect(three - one, closeTo(kNoticeBlankLineHeight * 2, 0.5));
+        expect(three - one, closeTo(kRichContentBlankLineHeight * 2, 0.5));
       });
     });
 
@@ -68,7 +68,7 @@ void main() {
         '<p>A</p>$blank$blank$blank$blank<p>B</p>',
       );
 
-      expect(four - two, closeTo(kNoticeBlankLineHeight * 2, 0.5));
+      expect(four - two, closeTo(kRichContentBlankLineHeight * 2, 0.5));
     });
 
     testWidgets('운영 본문 형태 — 빈 줄 1/2/3개가 각각 다른 간격으로 보인다', (tester) async {
@@ -89,7 +89,7 @@ void main() {
 
       expect(
         more - base,
-        closeTo(kNoticeBlankLineHeight * 3, 0.5),
+        closeTo(kRichContentBlankLineHeight * 3, 0.5),
         reason: '빈 줄을 3개 더 넣었으면 그만큼 높이가 커져야 한다',
       );
     });
@@ -98,7 +98,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: NoticeContentHtml(html: '<p>테스트 1</p><p>테스트 2</p>'),
+            body: RichContentHtml(html: '<p>테스트 1</p><p>테스트 2</p>'),
           ),
         ),
       );
@@ -114,7 +114,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: NoticeContentHtml(html: '<p>앞줄<br>뒷줄</p>'),
+            body: RichContentHtml(html: '<p>앞줄<br>뒷줄</p>'),
           ),
         ),
       );
@@ -136,14 +136,38 @@ void main() {
     });
   });
 
-  group('NoticeContentHtml 인라인 이미지', () {
+  group('hasVisibleHtmlContent', () {
+    // 웹 에디터(Quill)는 본문을 비워도 빈 HTML 을 저장한다 —
+    // isNotEmpty 로 가드하면 화면에 태그만 남은 빈 본문 영역이 생긴다.
+    test('빈 문단만 있는 본문은 내용 없음으로 판정한다', () {
+      expect(hasVisibleHtmlContent(''), isFalse);
+      expect(hasVisibleHtmlContent('   '), isFalse);
+      expect(hasVisibleHtmlContent('<p></p>'), isFalse);
+      expect(hasVisibleHtmlContent('<p><br></p>'), isFalse);
+      expect(hasVisibleHtmlContent('<p>&nbsp;</p>'), isFalse);
+      expect(hasVisibleHtmlContent('<p></p><p><br></p>'), isFalse);
+    });
+
+    test('텍스트가 있으면 내용 있음으로 판정한다', () {
+      expect(hasVisibleHtmlContent('<p>안내</p>'), isTrue);
+      expect(hasVisibleHtmlContent('<p>&nbsp;안내&nbsp;</p>'), isTrue);
+    });
+
+    test('텍스트가 없어도 보이는 요소가 있으면 내용 있음으로 판정한다', () {
+      // 빈 줄로 오인해 숨기면 이미지가 통째로 사라진다.
+      expect(hasVisibleHtmlContent('<p><img src="https://x/a.png"></p>'), isTrue);
+      expect(hasVisibleHtmlContent('<p><br></p><hr>'), isTrue);
+    });
+  });
+
+  group('RichContentHtml 인라인 이미지', () {
     testWidgets('텍스트 없이 이미지만 든 문단을 빈 줄로 오인하지 않는다', (tester) async {
       // `<p><img></p>` 는 element.text 가 비어 있어 빈 줄 판정에 걸리기 쉽다.
       // 빈 줄로 대체되면 이미지가 통째로 사라진다.
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: NoticeContentHtml(
+            body: RichContentHtml(
               html: '<p><img src="notice-image://abc"></p>',
             ),
           ),
@@ -151,7 +175,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(NoticeBrokenImageBox), findsOneWidget);
+      expect(find.byType(BrokenImageBox), findsOneWidget);
     });
 
     testWidgets('http 가 아닌 placeholder 잔존 시 깨진 이미지 박스를 표시한다',
@@ -159,7 +183,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: NoticeContentHtml(
+            body: RichContentHtml(
               html: '<p><img src="notice-image://abc"></p>',
             ),
           ),
@@ -167,7 +191,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(NoticeBrokenImageBox), findsOneWidget);
+      expect(find.byType(BrokenImageBox), findsOneWidget);
     });
   });
 }

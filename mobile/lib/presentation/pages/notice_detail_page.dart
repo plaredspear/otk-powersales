@@ -10,7 +10,7 @@ import '../../domain/entities/notice_category.dart';
 import '../providers/notice_detail_provider.dart';
 import '../providers/notice_detail_state.dart';
 import '../widgets/common/loading_indicator.dart';
-import '../widgets/notice/notice_content_html.dart';
+import '../widgets/common/rich_content_html.dart';
 
 /// 공지사항 상세 화면
 ///
@@ -151,7 +151,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
           const Divider(height: AppSpacing.xl, color: AppColors.border),
 
           // 본문 (HTML 렌더링)
-          NoticeContentHtml(html: detail.content),
+          RichContentHtml(html: detail.content),
 
           // 이미지 목록
           if (detail.images.isNotEmpty) ...[
@@ -173,7 +173,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
                       ),
                     ),
                     errorWidget: (context, url, error) =>
-                        const NoticeBrokenImageBox(),
+                        const BrokenImageBox(),
                   ),
                 ),
               );

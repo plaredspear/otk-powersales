@@ -10,22 +10,44 @@ import 'package:mobile/core/theme/app_typography.dart';
 ///
 /// HtmlWidget 이 `<p><br></p>` 에 부여하는 1em 과 동일하게 맞춘다
 /// (본문 textStyle 은 [AppTypography.bodyMedium] = fontSize 14).
-const double kNoticeBlankLineHeight = 14;
+const double kRichContentBlankLineHeight = 14;
 
 /// NBSP(`&nbsp;`). 일반 공백과 달리 trim 대상이 아니라 따로 걷어내야 한다.
 /// 소스에 리터럴로 두면 편집 과정에서 일반 공백으로 바뀌기 쉬워 이스케이프로 명시한다.
 const String _nbsp = ' ';
 
-/// 공지 본문 HTML 렌더러.
+/// 태그를 걷어낸 뒤 눈에 보이는 내용이 남는지 판정한다.
+///
+/// 웹 에디터(Quill)는 본문을 비워도 `<p></p>` 같은 빈 HTML 을 저장하므로,
+/// `content.isNotEmpty` 로는 "내용 없음" 을 걸러내지 못한다. 다만 `<img>` 처럼
+/// 텍스트가 없어도 보이는 요소는 내용으로 취급해야 한다.
+bool hasVisibleHtmlContent(String html) {
+  if (html.trim().isEmpty) return false;
+  // 텍스트가 없어도 표시되는 요소가 하나라도 있으면 내용 있음.
+  if (RegExp(r'<\s*(img|video|iframe|table|hr)\b', caseSensitive: false)
+      .hasMatch(html)) {
+    return true;
+  }
+  final text = html
+      .replaceAll(RegExp(r'<[^>]*>'), '')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll(_nbsp, ' ')
+      .trim();
+  return text.isNotEmpty;
+}
+
+/// 리치 텍스트 본문(HTML) 렌더러.
+///
+/// 웹 관리자(Quill 에디터)가 저장한 HTML 본문을 공지 / 교육 등에서 공통으로 렌더한다.
 ///
 /// 본문 인라인 이미지는 backend 가 presigned URL 로 rewrite 해서 내려준다(만료/매 조회 변동).
 /// `<img>` 를 가로채 [CachedNetworkImage] 로 렌더하되 cacheKey 를 data-refid(안정 식별자)로
 /// 지정해 presigned URL 변동과 무관하게 캐시를 재사용한다.
-class NoticeContentHtml extends StatelessWidget {
-  /// 공지 본문 HTML.
+class RichContentHtml extends StatelessWidget {
+  /// 본문 HTML.
   final String html;
 
-  const NoticeContentHtml({super.key, required this.html});
+  const RichContentHtml({super.key, required this.html});
 
   @override
   Widget build(BuildContext context) {
@@ -59,13 +81,13 @@ class NoticeContentHtml extends StatelessWidget {
         if (element.localName == 'p' &&
             element.text.replaceAll(_nbsp, ' ').trim().isEmpty &&
             element.children.every((child) => child.localName == 'br')) {
-          return const SizedBox(height: kNoticeBlankLineHeight);
+          return const SizedBox(height: kRichContentBlankLineHeight);
         }
         if (element.localName != 'img') return null;
         final src = element.attributes['src'];
         // placeholder(notice-image://) 잔존 = rewrite 미적용/실패분 → 깨진 이미지 박스.
         if (src == null || !src.startsWith('http')) {
-          return const NoticeBrokenImageBox();
+          return const BrokenImageBox();
         }
         final refid = element.attributes['data-refid'];
         return Padding(
@@ -82,7 +104,7 @@ class NoticeContentHtml extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              errorWidget: (context, url, error) => const NoticeBrokenImageBox(),
+              errorWidget: (context, url, error) => const BrokenImageBox(),
             ),
           ),
         );
@@ -92,8 +114,8 @@ class NoticeContentHtml extends StatelessWidget {
 }
 
 /// 이미지 로드 실패 / placeholder 잔존 시 표시할 깨진 이미지 박스.
-class NoticeBrokenImageBox extends StatelessWidget {
-  const NoticeBrokenImageBox({super.key});
+class BrokenImageBox extends StatelessWidget {
+  const BrokenImageBox({super.key});
 
   @override
   Widget build(BuildContext context) {
