@@ -19,6 +19,7 @@ import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.context.request.ServletWebRequest
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 
 @DisplayName("GlobalExceptionHandler 테스트")
 class GlobalExceptionHandlerTest {
@@ -163,5 +164,54 @@ class GlobalExceptionHandlerTest {
         assertThat(event.level).isEqualTo(Level.WARN)
         assertThat(event.throwableProxy).isNull()
         assertThat(event.formattedMessage).contains("ORD_CANCEL_SAP_FAILED")
+    }
+
+    @Test
+    @DisplayName("클라이언트 조기 이탈(AsyncRequestNotUsable) — WARN 한 줄 + 스택 없음 + 응답 본문 없음")
+    fun handleClientDisconnect_asyncRequestNotUsableLogsWarnWithoutStack() {
+        val ex = AsyncRequestNotUsableException("ServletOutputStream failed to flush: Broken pipe")
+        val request = ServletWebRequest(MockHttpServletRequest("GET", "/api/v1/mobile/me/order-requests/123"))
+
+        val response = handler.handleClientDisconnect(ex, request)
+
+        // 소켓이 이미 닫혀 있어 본문 작성은 무의미 — null 반환.
+        assertThat(response).isNull()
+
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.WARN)
+        assertThat(event.throwableProxy).isNull()
+        assertThat(event.formattedMessage).contains("/api/v1/mobile/me/order-requests/123")
+    }
+
+    @Test
+    @DisplayName("ClientAbortException 원인 사슬을 가진 IOException 도 WARN 한 줄")
+    fun handleClientDisconnect_clientAbortCauseLogsWarn() {
+        // Tomcat ClientAbortException 은 컨테이너 의존이라 핸들러가 클래스명으로 판별한다.
+        val abort = org.apache.catalina.connector.ClientAbortException(java.io.IOException("Broken pipe"))
+        val request = ServletWebRequest(MockHttpServletRequest("GET", "/api/v1/mobile/notices"))
+
+        val response = handler.handleClientDisconnect(abort, request)
+
+        assertThat(response).isNull()
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.WARN)
+        assertThat(event.throwableProxy).isNull()
+    }
+
+    @Test
+    @DisplayName("클라이언트 이탈이 아닌 IOException 은 종전대로 500 + ERROR 스택트레이스")
+    fun handleClientDisconnect_genuineIoErrorStaysError() {
+        val ex = java.io.IOException("disk full")
+        val request = ServletWebRequest(MockHttpServletRequest("POST", "/api/v1/mobile/order-requests"))
+
+        val response = handler.handleClientDisconnect(ex, request)
+
+        assertThat(response?.statusCode).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        val body = response?.body as ApiResponse<*>
+        assertThat(body.error?.code).isEqualTo("INTERNAL_SERVER_ERROR")
+
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.ERROR)
+        assertThat(event.throwableProxy).isNotNull()
     }
 }

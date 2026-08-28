@@ -29,8 +29,12 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Lazy
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -41,6 +45,7 @@ import java.time.LocalDateTime
  *
  * **흐름** (단일 DB 트랜잭션):
  *  1. 멱등 검사 — `clientRequestId` 가 전달되면 기존 row 조회 후 200 OK 멱등 반환 (SAP 호출 없음)
+ *     (검사~INSERT 사이 경합으로 unique 위반이 나면 [create] 가 잡아 선행 row 로 멱등 응답)
  *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
  *  3. 제품 마스터 대조 — 클라이언트 제공 productCode 가 마스터에 없으면 SAP 호출 전 즉시 거부
  *  3-1. 전용상품 차단 — product_type='2' 라인 거부 (20010042 레거시 예외 허용)
@@ -71,8 +76,52 @@ class OrderRequestCreateService(
 
     private val log = LoggerFactory.getLogger(OrderRequestCreateService::class.java)
 
-    @Transactional
+    // 자기 참조 프록시 — [create] 가 [transactionalCreate] 를 프록시 경유로 호출해야 @Transactional 이
+    // 적용된다(직접 호출하면 self-invocation 이라 프록시를 우회해 트랜잭션이 열리지 않는다).
+    // @Lazy 는 자기 자신 주입의 순환 참조를 끊기 위함. 단위 테스트처럼 컨테이너 밖에서 직접 생성한
+    // 경우 주입이 없으므로 this 로 되돌린다(그 환경엔 트랜잭션 자체가 없어 프록시가 무의미).
+    @Autowired(required = false)
+    @Lazy
+    private var self: OrderRequestCreateService? = null
+
+    private val proxy: OrderRequestCreateService get() = self ?: this
+
+    /**
+     * 주문 등록 진입점 — 멱등키 경합 복구를 담당한다.
+     *
+     * step 1 의 멱등 검사와 step 5 의 헤더 INSERT 사이에는 SAP 호출 2회(재고/여신)가 끼어 수 초의
+     * 창이 열린다. 같은 `clientRequestId` 로 재요청이 겹치면(모바일 재시도/더블탭) 둘 다 step 1 을
+     * 통과한 뒤 나중 요청이 `idx_order_request_client_request_id_unique` 에 걸려 500 이 났다 —
+     * 주문은 정상 접수됐는데 사용자에게는 "서버 내부 오류" 가 떠 재시도를 유발(중복 주문 위험)했다.
+     *
+     * 여기서 unique 위반을 잡아 먼저 커밋된 row 를 재조회해 멱등 성공으로 되돌린다. 이 catch 는
+     * **트랜잭션 밖**이어야 한다 — 트랜잭션 안에서 잡으면 이미 rollback-only 로 마킹돼 재조회 후
+     * 커밋이 불가능하다. 그래서 core 를 프록시 경유로 호출하도록 [transactionalCreate] 를 분리했다.
+     * (SAP 재고/여신 중복 호출은 조회성이라 그대로 둔다 — 선점 락 도입은 별도 판단.)
+     *
+     * `NOT_SUPPORTED` 필수 — 클래스 레벨 `@Transactional(readOnly = true)` 를 그대로 두면 여기가
+     * 바깥 트랜잭션이 되고 [transactionalCreate] 가 REQUIRED 로 합류해, unique 위반이 바깥까지
+     * rollback-only 로 마킹한다. 그러면 catch 후 재조회/커밋이 다시 실패해 복구가 무의미해진다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun create(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
+        return try {
+            proxy.transactionalCreate(userId, request)
+        } catch (ex: DataIntegrityViolationException) {
+            val clientRequestId = request.clientRequestId
+            if (clientRequestId.isNullOrBlank()) throw ex
+            val existing = orderRequestRepository.findByClientRequestId(clientRequestId)
+                ?: throw ex // 멱등키 충돌이 아닌 다른 제약 위반 — 원래대로 500.
+            log.warn(
+                "주문 등록 멱등키 경합 — 선행 요청 결과로 응답. clientRequestId={} orderRequestNumber={}",
+                clientRequestId, existing.orderRequestNumber,
+            )
+            OrderRequestCreateResponse.from(existing)
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun transactionalCreate(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
         // 1. 멱등 검사
         if (!request.clientRequestId.isNullOrBlank()) {
             val existing = orderRequestRepository.findByClientRequestId(request.clientRequestId)

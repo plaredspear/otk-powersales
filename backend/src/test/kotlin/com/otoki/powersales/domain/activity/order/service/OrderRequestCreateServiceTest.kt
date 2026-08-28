@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Nested
 import com.otoki.powersales.domain.activity.order.event.OrderRequestRegisteredEvent
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.dao.DataIntegrityViolationException
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -279,6 +280,70 @@ class OrderRequestCreateServiceTest {
             verify(exactly = 0) { loanInquiryClient.inquireCreditBalance(any()) }
             verify(exactly = 0) { orderRequestRepository.save(any<OrderRequest>()) }
             verify(exactly = 0) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("멱등 경합 — INSERT 가 unique 위반이면 선행 row 로 멱등 성공 응답 (500 아님)")
+        fun idempotencyRaceRecoversToExistingRow() {
+            // 시나리오: 두 요청이 step 1 멱등 검사를 모두 통과(둘 다 조회 시 null) → SAP 호출 수 초 →
+            // 나중 요청의 헤더 INSERT 가 idx_order_request_client_request_id_unique 에 걸린다.
+            val existing = mockHeader(orderRequestNumber = "OR00000042", status = OrderRequestStatus.SENT)
+            every { orderRequestRepository.findByClientRequestId("race-1") } returnsMany listOf(null, existing)
+            stubAuthAndAccount()
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } throws
+                DataIntegrityViolationException("duplicate key value violates unique constraint")
+
+            val request = baseRequest(
+                clientRequestId = "race-1",
+                lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 300, quantityBoxes = 10)),
+            )
+
+            val response = service.create(userId, request)
+
+            // 사용자에게는 성공 — 선행 요청이 만든 주문이 그대로 응답된다.
+            assertThat(response.orderRequestId).isEqualTo(existing.id)
+            assertThat(response.orderRequestNumber).isEqualTo("OR00000042")
+            // 중복 outbox 적재 없음 (SAP 이중 전송 방지).
+            verify(exactly = 0) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("멱등키 없는 요청의 제약 위반은 그대로 전파 (오류 은폐 금지)")
+        fun constraintViolationWithoutIdempotencyKeyPropagates() {
+            stubAuthAndAccount()
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } throws
+                DataIntegrityViolationException("some other constraint")
+
+            val request = baseRequest(
+                clientRequestId = null,
+                lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 300, quantityBoxes = 10)),
+            )
+
+            assertThatThrownBy { service.create(userId, request) }
+                .isInstanceOf(DataIntegrityViolationException::class.java)
+        }
+
+        @Test
+        @DisplayName("멱등키가 있어도 재조회 결과가 없으면 (다른 제약 위반) 예외 전파")
+        fun constraintViolationOnOtherConstraintPropagates() {
+            every { orderRequestRepository.findByClientRequestId("race-2") } returns null
+            stubAuthAndAccount()
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } throws
+                DataIntegrityViolationException("order_request_number unique violation")
+
+            val request = baseRequest(
+                clientRequestId = "race-2",
+                lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 300, quantityBoxes = 10)),
+            )
+
+            assertThatThrownBy { service.create(userId, request) }
+                .isInstanceOf(DataIntegrityViolationException::class.java)
         }
     }
 

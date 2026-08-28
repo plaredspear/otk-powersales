@@ -19,6 +19,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 import org.springframework.web.context.request.ServletWebRequest
 import org.springframework.web.context.request.WebRequest
 import org.slf4j.LoggerFactory
@@ -287,6 +288,41 @@ class GlobalExceptionHandler {
     private fun isSapInboundPath(request: WebRequest): Boolean {
         val servletRequest = (request as? ServletWebRequest)?.request ?: return false
         return servletRequest.requestURI?.startsWith("/api/v1/sap/") == true
+    }
+
+    /**
+     * 클라이언트 조기 이탈(broken pipe) 처리 — 사용자가 응답 수신 전에 화면을 벗어나거나 앱이
+     * 연결을 끊은 경우다. 소켓이 이미 닫혀 있어 어떤 응답도 전달되지 않으므로 본문 작성은
+     * 무의미하고, 서버 결함도 아니다. catch-all 로 흘려보내면 정상 이탈이 매일 ERROR
+     * 스택트레이스로 쌓여 진짜 장애를 가리므로 warn 한 줄만 남긴다.
+     *
+     * `ClientAbortException`(Tomcat) 은 컨테이너 의존이라 클래스명으로 판별한다 —
+     * 직접 import 하면 다른 서블릿 컨테이너에서 클래스 로딩이 깨진다.
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException::class, java.io.IOException::class)
+    fun handleClientDisconnect(ex: Exception, request: WebRequest): ResponseEntity<Any>? {
+        // AsyncRequestNotUsableException 도 IOException 하위라 명시 분기가 먼저다.
+        if (ex !is AsyncRequestNotUsableException && !isClientAbort(ex)) {
+            // 클라이언트 이탈이 아닌 진짜 I/O 오류 — catch-all 과 동일하게 500 + 스택트레이스.
+            log.error("Unhandled exception: {}", ex.message, ex)
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error<Any>(code = "INTERNAL_SERVER_ERROR", message = "서버 내부 오류가 발생했습니다"))
+        }
+        val uri = (request as? ServletWebRequest)?.request?.requestURI ?: "-"
+        log.warn("Client disconnected before response: {} ({})", uri, ex.javaClass.simpleName)
+        // null 반환 = 응답 본문 없음. 연결이 이미 닫혀 있어 작성해도 전달되지 않는다.
+        return null
+    }
+
+    /** Tomcat `ClientAbortException` 또는 그 원인 사슬에 broken pipe 가 있는지. */
+    private fun isClientAbort(ex: Throwable): Boolean {
+        var cause: Throwable? = ex
+        while (cause != null) {
+            if (cause.javaClass.name == "org.apache.catalina.connector.ClientAbortException") return true
+            cause = cause.cause?.takeIf { it !== cause }
+        }
+        return false
     }
 
     /**
