@@ -1,5 +1,7 @@
 package com.otoki.powersales.platform.push.sender
 
+import com.google.api.client.json.gson.GsonFactory
+import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.MessagingErrorCode
 import com.google.firebase.messaging.SendResponse
 import com.otoki.powersales.platform.common.storage.StorageNotFoundException
@@ -160,6 +162,60 @@ class RealFcmSenderTest {
             val result = sender(enabled = true, s3Key = "k").unregisteredTokensOf(chunk, responses)
 
             assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("발송 payload — iOS 알림음/진동(aps.sound) + 배지")
+    inner class PayloadBuilding {
+
+        /**
+         * SDK 가 실제로 wire 에 싣는 JSON 으로 검증한다 — [Message] 의 getter 는 package-private 이라
+         * 필드를 직접 못 읽고, `@Key` 어노테이션 기반 직렬화가 곧 전송 형태이기 때문이다.
+         */
+        @Suppress("UNCHECKED_CAST")
+        private fun payloadOf(target: PushTarget): Map<String, Any?> {
+            val message: Message = sender(enabled = true, s3Key = "k")
+                .buildMessage(target, "제목", "본문", mapOf("type" to "NOTICE"))
+            val json = GsonFactory.getDefaultInstance().toString(message)
+            return GsonFactory.getDefaultInstance()
+                .fromString(json, Map::class.java) as Map<String, Any?>
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        private fun nested(map: Map<String, Any?>, key: String): Map<String, Any?> =
+            map[key] as Map<String, Any?>
+
+        private fun apsOf(payload: Map<String, Any?>): Map<String, Any?> =
+            nested(nested(nested(payload, "apns"), "payload"), "aps")
+
+        @Test
+        @DisplayName("배지가 없어도 aps.sound=default 를 싣는다 (iOS 무음 배너 → 알림음/진동)")
+        fun soundWithoutBadge() {
+            val aps = apsOf(payloadOf(PushTarget("token-a")))
+
+            assertThat(aps["sound"]).isEqualTo(RealFcmSender.DEFAULT_APNS_SOUND)
+            // 배지 미지정 시 키 자체를 빼야 기기 배지가 0 으로 덮이지 않는다.
+            assertThat(aps).doesNotContainKey("badge")
+        }
+
+        @Test
+        @DisplayName("배지가 있으면 aps 에 sound 와 badge 가 함께 실린다")
+        fun soundWithBadge() {
+            val aps = apsOf(payloadOf(PushTarget("token-a", badge = 3)))
+
+            assertThat(aps["sound"]).isEqualTo(RealFcmSender.DEFAULT_APNS_SOUND)
+            assertThat((aps["badge"] as Number).toInt()).isEqualTo(3)
+        }
+
+        @Test
+        @DisplayName("Android 배지(notification_count)는 배지 지정 시에만 싣는다")
+        fun androidNotificationCount() {
+            assertThat(payloadOf(PushTarget("token-a"))).doesNotContainKey("android")
+
+            val android = nested(payloadOf(PushTarget("token-a", badge = 3)), "android")
+            val notification = nested(android, "notification")
+            assertThat((notification["notification_count"] as Number).toInt()).isEqualTo(3)
         }
     }
 }

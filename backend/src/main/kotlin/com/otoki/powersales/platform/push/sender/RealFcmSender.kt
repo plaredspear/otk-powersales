@@ -125,36 +125,46 @@ class RealFcmSender(
     /**
      * 대상 1건의 발송 메시지를 만든다.
      *
-     * 배지가 지정된 경우에만 배지 payload 를 싣는다:
+     * iOS 알림음/진동은 `aps.sound` 가 결정한다 — 이 키가 없으면 iOS 는 배너만 조용히 띄우고
+     * **진동도 하지 않는다**(진동만 켜는 APNs 옵션은 없다. 사운드 지정 시 무음 모드에서 진동,
+     * 벨소리 모드에서 사운드+진동이며 최종 동작은 사용자의 시스템 설정을 따른다).
+     * 앱의 [setForegroundNotificationPresentationOptions] 나 권한의 `sound: true` 는 "재생 허용"
+     * 일 뿐 재생 여부를 만들지 않으므로, 배지 유무와 무관하게 항상 실어 Android 채널
+     * (`Importance.high`, 기본 진동)과 동작을 맞춘다.
+     *
+     * 배지는 지정된 경우에만 싣는다:
      * - iOS: `aps.badge` — 절대값(증분 아님). 키를 싣지 않으면 기기 배지는 변하지 않는다.
-     *   alert(title/body)는 FCM 이 상위 notification 을 aps.alert 로 변환해 채우므로 여기선 배지만 지정한다.
+     *   alert(title/body)는 FCM 이 상위 notification 을 aps.alert 로 변환해 채운다.
      * - Android: `notification_count` — 런처 배지 숫자(지원 런처 한정). 미지정 시 활성 알림 수 기준 기본 동작.
+     *
+     * (payload 구성만 단위 테스트로 고정할 수 있게 `internal` 로 노출한다 — 발송 경로 전체는
+     * Firebase SDK 실호출이라 테스트가 불가능하다.)
      */
-    private fun buildMessage(
+    internal fun buildMessage(
         target: PushTarget,
         title: String,
         body: String,
         data: Map<String, String>,
     ): Message {
+        val aps = Aps.builder()
+            .setSound(DEFAULT_APNS_SOUND)
+            .apply { target.badge?.let { setBadge(it) } }
+            .build()
+
         val builder = Message.builder()
             .setToken(target.token)
             .setNotification(Notification.builder().setTitle(title).setBody(body).build())
             .putAllData(data)
+            .setApnsConfig(ApnsConfig.builder().setAps(aps).build())
 
         target.badge?.let { badge ->
-            builder
-                .setApnsConfig(
-                    ApnsConfig.builder()
-                        .setAps(Aps.builder().setBadge(badge).build())
-                        .build()
-                )
-                .setAndroidConfig(
-                    AndroidConfig.builder()
-                        .setNotification(
-                            AndroidNotification.builder().setNotificationCount(badge).build()
-                        )
-                        .build()
-                )
+            builder.setAndroidConfig(
+                AndroidConfig.builder()
+                    .setNotification(
+                        AndroidNotification.builder().setNotificationCount(badge).build()
+                    )
+                    .build()
+            )
         }
         return builder.build()
     }
@@ -199,5 +209,8 @@ class RealFcmSender(
 
         /** FCM HTTP v1 batch(sendEach) 1회 호출 메시지 상한. */
         private const val BATCH_LIMIT = 500
+
+        /** iOS 알림음/진동을 켜는 `aps.sound` 값 — 기기 기본 알림음. */
+        internal const val DEFAULT_APNS_SOUND = "default"
     }
 }
