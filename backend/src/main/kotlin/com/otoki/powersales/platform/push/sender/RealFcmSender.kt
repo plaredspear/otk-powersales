@@ -1,6 +1,5 @@
 package com.otoki.powersales.platform.push.sender
 
-import com.google.api.client.json.gson.GsonFactory
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -68,7 +67,6 @@ class RealFcmSender(
         targets.chunked(BATCH_LIMIT).forEach { chunk ->
             try {
                 val messages = chunk.map { buildMessage(it, title, body, data) }
-                logPayloadSample(messages.first())
                 val response = messaging.sendEach(messages)
                 success += response.successCount
                 failure += response.failureCount
@@ -90,24 +88,6 @@ class RealFcmSender(
             failureCount = failure,
             unregisteredTokens = unregistered,
         )
-    }
-
-    /**
-     * 발송 직전 payload 1건을 DEBUG 로 남긴다 — "알림은 오는데 소리/진동이 없다" 류의 신고에서
-     * 서버가 실제로 무엇을 보냈는지(특히 `aps.sound`)를 코드 추측이 아니라 로그로 확정하기 위함이다.
-     *
-     * SDK 가 wire 에 싣는 형태 그대로를 보려고 `@Key` 기반 직렬화를 쓴다. 토큰은 인증정보라 제외되도록
-     * 앞 12자만 남기고, 직렬화 실패는 발송을 막지 않는다(로그 목적이므로 조용히 무시).
-     * DEBUG 레벨이라 운영 기본 설정에서는 출력되지 않는다.
-     */
-    private fun logPayloadSample(message: Message) {
-        if (!log.isDebugEnabled) return
-        try {
-            val json = GsonFactory.getDefaultInstance().toString(message)
-            log.debug("FCM payload 샘플: {}", json.replace(TOKEN_JSON_REGEX, "\"token\":\"<masked>\""))
-        } catch (e: Exception) {
-            log.debug("FCM payload 직렬화 실패(무시): {}", e.message)
-        }
     }
 
     /**
@@ -232,8 +212,5 @@ class RealFcmSender(
 
         /** iOS 알림음/진동을 켜는 `aps.sound` 값 — 기기 기본 알림음. */
         internal const val DEFAULT_APNS_SOUND = "default"
-
-        /** payload 로그에서 기기 토큰을 가리기 위한 패턴 (토큰은 인증정보다). */
-        private val TOKEN_JSON_REGEX = Regex(""""token"\s*:\s*"[^"]*"""")
     }
 }
