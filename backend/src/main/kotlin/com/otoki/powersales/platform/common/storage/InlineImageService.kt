@@ -105,15 +105,22 @@ class InlineImageService(
      * 캐시 키로 쓰면 캐시가 전혀 재사용되지 않는다).
      * 매칭되지 않는 refid(삭제분 등)는 placeholder 를 유지해 깨진 아이콘만 노출하고 본문을 오염시키지 않는다.
      *
-     * [uploadFiles] 는 호출부가 부모 1건당 1회 조회해 넘긴다 (목록에서 N+1 을 만들지 않기 위함).
+     * [uploadFiles] 는 부모 1건당 1회 조회해 넘긴다 (목록에서 N+1 을 만들지 않기 위함). **지연 평가**라
+     * 본문에 인라인 이미지가 없으면 조회 자체가 일어나지 않는다 — 이미지 없는 글이 대부분인 도메인에서
+     * 상세 조회마다 항상 0건인 쿼리가 나가는 것을 막는다. 이미 목록을 들고 있는 호출부는 `{ files }` 로
+     * 그대로 넘기면 된다.
      */
-    fun rewriteInlineImages(domain: InlineImageDomain, html: String, uploadFiles: List<UploadFile>): String {
+    fun rewriteInlineImages(
+        domain: InlineImageDomain,
+        html: String,
+        uploadFiles: () -> List<UploadFile>,
+    ): String {
         if (!html.contains("data-refid")) return html
 
         // refid → uniqueKey. 마이그레이션분은 refid=sfid, 신규 업로드분은 refid=id 라 두 키를 함께 등록한다
         // (sfid 는 18자 영숫자, id 는 숫자라 충돌 없음).
         val uniqueKeyByRefid: Map<String, String> = buildMap {
-            uploadFiles.forEach { file ->
+            uploadFiles().forEach { file ->
                 val key = file.uniqueKey?.takeIf { it.isNotBlank() } ?: return@forEach
                 file.sfid?.takeIf { it.isNotBlank() }?.let { put(it, key) }
                 put(file.id.toString(), key)

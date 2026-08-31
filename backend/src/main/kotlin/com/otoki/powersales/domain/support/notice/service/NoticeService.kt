@@ -107,9 +107,10 @@ class NoticeService(
             .filter { !it.uniqueKey.isNullOrBlank() }
 
         // 본문 placeholder → presigned rewrite (1회 조회한 uploadFiles 재사용, N+1 없음).
+        // uploadFiles 는 아래 첨부 목록 구성에도 쓰므로 어차피 조회된 값이다 — 그대로 넘긴다.
         val content = inlineImageService.rewriteInlineImages(
-            InlineImageDomain.NOTICE, notice.contents ?: "", uploadFiles,
-        )
+            InlineImageDomain.NOTICE, notice.contents ?: "",
+        ) { uploadFiles }
 
         // 본문 인라인 이미지(upload_kbn=INLINE)는 하단 첨부 목록에서 제외 — 본문에 이미 렌더링되므로 중복 노출 방지.
         val images = uploadFiles

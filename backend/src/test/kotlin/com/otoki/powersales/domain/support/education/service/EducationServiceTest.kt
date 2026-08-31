@@ -201,6 +201,62 @@ class EducationServiceTest {
         }
 
         @Test
+        @DisplayName("이미지 없는 기존 본문 - 원문 그대로 + upload_file 조회조차 하지 않는다")
+        fun getPostDetail_legacyContentUntouched() {
+            // 레거시 이관분(본문에 <img> 0건)이 위지위그 도입 후에도 한 글자도 바뀌지 않아야 한다.
+            val legacyHtml = "<p>진짬뽕 시식 방법</p><p></p><p><strong>주의</strong>사항</p>"
+            val post = EducationPost(
+                eduId = "EDU002", eduTitle = "레거시", eduContent = legacyHtml, eduCode = "c00001",
+            )
+            every { educationPostRepository.findByEduId("EDU002") } returns post
+            every { educationPostAttachmentRepository.findByEducationPost(post) } returns emptyList()
+
+            val result = educationService.getPostDetail("EDU002")
+
+            assertThat(result.content).isEqualTo(legacyHtml)
+            // rewrite 는 지연 평가라 인라인 이미지가 없으면 조회 자체가 일어나지 않는다
+            // (상세는 모바일에서 가장 자주 열리는 화면이라 항상-0건 쿼리를 남기지 않는다).
+            verify(exactly = 0) {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("인라인 이미지 있는 본문 - placeholder 를 presigned 로 바꾸되 data-refid 는 보존")
+        fun getPostDetail_rewritesInlineImage() {
+            val post = EducationPost(
+                id = 99L,
+                eduId = "EDU003",
+                eduTitle = "이미지 포함",
+                eduContent = """<p><img src="notice-image://555" data-refid="555"></p>""",
+                eduCode = "c00001",
+            )
+            every { educationPostRepository.findByEduId("EDU003") } returns post
+            every { educationPostAttachmentRepository.findByEducationPost(post) } returns emptyList()
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.EDUCATION_POST, 99L,
+                )
+            } returns listOf(
+                UploadFile(
+                    id = 555L,
+                    uniqueKey = "uploads/education-inline/2026/08/31/x.png",
+                    parentType = UploadFileParentTypes.EDUCATION_POST,
+                    parentId = 99L,
+                    uploadKbn = "INLINE",
+                    isDeleted = false,
+                )
+            )
+
+            val result = educationService.getPostDetail("EDU003")
+
+            assertThat(result.content).contains("uploads/education-inline/2026/08/31/x.png")
+            // 모바일이 cacheKey 로 쓰므로 data-refid 는 남아야 한다 (presigned 는 매 조회 바뀐다).
+            assertThat(result.content).contains("""data-refid="555"""")
+            assertThat(result.content).doesNotContain("notice-image://")
+        }
+
+        @Test
         @DisplayName("게시물 미존재 - EducationPostNotFoundException")
         fun getPostDetail_notFound() {
             every { educationPostRepository.findByEduId("NONEXIST") } returns null

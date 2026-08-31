@@ -150,11 +150,11 @@ class EducationService(
 
         // 5. 본문 인라인 이미지 placeholder → presigned URL rewrite.
         //    DB 에는 만료 없는 placeholder 만 저장하고 조회 시점에 발급한다 (web/mobile 공통).
+        //    upload_file 조회는 지연 평가 — 본문에 인라인 이미지가 없으면(레거시 이관분 대부분) 쿼리가 나가지 않는다.
         val content = inlineImageService.rewriteInlineImages(
             InlineImageDomain.EDUCATION,
             post.eduContent ?: "",
-            inlineUploadFilesOf(post),
-        )
+        ) { inlineUploadFilesOf(post) }
 
         // 6. 응답 생성
         return EducationPostDetailResponse(
