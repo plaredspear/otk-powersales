@@ -66,6 +66,25 @@ interface PromotionEmployeeRepositoryCustom {
     fun findMyAssignmentsByDate(employeeId: Long, date: LocalDate): List<PromotionEmployee>
 
     /**
+     * 로그인 여사원이 **확정된 행사사원**으로 등록된, **[date] 당시 유효한 기간**의 행사마스터 거래처 id 일람
+     * (주문서 작성 화면 거래처 후보의 행사 축).
+     *
+     * 필터:
+     * - `employeeId == me` — 본인이 행사사원으로 등록
+     * - `teamMemberScheduleId IS NOT NULL` — **확정 여부**. 이 백링크는 행사 확정
+     *   ([com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper.upsert])
+     *   시점에만 채워지므로 미확정 행사의 행사사원은 제외된다. 판정 단위는 행사가 아니라 **행사사원 개인**이라,
+     *   확정 이후 추가 등록되어 아직 백링크가 없는 row 는 같은 행사라도 제외된다.
+     * - `promotion.startDate <= date <= promotion.endDate` — 행사마스터 기간이 [date] 를 포함.
+     *   두 날짜는 nullable(SF nillable 정합)이나 확정 시 필수 검증을 통과한 행사는 값이 채워져 있다.
+     * - 행사사원/행사마스터 soft-delete 제외, 거래처 미지정 행사 제외.
+     *
+     * 여사원 개인 투입일(`scheduleDate`)이 아니라 **행사마스터 기간**을 쓰므로, 3일 행사에 1일차만 투입된
+     * 여사원도 2·3일차에 해당 거래처를 후보로 갖는다.
+     */
+    fun findConfirmedAssignedAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long>
+
+    /**
      * 행사마스터의 행사사원 일람 — soft-delete(IsDeleted) 제외 (SF 정합).
      *
      * SF 는 행사사원 조회 시 표준 SOQL 기본 동작으로 IsDeleted=true row 를 항상 제외한다.

@@ -181,6 +181,26 @@ class PromotionEmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findConfirmedAssignedAccountIdsByEmployeeAndDate(employeeId: Long, date: LocalDate): List<Long> {
+        return queryFactory
+            .select(promotion.account.id).distinct()
+            .from(promotionEmployee)
+            .join(promotionEmployee.promotion, promotion)
+            .where(
+                promotionEmployee.employeeId.eq(employeeId),
+                // 확정 여부 — 행사 확정(PromotionSchedulesUpsertHelper.upsert)이 채우는 일정 백링크.
+                promotionEmployee.teamMemberScheduleId.isNotNull,
+                // 행사마스터 기간이 date 를 포함 (여사원 개인 투입일 scheduleDate 축이 아님).
+                promotion.startDate.loe(date),
+                promotion.endDate.goe(date),
+                notDeleted,
+                promotion.isDeleted.isFalse,
+                promotion.account.id.isNotNull,
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     override fun findByPromotionId(promotionId: Long): List<PromotionEmployee> {
         return queryFactory
             .selectFrom(promotionEmployee)

@@ -10,6 +10,7 @@ import com.otoki.powersales.platform.common.exception.AccountInvalidParameterExc
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepositoryCustom
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepositoryCustom
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepositoryCustom
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -28,6 +29,7 @@ class MyAccountServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom = mockk()
+    private val promotionEmployeeRepository: PromotionEmployeeRepositoryCustom = mockk()
     private val featureToggleService: FeatureToggleService = mockk {
         // 기본은 활성(신규 동작) — 개별 테스트에서 비활성 시나리오만 덮어쓴다.
         every { isEnabled(any(), any()) } returns true
@@ -38,6 +40,7 @@ class MyAccountServiceTest {
         accountRepository,
         teamMemberScheduleRepository,
         displayWorkScheduleRepository,
+        promotionEmployeeRepository,
         featureToggleService,
     )
 
@@ -448,7 +451,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3, 4)
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 4), true) } returns accounts
 
@@ -480,7 +483,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3)
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(7)
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 7), true) } returns accounts
 
@@ -504,7 +507,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3)
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3)
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(3), true) } returns accounts
 
@@ -527,7 +530,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(7)
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(7), true) } returns accounts
 
@@ -550,7 +553,7 @@ class MyAccountServiceTest {
             myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
 
             verify(exactly = 0) {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(any(), any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(any(), any())
             }
         }
 
@@ -580,7 +583,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(any(), any())
             }
             verify(exactly = 0) {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(any(), any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(any(), any())
             }
         }
 
@@ -600,7 +603,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(5)
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
             every { accountRepository.findByIdInAndIsDeletedNot(listOf(5), true) } returns accounts
 
@@ -668,7 +671,7 @@ class MyAccountServiceTest {
                 displayWorkScheduleRepository.findConfirmedValidAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
             every {
-                teamMemberScheduleRepository.findConfirmedPromotionAccountIdsByEmployeeAndDate(userId, any())
+                promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)

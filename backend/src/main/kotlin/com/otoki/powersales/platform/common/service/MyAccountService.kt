@@ -11,6 +11,7 @@ import com.otoki.powersales.platform.common.exception.AccountInvalidParameterExc
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepositoryCustom
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepositoryCustom
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepositoryCustom
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -34,7 +35,8 @@ import java.time.LocalDate
  *
  * 주문서 **작성** 화면([MyAccountScope.ORDER_WRITE])은 여기서 한 번 더 갈린다 —
  * [FeatureFlag.ORDER_ACCOUNT_DISPLAY_SCHEDULE_ONLY] 가 활성이면 팀멤버스케줄 전 기간을 쓰지 않고
- * **오늘 확정된 근무**(진열마스터 ∪ 확정 행사)의 거래처만 후보로 삼는다.
+ * **오늘 확정된 근무**의 거래처만 후보로 삼는다 — 확정 + 오늘 유효한 진열마스터 ∪ 본인이 확정된
+ * 행사사원으로 등록된 오늘 유효 기간의 행사마스터.
  */
 @Service
 @Transactional(readOnly = true)
@@ -43,6 +45,7 @@ class MyAccountService(
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom,
+    private val promotionEmployeeRepository: PromotionEmployeeRepositoryCustom,
     private val featureToggleService: FeatureToggleService
 ) {
 
@@ -242,19 +245,23 @@ class MyAccountService(
      * 주문서 작성 전용: 오늘 근무가 확정된 거래처 id — 진열 축 ∪ 행사 축.
      *
      * - 진열 축: 확정(confirmed) + 오늘이 기간 안인 진열마스터의 거래처.
-     * - 행사 축: 관리자 "행사 확정" 으로 생성된 오늘자 행사 파생 TMS 의 거래처
-     *   ([TeamMemberScheduleRepositoryCustom.findConfirmedPromotionAccountIdsByEmployeeAndDate]).
+     * - 행사 축: 본인이 **확정된 행사사원**으로 등록된, **오늘이 기간 안인 행사마스터**의 거래처
+     *   ([PromotionEmployeeRepositoryCustom.findConfirmedAssignedAccountIdsByEmployeeAndDate]).
      *
      * 진열 축에서 팀멤버스케줄(TMS)을 쓰지 않는 이유는 진열 TMS 가 **출근등록 시점**에 생성되는 실적
-     * 기록이라 작성 시점의 근무 예정을 담지 못하기 때문이다. 반면 행사 TMS 는 생성 시점이 달라
-     * (행사 확정 시점, 근무일 이전) 그 자체가 확정된 근무 예정이므로 행사 축의 정본으로 쓴다.
+     * 기록이라 작성 시점의 근무 예정을 담지 못하기 때문이다.
+     *
+     * 행사 축은 행사 파생 TMS(오늘자 근무 row)가 아니라 **행사마스터를 정본**으로 삼는다. TMS 는 여사원
+     * 개인 투입일(`PromotionEmployee.scheduleDate`) 단위로 생성되므로, 3일 행사에 1일차만 투입된 여사원은
+     * 2·3일차에 거래처를 잃는다. 행사마스터 기간을 쓰면 행사가 유효한 동안 후보가 유지되고, 확정 후 파생
+     * TMS 만 개별 삭제·변경된 경우에도 후보가 보존된다. 확정 여부는 행사사원의 일정 백링크로 판정한다.
      */
     private fun todayConfirmedWorkAccountIds(employeeId: Long): List<Long> {
         val today = LocalDate.now()
         val displayAccountIds = displayWorkScheduleRepository
             .findConfirmedValidAccountIdsByEmployeeAndDate(employeeId, today)
-        val promotionAccountIds = teamMemberScheduleRepository
-            .findConfirmedPromotionAccountIdsByEmployeeAndDate(employeeId, today)
+        val promotionAccountIds = promotionEmployeeRepository
+            .findConfirmedAssignedAccountIdsByEmployeeAndDate(employeeId, today)
         return (displayAccountIds + promotionAccountIds).distinct()
     }
 
