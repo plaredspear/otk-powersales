@@ -95,6 +95,31 @@ export async function deleteEducation(id: string): Promise<void> {
   }
 }
 
+export interface EducationInlineImage {
+  refid: string;
+  placeholder: string;
+  previewUrl: string;
+}
+
+/**
+ * 교육 본문 인라인 이미지 업로드 (Quill 툴바/드래그앤드롭/붙여넣기).
+ * 응답의 previewUrl 로 에디터에 즉시 미리보기를 띄우되, 저장 본문에는 placeholder(`<img data-refid>`)가 들어가야 한다
+ * — presigned URL 은 만료되므로 본문에 저장하면 그 시점부터 이미지가 깨진다.
+ */
+export async function uploadEducationInlineImage(file: File): Promise<EducationInlineImage> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await client.post<ApiResponse<EducationInlineImage>>(
+    '/api/v1/admin/education/images/inline',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || res.data.error?.message || '이미지 업로드에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchEducationCategories(): Promise<EducationCategory[]> {
   const res = await client.get<ApiResponse<EducationCategory[]>>('/api/v1/admin/education/categories');
   if (!res.data.success || !res.data.data) {

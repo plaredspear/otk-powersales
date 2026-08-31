@@ -38,10 +38,13 @@ class EducationPost(
     @Column(name = "title", length = 150)
     val eduTitle: String? = null,
 
+    // var — 저장 직후 본문 인라인 이미지 정규화(InlineImageService.normalizeContent) 결과를 dirty checking 으로
+    // 반영해야 한다. 신규 등록은 save 로 id 를 확보한 뒤에야 placeholder 의 parent_id 를 채울 수 있어,
+    // "저장 → 정규화 → 본문 갱신" 순서가 강제된다.
     @HCColumn("edu_content")
     @FieldName("제안내용")
     @Column(name = "content", columnDefinition = "TEXT")
-    val eduContent: String? = null,
+    var eduContent: String? = null,
 
     @HCColumn("edu_code")
     @FieldName("교육코드")

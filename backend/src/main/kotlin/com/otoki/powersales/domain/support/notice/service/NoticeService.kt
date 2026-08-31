@@ -5,6 +5,9 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.InlineImageDomain
+import com.otoki.powersales.platform.common.storage.InlineImagePlaceholder
+import com.otoki.powersales.platform.common.storage.InlineImageService
 import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
@@ -67,22 +70,15 @@ class NoticeService(
     private val fcmSender: FcmSender,
     private val pushBadgeService: PushBadgeService,
     private val branchScopeGateway: BranchScopeGateway,
-    private val externalImageFetcher: NoticeExternalImageFetcher,
+    private val inlineImageService: InlineImageService,
 ) {
 
     companion object {
         private val log = LoggerFactory.getLogger(NoticeService::class.java)
 
-        // placeholder <img> 의 생성/파싱 형식은 NoticeImagePlaceholder (SoT) 가 소유한다.
-        // 조회측 rewrite 는 그 정규식 2개를 그대로 참조 — 생성측(마이그레이션 치환)과 형식 정합 보장.
-        private val INLINE_IMG_REGEX = NoticeImagePlaceholder.PLACEHOLDER_IMG_REGEX
-        private val SRC_ATTR_REGEX = NoticeImagePlaceholder.SRC_ATTR_REGEX
-
-        // 본문 인라인 이미지 식별자 (upload_file.upload_kbn). 첨부 목록과 구분하기 위함.
-        private const val UPLOAD_KBN_INLINE = "INLINE"
-
-        // base64 data URI 정규화 시 업로드 파일명(확장자 파생용). 실제 파일명 정보가 없어 고정 stem 사용.
-        private const val INLINE_UPLOAD_STEM = "inline"
+        // 본문 인라인 이미지의 업로드/정규화/rewrite/정리는 InlineImageService (공지·교육 공용) 가 소유한다.
+        // 여기서는 첨부 목록에서 인라인분을 제외하는 판별에만 그 식별자를 참조한다.
+        private const val UPLOAD_KBN_INLINE = InlineImageService.UPLOAD_KBN_INLINE
 
         // 공지 push notification 제목 (본문은 공지 제목). 모바일 data payload 의 딥링크 타입.
         private const val PUSH_TITLE = "공지사항"
@@ -110,18 +106,10 @@ class NoticeService(
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, notice.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
 
-        // 본문 rewrite 용 refid → uniqueKey 맵 (1회 조회 재사용, N+1 없음).
-        // 마이그레이션분: refid = upload_file.sfid. 신규 업로드분: refid = upload_file.id (Long 문자열).
-        // 둘을 하나의 맵에 합쳐 rewrite 가 출처 무관하게 매칭하도록 한다 (id/sfid 충돌 가능성 없음 — sfid 는 18자 영숫자).
-        val uniqueKeyByRefid: Map<String, String> = buildMap {
-            uploadFiles.forEach { file ->
-                val key = file.uniqueKey ?: return@forEach
-                file.sfid?.takeIf { it.isNotBlank() }?.let { put(it, key) }
-                put(file.id.toString(), key)
-            }
-        }
-
-        val content = rewriteInlineImages(notice.contents ?: "", uniqueKeyByRefid)
+        // 본문 placeholder → presigned rewrite (1회 조회한 uploadFiles 재사용, N+1 없음).
+        val content = inlineImageService.rewriteInlineImages(
+            InlineImageDomain.NOTICE, notice.contents ?: "", uploadFiles,
+        )
 
         // 본문 인라인 이미지(upload_kbn=INLINE)는 하단 첨부 목록에서 제외 — 본문에 이미 렌더링되므로 중복 노출 방지.
         val images = uploadFiles
@@ -181,188 +169,11 @@ class NoticeService(
     }
 
     /**
-     * 공지 본문 HTML 의 placeholder 인라인 이미지(`<img ... data-refid="{refid}" ...>`)의 src 를 presigned URL 로 치환.
-     *
-     * 마이그레이션이 본문에 `<img src="notice-image://{refid}" data-refid="{refid}">` 형태로 영구 저장하고,
-     * 조회 시점에 본 함수가 refid → uniqueKey → presigned 로 src 만 교체한다 (data-refid 는 mobile cacheKey 용으로 보존).
-     * 미적재 refid(다운로드 실패분 등)는 placeholder 유지 → 클라이언트에서 깨진 이미지로 노출되되 본문 오염 없음.
-     * data-refid 미포함 본문(이미지 없는 공지)은 즉시 반환.
-     */
-    private fun rewriteInlineImages(html: String, uniqueKeyByRefid: Map<String, String>): String {
-        if (!html.contains("data-refid")) return html
-        return INLINE_IMG_REGEX.replace(html) { match ->
-            val refid = match.groupValues[1]
-            val uniqueKey = uniqueKeyByRefid[refid] ?: return@replace match.value
-            val presigned = storageService.getPresignedUrl(uniqueKey, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS)
-            // src 속성만 presigned 로 교체 (data-refid 보존). presigned URL 은 &, =, %, $ 등을 포함하므로
-            // 람다 기반 replace 로 치환 문자열을 literal 로 넣어 그룹 참조($1 등) 오해석을 방지한다.
-            SRC_ATTR_REGEX.replace(match.value) { "src=\"$presigned\"" }
-        }
-    }
-
-    /**
-     * 본문에 base64 data URI 로 박혀 들어온 인라인 이미지(`<img src="data:image/...;base64,...">`)를
-     * private S3 로 업로드하고 placeholder(`<img src="notice-image://{id}" data-refid="{id}">`)로 치환한다.
-     *
-     * 웹 Quill 에디터에 이미지를 '붙여넣기' 하면 정상 업로드 경로([uploadNoticeInlineImage])를 타지 않고
-     * base64 가 본문에 그대로 삽입될 수 있다. 이 경우 (1) DB contents 가 비대해지고 (2) 모바일은 http 가 아닌
-     * src 를 렌더하지 못해 이미지가 깨진다. 저장 시점에 여기서 정규화하여 어떤 클라이언트/경로로 들어와도
-     * 본문에는 placeholder 만 남고 조회 시 presigned 로 rewrite 되게 한다(설계 SoT: [NoticeImagePlaceholder]).
-     *
-     * 업로드분은 즉시 이 공지 소속(parentId=noticeId, upload_kbn=INLINE)으로 생성되므로 이어지는
-     * [syncInlineImages] 의 backfill/cleanup 대상에서 자연히 보존된다(본문이 그 refid 를 참조).
-     * 허용 외 content-type/디코드 실패분은 원본 태그를 보존한다(placeholder 미치환). content-type/크기 검증은
-     * 정상 업로드([uploadPrivate])와 동일 규칙 — 상한 초과 시 예외가 전파되어 저장이 거부된다.
-     */
-    private fun normalizeInlineBase64Images(noticeId: Long, html: String?): String? {
-        if (html.isNullOrEmpty() || !html.contains("data:image", ignoreCase = true)) return html
-        return NoticeImagePlaceholder.DATA_URI_IMG_REGEX.replace(html) { match ->
-            val contentType = match.groupValues[1].lowercase()
-            if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) return@replace match.value
-            val bytes = try {
-                Base64.getMimeDecoder().decode(match.groupValues[2])
-            } catch (_: IllegalArgumentException) {
-                return@replace match.value
-            }
-            if (bytes.isEmpty()) return@replace match.value
-
-            val fileName = "$INLINE_UPLOAD_STEM.${extensionForContentType(contentType)}"
-            val result = storageService.uploadPrivate(
-                domain = "notice",
-                originalName = fileName,
-                bytes = bytes,
-                contentType = contentType
-            )
-            val saved = uploadFileRepository.save(
-                UploadFile(
-                    name = fileName,
-                    uniqueKey = result.key,
-                    fileSize = formatFileSize(bytes.size.toLong()),
-                    parentType = UploadFileParentTypes.NOTICE,
-                    parentId = noticeId,
-                    uploadKbn = UPLOAD_KBN_INLINE,
-                    isDeleted = false
-                )
-            )
-            NoticeImagePlaceholder.build(saved.id.toString(), "")
-        }
-    }
-
-    /**
-     * 본문에 presigned URL 로 박혀 들어온 인라인 이미지(`<img src="https://.../private/{uniqueKey}?X-Amz-...">`)를
-     * placeholder(`<img src="notice-image://{id}" data-refid="{id}">`)로 되돌린다.
-     *
-     * presigned URL 은 30분(`NOTICE_PRESIGN_TTL_SECONDS`) 뒤 만료되는 임시값이라 본문에 저장되면 그 시점부터
-     * 이미지가 영구히 깨진다(공지 2393 실제 사례). 웹 에디터가 저장 직전 placeholder 로 복원하지만,
-     * 에디터가 `data-refid` 를 버리거나 URL 이스케이프(`&` → `&amp;`)로 치환이 어긋나면 그 복원이 실패한다.
-     * 클라이언트 복원에 의존하지 않도록 **저장 시점에 서버가 다시 정규화**한다 (base64 정규화와 같은 위치).
-     *
-     * 역추적 키는 URL 에 내재된 불변 uniqueKey(= `upload_file.unique_key`). 아직 부모가 없는(parent_id=null)
-     * 임시 업로드분은 이 공지로 소속시킨다. 다른 공지 소속 파일은 소속을 바꾸지 않으며(IDOR), placeholder 로만
-     * 바뀌어 조회 시 rewrite 대상에서 빠진다(= 남의 이미지가 노출되지 않는다).
-     * upload_file 에 없는 URL(외부 링크 등)은 원본 태그를 보존한다.
-     */
-    private fun normalizeInlinePresignedImages(noticeId: Long, html: String?): String? {
-        if (html.isNullOrEmpty()) return html
-        val uniqueKeys = NoticeImagePlaceholder.extractUniqueKeys(html).toSet()
-        if (uniqueKeys.isEmpty()) return html
-
-        val filesByKey = uploadFileRepository
-            .findByUniqueKeyInAndParentTypeAndIsDeletedFalse(uniqueKeys.toList(), UploadFileParentTypes.NOTICE)
-            .associateBy { it.uniqueKey }
-
-        return NoticeImagePlaceholder.rewriteImgsByUniqueKey(html) { key ->
-            val file = filesByKey[key]
-            if (file == null) {
-                // 되돌릴 근거(upload_file)가 없으면 만료되는 URL 이 본문에 그대로 남는다 = 이후 깨짐 확정.
-                // 조용히 저장되면 재발을 알 수 없으므로 경고로 남겨 관측 가능하게 한다.
-                log.warn(
-                    "공지 {} 본문의 인라인 이미지 uniqueKey={} 에 대응하는 upload_file 이 없어 placeholder 로 되돌리지 못했다 " +
-                        "— 만료 URL 이 본문에 남아 이미지가 깨질 수 있다",
-                    noticeId, key
-                )
-                return@rewriteImgsByUniqueKey null
-            }
-            // 아직 부모가 없는 임시 업로드분만 이 공지로 소속시킨다 (uploadKbn 은 업로드 시점에 INLINE 으로 고정).
-            if (file.parentId == null) file.parentId = noticeId
-            NoticeImagePlaceholder.build(file.id.toString(), "")
-        }
-    }
-
-    /**
-     * 붙여넣기로 본문에 박힌 **외부 이미지 URL** 을 S3 로 이관하고 placeholder 로 치환한다.
-     *
-     * 웹 페이지에서 이미지를 복사해 붙여넣으면 그 사이트의 URL 이 그대로 저장된다. 그대로 두면 원본이
-     * 사라지는 순간 깨지고, 사내망/로그인 필요 이미지는 모바일 앱에서 처음부터 보이지 않으며, 열람 때마다
-     * 외부로 요청이 나간다. 저장 시점에 서버가 받아([NoticeExternalImageFetcher]) 우리 S3 로 옮긴다.
-     *
-     * - 대상: `<img src="http(s)://...">` 중 우리 private 객체가 아닌 것. (우리 presigned 는 앞 단계
-     *   [normalizeInlinePresignedImages] 가 이미 placeholder 로 되돌렸다.)
-     * - 다운로드 실패(내부망/타입 거부/용량 초과/타임아웃)는 원본 태그를 보존하고 경고만 남긴다 —
-     *   이미지 하나 때문에 공지 저장이 실패하면 안 되므로. 그 이미지는 종전처럼 외부 URL 로 남는다.
-     * - `file:`/`blob:` 등 서버가 받아올 수 없는 스킴은 경고만 남긴다(웹이 저장 전에 차단한다).
-     */
-    private fun normalizeInlineExternalImages(noticeId: Long, html: String?): String? {
-        if (html.isNullOrEmpty() || !html.contains("<img", ignoreCase = true)) return html
-
-        return NoticeImagePlaceholder.rewriteImgsBySrc(html) { rawSrc ->
-            val src = NoticeImagePlaceholder.unescapeAttr(rawSrc)
-            when {
-                // 우리 private 객체 / placeholder 는 대상 아님.
-                src.startsWith(NoticeImagePlaceholder.SCHEME) -> null
-                src.contains(NoticeImagePlaceholder.PRIVATE_PATH_SEGMENT) -> null
-                src.startsWith("http://", ignoreCase = true) || src.startsWith("https://", ignoreCase = true) ->
-                    adoptExternalImage(noticeId, src)
-
-                else -> {
-                    // data: 는 앞 단계에서 처리됐고, 남은 건 file:/blob: 처럼 서버가 받아올 수 없는 참조다.
-                    log.warn("공지 {} 본문에 가져올 수 없는 이미지 참조가 있다 — src prefix={}", noticeId, src.take(12))
-                    null
-                }
-            }
-        }
-    }
-
-    /** 외부 이미지 1건을 내려받아 S3 + upload_file 로 적재하고 placeholder 태그를 돌려준다. 실패 시 null. */
-    private fun adoptExternalImage(noticeId: Long, src: String): String? {
-        val fetched = externalImageFetcher.fetch(src) ?: return null
-
-        val fileName = "$INLINE_UPLOAD_STEM.${extensionForContentType(fetched.contentType)}"
-        val result = storageService.uploadPrivate(
-            domain = "notice",
-            originalName = fileName,
-            bytes = fetched.bytes,
-            contentType = fetched.contentType
-        )
-        val saved = uploadFileRepository.save(
-            UploadFile(
-                name = fetched.fileName,
-                uniqueKey = result.key,
-                fileSize = formatFileSize(fetched.bytes.size.toLong()),
-                parentType = UploadFileParentTypes.NOTICE,
-                parentId = noticeId,
-                uploadKbn = UPLOAD_KBN_INLINE,
-                isDeleted = false
-            )
-        )
-        log.info("공지 {} 외부 이미지 S3 이관 — {} → {}", noticeId, src.take(120), result.key)
-        return NoticeImagePlaceholder.build(saved.id.toString(), "")
-    }
-
-    private fun extensionForContentType(contentType: String): String = when (contentType) {
-        "image/png" -> "png"
-        "image/jpeg", "image/jpg" -> "jpg"
-        "image/gif" -> "gif"
-        "image/webp" -> "webp"
-        "image/heic" -> "heic"
-        else -> "img"
-    }
-
-    /**
      * 기존 공지 본문의 비정상 인라인 이미지를 일괄 정규화한다 — 저장 시점 정규화 도입 이전 데이터의 소급 복구용
      * 관리자 작업. 두 종류를 함께 처리한다:
-     * 1. base64 data URI ([normalizeInlineBase64Images]) — S3 업로드 + placeholder 치환
-     * 2. 만료되는 presigned URL ([normalizeInlinePresignedImages]) — uniqueKey 역추적 + placeholder 치환
+     * 1. base64 data URI — S3 업로드 + placeholder 치환
+     * 2. 만료되는 presigned URL — uniqueKey 역추적 + placeholder 치환
+     * (변환 규칙은 [InlineImageService.normalizeContent] 가 소유 — 저장 경로와 동일 로직.)
      *
      * 2번은 웹 에디터의 placeholder 복원이 URL 이스케이프 차이로 실패해 본문에 presigned URL 이 그대로
      * 저장된 공지(2026-07-30 이전 작성분)를 되살린다 — placeholder 로 돌려놓으면 조회 시점마다 유효한
@@ -374,19 +185,15 @@ class NoticeService(
     fun migrateInlineBase64Images(): Int {
         val notices = (
             noticeRepository.findByContentsContaining("data:image") +
-                noticeRepository.findByContentsContaining(NoticeImagePlaceholder.PRIVATE_PATH_SEGMENT)
+                noticeRepository.findByContentsContaining(InlineImagePlaceholder.PRIVATE_PATH_SEGMENT)
             )
             .distinctBy { it.id }
             .filter { it.isDeleted != true }
         var migrated = 0
         for (notice in notices) {
             try {
-                val normalized = normalizeInlineExternalImages(
-                    notice.id,
-                    normalizeInlinePresignedImages(
-                        notice.id,
-                        normalizeInlineBase64Images(notice.id, notice.contents)
-                    )
+                val normalized = inlineImageService.normalizeContent(
+                    InlineImageDomain.NOTICE, notice.id, notice.contents,
                 )
                 if (normalized != notice.contents) {
                     notice.contents = normalized
@@ -511,14 +318,12 @@ class NoticeService(
         val saved = noticeRepository.save(notice)
         // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다
         // (parentId=noticeId 로 즉시 소속 → 이어지는 syncInlineImages 가 본문 참조로 자연히 보존).
-        saved.contents = normalizeInlineBase64Images(saved.id, saved.contents)
-        // 클라이언트가 placeholder 복원에 실패해 넘긴 presigned URL 도 서버가 placeholder 로 되돌린다
-        // (만료 URL 이 본문에 영구 저장돼 이미지가 깨지는 것을 구조적으로 차단).
-        saved.contents = normalizeInlinePresignedImages(saved.id, saved.contents)
-        // 붙여넣기로 들어온 외부 사이트 이미지 URL 은 우리 S3 로 이관해 placeholder 로 바꾼다
-        // (원본 사이트 링크 변경/사내망 이미지로 앱에서 깨지는 것을 방지).
-        saved.contents = normalizeInlineExternalImages(saved.id, saved.contents)
-        syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
+        saved.contents = inlineImageService.normalizeContent(
+            InlineImageDomain.NOTICE, saved.id, saved.contents,
+        )
+        inlineImageService.syncInlineImages(
+            InlineImageDomain.NOTICE, saved.id, saved.contents, request.sessionUploadedRefids,
+        )
         return NoticeMutationResponse.Companion.from(saved)
     }
 
@@ -544,9 +349,9 @@ class NoticeService(
         notice.scope = noticeScope
         notice.category = cat
         // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다.
-        notice.contents = normalizeInlineBase64Images(notice.id, request.content)
-        notice.contents = normalizeInlinePresignedImages(notice.id, notice.contents)
-        notice.contents = normalizeInlineExternalImages(notice.id, notice.contents)
+        notice.contents = inlineImageService.normalizeContent(
+            InlineImageDomain.NOTICE, notice.id, request.content,
+        )
         // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
         notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 
@@ -567,7 +372,9 @@ class NoticeService(
         }
 
         // 영속 entity 변경은 dirty checking 으로 flush — 명시 save 불필요. sync 는 같은 tx 내 auto-flush 로 정합.
-        syncInlineImages(notice.id, notice.contents, request.sessionUploadedRefids)
+        inlineImageService.syncInlineImages(
+            InlineImageDomain.NOTICE, notice.id, notice.contents, request.sessionUploadedRefids,
+        )
         return NoticeMutationResponse.Companion.from(notice)
     }
 
@@ -704,95 +511,18 @@ class NoticeService(
     }
 
     /**
-     * 공지 본문 인라인 이미지 업로드 (신규 작성/수정 화면 Quill 드래그앤드롭).
+     * 공지 본문 인라인 이미지 업로드 (신규 작성/수정 화면 Quill 툴바/드래그앤드롭/붙여넣기).
      *
-     * 첨부 업로드([uploadNoticeImage])와 달리:
-     * - parent_id 는 아직 미정(신규 작성 시 noticeId 부재) → null 로 저장하고 공지 저장 시 [backfillInlineImages] 가 채운다.
-     *   (수정 화면은 noticeId 가 있어도 일관성을 위해 동일하게 backfill 경로를 탄다.)
-     * - upload_kbn=INLINE 으로 표기 → 조회 시 하단 첨부 목록에서 제외(본문에만 렌더링).
-     * - 응답으로 placeholder(`<img data-refid="{id}">`)와 미리보기 presigned URL 을 함께 반환 → 클라이언트가 본문엔
-     *   placeholder 를, 에디터엔 presigned 로 보여준다.
-     *
-     * refid = upload_file.id (Long). 마이그레이션분(refid=sfid)과 충돌하지 않으며 조회측 rewrite 는 두 키를 모두 매칭한다.
+     * 업로드 시점에 parent_id 를 채우지 않는 이유와 backfill 계약은 [InlineImageService.uploadInlineImage] 참조.
      */
     @Transactional
     fun uploadNoticeInlineImage(file: MultipartFile): NoticeInlineImageResponse {
-        val key = fileStorageService.uploadNoticeImage(file, 0L)
-
-        val uploadFile = UploadFile(
-            name = file.originalFilename,
-            uniqueKey = key,
-            fileSize = formatFileSize(file.size),
-            parentType = UploadFileParentTypes.NOTICE,
-            parentId = null,
-            uploadKbn = UPLOAD_KBN_INLINE,
-            isDeleted = false
-        )
-        val saved = uploadFileRepository.save(uploadFile)
-
-        val refid = saved.id.toString()
+        val result = inlineImageService.uploadInlineImage(InlineImageDomain.NOTICE, file)
         return NoticeInlineImageResponse(
-            refid = refid,
-            placeholder = NoticeImagePlaceholder.build(refid, file.originalFilename ?: ""),
-            previewUrl = storageService.getPresignedUrl(saved.uniqueKey!!, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS)
+            refid = result.refid,
+            placeholder = result.placeholder,
+            previewUrl = result.previewUrl,
         )
-    }
-
-    /**
-     * 공지 저장 시 본문이 참조하는 인라인 이미지와 실제 upload_file 을 동기화한다.
-     * (1) backfill: 본문 refid 중 parent_id=null 인 임시 INLINE 업로드분을 이 공지로 소속시킨다.
-     * (2) cleanup: 본문에서 빠진(사용자가 삽입 후 삭제한) INLINE 이미지를 S3+soft-delete 로 정리한다.
-     * create/update 양쪽 끝에서 호출.
-     *
-     * ## backfill 보안 (IDOR)
-     * backfill 대상은 **아직 부모가 없는(parent_id=null) 임시 INLINE 업로드분**으로만 한정한다.
-     * refid 는 클라이언트가 보낸 본문 HTML 에서 추출되므로, 이미 다른 공지에 소속된 파일(parent_id != null)을 무차별
-     * 재부모화하면 본문에 타 공지의 upload_file.id 를 심어 그 이미지를 자기 공지로 탈취할 수 있다(IDOR). 이를 차단한다.
-     *
-     * ## cleanup 대상 (동시 편집 간섭 차단)
-     * 삭제 후보 = 최종 본문 refid 에 없는 INLINE 이미지 중 다음 하나:
-     *  - sessionUploadedRefids 에 포함(이번 편집 세션에서 올렸다가 최종 본문에서 뺀 것) — 신규 작성 orphan 포함
-     *  - parent_id=noticeId (이 공지에 이미 소속된 것 — 수정 시 기존 본문에서 뺀 것). 소유가 확실.
-     * 세션 목록에도 없고 이 공지 소속도 아닌 parent_id=null 파일은 **타 세션 미저장분일 수 있어 건드리지 않는다**.
-     * (프론트가 sessionUploadedRefids 를 미전송하면 세션 기반 정리는 생략되고 parent_id=noticeId 정리만 수행 — 하위호환.)
-     */
-    private fun syncInlineImages(noticeId: Long, content: String?, sessionUploadedRefids: List<String>?) {
-        val html = content ?: ""
-        val keptRefids = NoticeImagePlaceholder.extractRefids(html)
-            .mapNotNull { it.toLongOrNull() }.toSet()
-
-        // 본문이 참조 중인 uniqueKey 집합. 수정 화면은 data-refid 를 잃은 presigned `<img>` 를 그대로 저장 본문에
-        // 담아 보낼 수 있어(웹 에디터가 파싱 시 data-refid 소실), refid 만으로는 "본문에 살아있는 이미지" 를
-        // 판별하지 못한다. presigned URL 에 내재된 불변 uniqueKey 로 이 공지 소속 파일과 매칭해 보존 대상을 보강한다.
-        // (presigned URL 자체는 저장/식별자로 쓰지 않고, URL 에서 뽑은 uniqueKey 만 매칭에 사용.)
-        val keptUniqueKeys = NoticeImagePlaceholder.extractUniqueKeys(html).toSet()
-
-        // (1) backfill — 본문에 남아있는 refid 중 미소속 임시 업로드분을 이 공지로 연결.
-        if (keptRefids.isNotEmpty()) {
-            uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(keptRefids.toList(), UploadFileParentTypes.NOTICE)
-                .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.parentId == null }
-                .forEach { it.parentId = noticeId }
-        }
-
-        // (2) cleanup — 정리 후보 수집 (세션 업로드분 ∪ 이 공지 소속분) 후 본문에 없는 것만 삭제.
-        val sessionIds = sessionUploadedRefids.orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
-        val candidates = buildList {
-            if (sessionIds.isNotEmpty()) {
-                addAll(uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(sessionIds.toList(), UploadFileParentTypes.NOTICE))
-            }
-            addAll(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, noticeId))
-        }.distinctBy { it.id }
-
-        // 보존 판정: 본문이 refid 로 참조 OR uniqueKey 로 참조하면 삭제하지 않는다.
-        // (수정 시 이미지를 건드리지 않았는데 presigned src 로만 남은 기존 이미지가 오삭제되던 문제 방지.)
-        candidates
-            .filter { it.uploadKbn == UPLOAD_KBN_INLINE }
-            .filter { it.id !in keptRefids && (it.uniqueKey.isNullOrBlank() || it.uniqueKey !in keptUniqueKeys) }
-            .filter { it.parentId == noticeId || it.id in sessionIds }
-            .forEach { file ->
-                file.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
-                file.isDeleted = true
-            }
     }
 
     /**

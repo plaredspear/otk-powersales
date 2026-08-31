@@ -1,10 +1,7 @@
-import { useContext, useEffect, useMemo, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'antd';
 import type { FormInstance } from 'antd';
-import ReactQuill, { Quill } from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
-import './NoticeContentEditor.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
@@ -12,22 +9,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { uploadNoticeInlineImage } from '@/api/notice';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import BranchSingleSelect, { type BranchOption } from '@/components/common/BranchSingleSelect';
-import MobileNoticePreview from './MobileNoticePreview';
+import RichContentEditor from '@/components/editor/RichContentEditor';
+import MobileContentPreview from '@/components/editor/MobileContentPreview';
 import {
   collectPlaceholderMappings,
   findUnrecoverableImageSrcs,
-  isUnrecoverableImageSrc,
   replacePreviewsWithPlaceholders as toPlaceholders,
-  uniqueKeyFromSrc,
-} from './noticeInlineImage';
-
-// 본문 인라인 이미지 허용 타입/용량 (백엔드 StorageConstants 와 정합).
-const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
-// 정렬(align)은 Quill 기본이 class 기반(ql-align-*)이라 CSS 가 없는 환경(모바일 HtmlWidget)에서 렌더되지 않는다.
-// 인라인 style(text-align) 로 출력하도록 style attributor 를 등록해 웹/모바일 렌더를 일치시킨다.
-// (color/background 는 기본이 이미 인라인 style 이라 별도 등록 불요.)
-Quill.register('formats/align', Quill.import('attributors/style/align'), true);
+} from '@/lib/inlineImage';
 
 // 공개범위는 '현장여사원'으로 고정한다(레거시 영업사원 공지 미사용). 폼에서 선택 UI 를 노출하지 않고
 // 저장 시 항상 이 값을 전송한다. 백엔드 scope 는 @NotBlank 필수라 값 자체는 계속 채워 보내야 한다.
@@ -39,39 +27,6 @@ interface FormValues {
   content: string;
   /** 지점공지(BRANCH) 선택 지점코드. 그 외 카테고리에서는 미사용. */
   branchCode?: string;
-}
-
-/**
- * 본문 리치텍스트 에디터 — antd Form.Item 의 controlled 필드로 동작.
- *
- * Form.Item 이 주입하는 value(현재 HTML)/onChange 를 ReactQuill 에 연결한다.
- * (직전에는 ReactQuill 을 <div> 로 감싸 Form.Item 의 value/onChange 가 에디터로
- *  전달되지 않아, 본문이 폼 값으로 수집되지 못하고 미리보기/저장에 누락되던 버그가 있었다.)
- * 붙여넣기/드래그앤드롭 이미지 삽입은 모두 Quill root(.ql-editor) 에 capture 단계 리스너를 직접 걸어 처리한다
- *  (wrapper 버블링으로는 Quill 기본 삽입을 막지 못해 base64+presigned 2중 삽입되던 버그 회피).
- */
-function ContentEditor({
-  value,
-  onChange,
-  quillRef,
-  modules,
-}: {
-  value?: string;
-  onChange?: (html: string) => void;
-  quillRef: React.RefObject<ReactQuill | null>;
-  modules: Record<string, unknown>;
-}) {
-  return (
-    <div className="notice-content-editor">
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        modules={modules}
-        value={value ?? ''}
-        onChange={(html) => onChange?.(html)}
-      />
-    </div>
-  );
 }
 
 /**
@@ -146,11 +101,6 @@ export default function NoticeFormPage() {
   // 이번 편집 세션에서 업로드한 인라인 이미지 refid 누적. 저장 시 서버가 본문에서 빠진 이미지를
   // 정리(S3+soft-delete)하는 대상 판별에 넘긴다. (삽입 후 삭제한 이미지의 고아 파일 방지)
   const sessionUploadedRefids = useRef<Set<string>>(new Set());
-  const quillRef = useRef<ReactQuill>(null);
-  // 이번 붙여넣기에서 걸러낸 로컬 전용 이미지(file:/blob: 등) 개수 + 복구 예약 여부.
-  // matcher 는 이미지 노드마다 호출되므로, 붙여넣기 1회당 복구를 한 번만 돌리기 위한 상태다.
-  const droppedLocalImages = useRef(0);
-  const localImageRecoveryScheduled = useRef(false);
 
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { user } = useAuth();
@@ -200,224 +150,12 @@ export default function NoticeFormPage() {
     }
   }, [isEdit, notice, form]);
 
-  // 파일 1건 업로드 → 에디터 현재 커서 위치에 presigned 이미지 삽입 + placeholder 매핑 보관.
-  const uploadAndInsert = async (file: File) => {
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      message.error('이미지 파일(PNG, JPG, GIF, WEBP)만 첨부할 수 있습니다');
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      message.error('이미지 용량은 최대 20MB까지 가능합니다');
-      return;
-    }
-    const editor = quillRef.current?.getEditor();
-    if (!editor) return;
-
-    const hide = message.loading('이미지 업로드 중...', 0);
-    try {
-      const result = await uploadNoticeInlineImage(file);
-      // 매핑 키는 presigned URL 전문이 아니라 불변 uniqueKey (선언부 주석 참조).
-      const key = uniqueKeyFromSrc(result.previewUrl);
-      if (key) previewToPlaceholder.current.set(key, result.placeholder);
-      sessionUploadedRefids.current.add(result.refid);
-      const range = editor.getSelection(true);
-      const index = range ? range.index : editor.getLength();
-      editor.insertEmbed(index, 'image', result.previewUrl, 'user');
-      editor.setSelection(index + 1, 0);
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '이미지 업로드에 실패했습니다');
-    } finally {
-      hide();
-    }
-  };
-
-  // Quill toolbar 이미지 버튼 핸들러 — 파일 선택 다이얼로그.
-  const imageHandler = () => {
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (file) await uploadAndInsert(file);
-    };
-    input.click();
-  };
-
-  // base64 data URI → File 변환 (붙여넣기 HTML 안의 인라인 이미지 정규화용).
-  const dataUriToFile = (dataUri: string): File | null => {
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/is.exec(dataUri);
-    if (!match) return null;
-    const [, mime, b64] = match;
-    try {
-      const bin = atob(b64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-      const ext = (mime.split('/')[1] ?? 'png').replace('jpeg', 'jpg');
-      return new File([bytes], `pasted.${ext}`, { type: mime });
-    } catch {
-      return null;
-    }
-  };
-
-  /**
-   * Windows 에서 Word/한글 문서의 이미지를 붙여넣으면 클립보드 HTML 에 `file:///...clip_image001.png`
-   * 만 담기고 `clipboardData.files` 는 비어 있는 경우가 많다 (브라우저가 로컬 경로를 읽지 못해 에디터에서
-   * 바로 깨진다). 이때 비동기 Clipboard API 로 같은 클립보드의 **비트맵**을 다시 읽어 정상 업로드 경로로
-   * 돌린다. 권한 거부/미지원/비트맵 부재면 빈 배열을 반환해 안내 메시지로 폴백한다.
-   */
-  const readClipboardImageFiles = async (): Promise<File[]> => {
-    const clipboard = navigator.clipboard as { read?: () => Promise<ClipboardItem[]> } | undefined;
-    if (!clipboard?.read) return [];
-    try {
-      const items = await clipboard.read();
-      const files: File[] = [];
-      for (const item of items) {
-        const type = item.types.find((t) => t.startsWith('image/'));
-        if (!type) continue;
-        const blob = await item.getType(type);
-        const ext = (type.split('/')[1] ?? 'png').replace('jpeg', 'jpg');
-        files.push(new File([blob], `pasted.${ext}`, { type }));
-      }
-      return files;
-    } catch {
-      // 권한 거부(NotAllowedError) 등 — 안내 폴백.
-      return [];
-    }
-  };
-
-  // 걸러낸 로컬 이미지가 있으면 붙여넣기 1회당 한 번만 복구를 시도한다
-  // (matcher 는 이미지 노드마다 호출되므로 macrotask 로 모아서 실행).
-  const scheduleLocalImageRecovery = () => {
-    if (localImageRecoveryScheduled.current) return;
-    localImageRecoveryScheduled.current = true;
-    setTimeout(() => {
-      localImageRecoveryScheduled.current = false;
-      const dropped = droppedLocalImages.current;
-      droppedLocalImages.current = 0;
-      if (dropped === 0) return;
-      void (async () => {
-        const files = await readClipboardImageFiles();
-        if (files.length > 0) {
-          for (const file of files) await uploadAndInsert(file);
-          return;
-        }
-        message.warning(
-          `문서에서 복사한 이미지 ${dropped}건은 그대로 붙여넣을 수 없습니다. ` +
-            '이미지 파일을 직접 첨부하거나 화면 캡처(Windows: Win+Shift+S) 후 붙여넣어 주세요.',
-        );
-      })();
-    }, 0);
-  };
-
-  // 붙여넣기/드래그앤드롭 이미지 삽입을 모두 Quill root(.ql-editor) capture 단계 리스너 + clipboard matcher
-  // 로 일원화한다. 붙여넣기 이미지가 본문에 2번 삽입되던 버그의 원인은, 과거 wrapper div 의 onPaste 핸들러
-  // (clipboardData.files 처리) 와 아래 clipboard matcher (HTML base64 <img> 처리) 가 상호 배제 없이 둘 다
-  // 발동한 것이었다 (스크린샷 붙여넣기는 clipboard 에 files 와 <img src="data:..."> 가 동시에 담긴다).
-  // → 붙여넣기 진입점을 아래 하나로 통합: files 가 있으면 paste capture 리스너가 처리 + preventDefault 로
-  //   Quill 기본 붙여넣기를 막아 matcher 가 발동하지 않게 하고, files 가 없는 base64 HTML 은 matcher 가 처리한다.
-  useEffect(() => {
-    const editor = quillRef.current?.getEditor();
-    if (!editor) return;
-    const Delta = Quill.import('delta') as new () => unknown;
-    const root = editor.root;
-
-    // 붙여넣기 파일 케이스 — clipboardData.files 로 잡히는 이미지. Quill root 에 capture 단계로 걸어
-    // Quill 기본 붙여넣기(base64 <img> 삽입 + 아래 matcher 발동)를 선제 차단하고 정상 업로드 경로 1회만 태운다.
-    const onPaste = (e: ClipboardEvent) => {
-      const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
-      if (files.length === 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      void (async () => {
-        for (const file of files) await uploadAndInsert(file);
-      })();
-    };
-    root.addEventListener('paste', onPaste, { capture: true });
-
-    // 붙여넣기 base64 HTML 케이스 — clipboardData.files 로 잡히지 않고 HTML(<img src="data:...">) 형태로만
-    // 들어오는 경우. Quill 기본 동작은 base64 를 그대로 본문에 삽입한다 → (1) 본문 비대화 (2) 모바일에서 http
-    // 아닌 src 렌더 불가. clipboard matcher 로 data URI IMG 노드만 delta 에서 제거하고 비동기 업로드→presigned
-    // 삽입으로 대체한다 (텍스트 등 나머지 붙여넣기 내용은 보존). 백엔드도 저장 시점에 동일 정규화(이중 방어).
-    // react-quill-new 의 clipboard 타입에 addMatcher 가 노출되지 않아 최소 인터페이스로 좁혀 접근한다.
-    const clipboard = (editor as unknown as {
-      clipboard: { addMatcher: (selector: string, fn: (node: Node, delta: unknown) => unknown) => void };
-    }).clipboard;
-    clipboard.addMatcher('IMG', (node, delta) => {
-      const src = node instanceof HTMLElement ? (node.getAttribute('src') ?? '') : '';
-      if (src.startsWith('data:image/')) {
-        const file = dataUriToFile(src);
-        if (file) void uploadAndInsert(file);
-        return new Delta();
-      }
-      // 로컬 전용 참조(file:/blob:/cid: — Windows 워드·한글 붙여넣기)는 본문에 넣지 않는다. 넣어 봐야
-      // 에디터에서도 깨지고 저장도 막힌다. 대신 같은 클립보드의 비트맵을 비동기로 다시 읽어 업로드를 시도하고,
-      // 실패하면 안내한다.
-      if (src && isUnrecoverableImageSrc(src)) {
-        droppedLocalImages.current += 1;
-        scheduleLocalImageRecovery();
-        return new Delta();
-      }
-      return delta;
-    });
-    // addMatcher 는 누적 등록되므로 에디터 mount 시 1회만 등록한다.
-
-    // 드래그앤드롭 이미지 삽입 — Quill root(.ql-editor) 에 capture 단계로 리스너를 직접 걸어
-    // Quill 기본 drop 삽입(base64 <img>)을 선제 차단하고 정상 업로드 경로 1회만 태운다.
-    // (wrapper div 버블링 방식은 하위 contenteditable 에서 이미 벌어진 Quill 기본 삽입을 막지 못해
-    //  base64 + presigned 2중 삽입되던 버그가 있었다.)
-    const onDrop = (e: DragEvent) => {
-      const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
-      if (files.length === 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      // 여러 파일 drop 시 붙여넣기와 동일하게 순차 업로드해 삽입 순서/커서를 안정화한다
-      // (동시 발사하면 삽입 위치가 업로드 응답 도착 순서에 좌우됨).
-      void (async () => {
-        for (const file of files) await uploadAndInsert(file);
-      })();
-    };
-    const onDragOver = (e: DragEvent) => e.preventDefault();
-    root.addEventListener('drop', onDrop, { capture: true });
-    root.addEventListener('dragover', onDragOver, { capture: true });
-    return () => {
-      root.removeEventListener('paste', onPaste, { capture: true } as EventListenerOptions);
-      root.removeEventListener('drop', onDrop, { capture: true } as EventListenerOptions);
-      root.removeEventListener('dragover', onDragOver, { capture: true } as EventListenerOptions);
-    };
-    // uploadAndInsert / dataUriToFile / scheduleLocalImageRecovery 는 ref·모듈상수·안정 import 만
-    // 참조하므로 재구독 불필요.
-    // clipboard matcher(addMatcher) 와 drop 리스너는 에디터 mount 시 1회만 등록해야 한다
-    // (재실행 시 matcher 누적 / 리스너 중복). 정체성 안정화가 로직상 필수라 deps 를 비운다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const quillModules = useMemo(
-    () => ({
-      toolbar: {
-        container: [
-          [{ header: [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          // 폰트 색 / 배경색 — Quill 기본이 인라인 style(color/background-color) 로 출력되어
-          // 웹 상세(DOMPurify) 와 모바일 HtmlWidget 양쪽에서 렌더된다.
-          [{ color: [] }, { background: [] }],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          [{ align: [] }],
-          ['link', 'image'],
-          ['clean'],
-        ],
-        handlers: { image: imageHandler },
-      },
-    }),
-    // imageHandler 는 ref 만 참조하므로 재생성 불필요.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
 
   // 수정 화면 진입 시, 서버 상세조회 본문의 기존 이미지(<img src="presigned" data-refid="{refid}">)에서
   // uniqueKey → placeholder 매핑을 미리 등록한다. Quill 이 로드하며 data-refid 를 버리기 전에 원본 HTML 에서
   // 추출해야 하므로 setFieldsValue 직전에 호출한다. 저장 직전 replacePreviewsWithPlaceholders 가 이 매핑으로
   // presigned URL 을 placeholder 로 되돌려, 만료 URL 이 DB 본문에 영구 저장되는 것을 막는다.
-  // (변환 규칙과 회귀 케이스는 noticeInlineImage.ts / .test.ts 가 소유.)
+  // (변환 규칙과 회귀 케이스는 lib/inlineImage.ts / .test.ts 가 소유.)
   const registerExistingImagePlaceholders = (html: string | null | undefined) => {
     for (const [key, placeholder] of collectPlaceholderMappings(html)) {
       previewToPlaceholder.current.set(key, placeholder);
@@ -553,7 +291,11 @@ export default function NoticeFormPage() {
               extra="이미지는 툴바 버튼, 드래그앤드롭, 붙여넣기로 본문에 넣을 수 있습니다."
               rules={[{ required: true, message: '내용을 입력해주세요' }]}
             >
-              <ContentEditor quillRef={quillRef} modules={quillModules} />
+              <RichContentEditor
+                uploadInlineImage={uploadNoticeInlineImage}
+                previewToPlaceholder={previewToPlaceholder}
+                sessionUploadedRefids={sessionUploadedRefids}
+              />
             </Form.Item>
           </Col>
         </Row>
@@ -574,10 +316,10 @@ export default function NoticeFormPage() {
       </Form>
 
       <div style={{ position: 'sticky', top: 16, flexShrink: 0 }}>
-        <MobileNoticePreview
+        <MobileContentPreview
           title={watchedTitle}
           categoryName={watchedCategoryName}
-          isCompanyCategory={watchedCategory === 'COMPANY'}
+          badgeVariant={watchedCategory === 'COMPANY' ? 'company' : 'other'}
           content={watchedContent}
         />
       </div>

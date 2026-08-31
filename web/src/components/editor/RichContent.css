@@ -1,5 +1,5 @@
 /*
- * 공지 본문(에디터 산출 HTML) 을 web 에서 렌더할 때의 공통 보정.
+ * 리치텍스트 본문(에디터 산출 HTML) 을 web 에서 렌더할 때의 공통 보정. 공지 / 교육 공용.
  *
  * Quill 이 내보내는 빈 줄은 `<p></p>` (실제 DB 저장 형태) 와 `<p><br></p>` 두 가지다.
  * 이 빈 문단에 <p> 기본 margin(1em 0)이 걸리면 인접 문단과 마진이 collapse 되어,
@@ -15,12 +15,12 @@
  */
 
 /* `:has()` 미지원 브라우저에서 룰 전체가 무시되지 않도록 셀렉터를 분리해 둔다. */
-.notice-content-view p:empty {
+.rich-content-view p:empty {
   min-height: 1em;
   margin: 0;
 }
 
-.notice-content-view p:has(> br:only-child) {
+.rich-content-view p:has(> br:only-child) {
   min-height: 1em;
   margin: 0;
 }

@@ -1,10 +1,10 @@
-package com.otoki.powersales.domain.support.notice.service
+package com.otoki.powersales.platform.common.storage
 
 /**
- * 공지 본문 인라인 이미지 placeholder 의 생성/파싱 단일 출처(SoT).
+ * 리치텍스트 본문 인라인 이미지 placeholder 의 생성/파싱 단일 출처(SoT). 공지 / 교육 공통.
  *
- * 공지 본문(notice.contents) HTML 의 인라인 이미지는 만료 없는 placeholder `<img>` 태그로 영구 저장되고,
- * 조회 시점에 [NoticeService.getNoticeDetail] 가 `data-refid` 로 presigned URL 을 rewrite 한다.
+ * 본문 HTML 의 인라인 이미지는 만료 없는 placeholder `<img>` 태그로 영구 저장되고, 조회 시점에
+ * [InlineImageService.rewriteInlineImages] 가 `data-refid` 로 presigned URL 을 rewrite 한다.
  * placeholder 형식은 생성측(마이그레이션 치환)과 파싱측(조회 rewrite)이 정확히 맞물려야 하므로, 형식을
  * 본 object 한 곳에 모아 두 곳이 동일 정의를 참조하게 한다 (형식 변경 시 한 곳만 수정).
  *
@@ -12,19 +12,25 @@ package com.otoki.powersales.domain.support.notice.service
  *   <img src="notice-image://{refid}" data-refid="{refid}" [alt="{alt}"]>
  *   - src 의 `notice-image://` 커스텀 스킴 = http 아님 → rewrite 누락 시에도 잘못된 GET 안 나가고 깨진
  *     아이콘만 노출 (본문이 만료 URL 로 오염되는 것을 구조적으로 차단).
- *   - data-refid = 조회측 rewrite lookup 키 (= upload_file.sfid) + mobile cacheKey (권위 식별자).
+ *   - data-refid = 조회측 rewrite lookup 키 (= upload_file.id 또는 마이그레이션분 sfid) + mobile cacheKey.
  *
- * 외부 마이그레이션 스크립트 replace-notice-rta-urls.main.kts 도 동일 형식을 산출한다 (frozen 외부 스크립트라
- * 본 object 를 직접 참조하지 못하므로 형식을 수기 정합 — 변경 시 함께 갱신 의무).
+ * ## 스킴이 도메인별로 갈리지 않는 이유
+ * `notice-image://` 는 도메인 식별자가 아니라 "http 가 아님" 을 나타내는 sentinel 이다. lookup 은 전적으로
+ * `data-refid` + `(parentType, parentId)` 로 이뤄지고 src 값을 읽는 코드는 없으므로(rewrite 는 src 를 통째로
+ * 덮어쓴다), 교육 본문도 같은 스킴을 쓴다. 도메인 격리는 조회 시 parentType 으로 맵을 구성하는 것으로 이미
+ * 보장된다 — 교육 본문에 공지 refid 를 심어도 맵에 없어 rewrite 되지 않는다.
+ * 값 자체는 바꿀 수 없다: 기존 공지 본문에 영구 저장돼 있고, web `isUnrecoverableImageSrc` 화이트리스트와
+ * frozen 외부 마이그레이션 스크립트 replace-notice-rta-urls.main.kts 가 이 리터럴에 정합해 있다
+ * (형식 변경 시 그 스크립트도 함께 갱신 의무).
  */
-object NoticeImagePlaceholder {
+object InlineImagePlaceholder {
 
     /** placeholder src 의 커스텀 스킴 prefix. */
     const val SCHEME = "notice-image://"
 
     /**
      * data-refid 속성을 가진 placeholder `<img>` 태그 전체. group(1) = refid.
-     * 조회측 rewrite (NoticeService) 가 본 정규식으로 placeholder 를 찾아 src 만 presigned 로 교체한다.
+     * 조회측 rewrite ([InlineImageService]) 가 본 정규식으로 placeholder 를 찾아 src 만 presigned 로 교체한다.
      */
     val PLACEHOLDER_IMG_REGEX =
         Regex("""<img\b[^>]*\bdata-refid\s*=\s*"([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
@@ -44,10 +50,10 @@ object NoticeImagePlaceholder {
      * base64 data URI 로 본문에 통째로 박혀 들어온 인라인 이미지 `<img src="data:image/...;base64,...">`.
      * group(1) = content-type(mime, 예: image/png), group(2) = base64 payload.
      *
-     * 정상 인라인 업로드 경로([NoticeService.uploadNoticeInlineImage])는 본문에 placeholder 만 남기지만,
+     * 정상 인라인 업로드 경로([InlineImageService.uploadInlineImage])는 본문에 placeholder 만 남기지만,
      * 웹 에디터 '붙여넣기' 등은 Quill 기본 동작으로 base64 를 본문에 그대로 삽입해 이 경로를 우회한다.
-     * 그 결과 (1) DB contents 가 비대해지고 (2) 모바일이 http 아닌 src 를 렌더 못 해 이미지가 깨진다.
-     * 저장 시점에 [NoticeService] 가 본 정규식으로 찾아 S3 업로드 + placeholder 치환하여 정규화한다.
+     * 그 결과 (1) DB 본문이 비대해지고 (2) 모바일이 http 아닌 src 를 렌더 못 해 이미지가 깨진다.
+     * 저장 시점에 [InlineImageService] 가 본 정규식으로 찾아 S3 업로드 + placeholder 치환하여 정규화한다.
      */
     val DATA_URI_IMG_REGEX =
         Regex(
@@ -68,7 +74,7 @@ object NoticeImagePlaceholder {
 
     /**
      * 본문 HTML 에서 placeholder 인라인 이미지의 refid 목록을 추출한다.
-     * 신규 업로드 경로는 refid = upload_file.id (Long) 를 쓰므로, 공지 저장 시 본문이 참조하는
+     * 신규 업로드 경로는 refid = upload_file.id (Long) 를 쓰므로, 본문 저장 시 본문이 참조하는
      * 임시 업로드 이미지의 parent_id 를 backfill 하기 위해 사용한다 (마이그레이션분의 sfid refid 는 Long 변환 실패로 자연 제외).
      */
     fun extractRefids(html: String): List<String> {
@@ -115,7 +121,7 @@ object NoticeImagePlaceholder {
      * 본문 HTML 의 모든 `<img>` 를 src 값 기준으로 교체한다. [replacement] 가 null 이면 원본 태그 보존.
      *
      * 붙여넣기로 들어온 **외부 이미지 URL** 을 S3 로 이관해 placeholder 로 바꾸는 경로가 사용한다
-     * ([NoticeService.normalizeInlineExternalImages]). src 는 HTML 이스케이프된 상태(`&amp;`)일 수 있어
+     * ([InlineImageService.normalizeInlineExternalImages]). src 는 HTML 이스케이프된 상태(`&amp;`)일 수 있어
      * 소비자가 [unescapeAttr] 로 되돌린 뒤 사용한다.
      */
     fun rewriteImgsBySrc(html: String, replacement: (String) -> String?): String {
@@ -138,7 +144,7 @@ object NoticeImagePlaceholder {
 
     /**
      * 단일 img src 값에서 uniqueKey 를 해석한다. "private/" 미포함 시 null.
-     * URL 인코딩된 경로 세그먼트는 uniqueKey(uploads/notice/yyyy/mm/dd/uuid.ext)에 인코딩 대상 문자가
+     * URL 인코딩된 경로 세그먼트는 uniqueKey(uploads/{domain}/yyyy/mm/dd/uuid.ext)에 인코딩 대상 문자가
      * 없으므로 별도 디코딩 없이 그대로 비교 가능하다(영숫자/`/`/`.`/`-` 로만 구성).
      */
     private fun uniqueKeyFromSrc(src: String): String? {

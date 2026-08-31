@@ -8,6 +8,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import DOMPurify from 'dompurify';
+import '@/components/editor/RichContent.css';
 import { useEducationDetail } from '@/hooks/education/useEducationDetail';
 import { useDeleteEducation } from '@/hooks/education/useEducationMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
@@ -111,9 +112,17 @@ export default function EducationDetailPage() {
         <Descriptions.Item label="등록일">{education.createdAt?.substring(0, 10)}</Descriptions.Item>
       </Descriptions>
 
+      {/*
+        본문 인라인 이미지는 backend(getPostDetail)가 presigned URL 로 rewrite 해서 내려준다.
+        data-refid 는 mobile cacheKey 용 식별자로 본문에 보존되므로 sanitize 시 명시적으로 허용한다
+        (DOMPurify 3.x 는 data-* 를 기본 허용하나 버전/설정 변동 대비). presigned https src 는 기본 허용.
+      */}
       <div
+        className="rich-content-view"
         style={{ borderTop: '1px solid #f0f0f0', paddingTop: 24, marginBottom: 24 }}
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(education.content || '') }}
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(education.content || '', { ADD_ATTR: ['data-refid'] }),
+        }}
       />
 
       {education.attachments.length > 0 && (

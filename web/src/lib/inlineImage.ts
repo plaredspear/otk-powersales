@@ -1,5 +1,5 @@
 /**
- * 공지 본문 인라인 이미지의 presigned URL ↔ placeholder 변환 (순수 함수).
+ * 리치텍스트 본문 인라인 이미지의 presigned URL ↔ placeholder 변환 (순수 함수). 공지 / 교육 공용.
  *
  * 본문 DB 에는 만료 없는 placeholder `<img src="notice-image://{refid}" data-refid="{refid}">` 만 저장하고,
  * 조회 시점에 백엔드가 presigned URL 로 rewrite 한다. 에디터는 presigned 로 보여주되 **저장 직전 반드시**
@@ -11,7 +11,10 @@
  * 만료 URL 이 DB 에 그대로 저장됐다. URL 에 내재된 uniqueKey(`?` 앞 경로의 `private/` 이후)는 이스케이프
  * 대상 문자가 없고 재서명에도 불변이라 안전한 키다 (백엔드 `NoticeImagePlaceholder` 와 동일 규칙).
  *
- * 순수 함수로 분리해 두어 회귀 테스트(noticeInlineImage.test.ts)가 이 규칙을 고정한다.
+ * 순수 함수로 분리해 두어 회귀 테스트(inlineImage.test.ts)가 이 규칙을 고정한다.
+ *
+ * 스킴(`notice-image://`)이 도메인별로 갈리지 않는 이유는 backend InlineImagePlaceholder KDoc 참조 —
+ * 도메인 식별자가 아니라 "http 가 아님" sentinel 이고, lookup 은 전적으로 data-refid 로 이뤄진다.
  */
 
 /** private S3 key 의 세그먼트 prefix. presigned URL path 에서 이 뒤가 uniqueKey. */
@@ -34,7 +37,7 @@ export function uniqueKeyFromSrc(src: string): string | null {
   return path.slice(idx + PRIVATE_PATH_SEGMENT.length) || null;
 }
 
-/** 백엔드 `NoticeImagePlaceholder.build` 와 동일 형식의 placeholder 태그. */
+/** 백엔드 `InlineImagePlaceholder.build` 와 동일 형식의 placeholder 태그. */
 export function buildPlaceholder(refid: string): string {
   return `<img src="notice-image://${refid}" data-refid="${refid}">`;
 }
@@ -64,7 +67,7 @@ const PLACEHOLDER_SCHEME = 'notice-image://';
  * 저장해도 살릴 수 없는 이미지 참조인지 판정한다 (default-deny).
  *
  * 살릴 수 있는 것만 열거하고 나머지를 전부 막는다:
- * - `http(s)://` — 저장 시 서버가 내려받아 S3 로 이관한다 (NoticeService.normalizeInlineExternalImages)
+ * - `http(s)://` — 저장 시 서버가 내려받아 S3 로 이관한다 (InlineImageService.normalizeInlineExternalImages)
  * - `data:image/` — 붙여넣기 즉시 업로드로 변환되고, 남더라도 서버가 정규화한다
  * - `notice-image://` — 이미 우리 placeholder
  *
@@ -98,7 +101,7 @@ export function findUnrecoverableImageSrcs(html: string | null | undefined): str
 /**
  * 저장 직전 본문의 presigned `<img>` 를 placeholder 로 치환한다.
  * 매핑에 없는 src(외부 링크 등)와 placeholder 태그는 원본 그대로 둔다 — 백엔드가 저장 시점에 한 번 더
- * 정규화(`NoticeService.normalizeInlinePresignedImages`)하므로 여기서 누락돼도 DB 에는 남지 않는다.
+ * 정규화(`InlineImageService.normalizeContent`)하므로 여기서 누락돼도 DB 에는 남지 않는다.
  */
 export function replacePreviewsWithPlaceholders(
   html: string,

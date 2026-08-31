@@ -25,6 +25,12 @@ import com.otoki.powersales.domain.support.education.repository.EducationPostRep
 // import com.otoki.powersales.education.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.InlineImageDomain
+import com.otoki.powersales.platform.common.storage.InlineImageService
+import com.otoki.powersales.platform.common.storage.InlineImageUploadResult
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -41,7 +47,11 @@ class EducationService(
     // private val educationPostImageRepository: EducationPostImageRepository,  // Phase2: PG 대응 테이블 없음
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository,
     private val fileStorageService: FileStorageService,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    // 본문 인라인 이미지(공지와 공용). 첨부파일(education_post_attachment)과는 완전히 별개 저장 경로다.
+    private val inlineImageService: InlineImageService,
+    private val uploadFileRepository: UploadFileRepository,
+    private val storageService: StorageService
 ) {
 
     /**
@@ -138,13 +148,21 @@ class EducationService(
         // 4. 카테고리명 조회
         val categoryName = EducationCategoryCode.displayNameOf(post.eduCode)
 
-        // 5. 응답 생성
+        // 5. 본문 인라인 이미지 placeholder → presigned URL rewrite.
+        //    DB 에는 만료 없는 placeholder 만 저장하고 조회 시점에 발급한다 (web/mobile 공통).
+        val content = inlineImageService.rewriteInlineImages(
+            InlineImageDomain.EDUCATION,
+            post.eduContent ?: "",
+            inlineUploadFilesOf(post),
+        )
+
+        // 6. 응답 생성
         return EducationPostDetailResponse(
             id = post.eduId ?: "",
             category = post.eduCode ?: "",
             categoryName = categoryName,
             title = post.eduTitle ?: "",
-            content = post.eduContent ?: "",
+            content = content,
             createdAt = post.createdAt,
             images = images,
             attachments = attachments
@@ -204,7 +222,8 @@ class EducationService(
         title: String,
         content: String,
         category: String,
-        files: List<MultipartFile>?
+        files: List<MultipartFile>?,
+        sessionUploadedRefids: List<String>? = null
     ): EducationMutationResponse {
         validatePostInput(title, content, category)
         validateFiles(files)
@@ -225,6 +244,15 @@ class EducationService(
         )
         val savedPost = educationPostRepository.save(post)
 
+        // 본문 인라인 이미지 정규화는 save 이후에만 가능하다 — placeholder 의 parent_id 로 쓸 PK 가 그때 정해진다.
+        // (업로드 시점엔 글이 없어 parent_id=null 로 떠 있다가 syncInlineImages 의 backfill 이 연결한다.)
+        savedPost.eduContent = inlineImageService.normalizeContent(
+            InlineImageDomain.EDUCATION, savedPost.id, savedPost.eduContent,
+        )
+        inlineImageService.syncInlineImages(
+            InlineImageDomain.EDUCATION, savedPost.id, savedPost.eduContent, sessionUploadedRefids,
+        )
+
         val attachments = saveAttachments(savedPost, files)
         val categoryName = EducationCategoryCode.displayNameOf(category)
 
@@ -241,7 +269,8 @@ class EducationService(
         content: String,
         category: String,
         files: List<MultipartFile>?,
-        keepFileKeys: List<String>?
+        keepFileKeys: List<String>?,
+        sessionUploadedRefids: List<String>? = null
     ): EducationMutationResponse {
         val post = educationPostRepository.findByEduId(postId)
             ?: throw EducationPostNotFoundException()
@@ -276,12 +305,18 @@ class EducationService(
         // 신규 파일 저장
         saveAttachments(post, files)
 
-        // 엔티티 업데이트 (val 필드이므로 새 인스턴스 생성 후 merge)
+        // 본문 인라인 이미지 정규화 — 클라이언트가 placeholder 복원에 실패해도 만료 presigned URL 이
+        // DB 에 남지 않도록 서버가 저장 시점에 한 번 더 되돌린다.
+        val normalizedContent = inlineImageService.normalizeContent(
+            InlineImageDomain.EDUCATION, post.id, content,
+        )
+
+        // 엔티티 업데이트 (대부분 val 필드이므로 새 인스턴스 생성 후 merge)
         val updated = EducationPost(
             id = post.id,
             eduId = post.eduId,
             eduTitle = title,
-            eduContent = content,
+            eduContent = normalizedContent,
             eduCode = category,
             employee = post.employee,
             empCode = post.empCode
@@ -291,6 +326,11 @@ class EducationService(
         }
         educationPostRepository.save(updated)
 
+        // 본문에서 빠진 인라인 이미지 정리 + 이번 세션 업로드분 소속 연결.
+        inlineImageService.syncInlineImages(
+            InlineImageDomain.EDUCATION, post.id, normalizedContent, sessionUploadedRefids,
+        )
+
         val allAttachments = educationPostAttachmentRepository.findByEducationPost(updated)
         val categoryName = EducationCategoryCode.displayNameOf(category)
 
@@ -298,7 +338,11 @@ class EducationService(
     }
 
     /**
-     * 교육 자료 삭제
+     * 교육 자료 삭제.
+     *
+     * 첨부파일과 본문 인라인 이미지는 저장 경로가 다르므로 각각 정리한다. 인라인 이미지를 여기서 지우는
+     * 이유는 교육 게시물이 **hard delete** 이기 때문 — 부모 row 가 사라지면 upload_file 이 영원히 고아로
+     * 남아 S3 비용만 쌓인다. (공지는 soft delete 라 본문이 남아 있어 이 단계가 없다.)
      */
     @Transactional
     fun deletePost(postId: String) {
@@ -310,7 +354,28 @@ class EducationService(
             fileStorageService.deleteEducationFile(postId, attachment.fileKey)
         }
         educationPostAttachmentRepository.deleteAll(attachments)
+
+        inlineUploadFilesOf(post).forEach { file ->
+            file.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
+            file.isDeleted = true
+        }
+
         educationPostRepository.delete(post)
+    }
+
+    /**
+     * 교육 본문 인라인 이미지 업로드 (작성/수정 화면 Quill 툴바/드래그앤드롭/붙여넣기).
+     *
+     * 첨부파일([uploadEducationFile]) 과 저장 경로가 다르다 — 첨부는 file_key(30자 평면) 를 쓰는
+     * education_post_attachment, 인라인은 unique_key(500자) 를 쓰는 upload_file. 두 목록은 서로 섞이지 않는다.
+     * 업로드 시점에 parent_id 를 채우지 않는 이유는 [InlineImageService.uploadInlineImage] 참조.
+     */
+    @Transactional
+    fun uploadInlineImage(file: MultipartFile): InlineImageUploadResult {
+        if (file.isEmpty) {
+            throw InvalidEducationParameterException("빈 파일은 업로드할 수 없습니다")
+        }
+        return inlineImageService.uploadInlineImage(InlineImageDomain.EDUCATION, file)
     }
 
     /**
@@ -323,6 +388,17 @@ class EducationService(
     }
 
     // --- Private helpers ---
+
+    /**
+     * 이 게시물에 소속된 본문 인라인 이미지 upload_file 목록.
+     *
+     * parent_id 는 화면 식별자 eduId(String)가 아니라 **PK id(Long)** 다 — upload_file.parent_id 가 bigint 라
+     * eduId 를 넣을 수 없다. 조회/정리 양쪽이 같은 기준을 쓰도록 여기 한 곳으로 모은다.
+     */
+    private fun inlineUploadFilesOf(post: EducationPost) =
+        uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+            UploadFileParentTypes.EDUCATION_POST, post.id,
+        )
 
     private fun validatePostInput(title: String, content: String, category: String) {
         if (title.isBlank() || title.length > 150) {

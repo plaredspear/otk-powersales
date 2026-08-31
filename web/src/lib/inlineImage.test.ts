@@ -5,7 +5,7 @@ import {
   isUnrecoverableImageSrc,
   replacePreviewsWithPlaceholders,
   uniqueKeyFromSrc,
-} from './noticeInlineImage';
+} from './inlineImage';
 
 const KEY = 'uploads/notice/2026/07/30/de9a7d0b-006d-4a95-9d81-5a882ab39763.jpg';
 const HOST = 'https://prod-otk-pwrs-storage.s3.ap-northeast-2.amazonaws.com';

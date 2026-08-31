@@ -3,6 +3,9 @@ package com.otoki.powersales.domain.support.notice.service
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.ExternalImageFetcher
+import com.otoki.powersales.platform.common.storage.FetchedImage
+import com.otoki.powersales.platform.common.storage.InlineImageService
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -71,12 +74,19 @@ class NoticeServiceTest {
     private val fcmSender: FcmSender = mockk()
     private val pushBadgeService: PushBadgeService = mockk()
     private val branchScopeGateway: BranchScopeGateway = mockk()
-    private val externalImageFetcher: NoticeExternalImageFetcher = mockk()
+    private val externalImageFetcher: ExternalImageFetcher = mockk()
 
     private lateinit var noticeService: NoticeService
 
     @BeforeEach
     fun setUp() {
+        // 인라인 이미지 로직은 공용 InlineImageService 가 소유한다 — mock 이 아니라 실제 인스턴스를 주입해
+        // 정규화/backfill/cleanup 동작을 그대로 검증한다 (의존은 아래 repository/storage mock 이 담당).
+        val inlineImageService = InlineImageService(
+            uploadFileRepository,
+            storageService,
+            externalImageFetcher,
+        )
         noticeService = NoticeService(
             noticeRepository,
             noticePushLogRepository,
@@ -87,7 +97,7 @@ class NoticeServiceTest {
             fcmSender,
             pushBadgeService,
             branchScopeGateway,
-            externalImageFetcher,
+            inlineImageService,
         )
         // 외부 이미지 다운로드 — 기본은 미매칭(null) stub. 이관 경로를 검증하는 테스트에서 override.
         every { externalImageFetcher.fetch(any()) } returns null
@@ -1431,7 +1441,16 @@ class NoticeServiceTest {
         @Test
         @DisplayName("정상 업로드 - parent_id null + upload_kbn=INLINE 로 적재 + placeholder/previewUrl 반환")
         fun uploadInlineImage_success() {
-            every { fileStorageService.uploadNoticeImage(any(), 0L) } returns "uploads/notice/2026/06/26/inline-uuid.png"
+            // 인라인 업로드는 도메인별 S3 세그먼트를 파라미터로 받아야 하므로 storageService.uploadPrivate 를 직접 쓴다
+            // (첨부용 fileStorageService.uploadNoticeImage 는 domain="notice" 하드코딩이라 공용화 불가).
+            every {
+                storageService.uploadPrivate(domain = "notice", originalName = any(), bytes = any(), contentType = any())
+            } returns UploadResult(
+                key = "uploads/notice/2026/06/26/inline-uuid.png",
+                contentType = "image/png",
+                originalName = "inline.png",
+                sizeBytes = 1024L,
+            )
             every { uploadFileRepository.save(any<UploadFile>()) } answers {
                 val arg = firstArg<UploadFile>()
                 // 신규 INLINE 업로드는 parent_id 미정(null), upload_kbn=INLINE 이어야 한다.

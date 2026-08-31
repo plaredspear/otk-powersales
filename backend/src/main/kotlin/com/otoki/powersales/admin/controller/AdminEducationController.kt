@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.support.education.dto.response.EducationCateg
 import com.otoki.powersales.domain.support.education.dto.response.EducationMutationResponse
 import com.otoki.powersales.domain.support.education.dto.response.EducationPostDetailResponse
 import com.otoki.powersales.domain.support.education.service.EducationService
+import com.otoki.powersales.platform.common.storage.InlineImageUploadResult
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -49,9 +50,12 @@ class AdminEducationController(
         @RequestParam title: String,
         @RequestParam content: String,
         @RequestParam category: String,
-        @RequestParam(required = false) files: List<MultipartFile>?
+        @RequestParam(required = false) files: List<MultipartFile>?,
+        @RequestParam(required = false) sessionUploadedRefids: List<String>?
     ): ResponseEntity<ApiResponse<EducationMutationResponse>> {
-        val response = educationService.createPost(principal.requireEmployeeId(), title, content, category, files)
+        val response = educationService.createPost(
+            principal.requireEmployeeId(), title, content, category, files, sessionUploadedRefids,
+        )
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
@@ -63,10 +67,28 @@ class AdminEducationController(
         @RequestParam content: String,
         @RequestParam category: String,
         @RequestParam(required = false) files: List<MultipartFile>?,
-        @RequestParam(required = false) keepFileKeys: List<String>?
+        @RequestParam(required = false) keepFileKeys: List<String>?,
+        @RequestParam(required = false) sessionUploadedRefids: List<String>?
     ): ResponseEntity<ApiResponse<EducationMutationResponse>> {
-        val response = educationService.updatePost(postId, title, content, category, files, keepFileKeys)
+        val response = educationService.updatePost(
+            postId, title, content, category, files, keepFileKeys, sessionUploadedRefids,
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 교육 본문 인라인 이미지 업로드 (에디터 전용).
+     *
+     * 응답의 placeholder 는 본문에, previewUrl 은 에디터 미리보기에 쓴다 — presigned 는 만료되므로
+     * **본문에 저장하면 안 된다**. 글이 아직 없을 수 있어(신규 작성) 경로에 postId 를 두지 않는다.
+     */
+    @PostMapping("/images/inline")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.CREATE)
+    fun uploadInlineImage(
+        @RequestParam("image") image: MultipartFile
+    ): ResponseEntity<ApiResponse<InlineImageUploadResult>> {
+        val response = educationService.uploadInlineImage(image)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
     @DeleteMapping("/posts/{postId}")

@@ -1,6 +1,5 @@
-package com.otoki.powersales.domain.support.notice.service
+package com.otoki.powersales.platform.common.storage
 
-import com.otoki.powersales.platform.common.storage.StorageConstants
 import org.slf4j.LoggerFactory
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
@@ -18,12 +17,12 @@ data class FetchedImage(
 )
 
 /**
- * 공지 본문에 붙여넣기로 들어온 **외부 이미지 URL** 을 내려받는다 (저장 시 S3 이관용).
+ * 리치텍스트 본문에 붙여넣기로 들어온 **외부 이미지 URL** 을 내려받는다 (저장 시 S3 이관용). 공지 / 교육 공통.
  *
  * 웹 페이지에서 이미지를 복사해 붙여넣으면 에디터에는 그 사이트의 URL 이 그대로 박힌다. 그대로 저장하면
  * (1) 원본 사이트가 링크를 바꾸거나 내리면 깨지고 (2) 사내망/로그인 필요 이미지는 모바일 앱에서 아예
  * 안 보이며 (3) 열람 때마다 외부로 요청이 나간다. 그래서 저장 시점에 서버가 받아 S3 로 옮긴다
- * ([NoticeService.normalizeInlineExternalImages]).
+ * ([InlineImageService.normalizeInlineExternalImages]).
  *
  * ## 안전장치 (서버가 임의 URL 을 호출하므로 SSRF 방어가 필수)
  * - **스킴**: http/https 만. `file:`/`blob:`/그 외는 거부 (서버 로컬 파일 접근 차단).
@@ -33,14 +32,14 @@ data class FetchedImage(
  * - **타입**: 응답 Content-Type 이 이미지 허용 목록에 없으면 거부 (HTML 오류 페이지 등 혼입 차단).
  * - **시간**: 연결 3초 / 읽기 5초 — 저장 요청이 외부 지연에 묶이지 않게 한다.
  *
- * 실패는 예외를 던지지 않고 `null` 을 반환한다 — 이미지 하나 때문에 공지 저장 자체가 실패하면 안 되므로,
+ * 실패는 예외를 던지지 않고 `null` 을 반환한다 — 이미지 하나 때문에 본문 저장 자체가 실패하면 안 되므로,
  * 호출부가 원본 태그를 보존하고 경고 로그만 남긴다.
  */
 @Component
-class NoticeExternalImageFetcher {
+class ExternalImageFetcher {
 
     companion object {
-        private val log = LoggerFactory.getLogger(NoticeExternalImageFetcher::class.java)
+        private val log = LoggerFactory.getLogger(ExternalImageFetcher::class.java)
 
         private const val CONNECT_TIMEOUT_MS = 3_000L
         private const val READ_TIMEOUT_MS = 5_000L

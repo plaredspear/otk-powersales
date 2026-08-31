@@ -3,10 +3,11 @@ import DOMPurify from 'dompurify';
 import './MobilePreview.css';
 
 /**
- * 공지 작성/수정 화면의 모바일 미리보기 프레임.
+ * 작성/수정 화면의 모바일 미리보기 프레임. 공지 / 교육 공용.
  *
- * mobile/lib/presentation/pages/notice_detail_page.dart 의 상세 화면 레이아웃
- * (분류 태그 → 제목 → 등록일 → 구분선 → 본문)을 web 에서 재현한다.
+ * mobile 상세 화면의 레이아웃(분류 태그 → 제목 → 등록일 → 구분선 → 본문)을 web 에서 재현한다.
+ * 공지(notice_detail_page.dart)와 교육(education_detail_page.dart)의 레이아웃이 동일해 한 컴포넌트로
+ * 쓰고, 다른 것은 분류 태그의 색([badgeVariant])뿐이다.
  * 폭 375px + 모바일 디자인 토큰 스타일(MobilePreview.css)로 실제 표현을 근사한다.
  *
  * 본문 HTML 은 에디터가 편집 중인 값을 그대로 받는다 — 저장 전 상태라
@@ -16,10 +17,13 @@ import './MobilePreview.css';
  * 주의: 모바일은 flutter_widget_from_html_core 로 태그 기반 렌더링만 하고
  * 인라인 style/CSS class 는 무시하므로, 재현도 태그 기반 스타일로만 맞춘다.
  */
-export interface MobileNoticePreviewProps {
+/** 분류 태그 색 — 모바일 상세 화면의 배지 색과 1:1 대응 (MobilePreview.css 참조). */
+export type PreviewBadgeVariant = 'company' | 'other' | 'education';
+
+export interface MobileContentPreviewProps {
   title: string;
   categoryName: string;
-  isCompanyCategory: boolean;
+  badgeVariant: PreviewBadgeVariant;
   content: string;
 }
 
@@ -30,13 +34,13 @@ function formatNow(): string {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export default function MobileNoticePreview({
+export default function MobileContentPreview({
   title,
   categoryName,
-  isCompanyCategory,
+  badgeVariant,
   content,
-}: MobileNoticePreviewProps) {
-  // data-refid 는 mobile cacheKey 용 식별자이므로 sanitize 시 보존 (NoticeDetailPage 정합).
+}: MobileContentPreviewProps) {
+  // data-refid 는 mobile cacheKey 용 식별자이므로 sanitize 시 보존 (상세 페이지 렌더와 정합).
   const safeHtml = useMemo(
     () => DOMPurify.sanitize(content || '', { ADD_ATTR: ['data-refid'] }),
     [content],
@@ -50,11 +54,7 @@ export default function MobileNoticePreview({
       <div className="mobile-preview-frame">
         <div className="mobile-preview-statusbar" />
         <div className="mobile-preview-scroll">
-          <span
-            className={`mobile-preview-badge ${
-              isCompanyCategory ? 'mobile-preview-badge--company' : 'mobile-preview-badge--other'
-            }`}
-          >
+          <span className={`mobile-preview-badge mobile-preview-badge--${badgeVariant}`}>
             {categoryName || '분류'}
           </span>
 

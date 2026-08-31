@@ -1,6 +1,13 @@
 package com.otoki.powersales.domain.support.education.service
 
+import com.otoki.powersales.platform.common.entity.UploadFile
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.ExternalImageFetcher
+import com.otoki.powersales.platform.common.storage.InlineImageService
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.storage.UploadResult
 import com.otoki.powersales.domain.support.education.entity.EducationPost
 import com.otoki.powersales.domain.support.education.entity.EducationPostAttachment
 import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
@@ -37,18 +44,36 @@ class EducationServiceTest {
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository = mockk()
     private val fileStorageService: FileStorageService = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val uploadFileRepository: UploadFileRepository = mockk()
+    private val storageService: StorageService = mockk()
+    private val externalImageFetcher: ExternalImageFetcher = mockk()
 
+    // 인라인 이미지 로직은 공용 InlineImageService 가 소유한다 — mock 이 아니라 실제 인스턴스를 주입해
+    // 본문 정규화/정리 동작이 교육 경로에서도 그대로 도는지 검증한다.
     private val educationService = EducationService(
         educationPostRepository,
         educationPostAttachmentRepository,
         fileStorageService,
         employeeRepository,
+        InlineImageService(uploadFileRepository, storageService, externalImageFetcher),
+        uploadFileRepository,
+        storageService,
     )
 
     private lateinit var testPost: EducationPost
 
     @BeforeEach
     fun setUp() {
+        // 인라인 이미지 기본 stub — 기존 테스트 본문에는 <img> 가 없어 실제로는 대부분 진입하지 않지만,
+        // 정규화/정리 경로가 조회를 시도할 때 빈 결과를 돌려주도록 둔다 (개별 테스트에서 override).
+        every { uploadFileRepository.findByUniqueKeyInAndParentTypeAndIsDeletedFalse(any(), any()) } returns emptyList()
+        every { uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), any()) } returns emptyList()
+        every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(any(), any()) } returns emptyList()
+        every { externalImageFetcher.fetch(any()) } returns null
+        every { storageService.getPresignedUrl(any(), any()) } answers {
+            "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/${firstArg<String>()}?X-Amz-Signature=test"
+        }
+
         testPost = EducationPost(
             eduId = "EDU001",
             eduTitle = "진짬뽕 시식 매뉴얼",
@@ -443,6 +468,150 @@ class EducationServiceTest {
                 .containsExactly("c00001", "c00002", "c00003", "c00005", "c00004")
             assertThat(result.map { it.eduCodeNm })
                 .containsExactly("시식 매뉴얼", "안전교육", "영업 교육", "APP 매뉴얼", "설문조사")
+        }
+    }
+
+    @Nested
+    @DisplayName("본문 인라인 이미지 — 공지와 동일 파이프라인(InlineImageService) 적용")
+    inner class InlineImageTests {
+
+        private val testEmployee = Employee(id = 1L, employeeCode = "12345678", name = "테스트")
+
+        private fun image(name: String = "inline.png"): MockMultipartFile =
+            MockMultipartFile("image", name, "image/png", ByteArray(1024))
+
+        private fun uploadResult(key: String) = UploadResult(
+            key = key,
+            contentType = "image/png",
+            originalName = "inline.png",
+            sizeBytes = 1024L,
+        )
+
+        @Test
+        @DisplayName("업로드 - parent_id null + upload_kbn=INLINE 로 적재, 교육 전용 S3 세그먼트 사용")
+        fun uploadInlineImage_success() {
+            every {
+                storageService.uploadPrivate(
+                    domain = "education-inline", originalName = any(), bytes = any(), contentType = any(),
+                )
+            } returns uploadResult("uploads/education-inline/2026/08/31/x.png")
+            every { uploadFileRepository.save(any<UploadFile>()) } answers {
+                val arg = firstArg<UploadFile>()
+                // 업로드 시점엔 글이 없을 수 있어(신규 작성) parent_id 는 비운다 — 저장 시 backfill 이 채운다.
+                assertThat(arg.parentId).isNull()
+                assertThat(arg.uploadKbn).isEqualTo("INLINE")
+                // 첨부(EducationPostAttachment)와 섞이지 않도록 parent_type 으로 격리된다.
+                assertThat(arg.parentType).isEqualTo(UploadFileParentTypes.EDUCATION_POST)
+                UploadFile(
+                    id = 555L,
+                    name = arg.name,
+                    uniqueKey = arg.uniqueKey,
+                    parentType = arg.parentType,
+                    parentId = arg.parentId,
+                    uploadKbn = arg.uploadKbn,
+                    isDeleted = arg.isDeleted,
+                )
+            }
+
+            val result = educationService.uploadInlineImage(image())
+
+            assertThat(result.refid).isEqualTo("555")
+            // 본문에는 만료되는 presigned 가 아니라 placeholder 가 들어가야 한다.
+            assertThat(result.placeholder).contains("""data-refid="555"""")
+            assertThat(result.placeholder).contains("notice-image://555")
+            assertThat(result.previewUrl).contains("uploads/education-inline/2026/08/31/x.png")
+        }
+
+        @Test
+        @DisplayName("작성 - 본문의 만료 presigned URL 을 placeholder 로 되돌려 저장한다")
+        fun createPost_normalizesPresignedToPlaceholder() {
+            val uniqueKey = "uploads/education-inline/2026/08/31/x.png"
+            val inlineFile = UploadFile(
+                id = 555L,
+                uniqueKey = uniqueKey,
+                parentType = UploadFileParentTypes.EDUCATION_POST,
+                parentId = null,
+                uploadKbn = "INLINE",
+                isDeleted = false,
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
+            every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
+            every {
+                uploadFileRepository.findByUniqueKeyInAndParentTypeAndIsDeletedFalse(
+                    any(), UploadFileParentTypes.EDUCATION_POST,
+                )
+            } returns listOf(inlineFile)
+
+            val body = """<p><img src="https://b.s3.amazonaws.com/private/$uniqueKey?X-Amz-Signature=z"></p>"""
+            val result = educationService.createPost(1L, "교육", body, "c00001", null)
+
+            // 만료 URL 이 그대로 저장되면 30분 뒤 이미지가 영구히 깨진다 (공지 2393 과 같은 사고).
+            assertThat(result.eduContent).doesNotContain("X-Amz-Signature")
+            assertThat(result.eduContent).contains("""data-refid="555"""")
+        }
+
+        @Test
+        @DisplayName("작성 - 본문이 참조하는 임시 업로드분을 이 글로 backfill 한다")
+        fun createPost_backfillsInlineImageParent() {
+            val inlineFile = UploadFile(
+                id = 555L,
+                uniqueKey = "uploads/education-inline/2026/08/31/x.png",
+                parentType = UploadFileParentTypes.EDUCATION_POST,
+                parentId = null,
+                uploadKbn = "INLINE",
+                isDeleted = false,
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
+            every { educationPostRepository.save(any<EducationPost>()) } answers {
+                // parent_id 로는 화면 식별자 eduId(String)가 아니라 PK id(Long)를 써야 한다.
+                firstArg<EducationPost>().let { EducationPost(
+                    id = 99L,
+                    eduId = it.eduId,
+                    eduTitle = it.eduTitle,
+                    eduContent = it.eduContent,
+                    eduCode = it.eduCode,
+                    employee = it.employee,
+                    empCode = it.empCode,
+                ) }
+            }
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(
+                    listOf(555L), UploadFileParentTypes.EDUCATION_POST,
+                )
+            } returns listOf(inlineFile)
+
+            val body = """<p><img src="notice-image://555" data-refid="555"></p>"""
+            educationService.createPost(1L, "교육", body, "c00001", null)
+
+            assertThat(inlineFile.parentId).isEqualTo(99L)
+        }
+
+        @Test
+        @DisplayName("삭제 - 본문 인라인 이미지도 S3 삭제 + soft-delete 한다 (hard delete 라 고아 방지)")
+        fun deletePost_cleansUpInlineImages() {
+            val inlineFile = UploadFile(
+                id = 555L,
+                uniqueKey = "uploads/education-inline/2026/08/31/x.png",
+                parentType = UploadFileParentTypes.EDUCATION_POST,
+                parentId = 99L,
+                uploadKbn = "INLINE",
+                isDeleted = false,
+            )
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns emptyList()
+            every { educationPostAttachmentRepository.deleteAll(any()) } just Runs
+            every { educationPostRepository.delete(testPost) } just Runs
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.EDUCATION_POST, any(),
+                )
+            } returns listOf(inlineFile)
+            every { storageService.deletePrivate(any()) } just Runs
+
+            educationService.deletePost("EDU001")
+
+            verify { storageService.deletePrivate("uploads/education-inline/2026/08/31/x.png") }
+            assertThat(inlineFile.isDeleted).isTrue()
         }
     }
 }
