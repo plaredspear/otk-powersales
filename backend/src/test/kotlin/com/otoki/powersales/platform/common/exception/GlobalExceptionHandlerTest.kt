@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.converter.HttpMessageNotWritableException
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.context.request.ServletWebRequest
@@ -213,5 +214,65 @@ class GlobalExceptionHandlerTest {
         val event = singleLogEvent()
         assertThat(event.level).isEqualTo(Level.ERROR)
         assertThat(event.throwableProxy).isNotNull()
+    }
+
+    @Test
+    @DisplayName("직렬화 중 이탈(HttpMessageNotWritable 로 감싸인 broken pipe) 도 WARN 한 줄 + URI 기록")
+    fun handleClientDisconnect_wrappedInHttpMessageNotWritableLogsWarn() {
+        // 운영 실사례 재현 — 응답 JSON 을 쓰는 도중 클라이언트가 끊으면 Jackson 이
+        // broken pipe 를 감싸 HttpMessageNotWritableException 으로 올라온다. 이탈 신호가
+        // cause 사슬 안쪽에 묻혀 catch-all 로 새면서 ERROR 스택 150줄이 쌓이던 경로.
+        val abort = org.apache.catalina.connector.ClientAbortException(java.io.IOException("Broken pipe"))
+        val notUsable = AsyncRequestNotUsableException("ServletOutputStream failed to write", abort)
+        val ex = HttpMessageNotWritableException("Could not write JSON", notUsable)
+        val request = ServletWebRequest(MockHttpServletRequest("GET", "/api/v1/mobile/products/search"))
+
+        val response = handler.handleClientDisconnect(ex, request)
+
+        assertThat(response).isNull()
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.WARN)
+        assertThat(event.throwableProxy).isNull()
+        // 어느 API 에서 끊겼는지 특정 가능해야 한다 — 이 경로의 진단 가치가 URI 에 있다.
+        assertThat(event.formattedMessage).contains("/api/v1/mobile/products/search")
+    }
+
+    @Test
+    @DisplayName("이탈이 아닌 직렬화 실패(HttpMessageNotWritable) 는 500 + ERROR 스택트레이스")
+    fun handleClientDisconnect_genuineSerializationFailureStaysError() {
+        // 순환 참조 등 진짜 직렬화 결함은 서버 버그이므로 종전대로 드러나야 한다.
+        val ex = HttpMessageNotWritableException(
+            "Could not write JSON",
+            IllegalStateException("Infinite recursion (StackOverflowError)"),
+        )
+        val request = ServletWebRequest(MockHttpServletRequest("GET", "/api/v1/mobile/notices"))
+
+        val response = handler.handleClientDisconnect(ex, request)
+
+        assertThat(response?.statusCode).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        val body = response?.body as ApiResponse<*>
+        assertThat(body.error?.code).isEqualTo("INTERNAL_SERVER_ERROR")
+
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.ERROR)
+        assertThat(event.throwableProxy).isNotNull()
+    }
+
+    @Test
+    @DisplayName("cause 사슬 깊은 곳의 broken pipe IOException 도 WARN 한 줄 (ClientAbort 부재)")
+    fun handleClientDisconnect_nestedBrokenPipeWithoutClientAbortLogsWarn() {
+        // 컨테이너/스택 조합에 따라 ClientAbortException 없이 IOException 만 감싸여 올 수 있다.
+        val ex = HttpMessageNotWritableException(
+            "Could not write JSON",
+            java.io.IOException("Connection reset by peer"),
+        )
+        val request = ServletWebRequest(MockHttpServletRequest("GET", "/api/v1/mobile/me/order-requests/9"))
+
+        val response = handler.handleClientDisconnect(ex, request)
+
+        assertThat(response).isNull()
+        val event = singleLogEvent()
+        assertThat(event.level).isEqualTo(Level.WARN)
+        assertThat(event.throwableProxy).isNull()
     }
 }

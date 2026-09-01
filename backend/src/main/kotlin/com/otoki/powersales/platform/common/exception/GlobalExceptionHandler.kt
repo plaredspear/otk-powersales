@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.FieldError
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.http.converter.HttpMessageNotWritableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -298,12 +299,20 @@ class GlobalExceptionHandler {
      *
      * `ClientAbortException`(Tomcat) 은 컨테이너 의존이라 클래스명으로 판별한다 —
      * 직접 import 하면 다른 서블릿 컨테이너에서 클래스 로딩이 깨진다.
+     *
+     * `HttpMessageNotWritableException` 도 대상이다 — 응답 본문 직렬화 도중 연결이 끊기면
+     * Jackson 이 broken pipe 를 `JacksonIOException` → `HttpMessageNotWritableException` 으로
+     * 감싸 던진다. `@ExceptionHandler` 는 최상위 타입으로만 매칭하므로, 이탈 신호가 cause
+     * 사슬 안쪽에 묻혀 catch-all 로 새는 경로였다. 판별은 타입이 아니라 사슬 순회로 통일한다.
      */
-    @ExceptionHandler(AsyncRequestNotUsableException::class, java.io.IOException::class)
+    @ExceptionHandler(
+        AsyncRequestNotUsableException::class,
+        java.io.IOException::class,
+        HttpMessageNotWritableException::class,
+    )
     fun handleClientDisconnect(ex: Exception, request: WebRequest): ResponseEntity<Any>? {
-        // AsyncRequestNotUsableException 도 IOException 하위라 명시 분기가 먼저다.
-        if (ex !is AsyncRequestNotUsableException && !isClientAbort(ex)) {
-            // 클라이언트 이탈이 아닌 진짜 I/O 오류 — catch-all 과 동일하게 500 + 스택트레이스.
+        if (!isClientDisconnect(ex)) {
+            // 클라이언트 이탈이 아닌 진짜 I/O·직렬화 오류 — catch-all 과 동일하게 500 + 스택트레이스.
             log.error("Unhandled exception: {}", ex.message, ex)
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -315,14 +324,26 @@ class GlobalExceptionHandler {
         return null
     }
 
-    /** Tomcat `ClientAbortException` 또는 그 원인 사슬에 broken pipe 가 있는지. */
-    private fun isClientAbort(ex: Throwable): Boolean {
+    /**
+     * 원인 사슬 어디에든 클라이언트 이탈 신호가 있는지 —
+     * `AsyncRequestNotUsableException`, Tomcat `ClientAbortException`(클래스명 판별),
+     * 또는 broken pipe / connection reset I/O 오류.
+     */
+    private fun isClientDisconnect(ex: Throwable): Boolean {
         var cause: Throwable? = ex
         while (cause != null) {
+            if (cause is AsyncRequestNotUsableException) return true
             if (cause.javaClass.name == "org.apache.catalina.connector.ClientAbortException") return true
+            if (cause is java.io.IOException && isDisconnectMessage(cause.message)) return true
             cause = cause.cause?.takeIf { it !== cause }
         }
         return false
+    }
+
+    /** OS/JDK 가 연결 단절 시 내는 표준 문구. 로케일 무관하도록 영문 원문으로 비교한다. */
+    private fun isDisconnectMessage(message: String?): Boolean {
+        val normalized = message?.lowercase() ?: return false
+        return normalized.contains("broken pipe") || normalized.contains("connection reset")
     }
 
     /**
