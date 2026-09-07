@@ -7149,6 +7149,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseInlineImageUploadResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InlineImageUploadResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseInspectionDetailResponse" : {
         "properties" : {
           "data" : {
@@ -17684,6 +17713,20 @@
         },
         "type" : "object"
       },
+      "InlineImageUploadResult" : {
+        "properties" : {
+          "placeholder" : {
+            "type" : "string"
+          },
+          "previewUrl" : {
+            "type" : "string"
+          },
+          "refid" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "InspectionDetailResponse" : {
         "properties" : {
           "accountId" : {
@@ -24017,6 +24060,10 @@
             },
             "type" : "array"
           },
+          "displayedRowCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "endDate" : {
             "type" : "string"
           },
@@ -24044,8 +24091,15 @@
           "totalPrimaryQuantity" : {
             "type" : "number"
           },
+          "totalRowCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "totalTargetAmount" : {
             "type" : "number"
+          },
+          "truncated" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -31095,6 +31149,40 @@
         "tags" : [ "admin-education-controller" ]
       }
     },
+    "/api/v1/admin/education/images/inline" : {
+      "post" : {
+        "operationId" : "uploadInlineImage",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "properties" : {
+                  "image" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "image" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseInlineImageUploadResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-education-controller" ]
+      }
+    },
     "/api/v1/admin/education/posts" : {
       "get" : {
         "operationId" : "getPosts_1",
@@ -31175,6 +31263,16 @@
           "schema" : {
             "items" : {
               "format" : "binary",
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sessionUploadedRefids",
+          "required" : false,
+          "schema" : {
+            "items" : {
               "type" : "string"
             },
             "type" : "array"
@@ -31288,6 +31386,16 @@
         }, {
           "in" : "query",
           "name" : "keepFileKeys",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sessionUploadedRefids",
           "required" : false,
           "schema" : {
             "items" : {
