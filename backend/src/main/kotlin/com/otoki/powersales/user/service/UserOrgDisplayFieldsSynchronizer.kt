@@ -2,6 +2,7 @@ package com.otoki.powersales.user.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.repository.dto.OrganizationCacheDto
 import com.otoki.powersales.user.entity.User
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -51,10 +52,7 @@ class UserOrgDisplayFieldsSynchronizer(
      */
     @Transactional
     fun sync(user: User, employee: Employee): Boolean {
-        val org = employee.costCenterCode
-            ?.takeIf { it.isNotBlank() }
-            ?.let { organizationRepository.findFirstByOrgCodeCascade(it) }
-            ?: return false
+        val org = resolveOrg(employee) ?: return false
 
         user.division = org.orgNameLevel3
         user.department = joinDepartment(org.orgNameLevel3, org.orgNameLevel4)
@@ -63,6 +61,17 @@ class UserOrgDisplayFieldsSynchronizer(
         user.branch = employee.orgName
         return true
     }
+
+    /**
+     * 사원의 코스트센터 → 조직 cascade (Level5→4→3) 조회.
+     *
+     * [com.otoki.powersales.user.service.UserRoleAssignmentResolver] 호출자도 같은 조직 행이 필요해
+     * 조회 지점을 여기 하나로 모은다 (Redis 24h 캐시라 중복 호출 비용은 캐시 hit).
+     */
+    fun resolveOrg(employee: Employee): OrganizationCacheDto? =
+        employee.costCenterCode
+            ?.takeIf { it.isNotBlank() }
+            ?.let { organizationRepository.findFirstByOrgCodeCascade(it) }
 
     /**
      * `User.department` 조립 — SF cls:316 `OrgNameLevel3__c + '_' + OrgNameLevel4__c` 정합.

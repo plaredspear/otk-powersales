@@ -59,4 +59,17 @@ interface UserRepositoryCustom {
      * 호출자: [com.otoki.powersales.user.service.UserOrgFieldsBackfillRunner] (부팅 catch-up).
      */
     fun findEmployeeCodesWithoutOrgDisplayFields(): List<String>
+
+    /**
+     * `user_role_id` 가 비어 있는 **활성 신규 생성분** 사원 매칭 User 의 사번 목록.
+     *
+     * `sfid IS NULL` = SF 마이그레이션 유래가 아닌 행. SF 에서도 UserRole 이 비어 있던 계정은 신규가
+     * 새로 배정하지 않는다는 운영 결정에 따른 조건이다. `is_active` 는 SF 가 퇴직 시 UserRoleId 를
+     * 지우므로(정상 상태) 제외하기 위한 것.
+     *
+     * 배정에 성공한 행은 `user_role_id` 가 채워져 다음 실행부터 자동으로 빠진다.
+     *
+     * 호출자: [com.otoki.powersales.user.service.UserRoleBackfillRunner] (부팅 catch-up).
+     */
+    fun findEmployeeCodesWithoutUserRole(): List<String>
 }

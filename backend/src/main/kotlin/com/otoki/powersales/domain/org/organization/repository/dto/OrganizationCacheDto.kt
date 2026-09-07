@@ -19,6 +19,8 @@ import com.otoki.powersales.domain.org.organization.entity.Organization
  * - `orgCodeLevel3` — [com.otoki.powersales.user.service.EmployeeProfileResolver] 의 Profile.name 분기
  * - `orgNameLevel4` / `orgNameLevel3` — [com.otoki.powersales.user.service.UserRoleResolver] 의 영업지원/영업본부 매칭
  * - `costCenterLevel3` — [com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService] 의 영업지원실 다중 지점 expand
+ * - `orgCodeLevel5` — [com.otoki.powersales.user.service.UserRoleAssignmentResolver] 의 유통총괄실 prefix 분기
+ *   (본인 코스트센터가 Level5 로 정확히 잡힐 때만 Level4 조직명을 앞에 붙임)
  *
  * 신규 호출자가 다른 필드를 필요로 하면 본 DTO 에 필드 추가 + Repository 의 [from] 매핑 갱신.
  * cache value 형식 변경 시 기존 Redis entry 호환성 — `GenericJacksonJsonRedisSerializer` 의
@@ -30,6 +32,7 @@ data class OrganizationCacheDto(
     val orgNameLevel3: String?,
     val orgNameLevel4: String?,
     val costCenterLevel3: String?,
+    val orgCodeLevel5: String? = null,
 ) {
     companion object {
         fun from(org: Organization): OrganizationCacheDto = OrganizationCacheDto(
@@ -37,6 +40,7 @@ data class OrganizationCacheDto(
             orgNameLevel3 = org.orgNameLevel3,
             orgNameLevel4 = org.orgNameLevel4,
             costCenterLevel3 = org.costCenterLevel3,
+            orgCodeLevel5 = org.orgCodeLevel5,
         )
     }
 }

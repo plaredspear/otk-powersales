@@ -152,4 +152,16 @@ class UserRepositoryCustomImpl(
                 user.employeeCode.isNotNull,
             )
             .fetch()
+
+    override fun findEmployeeCodesWithoutUserRole(): List<String> =
+        queryFactory
+            .select(user.employeeCode)
+            .from(user)
+            .where(
+                user.userRoleId.isNull,
+                user.isActive.isTrue,
+                user.sfid.isNull,
+                user.employeeCode.isNotNull,
+            )
+            .fetch()
 }

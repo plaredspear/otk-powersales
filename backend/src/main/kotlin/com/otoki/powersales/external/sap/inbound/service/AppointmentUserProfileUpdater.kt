@@ -10,6 +10,7 @@ import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepositor
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
 import com.otoki.powersales.user.service.UserOrgDisplayFieldsSynchronizer
+import com.otoki.powersales.user.service.UserRoleAssignmentResolver
 import com.otoki.powersales.user.service.UserRoleResolver
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -21,6 +22,7 @@ import java.time.LocalDate
 class AppointmentUserProfileUpdater(
     private val employeeRepository: EmployeeRepository,
     private val userOrgDisplayFieldsSynchronizer: UserOrgDisplayFieldsSynchronizer,
+    private val userRoleAssignmentResolver: UserRoleAssignmentResolver,
     private val systemCodeMasterRepository: SystemCodeMasterRepository,
     private val userRepository: UserRepository,
     private val employeeProfileResolver: EmployeeProfileResolver,
@@ -52,6 +54,8 @@ class AppointmentUserProfileUpdater(
     @Transactional
     internal fun updateUserProfiles(appointments: List<Appointment>, today: LocalDate) {
         val codeMap = loadSystemCodeMap()
+        // UserRole 이름 색인은 발령 건수와 무관하게 1회만 적재 (SF cls:241-256 도 future 진입 시 1회).
+        val userRoleNameIndex = userRoleAssignmentResolver.loadNameIndex()
 
         var updatedCount = 0
         var skippedCount = 0
@@ -91,7 +95,7 @@ class AppointmentUserProfileUpdater(
                     applyImmediateAppointment(employee, appointment, appointDate, codeMap)
                 }
 
-                updateUserProfileCache(employee)
+                updateUserProfileCache(employee, userRoleNameIndex)
 
                 updatedCount++
             } catch (e: Exception) {
@@ -323,7 +327,7 @@ class AppointmentUserProfileUpdater(
      *
      * SF `AppointmentTriggerHanlder.cls:233-365` `updateUser(@future)` 동등 — 매칭 User 행
      * (`User.employeeCode == Employee.employeeCode`) 에 대해 두 묶음을 갱신한다:
-     * 1. 권한 파생 캐시 — `profileId` / `isSalesSupport` / `costCenterCode`
+     * 1. 권한 파생 캐시 — `profileId` / `isSalesSupport` / `costCenterCode` / `userRoleId`
      * 2. 조직 표시 필드 — `division` / `department` / `title` / `hrCode` / `branch` (cls:313-323)
      *
      * 2번은 user 도메인의 [UserOrgDisplayFieldsSynchronizer] 에 위임한다 (SF `orgInfoTmp != null` 가드 포함) —
@@ -335,12 +339,29 @@ class AppointmentUserProfileUpdater(
      * 매칭 User 행 부재 시 silently skip (마이그레이션 이전 단계 / 신규 미동기화 사원 케이스).
      */
     internal fun updateUserProfileCache(employee: Employee) {
+        updateUserProfileCache(employee, userRoleAssignmentResolver.loadNameIndex())
+    }
+
+    /**
+     * 색인 주입 오버로드 — 다건 처리에서 `UserRole` 이름 색인(273행)을 사원마다 다시 읽지 않기 위한 진입점.
+     * 단건 호출자는 위 [updateUserProfileCache] 를 쓰면 된다.
+     */
+    internal fun updateUserProfileCache(employee: Employee, userRoleNameIndex: Map<String, Long>) {
         val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) } ?: return
         user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode
         userOrgDisplayFieldsSynchronizer.sync(user, employee)
-        // profileId / isSalesSupport 가 권한 산출 입력이라 변경 즉시 cache invalidate.
+
+        // SF cls:367-398 — UserRole 배정. sharing rule 의 ROLE 타겟 매칭과 role hierarchy 부여의
+        // 유일한 연결 고리라, 비어 있으면 OWD=Private SObject 가 전부 차단된다.
+        // 미매칭 시 기존 값 유지 (레거시는 null 로 덮어써 그 사용자를 조직도 밖으로 밀어낸다).
+        userOrgDisplayFieldsSynchronizer.resolveOrg(employee)?.let { org ->
+            userRoleAssignmentResolver.resolveUserRoleId(employee, org, userRoleNameIndex)
+                ?.let { user.userRoleId = it }
+        }
+
+        // profileId / isSalesSupport / userRoleId 가 권한 산출 입력이라 변경 즉시 cache invalidate.
         adminPermissionCache.invalidate(user.id)
         adminDataScopeCache.invalidate(user.id)
     }

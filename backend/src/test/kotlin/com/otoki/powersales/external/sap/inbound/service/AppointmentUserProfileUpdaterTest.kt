@@ -13,6 +13,7 @@ import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
 import com.otoki.powersales.user.service.UserOrgDisplayFieldsSynchronizer
+import com.otoki.powersales.user.service.UserRoleAssignmentResolver
 import com.otoki.powersales.user.service.UserRoleResolver
 import io.mockk.every
 import io.mockk.mockk
@@ -29,6 +30,7 @@ class AppointmentUserProfileUpdaterTest {
 
     private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
     private val userOrgDisplayFieldsSynchronizer: UserOrgDisplayFieldsSynchronizer = mockk(relaxed = true)
+    private val userRoleAssignmentResolver: UserRoleAssignmentResolver = mockk(relaxed = true)
     private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val employeeProfileResolver: EmployeeProfileResolver = mockk(relaxed = true)
@@ -38,6 +40,7 @@ class AppointmentUserProfileUpdaterTest {
     private val updater = AppointmentUserProfileUpdater(
         employeeRepository,
         userOrgDisplayFieldsSynchronizer,
+        userRoleAssignmentResolver,
         systemCodeMasterRepository,
         userRepository,
         employeeProfileResolver,
