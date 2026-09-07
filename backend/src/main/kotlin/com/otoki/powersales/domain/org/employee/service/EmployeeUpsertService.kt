@@ -134,6 +134,18 @@ class EmployeeUpsertService(
             existingUsersByCode.forEach { (empCode, user) ->
                 val employee = savedByCode[empCode] ?: return@forEach
                 if (employee.costCenterCode in EXCLUDED_COST_CENTER_CODES) return@forEach
+                // SF cls:249 `userTmp.LastName = obj.Name` 동등. SF 의 User.Name 은
+                // FirstName + LastName 파생 formula 라 LastName 대입만으로 표시명이 함께 갱신되지만,
+                // 신규는 `name` 이 독립 컬럼이므로 두 컬럼을 함께 맞춘다 (한글명은 성/이름 분리 없음).
+                user.lastName = employee.name
+                user.name = employee.name
+                // SF cls:250-256 — 개인 Email 이 있을 때만 덮어쓴다 (null 이면 기존 값 유지).
+                // Username 은 SF update 경로에서도 갱신 대상이 아니다 (로그인 ID 고정).
+                employee.email?.takeIf { it.isNotBlank() }?.let { user.email = it }
+                // SF cls:259-261 — MobilePhone ← HomePhone, Phone ← WorkPhone, HR_Code__c ← CostCenterCode.
+                user.mobilePhone = employee.homePhone
+                user.phone = employee.workPhone
+                user.hrCode = employee.costCenterCode
                 user.costCenterCode = employee.costCenterCode
                 // SF cls:264-270 동등 — 재직상태 퇴직 → 기존 User 비활성화. 그 외 → 활성.
                 user.isActive = employee.status != STATUS_RETIRED
@@ -161,6 +173,8 @@ class EmployeeUpsertService(
                                 role = employee.role,
                                 appLoginActive = employee.appLoginActive,
                                 costCenterCode = employee.costCenterCode,
+                                homePhone = employee.homePhone,
+                                workPhone = employee.workPhone,
                             )
                         }
                     )

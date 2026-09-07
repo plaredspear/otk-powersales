@@ -141,4 +141,15 @@ class UserRepositoryCustomImpl(
                 sfid to id
             }
     }
+
+    override fun findEmployeeCodesWithoutOrgDisplayFields(): List<String> =
+        queryFactory
+            .select(user.employeeCode)
+            .from(user)
+            .where(
+                user.branch.isNull,
+                user.division.isNull,
+                user.employeeCode.isNotNull,
+            )
+            .fetch()
 }

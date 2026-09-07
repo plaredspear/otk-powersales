@@ -35,4 +35,8 @@ data class EmployeeSnapshot(
     val role: String?,
     val appLoginActive: Boolean?,
     val costCenterCode: String? = null,
+    /** SF `DKRetail__HomePhone__c` — User.MobilePhone 초기값 (cls:299). */
+    val homePhone: String? = null,
+    /** SF `DKRetail__WorkPhone__c` — User.Phone 초기값 (cls:300). */
+    val workPhone: String? = null,
 )

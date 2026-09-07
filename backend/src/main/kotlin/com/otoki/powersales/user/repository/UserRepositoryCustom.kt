@@ -47,4 +47,16 @@ interface UserRepositoryCustom {
      * snapshot 적재 시점에 신규 User.id 로 pre-resolve 하는 용도.
      */
     fun findIdsBySfidIn(sfids: Collection<String>): List<Pair<String, Long>>
+
+    /**
+     * 조직 표시 필드가 한 번도 채워지지 않은 사원 매칭 User 의 사번 목록.
+     *
+     * `branch` / `division` 이 **둘 다** null 인 행만 대상 — `branch` 단독 기준은 발령 이력이 없어
+     * `Employee.orgName` 이 null 인 사원을 매 부팅 재조회하게 만든다 (동기화에 성공해도 branch 는
+     * 계속 null 이므로). 두 컬럼 모두 [com.otoki.powersales.user.service.UserOrgDisplayFieldsSynchronizer]
+     * 만 쓰기 때문에 "미동기화" 마커로 안전하다 — `hrCode` 는 SAP 사원 마스터 인바운드도 쓰므로 부적합.
+     *
+     * 호출자: [com.otoki.powersales.user.service.UserOrgFieldsBackfillRunner] (부팅 catch-up).
+     */
+    fun findEmployeeCodesWithoutOrgDisplayFields(): List<String>
 }

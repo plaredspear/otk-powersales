@@ -6,10 +6,10 @@ import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
+import com.otoki.powersales.user.service.UserOrgDisplayFieldsSynchronizer
 import com.otoki.powersales.user.service.UserRoleResolver
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -20,7 +20,7 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class AppointmentUserProfileUpdater(
     private val employeeRepository: EmployeeRepository,
-    private val organizationRepository: OrganizationRepository,
+    private val userOrgDisplayFieldsSynchronizer: UserOrgDisplayFieldsSynchronizer,
     private val systemCodeMasterRepository: SystemCodeMasterRepository,
     private val userRepository: UserRepository,
     private val employeeProfileResolver: EmployeeProfileResolver,
@@ -319,10 +319,19 @@ class AppointmentUserProfileUpdater(
     }
 
     /**
-     * 발령 후처리로 변경된 Employee 의 최신 상태를 기준으로 User cache 갱신.
+     * 발령 후처리로 변경된 Employee 의 최신 상태를 기준으로 User 파생 정보 갱신.
      *
-     * SF `AppointmentTriggerHanlder.cls:233-365` `updateUser(@future)` 동등 — Profile/UserRole 산출 후
-     * 매칭 User 행(`User.employeeCode == Employee.employeeCode`) 의 `profileId` / `isSalesSupport` 갱신.
+     * SF `AppointmentTriggerHanlder.cls:233-365` `updateUser(@future)` 동등 — 매칭 User 행
+     * (`User.employeeCode == Employee.employeeCode`) 에 대해 두 묶음을 갱신한다:
+     * 1. 권한 파생 캐시 — `profileId` / `isSalesSupport` / `costCenterCode`
+     * 2. 조직 표시 필드 — `division` / `department` / `title` / `hrCode` / `branch` (cls:313-323)
+     *
+     * 2번은 user 도메인의 [UserOrgDisplayFieldsSynchronizer] 에 위임한다 (SF `orgInfoTmp != null` 가드 포함) —
+     * 부팅 catch-up ([com.otoki.powersales.user.service.UserOrgFieldsBackfillRunner]) 과 매핑을 공유하되,
+     * 도메인 로직이 SAP 어댑터에 갇히지 않도록 소유권을 도메인에 둔다.
+     * 1번의 `profileId` 는 [EmployeeProfileResolver] 가 조직 lookup 실패를 `Staff` 디폴트로 흡수하는
+     * 별도 정책 — Spec #759 의 의도적 이탈이라 그대로 둔다.
+     *
      * 매칭 User 행 부재 시 silently skip (마이그레이션 이전 단계 / 신규 미동기화 사원 케이스).
      */
     internal fun updateUserProfileCache(employee: Employee) {
@@ -330,8 +339,10 @@ class AppointmentUserProfileUpdater(
         user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode
+        userOrgDisplayFieldsSynchronizer.sync(user, employee)
         // profileId / isSalesSupport 가 권한 산출 입력이라 변경 즉시 cache invalidate.
         adminPermissionCache.invalidate(user.id)
         adminDataScopeCache.invalidate(user.id)
     }
+
 }

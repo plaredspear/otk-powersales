@@ -681,5 +681,79 @@ class EmployeeUpsertServiceTest {
             // excHrCode 사원은 update 루프 진입 전 skip → 퇴직이어도 비활성화하지 않는다.
             assertThat(user.isActive).isTrue()
         }
+
+        @Test
+        @DisplayName("E11 기존 User - 이름/메일/연락처/HR코드 동기화 (SF cls:249-261 동등)")
+        fun upsert_existingUserSyncsContactFields() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { costCenterCode = "11110" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존")
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(
+                listOf(
+                    command(
+                        employeeCode = "100123",
+                        employeeName = "김정현",
+                        email = "kjh@otoki.com",
+                        homePhone = "010-1111-2222",
+                        workPhone = "032-100-2000",
+                        orgCode = "5826"
+                    )
+                )
+            )
+
+            assertThat(user.name).isEqualTo("김정현")
+            assertThat(user.lastName).isEqualTo("김정현")
+            assertThat(user.email).isEqualTo("kjh@otoki.com")
+            assertThat(user.mobilePhone).isEqualTo("010-1111-2222")
+            assertThat(user.phone).isEqualTo("032-100-2000")
+            assertThat(user.hrCode).isEqualTo("5826")
+            assertThat(user.costCenterCode).isEqualTo("5826")
+            // Username(로그인 ID) 은 SF update 경로에서도 갱신 대상이 아니다.
+            assertThat(user.username).isEqualTo("u@otoki.com")
+        }
+
+        @Test
+        @DisplayName("E12 기존 User - 개인 Email 부재 시 기존 email 유지 (SF cls:250 null 가드)")
+        fun upsert_existingUserKeepsEmailWhenAbsent() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { costCenterCode = "11110" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존")
+                .apply { email = "old@otoki.com" }
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(listOf(command(employeeCode = "100123", email = null, orgCode = "11110")))
+
+            assertThat(user.email).isEqualTo("old@otoki.com")
+        }
+
+        @Test
+        @DisplayName("E13 신규 프로비저닝 스냅샷 - homePhone/workPhone 전달 (SF cls:299-300)")
+        fun upsert_snapshotCarriesPhones() {
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val eventSlot = stubEventCapture()
+
+            service.upsert(
+                listOf(
+                    command(
+                        employeeCode = "100123",
+                        email = "p@otoki.com",
+                        homePhone = "010-1111-2222",
+                        workPhone = "032-100-2000"
+                    )
+                )
+            )
+
+            val snapshot = eventSlot.captured.employees.single()
+            assertThat(snapshot.homePhone).isEqualTo("010-1111-2222")
+            assertThat(snapshot.workPhone).isEqualTo("032-100-2000")
+        }
     }
 }

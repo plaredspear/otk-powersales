@@ -7,12 +7,12 @@ import com.otoki.powersales.platform.common.entity.SystemCodeMaster
 import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
+import com.otoki.powersales.user.service.UserOrgDisplayFieldsSynchronizer
 import com.otoki.powersales.user.service.UserRoleResolver
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +28,7 @@ import java.util.Optional
 class AppointmentUserProfileUpdaterTest {
 
     private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
-    private val organizationRepository: OrganizationRepository = mockk(relaxed = true)
+    private val userOrgDisplayFieldsSynchronizer: UserOrgDisplayFieldsSynchronizer = mockk(relaxed = true)
     private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val employeeProfileResolver: EmployeeProfileResolver = mockk(relaxed = true)
@@ -37,7 +37,7 @@ class AppointmentUserProfileUpdaterTest {
     private val adminDataScopeCache: AdminDataScopeCache = mockk(relaxed = true)
     private val updater = AppointmentUserProfileUpdater(
         employeeRepository,
-        organizationRepository,
+        userOrgDisplayFieldsSynchronizer,
         systemCodeMasterRepository,
         userRepository,
         employeeProfileResolver,

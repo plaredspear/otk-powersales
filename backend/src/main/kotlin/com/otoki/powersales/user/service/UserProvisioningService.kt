@@ -130,15 +130,35 @@ class UserProvisioningService(
             email = resolvedEmail,
             employeeCode = snapshot.employeeCode,
             name = snapshot.name,
+            // SF cls:284 `userTmp.LastName = obj.Name` — SF 는 Name 이 파생 formula 라 LastName 만 대입한다.
+            // 신규는 name 이 독립 컬럼이라 둘을 함께 맞춘다 (update 경로 EmployeeUpsertService 와 동일 정책).
+            lastName = snapshot.name,
+            alias = aliasOf(snapshot.name),
             password = passwordEncoder.encode(tempPassword)!!,
             passwordChangeRequired = true,
             isActive = snapshot.appLoginActive ?: true,
             profileId = profileIdFor(snapshot.role),
             isSalesSupport = false,
             costCenterCode = snapshot.costCenterCode,
+            // SF cls:296·299-300 — HR_Code__c ← CostCenterCode, MobilePhone ← HomePhone, Phone ← WorkPhone.
+            // 조직 표시 필드(branch/division/department/title) 는 SF 도 insert 시점에 채우지 않는다
+            // (cls:277 주석 "조직정보는 발령정보수신에서") — 최초 발령 후처리에서
+            // [com.otoki.powersales.external.sap.inbound.service.AppointmentUserProfileUpdater] 가 채운다.
+            hrCode = snapshot.costCenterCode,
+            mobilePhone = snapshot.homePhone,
+            phone = snapshot.workPhone,
             isDeleted = false,
         )
     }
+
+    /**
+     * SF cls:292 `userTmp.Alias = obj.Name` 정합 — 사원명을 별칭 초기값으로 사용.
+     *
+     * SF User.Alias 는 8자 제한이고 신규 `user.alias` 컬럼도 length=8 이라, 한글명이 8자를 넘는
+     * 예외 케이스에서 INSERT 가 통째로 실패하지 않도록 잘라 담는다.
+     */
+    private fun aliasOf(name: String?): String? =
+        name?.takeIf { it.isNotBlank() }?.take(ALIAS_MAX_LENGTH)
 
     /**
      * 시드 / 수동 호출 진입점 (동기, 호출자의 트랜잭션에 합류).
@@ -216,12 +236,15 @@ class UserProvisioningService(
             email = resolvedEmail,
             employeeCode = employeeCode,
             name = name,
+            lastName = name,
+            alias = aliasOf(name),
             password = encoded,
             passwordChangeRequired = passwordChangeRequired,
             isActive = appLoginActive ?: true,
             profileId = profileIdFor(role),
             isSalesSupport = isSalesSupport,
             costCenterCode = costCenterCode,
+            hrCode = costCenterCode,
             isDeleted = false,
         )
         userRepository.save(user)
@@ -244,5 +267,8 @@ class UserProvisioningService(
     companion object {
         private const val BIRTH_SUFFIX_LENGTH = 4
         private const val BIRTH_SUFFIX_FALLBACK = "0000"
+
+        /** `user.alias` 컬럼 length (SF User.Alias 8자 제한 정합). */
+        private const val ALIAS_MAX_LENGTH = 8
     }
 }

@@ -95,6 +95,54 @@ class UserProvisioningServiceTest {
         }
 
         @Test
+        @DisplayName("U1b 정상 — lastName/alias/hrCode/연락처 초기값 (SF cls:284·292·296·299-300 동등)")
+        fun handleEvent_createsUserWithSfInsertDefaults() {
+            handleOne(
+                EmployeeSnapshot(
+                    employeeCode = "100123",
+                    name = "홍길동",
+                    workEmail = null,
+                    email = "hong@otokims.co.kr",
+                    birthDate = "19900315",
+                    role = AppAuthority.WOMAN,
+                    appLoginActive = true,
+                    costCenterCode = "5826",
+                    homePhone = "010-1111-2222",
+                    workPhone = "032-100-2000",
+                )
+            )
+
+            val saved = savedUsers.single()
+            assertThat(saved.lastName).isEqualTo("홍길동")
+            assertThat(saved.alias).isEqualTo("홍길동")
+            assertThat(saved.hrCode).isEqualTo("5826")
+            assertThat(saved.costCenterCode).isEqualTo("5826")
+            assertThat(saved.mobilePhone).isEqualTo("010-1111-2222")
+            assertThat(saved.phone).isEqualTo("032-100-2000")
+            // 조직 표시 필드는 SF 도 insert 시점에 채우지 않는다 (cls:277 "조직정보는 발령정보수신에서").
+            assertThat(saved.branch).isNull()
+            assertThat(saved.department).isNull()
+        }
+
+        @Test
+        @DisplayName("U1c alias — 컬럼 length(8) 초과 이름은 잘라 담아 INSERT 실패를 막는다")
+        fun handleEvent_truncatesAlias() {
+            handleOne(
+                EmployeeSnapshot(
+                    employeeCode = "100124",
+                    name = "가나다라마바사아자차",
+                    workEmail = null,
+                    email = "long@otokims.co.kr",
+                    birthDate = "19900315",
+                    role = AppAuthority.WOMAN,
+                    appLoginActive = true,
+                )
+            )
+
+            assertThat(savedUsers.single().alias).isEqualTo("가나다라마바사아")
+        }
+
+        @Test
         @DisplayName("U2 workEmail 만 있고 email(개인) 부재 — User 생성 skip (SAP 경로는 email 단독, cls:281 동등)")
         fun handleEvent_onlyWorkEmail_skipsCreation() {
             handleOne(
