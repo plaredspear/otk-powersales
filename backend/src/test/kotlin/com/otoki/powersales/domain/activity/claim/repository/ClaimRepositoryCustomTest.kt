@@ -25,7 +25,7 @@ import java.time.LocalDateTime
  * ClaimRepositoryCustom QueryDSL 구현 검증.
  *
  * 기존 @Query(JPQL) → QueryDSL 전환의 동작 동등성 회귀 가드. mock 기반 ClaimQueryServiceTest 가
- * 잡지 못하는 실 DB 동작(발생일자 BETWEEN 경계, accountId null/지정 분기, 정렬, 사원/원가센터 스코프)을 검증한다.
+ * 잡지 못하는 실 DB 동작(등록일시 기간 경계, accountId null/지정 분기, 정렬, 사원/원가센터 스코프)을 검증한다.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -53,8 +53,8 @@ class ClaimRepositoryCustomTest {
         account: Account? = null,
         product: Product? = null,
         costCenterCode: String? = null,
-        date: LocalDate,
-        createdAt: LocalDateTime = LocalDateTime.of(2026, 6, 1, 0, 0),
+        date: LocalDate = LocalDate.of(2026, 6, 10),
+        createdAt: LocalDateTime = LocalDateTime.of(2026, 6, 10, 9, 0),
     ): Claim {
         val claim = Claim(
             employee = employee,
@@ -72,21 +72,21 @@ class ClaimRepositoryCustomTest {
     inner class FindOwnClaims {
 
         @Test
-        @DisplayName("본인 사원 + 발생일자 BETWEEN 범위 내 건만 조회한다")
+        @DisplayName("본인 사원 + 등록일시가 기간 내인 건만 조회한다 (종료일 당일 포함)")
         fun ownAndDateRange() {
             val me = persistEmployee("EMP-ME", "나")
             val other = persistEmployee("EMP-OTHER", "타인")
             // 범위 내(본인)
-            persistClaim(employee = me, date = LocalDate.of(2026, 6, 10))
-            // 범위 경계(시작일 == 발생일자) 포함
-            persistClaim(employee = me, date = LocalDate.of(2026, 6, 1))
-            // 범위 경계(종료일 == 발생일자) 포함
-            persistClaim(employee = me, date = LocalDate.of(2026, 6, 30))
+            persistClaim(employee = me, createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
+            // 범위 경계(시작일 00:00) 포함
+            persistClaim(employee = me, createdAt = LocalDateTime.of(2026, 6, 1, 0, 0))
+            // 범위 경계(종료일 23:59) 포함 — 레거시 SF `CreatedDate <= endDate.addDays(1)` 동등
+            persistClaim(employee = me, createdAt = LocalDateTime.of(2026, 6, 30, 23, 59))
             // 범위 밖
-            persistClaim(employee = me, date = LocalDate.of(2026, 5, 31))
-            persistClaim(employee = me, date = LocalDate.of(2026, 7, 1))
+            persistClaim(employee = me, createdAt = LocalDateTime.of(2026, 5, 31, 23, 59))
+            persistClaim(employee = me, createdAt = LocalDateTime.of(2026, 7, 1, 0, 0))
             // 타인 등록분(제외 대상)
-            persistClaim(employee = other, date = LocalDate.of(2026, 6, 10))
+            persistClaim(employee = other, createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
             em.clear()
 
             val result = claimRepository.findOwnClaims(
@@ -94,12 +94,31 @@ class ClaimRepositoryCustomTest {
             )
 
             assertThat(result).hasSize(3)
-            assertThat(result.map { it.date }).containsExactlyInAnyOrder(
-                LocalDate.of(2026, 6, 10),
-                LocalDate.of(2026, 6, 1),
-                LocalDate.of(2026, 6, 30),
+            assertThat(result.map { it.createdAt }).containsExactlyInAnyOrder(
+                LocalDateTime.of(2026, 6, 10, 9, 0),
+                LocalDateTime.of(2026, 6, 1, 0, 0),
+                LocalDateTime.of(2026, 6, 30, 23, 59),
             )
             assertThat(result).allMatch { it.employee?.id == me.id }
+        }
+
+        @Test
+        @DisplayName("발생일자가 기간 밖(미래 유통기한 등)이어도 등록일시가 기간 내면 조회된다")
+        fun dateOutOfRangeButCreatedInRange() {
+            val me = persistEmployee("EMP-ME", "나")
+            // 발생일자는 1년 뒤지만 등록은 기간 내 — 기간 축이 등록일시임을 보장하는 회귀 가드.
+            persistClaim(
+                employee = me,
+                date = LocalDate.of(2027, 4, 23),
+                createdAt = LocalDateTime.of(2026, 6, 10, 9, 0),
+            )
+            em.clear()
+
+            val result = claimRepository.findOwnClaims(
+                me.id, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30), null
+            )
+
+            assertThat(result).hasSize(1)
         }
 
         @Test
@@ -108,8 +127,8 @@ class ClaimRepositoryCustomTest {
             val me = persistEmployee("EMP-ME", "나")
             val a1 = persistAccount("거래처1")
             val a2 = persistAccount("거래처2")
-            persistClaim(employee = me, account = a1, date = LocalDate.of(2026, 6, 10))
-            persistClaim(employee = me, account = a2, date = LocalDate.of(2026, 6, 11))
+            persistClaim(employee = me, account = a1, createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
+            persistClaim(employee = me, account = a2, createdAt = LocalDateTime.of(2026, 6, 11, 9, 0))
             em.clear()
 
             val filtered = claimRepository.findOwnClaims(
@@ -125,20 +144,18 @@ class ClaimRepositoryCustomTest {
         }
 
         @Test
-        @DisplayName("발생일자 DESC, createdAt DESC 순으로 정렬한다")
+        @DisplayName("등록일시 DESC 순으로 정렬한다")
         fun ordering() {
             val me = persistEmployee("EMP-ME", "나")
-            // 같은 발생일자 — createdAt 으로 tie-break
             val older = persistClaim(
-                employee = me, date = LocalDate.of(2026, 6, 10),
-                createdAt = LocalDateTime.of(2026, 6, 10, 9, 0),
+                employee = me, createdAt = LocalDateTime.of(2026, 6, 10, 9, 0),
             )
             val newer = persistClaim(
-                employee = me, date = LocalDate.of(2026, 6, 10),
-                createdAt = LocalDateTime.of(2026, 6, 10, 15, 0),
+                employee = me, createdAt = LocalDateTime.of(2026, 6, 10, 15, 0),
             )
-            // 더 이른 발생일자 — 마지막으로 정렬
-            val earlierDate = persistClaim(employee = me, date = LocalDate.of(2026, 6, 5))
+            val earlierDate = persistClaim(
+                employee = me, createdAt = LocalDateTime.of(2026, 6, 5, 9, 0),
+            )
             em.clear()
 
             val result = claimRepository.findOwnClaims(
@@ -154,15 +171,15 @@ class ClaimRepositoryCustomTest {
     inner class FindCostCenterClaims {
 
         @Test
-        @DisplayName("원가센터 일치 건만, 발생일자 BETWEEN 범위 내에서 조회한다")
+        @DisplayName("원가센터 일치 건만, 등록일시가 기간 내에서 조회한다")
         fun costCenterAndDateRange() {
             val emp = persistEmployee("EMP-1", "사원")
             // 일치 원가센터 + 범위 내
-            persistClaim(employee = emp, costCenterCode = "CC01", date = LocalDate.of(2026, 6, 10))
+            persistClaim(employee = emp, costCenterCode = "CC01", createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
             // 일치 원가센터 + 범위 밖
-            persistClaim(employee = emp, costCenterCode = "CC01", date = LocalDate.of(2026, 7, 1))
+            persistClaim(employee = emp, costCenterCode = "CC01", createdAt = LocalDateTime.of(2026, 7, 1, 0, 0))
             // 다른 원가센터(제외 대상)
-            persistClaim(employee = emp, costCenterCode = "CC02", date = LocalDate.of(2026, 6, 10))
+            persistClaim(employee = emp, costCenterCode = "CC02", createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
             em.clear()
 
             val result = claimRepository.findCostCenterClaims(
@@ -171,7 +188,7 @@ class ClaimRepositoryCustomTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].costCenterCode).isEqualTo("CC01")
-            assertThat(result[0].date).isEqualTo(LocalDate.of(2026, 6, 10))
+            assertThat(result[0].createdAt).isEqualTo(LocalDateTime.of(2026, 6, 10, 9, 0))
         }
 
         @Test
@@ -180,8 +197,8 @@ class ClaimRepositoryCustomTest {
             val emp = persistEmployee("EMP-1", "사원")
             val a1 = persistAccount("거래처1")
             val a2 = persistAccount("거래처2")
-            persistClaim(employee = emp, account = a1, costCenterCode = "CC01", date = LocalDate.of(2026, 6, 10))
-            persistClaim(employee = emp, account = a2, costCenterCode = "CC01", date = LocalDate.of(2026, 6, 11))
+            persistClaim(employee = emp, account = a1, costCenterCode = "CC01", createdAt = LocalDateTime.of(2026, 6, 10, 9, 0))
+            persistClaim(employee = emp, account = a2, costCenterCode = "CC01", createdAt = LocalDateTime.of(2026, 6, 11, 9, 0))
             em.clear()
 
             val result = claimRepository.findCostCenterClaims(

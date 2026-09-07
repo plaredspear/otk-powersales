@@ -102,6 +102,48 @@ class ClaimSfDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("SF 페이로드 날짜 3종 — ExpirationDate=기한일, ClaimDate=발생일자, ManufacturingDate=공란")
+    fun buildsSfPayloadDatesFromSeparateColumns() {
+        // 날짜 분리 적재 이후의 row: date=발생일자, expirationDate=제품 기한일.
+        val claim = claimWith(ClaimSfSendStatus.PENDING).apply {
+            date = LocalDate.of(2026, 9, 7)
+            applyProductDate(ClaimDateType.EXPIRY_DATE, LocalDate.of(2027, 4, 23))
+        }
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
+        every { claimRepository.findById(claimId) } returns Optional.of(claim)
+        stubPhotos()
+        val payload = slot<Map<String, Any?>>()
+        every { sfOutboundClient.callApi("/ClaimRegist", capture(payload)) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}")
+
+        service.dispatch(claimId, pendingAllowed, onStatusMismatch = { error("호출되면 안 됨") })
+
+        // SF Apex 계약(IF_REST_MOBILE_ClaimRegist Input)은 날짜 3종을 분리해 받는다 — 컬럼 분리 적재
+        // 전후로 페이로드가 동일해야 한다.
+        assertThat(payload.captured["ExpirationDate"]).isEqualTo("2027-04-23")
+        assertThat(payload.captured["ManufacturingDate"]).isEqualTo("")
+        assertThat(payload.captured["ClaimDate"]).isEqualTo("2026-09-07")
+    }
+
+    @Test
+    @DisplayName("기한 컬럼이 빈 구 row — 기한일을 date 로 폴백해 전송 페이로드를 유지한다")
+    fun fallsBackToDateForLegacyRows() {
+        // 백필(V202609071700) 전에 등록된 row: 기한일이 date 에만 있고 기한 컬럼은 비어 있다.
+        val claim = claimWith(ClaimSfSendStatus.PENDING)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
+        every { claimRepository.findById(claimId) } returns Optional.of(claim)
+        stubPhotos()
+        val payload = slot<Map<String, Any?>>()
+        every { sfOutboundClient.callApi("/ClaimRegist", capture(payload)) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}")
+
+        service.dispatch(claimId, pendingAllowed, onStatusMismatch = { error("호출되면 안 됨") })
+
+        assertThat(payload.captured["ExpirationDate"]).isEqualTo("2026-01-01")
+        assertThat(payload.captured["ClaimDate"]).isEqualTo("2026-01-01")
+    }
+
+    @Test
     @DisplayName("PENDING dispatch 성공 → sfSendStatus=SENT + sfSendAttemptCount 1")
     fun dispatchPendingSucceeds() {
         val claim = claimWith(ClaimSfSendStatus.PENDING)

@@ -52,6 +52,8 @@ import java.time.LocalDate
  *   - 요청사항 최대 4개
  *   - CC코드(cost_center_code)는 거래처(Account) BranchCode 로 자동 채움 (SF ClaimRegist.cls:90 정합) — [Claim.forRegistration] 처리
  *   - division 은 등록 시 공란 (SF 모바일 등록 정합) — [Claim.forRegistration] 처리
+ *   - 날짜 분리 적재: 입력 기한일은 dateType 에 따라 유통기한/제조일자 컬럼으로, 발생일자(ClaimDate)에는
+ *     등록일을 넣는다 (SF Input 의 ExpirationDate/ManufacturingDate/ClaimDate 3분리와 동일) — [Claim.forRegistration] 처리
  *   - 정식 등록 성공 시 해당 사원의 임시저장 row 삭제
  *
  * 트랜잭션 경계를 [txTemplate] 으로 직접 관리하므로 진입 시점엔 트랜잭션이 없어야 한다 — 클래스 레벨
@@ -92,8 +94,9 @@ class MobileClaimService(
             ?: throw ProductNotFoundException(request.productCode)
 
         val dateType = parseDateType(request.dateType!!)
-        val date = parseDate(request.date!!)
-        validateClaimDate(date, dateType)
+        // request.date 는 "기한 종류 + 날짜 1개" 입력의 날짜 — 발생일자가 아니라 제품 기한일이다.
+        val productDate = parseDate(request.date!!)
+        validateClaimDate(productDate, dateType)
 
         val claimType1 = ClaimType1.fromValueOrNull(request.claimType1)
             ?: throw InvalidClaimType1Exception()
@@ -135,7 +138,10 @@ class MobileClaimService(
                     product = product,
                     channel = ClaimChannel.CAP,
                     dateType = dateType,
-                    date = date,
+                    productDate = productDate,
+                    // 모바일 등록 폼에는 발생일자 입력이 없다 — SF 로 보내는 ClaimDate 와 동일하게 등록일을 쓴다
+                    // (레거시 SF `IF_REST_MOBILE_ClaimSearch` 도 목록의 ClaimDate 자리에 CreatedDate 를 실어 보냈다).
+                    claimDate = LocalDate.now(),
                     claimType1 = claimType1,
                     claimType2 = claimType2,
                     quantity = request.defectQuantity!!,

@@ -129,9 +129,10 @@ class ClaimListItemCard extends StatelessWidget {
   }
 
   Widget _buildDate() {
-    // 발생일자(SF ClaimDate) 우선 표시 — 레거시 list.jsp 와 동일. 없으면 등록일시로 폴백.
+    // 등록일 표시 — 레거시 SF `IF_REST_MOBILE_ClaimSearch` 가 목록 조회를 CreatedDate 로 필터하고
+    // 응답의 ClaimDate 자리에도 CreatedDate 를 실어 보낸다. 목록의 기간 필터 축과 표시 축을 일치시킨다.
     return Text(
-      DateFormat('yyyy-MM-dd').format(item.date ?? item.createdAt),
+      DateFormat('yyyy-MM-dd').format(item.createdAt),
       style: AppTypography.labelSmall.copyWith(
         color: AppColors.textSecondary,
       ),

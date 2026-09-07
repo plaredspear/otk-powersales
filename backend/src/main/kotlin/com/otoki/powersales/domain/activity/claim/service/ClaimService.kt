@@ -75,11 +75,20 @@ class ClaimService(
                 ?: throw ProductNotFoundException(it)
             claim.product = product
         }
-        request.dateType?.let { claim.dateType = parseDateType(it) }
-        request.date?.let {
-            val newDate = parseDate(it)
-            validateClaimDate(newDate, claim.dateType)
-            claim.date = newDate
+        // 수정 폼의 dateType/date 는 제품 기한일 축이다 — 발생일자(claim.date, SF ClaimDate) 는 건드리지 않고
+        // dateType 이 가리키는 유통기한/제조일자 컬럼에 적재한다 ([Claim.applyProductDate]).
+        val newDateType = request.dateType?.let { parseDateType(it) }
+        val newProductDate = request.date?.let { parseDate(it) }
+        if (newDateType != null || newProductDate != null) {
+            val dateType = newDateType ?: claim.dateType
+            val productDate = newProductDate ?: claim.productDate()
+            if (dateType != null && productDate != null) {
+                validateClaimDate(productDate, dateType)
+                claim.applyProductDate(dateType, productDate)
+            } else if (dateType != null) {
+                // 기한일이 아직 없는 row 에서 종류만 바꾼 경우 — 종류만 반영한다.
+                claim.dateType = dateType
+            }
         }
         request.claimType1?.let {
             val t1 = ClaimType1.fromValueOrNull(it) ?: throw InvalidClaimType1Exception()

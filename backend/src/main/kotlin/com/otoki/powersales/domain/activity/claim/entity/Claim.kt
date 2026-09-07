@@ -362,6 +362,41 @@ class Claim(
         return actionStatus?.takeIf { it.isNotBlank() } ?: ACTION_STATUS_UNCONFIRMED
     }
 
+    /**
+     * 제품 기한일 적재 — [dateType] 이 가리키는 컬럼 한쪽만 채우고 반대편은 비운다.
+     *
+     * SF 는 유통기한(`DKRetail__ExpirationDate__c`)·제조일자(`DKRetail__ManufacturingDate__c`)를
+     * 별도 컬럼으로 두고, `IF_REST_MOBILE_ClaimRegist` 가 Input 의 두 값을 각각 넣는다. 신규는
+     * 앱/웹 입력이 "기한 종류 + 날짜 1개" 라서 종류에 따라 어느 컬럼에 넣을지를 여기서 결정한다.
+     * 수정으로 종류가 바뀌면 이전 종류의 값이 남지 않도록 반대편을 null 로 비운다.
+     *
+     * 발생일자([date], `DKRetail__ClaimDate__c`) 는 별개 축이므로 본 메서드가 건드리지 않는다.
+     */
+    fun applyProductDate(dateType: ClaimDateType, productDate: LocalDate) {
+        this.dateType = dateType
+        when (dateType) {
+            ClaimDateType.EXPIRY_DATE -> {
+                this.expirationDate = productDate
+                this.manufacturingDate = null
+            }
+            ClaimDateType.MANUFACTURE_DATE -> {
+                this.manufacturingDate = productDate
+                this.expirationDate = null
+            }
+        }
+    }
+
+    /**
+     * 현재 [dateType] 이 가리키는 제품 기한일. SF 송신 페이로드의 ExpirationDate/ManufacturingDate 복원에 쓴다.
+     *
+     * dateType 이 없는 SF 이관 row 는 유통기한 → 제조일자 순으로 존재하는 값을 돌려준다.
+     */
+    fun productDate(): LocalDate? = when (dateType) {
+        ClaimDateType.EXPIRY_DATE -> expirationDate
+        ClaimDateType.MANUFACTURE_DATE -> manufacturingDate
+        null -> expirationDate ?: manufacturingDate
+    }
+
     companion object {
         /** 코스모스 조치상태 미회신 시 표시값 (SF `DKRetail__Proposal__c.ActionStatus__c` 기본값과 동일 어휘). */
         const val ACTION_STATUS_UNCONFIRMED = "미확인"
@@ -380,6 +415,14 @@ class Claim(
          *    CostCenter__c formula = AccountId__r.BranchCode__c 와 동일).
          *  - division = null — IF_REST_MOBILE_ClaimRegist 컨트롤러가 set 안 함 + 트리거는
          *    Interface 가드로 미실행 → 등록 시 공란.
+         *
+         * 날짜 3종은 SF 필드 의미 그대로 분리 적재한다 (SF `IF_REST_MOBILE_ClaimRegist` 가 Input 의
+         * ExpirationDate / ManufacturingDate / ClaimDate 를 각각 다른 컬럼에 넣는 것과 동일):
+         *  - [claimDate] → [date] (`DKRetail__ClaimDate__c`, 발생일자). mobile 은 입력 UI 가 없어 등록일.
+         *  - [productDate] → [dateType] 에 따라 [expirationDate] 또는 [manufacturingDate].
+         *
+         * @param productDate [dateType] 이 가리키는 제품 기한일 (유통기한 또는 제조일자)
+         * @param claimDate 클레임 발생일자
          */
         fun forRegistration(
             employee: Employee,
@@ -387,7 +430,8 @@ class Claim(
             product: Product,
             channel: ClaimChannel,
             dateType: ClaimDateType,
-            date: LocalDate,
+            productDate: LocalDate,
+            claimDate: LocalDate,
             claimType1: ClaimType1,
             claimType2: ClaimType2,
             quantity: BigDecimal,
@@ -398,8 +442,7 @@ class Claim(
         ): Claim = Claim(
             employee = employee,
             account = account,
-            dateType = dateType,
-            date = date,
+            date = claimDate,
             claimType1 = claimType1,
             claimType2 = claimType2,
             defectDescription = description,
@@ -413,6 +456,6 @@ class Claim(
             product = product,
             costCenterCode = account.branchCode,
             division = null,
-        )
+        ).apply { applyProductDate(dateType, productDate) }
     }
 }

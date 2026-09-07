@@ -24,11 +24,6 @@ const SF_SEND_STATUS_TAG: Record<string, { color: string; label: string }> = {
   SEND_FAILED: { color: 'red', label: '전송실패' },
 };
 
-const DATE_TYPE_LABEL: Record<string, string> = {
-  EXPIRY_DATE: '유통기한',
-  MANUFACTURE_DATE: '제조일자',
-};
-
 /** 값이 없으면 '-' 로 표시. */
 const orDash = (v: string | number | null | undefined): string =>
   v === null || v === undefined || v === '' ? '-' : String(v);
@@ -95,7 +90,6 @@ export default function ClaimDetailPage() {
 
   const statusTag = STATUS_TAG[claim.status];
   const sfSendStatusTag = claim.sfSendStatus ? SF_SEND_STATUS_TAG[claim.sfSendStatus] : null;
-  const dateTypeLabel = claim.dateType ? DATE_TYPE_LABEL[claim.dateType] : null;
 
   return (
     <div style={{ padding: 16 }}>
@@ -161,9 +155,8 @@ export default function ClaimDetailPage() {
           <Descriptions.Item label="샘플회수여부">
             {claim.sampleCollectionFlag == null ? '-' : claim.sampleCollectionFlag ? '회수' : '미회수'}
           </Descriptions.Item>
-          <Descriptions.Item label={dateTypeLabel ? `발생일자(${dateTypeLabel})` : '발생일자'}>
-            {orDash(claim.date)}
-          </Descriptions.Item>
+          {/* 발생일자 = SF ClaimDate. 기한일(유통기한/제조일자)은 제품정보 섹션에 별도 행으로 표시한다. */}
+          <Descriptions.Item label="발생일자">{orDash(claim.date)}</Descriptions.Item>
           <Descriptions.Item label="거래처납품일자">{orDash(claim.customerDeliveryDate)}</Descriptions.Item>
           <Descriptions.Item label="세부점포명">{orDash(claim.detailSnsName)}</Descriptions.Item>
           <Descriptions.Item label="구매방법">{orDash(claim.purchaseMethodName)}</Descriptions.Item>

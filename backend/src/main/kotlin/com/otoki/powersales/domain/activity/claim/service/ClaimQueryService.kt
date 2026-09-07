@@ -67,7 +67,8 @@ class ClaimQueryService(
 
         // SF 레거시 `IF_REST_MOBILE_LogisticsClaimSearch.cls:138-142` 동등 동작:
         // 여사원이면 본인 등록분, 그 외(조장/지점장 등)면 같은 원가센터 전체.
-        // 날짜 필터는 발생일자(Claim.date, SF ClaimDate) 기준 — 레거시 list.jsp 와 동일.
+        // 날짜 필터는 등록일시(Claim.createdAt) 기준 — 레거시 SF `IF_REST_MOBILE_ClaimSearch` 가
+        // CreatedDate 로 조회한다 (발생일자 Claim.date 가 아니다).
         val claims = if (employee.role == AppAuthority.WOMAN || employee.costCenterCode.isNullOrBlank()) {
             claimRepository.findOwnClaims(userId, startDate, endDate, accountId)
         } else {

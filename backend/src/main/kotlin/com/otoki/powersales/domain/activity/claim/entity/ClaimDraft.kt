@@ -59,7 +59,10 @@ class ClaimDraft(
     @Column(name = "date_type", length = 30)
     var dateType: String? = null,
 
-    @FieldName("물류 클레임 발생일자")
+    // 등록 폼의 "기한 종류 + 날짜 1개" 입력 중 날짜 — [dateType] 이 가리키는 제품 기한일이다
+    // (발생일자가 아니다). 정식 등록 시 Claim.expirationDate / manufacturingDate 로 나뉘어 저장된다.
+    // 컬럼명 claim_date 와 라벨은 물류클레임(Suggestion) 초안에서 복사된 잔재라 의미와 어긋난다.
+    @FieldName("기한일자(유통기한/제조일자)")
     @Column(name = "claim_date")
     var claimDate: LocalDate? = null,
 

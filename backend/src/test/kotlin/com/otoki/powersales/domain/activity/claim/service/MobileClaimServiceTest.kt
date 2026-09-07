@@ -175,6 +175,44 @@ class MobileClaimServiceTest {
     }
 
     @Test
+    @DisplayName("유통기한 입력 - 유통기한 컬럼에 적재하고 발생일자(ClaimDate)에는 등록일을 넣는다")
+    fun storesExpiryDateSeparatelyFromClaimDate() {
+        stubCreateDeps()
+        val claimSlot = slot<Claim>()
+        every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
+
+        service.createClaim(
+            userId, validRequest(dateType = ClaimDateType.EXPIRY_DATE.name, date = "2027-04-23"),
+            mockPhoto("d"), mockPhoto("l"), null,
+        )
+
+        // SF 는 ExpirationDate / ManufacturingDate / ClaimDate 를 별도 컬럼으로 둔다 — 입력 기한일이
+        // 발생일자 컬럼(date)에 들어가면 목록 기간 조회에서 사라진다(과거 회귀).
+        assertThat(claimSlot.captured.expirationDate).isEqualTo(LocalDate.of(2027, 4, 23))
+        assertThat(claimSlot.captured.manufacturingDate).isNull()
+        assertThat(claimSlot.captured.dateType).isEqualTo(ClaimDateType.EXPIRY_DATE)
+        // 모바일 등록 폼에는 발생일자 입력이 없다 — 등록일이 발생일자가 된다.
+        assertThat(claimSlot.captured.date).isEqualTo(LocalDate.now())
+    }
+
+    @Test
+    @DisplayName("제조일자 입력 - 제조일자 컬럼에 적재하고 유통기한은 비운다")
+    fun storesManufactureDateSeparately() {
+        stubCreateDeps()
+        val claimSlot = slot<Claim>()
+        every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
+
+        service.createClaim(
+            userId, validRequest(dateType = ClaimDateType.MANUFACTURE_DATE.name, date = "2026-01-01"),
+            mockPhoto("d"), mockPhoto("l"), null,
+        )
+
+        assertThat(claimSlot.captured.manufacturingDate).isEqualTo(LocalDate.of(2026, 1, 1))
+        assertThat(claimSlot.captured.expirationDate).isNull()
+        assertThat(claimSlot.captured.date).isEqualTo(LocalDate.now())
+    }
+
+    @Test
     @DisplayName("개인카드(B) + 영수증 미첨부 - ReceiptRequiredException")
     fun rejectsPersonalCardWithoutReceipt() {
         every { employeeRepository.findById(userId) } returns Optional.of(employee)

@@ -158,6 +158,26 @@ class AdminClaimCreateServiceTest {
     }
 
     @Test
+    @DisplayName("발생일자/기한일 분리 적재 — date=입력 발생일자, expirationDate=입력 유통기한")
+    fun storesClaimDateAndProductDateSeparately() {
+        stubLookups()
+        val claimSlot = slot<Claim>()
+        every { claimRepository.save(capture(claimSlot)) } answers { Claim(id = 42L) }
+        val claimDate = LocalDate.now().minusDays(3)
+
+        service.createClaim(
+            newRequest().copy(claimDate = claimDate.toString()),
+            newPhoto("claim"), newPhoto("part"), null,
+        )
+
+        // 웹 등록 폼은 발생일자를 별도로 입력받는다 — 그 값이 date(SF ClaimDate) 로 저장되어야 하고,
+        // 기한일은 dateType 이 가리키는 컬럼으로 간다.
+        assertThat(claimSlot.captured.date).isEqualTo(claimDate)
+        assertThat(claimSlot.captured.expirationDate).isEqualTo(LocalDate.of(2027, 1, 1))
+        assertThat(claimSlot.captured.manufacturingDate).isNull()
+    }
+
+    @Test
     @DisplayName("정상 등록 → sfSendStatus=PENDING + claimId 반환 + SF 송신 이벤트 발행 (channel=WEB INSERT)")
     fun create_success() {
         stubLookups()

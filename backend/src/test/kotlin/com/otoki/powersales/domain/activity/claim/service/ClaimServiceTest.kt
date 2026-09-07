@@ -103,6 +103,39 @@ class ClaimServiceTest {
         }
 
         @Test
+        @DisplayName("기한일 수정 - 유통기한 컬럼만 갱신하고 발생일자(date)는 건드리지 않는다")
+        fun updatesProductDateNotClaimDate() {
+            val existing = existingClaim()
+            val claimDate = existing.date
+            every { claimRepository.findById(claimId) } returns Optional.of(existing)
+
+            claimService.updateClaim(
+                userId, claimId,
+                ClaimUpdateRequest(dateType = ClaimDateType.EXPIRY_DATE.name, date = "2027-04-23"),
+            )
+
+            assertThat(existing.expirationDate).isEqualTo(LocalDate.of(2027, 4, 23))
+            assertThat(existing.date).isEqualTo(claimDate)
+        }
+
+        @Test
+        @DisplayName("기한 종류 전환 - 반대편 기한 컬럼을 비운다")
+        fun switchingDateTypeClearsOppositeColumn() {
+            val existing = existingClaim().apply {
+                applyProductDate(ClaimDateType.EXPIRY_DATE, LocalDate.of(2027, 4, 23))
+            }
+            every { claimRepository.findById(claimId) } returns Optional.of(existing)
+
+            claimService.updateClaim(
+                userId, claimId,
+                ClaimUpdateRequest(dateType = ClaimDateType.MANUFACTURE_DATE.name, date = "2026-01-05"),
+            )
+
+            assertThat(existing.manufacturingDate).isEqualTo(LocalDate.of(2026, 1, 5))
+            assertThat(existing.expirationDate).isNull()
+        }
+
+        @Test
         @DisplayName("SENT 상태 - ClaimNotEditableException")
         fun rejectsNonDraftStatus() {
             val existing = existingClaim(status = ClaimStatus.SENT)

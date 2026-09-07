@@ -78,8 +78,12 @@ class ClaimSfDispatchService(
                     employeeCode = claim.employee?.employeeCode
                         ?: error("사번 미보유 사원의 claim 은 전송할 수 없습니다"),
                     dateType = claim.dateType ?: ClaimDateType.EXPIRY_DATE,
-                    date = claim.date ?: error("발생일자 미보유 claim 은 전송할 수 없습니다"),
-                    claimDate = claim.createdAt.toLocalDate(),
+                    // SF 페이로드의 ExpirationDate/ManufacturingDate 는 제품 기한일, ClaimDate 는 발생일자다.
+                    // 기한일은 dateType 이 가리키는 컬럼에서 복원한다. 기한 컬럼이 비어 있는 row 는
+                    // 날짜 분리 적재 이전(V202609071700 백필 전)에 등록된 건이므로 date 로 폴백한다.
+                    date = claim.productDate() ?: claim.date
+                        ?: error("기한일 미보유 claim 은 전송할 수 없습니다"),
+                    claimDate = claim.date ?: claim.createdAt.toLocalDate(),
                     claimType1 = claim.claimType1 ?: error("클레임대분류 미보유 claim 은 전송할 수 없습니다"),
                     claimType2 = claim.claimType2 ?: error("클레임소분류 미보유 claim 은 전송할 수 없습니다"),
                     quantity = claim.defectQuantity ?: error("수량 미보유 claim 은 전송할 수 없습니다"),
