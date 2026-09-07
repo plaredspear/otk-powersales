@@ -200,6 +200,18 @@ class UserRoleAssignmentResolverTest {
         }
 
         @Test
+        @DisplayName("유통총괄실 + 코스트센터 5638 -> 5638 분기로 넘어가지 않는다 (SF if/else-if 중첩)")
+        fun distributionHqDoesNotFallThroughTo5638() {
+            val e = employee(orgName = "제품개발팀", jikchak = "사원", costCenterCode = "5638")
+            val hq = org(orgCodeLevel3 = "1837", orgNameLevel3 = "제1사업부",
+                         orgNameLevel4 = "유통1팀", orgCodeLevel5 = "9999")
+            // 1837 분기에 들어갔으나 Level5 불일치 → prefix 없음. `when` fall-through 였다면
+            // "제1사업부_제품개발팀_영업사원" 이 되어 어긋난다.
+            assertThat(resolver.applyOrgPrefix(e, hq, "제품개발팀_영업사원"))
+                .isEqualTo("제품개발팀_영업사원")
+        }
+
+        @Test
         @DisplayName("제품개발팀(5638) -> Level3 조직명 prefix")
         fun productDevTeam() {
             stubRoles(402L to "제1사업부_제품개발팀_영업사원")

@@ -147,14 +147,20 @@ class UserRoleAssignmentResolver(
      * - 유통총괄실(Level3 = 1837): **본인 코스트센터가 Level5 로 정확히 잡힐 때만** Level4 조직명을 앞에
      * - 제1사업부 제품개발팀(코스트센터 5638): Level3 조직명을 앞에
      */
-    internal fun applyOrgPrefix(employee: Employee, org: OrganizationCacheDto, base: String): String = when {
-        org.orgCodeLevel3 == ORG_DISTRIBUTION_HQ &&
-            org.orgCodeLevel5 != null &&
-            org.orgCodeLevel5 == employee.costCenterCode -> "${org.orgNameLevel4.orEmpty()}_$base"
-
-        employee.costCenterCode == COST_CENTER_PRODUCT_DEV -> "${org.orgNameLevel3.orEmpty()}_$base"
-
-        else -> base
+    internal fun applyOrgPrefix(employee: Employee, org: OrganizationCacheDto, base: String): String {
+        // 바깥 if / else-if 구조를 그대로 유지한다 — 유통총괄실이면 Level5 불일치로 prefix 를 못 붙여도
+        // 5638 분기로 넘어가지 않는다 (`when` 의 fall-through 로 옮기면 이 지점이 어긋난다).
+        if (org.orgCodeLevel3 == ORG_DISTRIBUTION_HQ) {
+            return if (org.orgCodeLevel5 != null && org.orgCodeLevel5 == employee.costCenterCode) {
+                "${org.orgNameLevel4.orEmpty()}_$base"
+            } else {
+                base
+            }
+        }
+        if (employee.costCenterCode == COST_CENTER_PRODUCT_DEV) {
+            return "${org.orgNameLevel3.orEmpty()}_$base"
+        }
+        return base
     }
 
     companion object {

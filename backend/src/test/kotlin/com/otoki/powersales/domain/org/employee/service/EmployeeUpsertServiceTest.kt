@@ -663,6 +663,39 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
+        @DisplayName("E9b 퇴직 전환 - user_role_id 도 함께 해제 (SF cls:266 — hierarchy 노출 차단)")
+        fun upsert_existingUserRoleClearedOnRetire() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { costCenterCode = "11110" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존")
+                .apply { isActive = true; userRoleId = 52L }
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "퇴직", orgCode = "11110")))
+
+            assertThat(user.isActive).isFalse()
+            assertThat(user.userRoleId).isNull()
+        }
+
+        @Test
+        @DisplayName("E9c 재직 유지 - user_role_id 는 건드리지 않는다")
+        fun upsert_existingUserRoleKeptWhenActive() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { costCenterCode = "11110" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존")
+                .apply { userRoleId = 52L }
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "재직", orgCode = "11110")))
+
+            assertThat(user.userRoleId).isEqualTo(52L)
+        }
+
+        @Test
         @DisplayName("E10 기존 User - excHrCode 사원은 User 무변경 (SF update SOQL NOT IN excHrCode 동등)")
         fun upsert_existingUserUntouchedForExcludedCostCenter() {
             val existing = Employee(employeeCode = "100123", name = "본사").apply { costCenterCode = "4606" }

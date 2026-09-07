@@ -147,8 +147,12 @@ class EmployeeUpsertService(
                 user.phone = employee.workPhone
                 user.hrCode = employee.costCenterCode
                 user.costCenterCode = employee.costCenterCode
-                // SF cls:264-270 동등 — 재직상태 퇴직 → 기존 User 비활성화. 그 외 → 활성.
-                user.isActive = employee.status != STATUS_RETIRED
+                // SF cls:264-270 동등 — 재직상태 퇴직 → 기존 User 비활성화 + UserRole 해제. 그 외 → 활성.
+                // UserRole 해제가 핵심이다: 남겨두면 퇴직자가 소유한 레코드가 그 role 의 상위 사용자에게
+                // 계속 hierarchy 로 노출된다 (SF 가 굳이 null 로 지우는 이유).
+                val retired = employee.status == STATUS_RETIRED
+                user.isActive = !retired
+                if (retired) user.userRoleId = null
             }
 
             // insert 경로 — User 가 없는 사원 (SF cls:277, insert SOQL). 신규 Employee + "기존 Employee 인데 User 부재" 포함.

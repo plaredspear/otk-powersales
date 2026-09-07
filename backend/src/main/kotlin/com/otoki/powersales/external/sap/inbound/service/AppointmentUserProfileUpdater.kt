@@ -356,9 +356,15 @@ class AppointmentUserProfileUpdater(
         // SF cls:367-398 — UserRole 배정. sharing rule 의 ROLE 타겟 매칭과 role hierarchy 부여의
         // 유일한 연결 고리라, 비어 있으면 OWD=Private SObject 가 전부 차단된다.
         // 미매칭 시 기존 값 유지 (레거시는 null 로 덮어써 그 사용자를 조직도 밖으로 밀어낸다).
-        userOrgDisplayFieldsSynchronizer.resolveOrg(employee)?.let { org ->
-            userRoleAssignmentResolver.resolveUserRoleId(employee, org, userRoleNameIndex)
-                ?.let { user.userRoleId = it }
+        //
+        // `isActive` 게이트는 SF cls:287 의 User SOQL `AND isActive = true` 정합이다. 표시 필드와 달리
+        // UserRole 은 비활성 사용자에게도 실효가 있다 — 퇴직자가 소유한 레코드가 그 role 의 상위
+        // 사용자에게 hierarchy 로 계속 노출되기 때문에, SF 가 퇴직 시 UserRoleId 를 지우는 것과 짝을 이룬다.
+        if (user.isActive) {
+            userOrgDisplayFieldsSynchronizer.resolveOrg(employee)?.let { org ->
+                userRoleAssignmentResolver.resolveUserRoleId(employee, org, userRoleNameIndex)
+                    ?.let { user.userRoleId = it }
+            }
         }
 
         // profileId / isSalesSupport / userRoleId 가 권한 산출 입력이라 변경 즉시 cache invalidate.

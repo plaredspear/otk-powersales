@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
+import com.otoki.powersales.domain.org.organization.repository.dto.OrganizationCacheDto
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
@@ -17,6 +18,7 @@ import com.otoki.powersales.user.service.UserRoleAssignmentResolver
 import com.otoki.powersales.user.service.UserRoleResolver
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -356,6 +358,125 @@ class AppointmentUserProfileUpdaterTest {
             updater.updateUserProfiles(listOf(appointment), today)
 
             assertThat(employee.costCenterCode).isEqualTo("1111")
+        }
+    }
+
+    @Nested
+    @DisplayName("UserRole 배정 (SF cls:287 isActive 게이트 + cls:367-398)")
+    inner class UserRoleAssignment {
+
+        @BeforeEach
+        fun setUp() {
+            setupSystemCodeMaster()
+            every { userOrgDisplayFieldsSynchronizer.resolveOrg(any()) } returns
+                OrganizationCacheDto(
+                    orgCodeLevel3 = "3000",
+                    orgNameLevel3 = "Retail사업부",
+                    orgNameLevel4 = "3영업부",
+                    costCenterLevel3 = "3000",
+                    orgCodeLevel5 = "1111",
+                )
+            every { userRoleAssignmentResolver.loadNameIndex() } returns mapOf("인천1지점_조장" to 52L)
+            every { userRoleAssignmentResolver.resolveUserRoleId(any(), any(), any()) } returns 52L
+        }
+
+        private fun runAppointment(user: User) {
+            val employee = createEmployee(costCenterCode = "0000")
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+            every { userRepository.findByEmployeeCode("100234") } returns user
+            updater.updateUserProfiles(
+                listOf(
+                    createAppointment(
+                        afterOrgCode = "1111", afterOrgName = "인천1지점",
+                        jikchak = "D0053", jobCode = "A055",
+                        appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
+                    )
+                ),
+                today
+            )
+        }
+
+        private fun user(active: Boolean, roleId: Long? = null) = User(
+            username = "u@otoki.local",
+            employeeCode = "100234",
+            password = "x",
+            isActive = active,
+        ).apply { userRoleId = roleId }
+
+        @Test
+        @DisplayName("활성 사용자 - UserRole 배정")
+        fun assignsForActiveUser() {
+            val u = user(active = true)
+
+            runAppointment(u)
+
+            assertThat(u.userRoleId).isEqualTo(52L)
+        }
+
+        @Test
+        @DisplayName("비활성 사용자 - 배정하지 않는다 (SF User SOQL 의 isActive = true 필터)")
+        fun skipsInactiveUser() {
+            val u = user(active = false)
+
+            runAppointment(u)
+
+            assertThat(u.userRoleId).isNull()
+            verify(exactly = 0) { userRoleAssignmentResolver.resolveUserRoleId(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("비활성 사용자 - 기존 배정도 건드리지 않는다")
+        fun keepsExistingRoleForInactiveUser() {
+            val u = user(active = false, roleId = 99L)
+
+            runAppointment(u)
+
+            assertThat(u.userRoleId).isEqualTo(99L)
+        }
+
+        @Test
+        @DisplayName("이름 미매칭 - 기존 값 유지 (레거시는 null 로 덮어씀)")
+        fun keepsExistingWhenUnresolved() {
+            every { userRoleAssignmentResolver.resolveUserRoleId(any(), any(), any()) } returns null
+            val u = user(active = true, roleId = 99L)
+
+            runAppointment(u)
+
+            assertThat(u.userRoleId).isEqualTo(99L)
+        }
+
+        @Test
+        @DisplayName("조직 미매칭 - 배정하지 않는다 (SF orgInfoTmp == null 가드)")
+        fun skipsWhenOrgMissing() {
+            every { userOrgDisplayFieldsSynchronizer.resolveOrg(any()) } returns null
+            val u = user(active = true)
+
+            runAppointment(u)
+
+            assertThat(u.userRoleId).isNull()
+        }
+
+        @Test
+        @DisplayName("이름 색인은 발령 건수와 무관하게 1회만 적재")
+        fun loadsNameIndexOnce() {
+            val u = user(active = true)
+            val employee = createEmployee(costCenterCode = "0000")
+            every { employeeRepository.findByEmployeeCode(any()) } returns Optional.of(employee)
+            every { userRepository.findByEmployeeCode(any()) } returns u
+
+            updater.updateUserProfiles(
+                (1..3).map {
+                    createAppointment(
+                        employeeCode = "10023$it",
+                        afterOrgCode = "1111", afterOrgName = "인천1지점",
+                        jikchak = "D0053", jobCode = "A055",
+                        appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
+                    )
+                },
+                today
+            )
+
+            verify(exactly = 1) { userRoleAssignmentResolver.loadNameIndex() }
         }
     }
 
