@@ -2,6 +2,7 @@ package com.otoki.powersales.external.sap.outbound.sender
 
 import com.otoki.powersales.domain.activity.order.exception.InventorySapErrorException
 import com.otoki.powersales.domain.activity.order.exception.InventorySapHtmlResponseException
+import com.otoki.powersales.domain.activity.order.exception.InventorySapRejectedException
 import com.otoki.powersales.domain.activity.order.exception.InventorySapUnavailableException
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.guard.SapResponseHtmlGuard
@@ -115,7 +116,9 @@ class InventorySearchSender(
         // 어느 SAP 인터페이스에서 난 오류인지 식별 가능하도록 prefix 만 덧붙인다(레거시 relay 정합 유지).
         val resultMsg = parsed["resutlMsg"]?.asString() ?: parsed["resultMsg"]?.asString()
         if (resultCode != "S") {
-            throw InventorySapErrorException(withSapPrefix(resultMsg))
+            // SAP 가 정상 응답으로 업무 규칙상 거부한 것(출고정지 고객 / 조회 불가 거래처 등)이므로
+            // 서버 결함이 아닌 4xx 로 내린다. 응답 구조가 깨진 위쪽 케이스들과 구분.
+            throw InventorySapRejectedException(withSapPrefix(resultMsg))
         }
 
         val resultNode = parsed["result"] ?: throw InventorySapErrorException("SAP 응답 result 필드 누락")
@@ -152,7 +155,7 @@ class InventorySearchSender(
         /**
          * SAP 오류 원문에 인터페이스 식별 prefix 를 덧붙인다.
          * 원문이 없으면(null/공란) prefix 만 붙이지 않고 null 을 반환해
-         * [InventorySapErrorException] 의 기본 문구가 쓰이도록 한다.
+         * [InventorySapRejectedException] 의 기본 문구가 쓰이도록 한다.
          */
         private fun withSapPrefix(resultMsg: String?): String? {
             val trimmed = resultMsg?.trim()

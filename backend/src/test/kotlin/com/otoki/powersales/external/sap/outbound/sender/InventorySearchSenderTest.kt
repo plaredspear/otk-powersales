@@ -1,6 +1,7 @@
 package com.otoki.powersales.external.sap.outbound.sender
 
 import com.otoki.powersales.domain.activity.order.exception.InventorySapErrorException
+import com.otoki.powersales.domain.activity.order.exception.InventorySapRejectedException
 import com.otoki.powersales.domain.activity.order.exception.InventorySapUnavailableException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.ExpectedCount
 import org.springframework.test.web.client.MockRestServiceServer
@@ -101,7 +103,7 @@ class InventorySearchSenderTest {
     }
 
     @Test
-    @DisplayName("resultCode != 'S' → INVENTORY_SAP_ERROR + [SAP재고조회] prefix + resutlMsg 패스스루")
+    @DisplayName("resultCode != 'S' → INVENTORY_SAP_REJECTED(400) + [SAP재고조회] prefix + resutlMsg 패스스루")
     fun sapErrorPrefixed() {
         server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03070"))
             .andRespond(
@@ -112,8 +114,29 @@ class InventorySearchSenderTest {
             )
 
         assertThatThrownBy { sender.search("1005139", listOf("P001"), deliveryDate) }
-            .isInstanceOf(InventorySapErrorException::class.java)
+            .isInstanceOf(InventorySapRejectedException::class.java)
             .hasMessage("[SAP재고조회] 조회 가능한 거래처가 아닙니다")
+            .satisfies({
+                // SAP 업무 거부는 서버 결함이 아니다 — 4xx + serverFault=false(스택 없는 warn 로깅).
+                val ex = it as InventorySapRejectedException
+                assertThat(ex.httpStatus).isEqualTo(HttpStatus.BAD_REQUEST)
+                assertThat(ex.serverFault).isFalse()
+            })
+    }
+
+    @Test
+    @DisplayName("응답 JSON 파싱 실패 → INVENTORY_SAP_ERROR(500) 유지 — 연동 결함은 스택까지 추적")
+    fun sapMalformedBodyStaysServerFault() {
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03070"))
+            .andRespond(withSuccess("""{"resultCode":""", MediaType.APPLICATION_JSON))
+
+        assertThatThrownBy { sender.search("1005139", listOf("P001"), deliveryDate) }
+            .isInstanceOf(InventorySapErrorException::class.java)
+            .satisfies({
+                val ex = it as InventorySapErrorException
+                assertThat(ex.httpStatus).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+                assertThat(ex.serverFault).isTrue()
+            })
     }
 
     private fun successBody(codes: List<String>): String {

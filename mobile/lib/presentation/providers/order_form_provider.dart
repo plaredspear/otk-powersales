@@ -821,6 +821,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     // SAP 사전 검증을 거치므로, 어느 단계에서 실패했는지 메시지에 드러낸다.
     // (문자열 heuristic 보다 코드가 우선 — "SAP" 포함 여부만으로는 단계 구분이 불가능하다.)
     switch (extractErrorCode(error)) {
+      // SAP 가 정상 응답으로 업무 규칙상 거부한 경우(출고정지 고객 등) — 재시도로 해소되지 않으므로
+      // SAP 원문 사유를 그대로 보여준다. 시스템 오류(_ERROR/_UNAVAILABLE)와 구분되는 분기.
+      case 'INVENTORY_SAP_REJECTED':
+        return raw;
       case 'INVENTORY_SAP_ERROR':
         return '재고 조회 오류: $raw';
       case 'INVENTORY_SAP_UNAVAILABLE':

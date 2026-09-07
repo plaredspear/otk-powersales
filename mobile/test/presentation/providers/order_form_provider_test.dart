@@ -1007,6 +1007,25 @@ void main() {
         );
       });
 
+      test('등록 INVENTORY_SAP_REJECTED → SAP 거부 사유 원문 그대로 노출', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        // SAP 가 정상 응답으로 업무 규칙상 거부한 경우 — 재시도 안내나 "오류" 수식 없이
+        // 사유만 그대로 보여준다 (시스템 오류 INVENTORY_SAP_ERROR 와 구분).
+        formRepo.exceptionToThrow =
+            _apiError('INVENTORY_SAP_REJECTED', '[SAP재고조회] 출고정지 고객 입니다.');
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(
+          notifier.state.errorMessage,
+          '[SAP재고조회] 출고정지 고객 입니다.',
+        );
+      });
+
       test('등록 LOAN_SAP_UNAVAILABLE → 여신 조회 단계 명시 메시지', () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
