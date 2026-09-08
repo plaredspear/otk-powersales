@@ -399,4 +399,32 @@ class AdminClaimMasterSyncTestServiceTest {
         assertThat(response.fetchedCount).isEqualTo(0)
         assertThat(response.updatedCount).isEqualTo(0)
     }
+
+    @Test
+    @DisplayName("Status 미수신 + 조치정보 회수 — 파생 승격으로 임시저장 → 전송완료 (레거시 afterUpdateStatus 정합)")
+    fun promotesDraftWhenActionInfoArrives() {
+        val claim = Claim(id = 42L, status = ClaimStatus.DRAFT)
+            .apply { createdAt = ClaimDeliveryStatusRule.PROMOTION_START_AT.plusDays(1) }
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf("""[{ "pwrskey": "42", "counselNumber": "CS-100" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(claim.status).isEqualTo(ClaimStatus.SENT)
+    }
+
+    @Test
+    @DisplayName("커트라인(2026-08-10) 이전 등록분은 조치정보가 와도 파생 승격하지 않는다")
+    fun doesNotPromoteBeforeCutoff() {
+        val claim = Claim(id = 42L, status = ClaimStatus.DRAFT)
+            .apply { createdAt = ClaimDeliveryStatusRule.PROMOTION_START_AT.minusSeconds(1) }
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf("""[{ "pwrskey": "42", "counselNumber": "CS-100" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(claim.status).isEqualTo(ClaimStatus.DRAFT)
+    }
 }

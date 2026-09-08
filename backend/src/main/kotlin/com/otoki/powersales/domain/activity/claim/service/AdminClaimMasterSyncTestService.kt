@@ -30,6 +30,9 @@ import java.time.format.DateTimeFormatter
  *    interfaceDate(전송일시) / logisticsCenter(출고처) / sampleCollectionFlag(샘플 회수 여부) / cosmosKey.
  *    신규는 등록 시 이 컬럼들을 채우지 않으므로 본 sync 가 유일한 공급원이고, 응답에 값이 없다고 덮으면
  *    이미 채워둔 값이 소실된다(cosmosKey 는 문서 응답 표에 아예 없어 무조건 대입 시 매 회 NULL 로 지워졌다).
+ *  - **파생 승격** — 위 갱신 후 [ClaimDeliveryStatusRule] 로 판정해, 조치/처리 정보가 있는데 status 가
+ *    '임시저장'/'전송실패'/NULL 로 남아 있으면 '전송완료' 로 올린다(레거시 `ClaimTriggerHandler.afterUpdateStatus()`
+ *    정합). SF 가 Status 를 응답에 담지 않는 레코드를 구제한다.
  * 등록 시 확정 필드(제품/거래처/수량/금액 등) 는 갱신하지 않는다. SF 레거시 `ClaimTriggerHandler` 의
  * before-update 게이트는 status 가 '임시저장' 이 아니면 수정을 차단하나(시스템 관리자 프로필 예외),
  * inbound 갱신 API 는 그 예외 권한으로 실행돼 status 와 무관하게 조치 필드를 갱신한다. 신규는 배치 pull
@@ -73,9 +76,9 @@ class AdminClaimMasterSyncTestService(
         val result = applyUpdates(records)
 
         log.info(
-            "SF_CLAIM_MASTER_SYNC user={} modDt={} resultCode={} fetched={} updated={} notFound={} skipped={}",
+            "SF_CLAIM_MASTER_SYNC user={} modDt={} resultCode={} fetched={} updated={} notFound={} skipped={} promoted={}",
             userId, request.modDt, apiResponse.resultCode,
-            result.fetched, result.updated, result.notFound, result.skipped,
+            result.fetched, result.updated, result.notFound, result.skipped, result.promoted,
         )
 
         return AdminClaimMasterSyncTestResponse(
@@ -121,8 +124,9 @@ class AdminClaimMasterSyncTestService(
             )
         )
         log.info(
-            "[claim-master-sync] 배치 완료 — modDt={} resultCode={} fetched={} updated={} notFound={} skipped={}",
-            modDt, apiResponse.resultCode, result.fetched, result.updated, result.notFound, result.skipped,
+            "[claim-master-sync] 배치 완료 — modDt={} resultCode={} fetched={} updated={} notFound={} skipped={} promoted={}",
+            modDt, apiResponse.resultCode,
+            result.fetched, result.updated, result.notFound, result.skipped, result.promoted,
         )
         return result
     }
@@ -140,6 +144,7 @@ class AdminClaimMasterSyncTestService(
         var updated = 0
         var notFound = 0
         var skipped = 0
+        var promoted = 0
 
         for (record in records) {
             val claimId = record.pwrskeyAsClaimId()
@@ -170,10 +175,21 @@ class AdminClaimMasterSyncTestService(
             record.logisticsCenterOrNull()?.let { claim.logisticsCenter = it }
             record.sampleCollectionFlagAsBoolean()?.let { claim.sampleCollectionFlag = it }
             record.cosmosKeyOrNull()?.let { claim.cosmosKey = it }
+            // ③ 파생 승격 — SF 가 Status 를 주지 않았거나 아직 '임시저장' 인데 조치/처리 정보가 이미 있으면
+            // 코스모스 전송이 성사된 것이므로 '전송완료' 로 올린다([ClaimDeliveryStatusRule], 레거시
+            // `ClaimTriggerHandler.afterUpdateStatus()` 정합). ①②를 적용한 뒤 판정해야 이번 응답으로 새로
+            // 들어온 조치 정보까지 근거에 포함된다.
+            if (ClaimDeliveryStatusRule.promoteIfDelivered(claim)) promoted++
             updated++
         }
 
-        UpdateResult(fetched = records.size, updated = updated, notFound = notFound, skipped = skipped)
+        UpdateResult(
+            fetched = records.size,
+            updated = updated,
+            notFound = notFound,
+            skipped = skipped,
+            promoted = promoted,
+        )
     }!!
 
     /** rawBody JSON 에서 클레임 레코드 배열을 추출 후 역직렬화. 형식 불명/파싱 실패 시 빈 리스트. */
@@ -200,12 +216,18 @@ class AdminClaimMasterSyncTestService(
         requestPayload = requestPayload,
     )
 
-    /** 갱신 집계 결과. */
+    /**
+     * 갱신 집계 결과.
+     *
+     * @property promoted [ClaimDeliveryStatusRule] 로 status 를 '전송완료' 로 파생 승격한 건수
+     *   (updated 의 부분집합 — 별도 갱신이 아니라 같은 행에 함께 적용된다).
+     */
     data class UpdateResult(
         val fetched: Int,
         val updated: Int,
         val notFound: Int,
         val skipped: Int,
+        val promoted: Int = 0,
     )
 
     companion object {

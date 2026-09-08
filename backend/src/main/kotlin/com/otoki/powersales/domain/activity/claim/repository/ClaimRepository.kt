@@ -2,10 +2,13 @@ package com.otoki.powersales.domain.activity.claim.repository
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 interface ClaimRepository : JpaRepository<Claim, Long>, ClaimRepositoryCustom {
@@ -59,4 +62,61 @@ interface ClaimRepository : JpaRepository<Claim, Long>, ClaimRepositoryCustom {
         """,
     )
     fun findByIdWithSfRefs(@Param("id") id: Long): Claim?
+
+    /**
+     * 코스모스 전송상태 파생 승격 대상 건수 —
+     * [com.otoki.powersales.domain.activity.claim.service.ClaimDeliveryStatusRule] 의 SQL 표현.
+     *
+     * 조건은 규칙 object 와 1:1 로 대응한다(이관분 제외 / 커트라인 이후 등록 / 상태 미확정 / 전송 증거 보유).
+     * `is_deleted` 는 조건에 넣지 않는다 — 운영 claim 에 NULL 행이 존재해(V60 의 NOT NULL 이 운영에 미반영)
+     * `= false` 비교가 대상 전건을 탈락시킨다. 기간별 클레임 보고서 조회도 이 컬럼을 보지 않아 정합이다.
+     * 증거 필드의 blank 는 증거로 보지 않으므로 `trim(coalesce(...)) <> ''` 로 비교한다 — sync 가 조치 5필드를
+     * 빈 값으로도 덮어쓰기 때문에 NULL 체크만으로는 `''` 가 걸러지지 않는다.
+     */
+    @Query(
+        """
+        select count(c) from Claim c
+        where c.sfid is null
+          and c.createdAt >= :promotionStartAt
+          and (c.status is null or c.status in :promotableStatuses)
+          and (
+            c.interfaceDate is not null
+            or trim(coalesce(c.cosmosKey, '')) <> ''
+            or trim(coalesce(c.counselNumber, '')) <> ''
+            or trim(coalesce(c.actionStatus, '')) <> ''
+            or trim(coalesce(c.actionCode, '')) <> ''
+            or trim(coalesce(c.reasonType, '')) <> ''
+            or trim(coalesce(c.actContent, '')) <> ''
+          )
+        """,
+    )
+    fun countDeliveryStatusPromotionTargets(
+        @Param("promotionStartAt") promotionStartAt: LocalDateTime,
+        @Param("promotableStatuses") promotableStatuses: Collection<ClaimStatus>,
+    ): Long
+
+    /** 승격 대상 조회 — 조건은 [countDeliveryStatusPromotionTargets] 와 동일. id 오래된 순 [pageable] 상한. */
+    @Query(
+        """
+        select c from Claim c
+        where c.sfid is null
+          and c.createdAt >= :promotionStartAt
+          and (c.status is null or c.status in :promotableStatuses)
+          and (
+            c.interfaceDate is not null
+            or trim(coalesce(c.cosmosKey, '')) <> ''
+            or trim(coalesce(c.counselNumber, '')) <> ''
+            or trim(coalesce(c.actionStatus, '')) <> ''
+            or trim(coalesce(c.actionCode, '')) <> ''
+            or trim(coalesce(c.reasonType, '')) <> ''
+            or trim(coalesce(c.actContent, '')) <> ''
+          )
+        order by c.id asc
+        """,
+    )
+    fun findDeliveryStatusPromotionTargets(
+        @Param("promotionStartAt") promotionStartAt: LocalDateTime,
+        @Param("promotableStatuses") promotableStatuses: Collection<ClaimStatus>,
+        pageable: Pageable,
+    ): List<Claim>
 }
