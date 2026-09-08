@@ -192,7 +192,7 @@ class PosSalesAdminQueryService(
         category3: String? = null,
     ): PosSalesRangeResponse {
         validateDateRange(startDate, endDate)
-        val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
+        val account = accountRepository.findByIdInAndNotDeleted(listOf(customerId)).firstOrNull()
             ?: throw BusinessException(
                 errorCode = "ACCOUNT_NOT_FOUND",
                 message = "거래처를 찾을 수 없습니다: $customerId",
@@ -448,7 +448,7 @@ class PosSalesAdminQueryService(
                 httpStatus = HttpStatus.BAD_REQUEST,
             )
         }
-        val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds.distinct(), true)
+        val accounts = accountRepository.findByIdInAndNotDeleted(accountIds.distinct())
         if (accounts.any { !scope.validateAccess(it.branchCode) }) throw AdminForbiddenException()
         return accounts
     }

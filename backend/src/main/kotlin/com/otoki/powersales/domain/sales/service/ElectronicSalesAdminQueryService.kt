@@ -136,7 +136,7 @@ class ElectronicSalesAdminQueryService(
         category3: String? = null,
     ): ElectronicSalesDashboardDetailResponse {
         validateDateRange(startDate, endDate)
-        val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
+        val account = accountRepository.findByIdInAndNotDeleted(listOf(customerId)).firstOrNull()
             ?: throw BusinessException(
                 errorCode = "ACCOUNT_NOT_FOUND",
                 message = "거래처를 찾을 수 없습니다: $customerId",
@@ -468,10 +468,9 @@ class ElectronicSalesAdminQueryService(
     ): List<Account> {
         val candidates = if (request.accountGroup != null) {
             effectiveCodes.flatMap { code ->
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
                     branchCode = code,
                     accountGroups = listOf(request.accountGroup),
-                    isDeleted = true,
                 )
             }
         } else {

@@ -53,7 +53,7 @@ class ElectronicSalesService(
 		endDate: String,
 		barcodes: List<String>?,
 	): ElectronicSalesResponse {
-		val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
+		val account = accountRepository.findByIdInAndNotDeleted(listOf(customerId)).firstOrNull()
 			?: throw BusinessException(
 				errorCode = "ACCOUNT_NOT_FOUND",
 				message = "거래처를 찾을 수 없습니다: $customerId",

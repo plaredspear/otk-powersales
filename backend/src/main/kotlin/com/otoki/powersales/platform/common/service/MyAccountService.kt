@@ -164,10 +164,9 @@ class MyAccountService(
     private fun getLeaderAccounts(costCenterCode: String?): List<MyAccountInfo> {
         if (costCenterCode.isNullOrBlank()) return emptyList()
 
-        return accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+        return accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
             branchCode = costCenterCode,
             accountGroups = listOf("1000", "1010"),
-            isDeleted = true
         ).map { MyAccountInfo.from(it) }
     }
 
@@ -281,7 +280,7 @@ class MyAccountService(
      */
     private fun toAccounts(accountIds: List<Long>, scope: MyAccountScope): List<MyAccountInfo> {
         if (accountIds.isEmpty()) return emptyList()
-        val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds, true)
+        val accounts = accountRepository.findByIdInAndNotDeleted(accountIds)
         val filtered = if (scope.isOrder) {
             accounts.filter { it.isOrderableType() }
         } else {

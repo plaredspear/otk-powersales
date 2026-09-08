@@ -364,8 +364,8 @@ class LeaderScheduleServiceTest {
             val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart")
 
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
-                "C001", listOf("1000", "1010"), true
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
+                "C001", listOf("1000", "1010")
             ) } returns listOf(a1, a2)
 
             val result = leaderScheduleService.getAccounts(leader.id, null)
@@ -383,8 +383,8 @@ class LeaderScheduleServiceTest {
             val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart", address1 = "Busan")
 
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
-                "C001", listOf("1000", "1010"), true
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
+                "C001", listOf("1000", "1010")
             ) } returns listOf(a1, a2)
 
             val result = leaderScheduleService.getAccounts(leader.id, "alpha")
@@ -403,8 +403,8 @@ class LeaderScheduleServiceTest {
             val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart", address1 = "777번지", externalKey = "1000111")
 
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
-                "C001", listOf("1000", "1010"), true
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
+                "C001", listOf("1000", "1010")
             ) } returns listOf(a1, a2)
 
             val result = leaderScheduleService.getAccounts(leader.id, "777")

@@ -2,9 +2,19 @@ package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 /**
  * 거래처 마스터 Repository
+ *
+ * **미삭제 조건은 `is_deleted IS NULL OR is_deleted = false` 로 쓴다.**
+ * `IsDeletedNot(true)` 파생 쿼리(= `is_deleted <> true`)는 안 된다 — SQL 3값 논리에서
+ * `NULL <> true` 가 NULL 이라 is_deleted 가 NULL 인 거래처가 통째로 탈락한다.
+ * SAP 거래처마스터 인터페이스([com.otoki.powersales.external.sap.inbound.service.SapClientMasterService])
+ * 가 is_deleted 를 세팅하지 않아 NULL 이 정상 상태이며, 실제로 진열마스터가 확정·유효인데도
+ * 주문서 작성 거래처가 0건이 되는 장애로 이어졌다 (2026-09-08).
+ * QueryDSL 경로의 `isNotDeleted()` 와 동일 기준.
  */
 interface AccountRepository : JpaRepository<Account, Long>, AccountRepositoryCustom {
 
@@ -55,14 +65,29 @@ interface AccountRepository : JpaRepository<Account, Long>, AccountRepositoryCus
     /**
      * 지점 코드 + 거래처 그룹 + 삭제되지 않은 거래처 조회 (조장용)
      */
-    fun findByBranchCodeAndAccountGroupInAndIsDeletedNot(
-        branchCode: String,
-        accountGroups: List<String>,
-        isDeleted: Boolean
+    @Query(
+        """
+        SELECT a FROM Account a
+        WHERE a.branchCode = :branchCode
+          AND a.accountGroup IN :accountGroups
+          AND (a.isDeleted IS NULL OR a.isDeleted = false)
+        """
+    )
+    fun findByBranchCodeAndAccountGroupInAndNotDeleted(
+        @Param("branchCode") branchCode: String,
+        @Param("accountGroups") accountGroups: List<String>,
     ): List<Account>
 
     /**
      * 거래처 ID 목록 + 삭제되지 않은 거래처 조회 (일반사원용)
      */
-    fun findByIdInAndIsDeletedNot(ids: List<Long>, isDeleted: Boolean): List<Account>
+    @Query(
+        """
+        SELECT a FROM Account a
+        WHERE a.id IN :ids
+          AND (a.isDeleted IS NULL OR a.isDeleted = false)
+        """
+    )
+    fun findByIdInAndNotDeleted(@Param("ids") ids: List<Long>): List<Account>
+
 }

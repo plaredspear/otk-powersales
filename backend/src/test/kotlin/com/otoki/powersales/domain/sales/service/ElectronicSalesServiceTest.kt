@@ -54,7 +54,7 @@ class ElectronicSalesServiceTest {
 	@Test
 	@DisplayName("매출 조회 제품(바코드) 선택 시 '000' 패딩 CUST_CD + 기간 + UPC_CD IN 으로 제품별 조회·합계")
 	fun querySelectedProducts() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		val custSlot = slot<String>()
 		val startSlot = slot<String>()
 		val endSlot = slot<String>()
@@ -98,7 +98,7 @@ class ElectronicSalesServiceTest {
 	@Test
 	@DisplayName("매출 조회 제품 미선택 시 제품 명세 없이 거래처·기간 전체 합계금액만 (레거시 abcSumAmount)")
 	fun querySumOnly() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		every {
 			liveTotSalesDailyRepository.aggregateByCustomer(listOf("00012345"), "2026-06-01", "2026-06-09")
 		} returns listOf(customerRow("00012345", 123_456L, 99L))
@@ -118,7 +118,7 @@ class ElectronicSalesServiceTest {
 	@Test
 	@DisplayName("거래처 없음 → BusinessException")
 	fun accountNotFound() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(99), true) } returns emptyList()
+		every { accountRepository.findByIdInAndNotDeleted(listOf(99)) } returns emptyList()
 
 		assertThatThrownBy { service.getElectronicSales(99, "2026-06-01", "2026-06-09", null) }
 			.isInstanceOf(BusinessException::class.java)
@@ -127,7 +127,7 @@ class ElectronicSalesServiceTest {
 	@Test
 	@DisplayName("externalKey 없으면 POS 조회 없이 빈 items·합계 0")
 	fun noExternalKey() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = null))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = null))
 
 		val res = service.getElectronicSales(1, "2026-06-01", "2026-06-09", listOf("8801234500011"))
 
@@ -140,7 +140,7 @@ class ElectronicSalesServiceTest {
 	@Test
 	@DisplayName("POS DB 조회 실패 시 빈 items·합계 0 으로 graceful fallback")
 	fun posDownGracefulFallback() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account())
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account())
 		every {
 			liveTotSalesDailyRepository.aggregateByProductBarcodes(any(), any(), any(), any())
 		} throws RuntimeException("POS down")

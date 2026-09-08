@@ -65,7 +65,7 @@ class AdminSalesComparisonService(
      */
     fun getSearchCategories(): List<SearchAccountCategoryItem> {
         return accountCategoryMasterRepository
-            .findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(true)
+            .findByUseSearchTrueAndNotDeletedOrderByAccountCode()
             .map { SearchAccountCategoryItem(accountCode = it.accountCode ?: "", name = it.name ?: "") }
     }
 
@@ -482,7 +482,7 @@ class AdminSalesComparisonService(
         val selectedFirstDay: LocalDate = selectedMonth.atDay(1)
         val selectedLastDay: LocalDate = selectedMonth.atEndOfMonth()
         val criteriaList = employeeInputCriteriaMasterRepository
-            .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
+            .findByTypeOfWork1AndConfirmedTrueAndNotDeleted(TypeOfWork1.DISPLAY)
             .filter { master ->
                 val start = master.startDate ?: return@filter false
                 start <= selectedLastDay && (master.endDate?.let { it >= selectedFirstDay } ?: true)

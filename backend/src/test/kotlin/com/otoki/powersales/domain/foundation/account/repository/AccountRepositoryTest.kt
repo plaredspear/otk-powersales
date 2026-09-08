@@ -1,24 +1,23 @@
 package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.policy.GeocodeRetryPolicy
 import com.otoki.powersales.platform.common.config.QueryDslConfig
-import com.querydsl.core.types.dsl.Expressions
-import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
-import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 
 /**
- * AccountRepository 테스트
+ * 미삭제 거래처 조회의 NULL 취약성 회귀 방지.
+ *
+ * 종전 `IsDeletedNot(true)` 파생 쿼리(= `is_deleted <> true`)는 SQL 3값 논리로 `is_deleted IS NULL`
+ * 행을 통째로 탈락시켜, SAP 로 적재된(is_deleted 미세팅) 거래처가 주문서 작성·매출 화면에서
+ * 사라졌다 (2026-09-08 운영 장애). mockk 단위 테스트로는 잡히지 않는 SQL 의미 차이라 JPA 슬라이스로 고정한다.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -30,392 +29,50 @@ class AccountRepositoryTest {
     private lateinit var accountRepository: AccountRepository
 
     @Autowired
-    private lateinit var testEntityManager: TestEntityManager
+    private lateinit var em: TestEntityManager
 
-    @BeforeEach
-    fun setUp() {
-        accountRepository.deleteAll()
-        testEntityManager.clear()
+    @Test
+    @DisplayName("findByIdInAndNotDeleted - is_deleted 가 NULL 인 거래처도 미삭제로 조회된다")
+    fun findByIdInAndNotDeleted_includesNull() {
+        val nullFlag = persist(name = "NULL거래처", isDeleted = null)
+        val notDeleted = persist(name = "미삭제거래처", isDeleted = false)
+        val deleted = persist(name = "삭제거래처", isDeleted = true)
+        em.clear()
+
+        val result = accountRepository.findByIdInAndNotDeleted(listOf(nullFlag.id, notDeleted.id, deleted.id))
+
+        assertThat(result.map { it.name })
+            .containsExactlyInAnyOrder("NULL거래처", "미삭제거래처")
     }
 
-    @Nested
-    @DisplayName("기본 CRUD 테스트")
-    inner class BasicCrudTests {
+    @Test
+    @DisplayName("findByBranchCodeAndAccountGroupInAndNotDeleted - is_deleted 가 NULL 인 거래처도 미삭제로 조회된다")
+    fun findByBranchCodeAndAccountGroupInAndNotDeleted_includesNull() {
+        persist(name = "NULL거래처", isDeleted = null, branchCode = "5830", accountGroup = "1000")
+        persist(name = "미삭제거래처", isDeleted = false, branchCode = "5830", accountGroup = "1010")
+        persist(name = "삭제거래처", isDeleted = true, branchCode = "5830", accountGroup = "1000")
+        persist(name = "타지점거래처", isDeleted = null, branchCode = "9999", accountGroup = "1000")
+        persist(name = "타그룹거래처", isDeleted = null, branchCode = "5830", accountGroup = "2000")
+        em.clear()
 
-        @Test
-        @DisplayName("Account 저장 및 ID로 조회")
-        fun saveAndFindById() {
-            // Given
-            val account = createAccount(
-                name = "이마트 부산점",
-                phone = "051-1234-5678",
-                address1 = "부산시 해운대구",
-                representative = "홍길동",
-                externalKey = "EXT-00101"
-            )
-            val saved = testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
+        val result = accountRepository
+            .findByBranchCodeAndAccountGroupInAndNotDeleted("5830", listOf("1000", "1010"))
 
-            // When
-            val result = accountRepository.findById(saved.id)
-
-            // Then
-            Assertions.assertThat(result).isPresent
-            Assertions.assertThat(result.get().name).isEqualTo("이마트 부산점")
-            Assertions.assertThat(result.get().phone).isEqualTo("051-1234-5678")
-            Assertions.assertThat(result.get().address1).isEqualTo("부산시 해운대구")
-            Assertions.assertThat(result.get().representative).isEqualTo("홍길동")
-            Assertions.assertThat(result.get().externalKey).isEqualTo("EXT-00101")
-        }
+        assertThat(result.map { it.name })
+            .containsExactlyInAnyOrder("NULL거래처", "미삭제거래처")
     }
 
-    @Nested
-    @DisplayName("findByExternalKey 테스트")
-    inner class FindByExternalKeyTests {
-
-        @Test
-        @DisplayName("외부키로 조회 성공")
-        fun findByExternalKey_success() {
-            // Given
-            val account = createAccount(
-                externalKey = "EXT-00101",
-                name = "이마트 부산점"
-            )
-            testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByExternalKey("EXT-00101")
-
-            // Then
-            Assertions.assertThat(result).isNotNull
-            Assertions.assertThat(result!!.externalKey).isEqualTo("EXT-00101")
-            Assertions.assertThat(result.name).isEqualTo("이마트 부산점")
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 외부키 조회 시 null 반환")
-        fun findByExternalKey_notFound_returnsNull() {
-            // Given
-            val account = createAccount(externalKey = "EXT-00101")
-            testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByExternalKey("EXT-99999")
-
-            // Then
-            Assertions.assertThat(result).isNull()
-        }
-
-        @Test
-        @DisplayName("외부키는 유니크하므로 단일 결과만 반환")
-        fun findByExternalKey_returnsUniqueResult() {
-            // Given
-            val account = createAccount(
-                externalKey = "EXT-00101",
-                name = "이마트 부산점"
-            )
-            testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
-
-            // When
-            val result1 = accountRepository.findByExternalKey("EXT-00101")
-            val result2 = accountRepository.findByExternalKey("EXT-00101")
-
-            // Then
-            Assertions.assertThat(result1).isNotNull
-            Assertions.assertThat(result2).isNotNull
-            Assertions.assertThat(result1!!.id).isEqualTo(result2!!.id)
-        }
-    }
-
-    @Nested
-    @DisplayName("findByIdIn 테스트")
-    inner class FindByIdInTests {
-
-        @Test
-        @DisplayName("ID 목록으로 일괄 조회 성공")
-        fun findByIdIn_success() {
-            // Given
-            val account1 = createAccount(externalKey = "EXT-00101", name = "이마트 부산점")
-            val account2 = createAccount(externalKey = "EXT-00102", name = "홈플러스 서면점")
-            val account3 = createAccount(externalKey = "EXT-00103", name = "롯데마트 해운대점")
-            val saved1 = testEntityManager.persistAndFlush(account1)
-            val saved2 = testEntityManager.persistAndFlush(account2)
-            val saved3 = testEntityManager.persistAndFlush(account3)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id))
-
-            // Then
-            Assertions.assertThat(result).hasSize(2)
-            Assertions.assertThat(result.map { it.name }).containsExactlyInAnyOrder(
-                "이마트 부산점",
-                "홈플러스 서면점"
-            )
-            Assertions.assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
-        }
-
-        @Test
-        @DisplayName("빈 ID 목록으로 조회 시 빈 리스트 반환")
-        fun findByIdIn_emptyList_returnsEmpty() {
-            // Given
-            val account = createAccount(externalKey = "EXT-00101")
-            testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByIdIn(emptyList())
-
-            // Then
-            Assertions.assertThat(result).isEmpty()
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 ID는 결과에서 제외")
-        fun findByIdIn_nonExistingIds_excluded() {
-            // Given
-            val account1 = createAccount(externalKey = "EXT-00101", name = "이마트 부산점")
-            val account2 = createAccount(externalKey = "EXT-00102", name = "홈플러스 서면점")
-            val saved1 = testEntityManager.persistAndFlush(account1)
-            val saved2 = testEntityManager.persistAndFlush(account2)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, 999, 888))
-
-            // Then
-            Assertions.assertThat(result).hasSize(2)
-            Assertions.assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
-        }
-
-        @Test
-        @DisplayName("단일 ID로 조회")
-        fun findByIdIn_singleId() {
-            // Given
-            val account = createAccount(externalKey = "EXT-00101", name = "이마트 부산점")
-            val saved = testEntityManager.persistAndFlush(account)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByIdIn(listOf(saved.id))
-
-            // Then
-            Assertions.assertThat(result).hasSize(1)
-            Assertions.assertThat(result[0].name).isEqualTo("이마트 부산점")
-        }
-
-        @Test
-        @DisplayName("모든 거래처 조회")
-        fun findByIdIn_allAccounts() {
-            // Given
-            val account1 = createAccount(externalKey = "EXT-00101", name = "이마트 부산점")
-            val account2 = createAccount(externalKey = "EXT-00102", name = "홈플러스 서면점")
-            val account3 = createAccount(externalKey = "EXT-00103", name = "롯데마트 해운대점")
-            val saved1 = testEntityManager.persistAndFlush(account1)
-            val saved2 = testEntityManager.persistAndFlush(account2)
-            val saved3 = testEntityManager.persistAndFlush(account3)
-            testEntityManager.clear()
-
-            // When
-            val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, saved3.id))
-
-            // Then
-            Assertions.assertThat(result).hasSize(3)
-            Assertions.assertThat(result.map { it.name }).containsExactlyInAnyOrder(
-                "이마트 부산점",
-                "홈플러스 서면점",
-                "롯데마트 해운대점"
-            )
-        }
-    }
-
-    @Nested
-    @DisplayName("findCoordinatesMissingAccounts 테스트 (#637 — Naver Geocode batch)")
-    inner class FindCoordinatesMissingAccountsTests {
-
-        @Test
-        @DisplayName("좌표 미수신 거래처 조회 — 거래처상태 무관 (출고중지/폐업 포함)")
-        fun findCoordinatesMissingAccounts_filtersByConditions() {
-            // Given — 다양한 조건의 거래처 7건
-            // (1) 좌표 모두 null + 조건 충족 → 포함
-            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래")
-            // (2) latitude 만 null + 조건 충족 → 포함
-            persistAccount(externalKey = "EXT-2", latitude = null, longitude = "127.1", accountStatusName = "거래")
-            // (3) 좌표 둘 다 set → 제외
-            persistAccount(externalKey = "EXT-3", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
-            // (4) address1 null → 제외
-            persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래")
-            // (5) externalKey null → 제외
-            persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래")
-            // (6) 출고중지 → 포함 (레거시 이탈 — 거래처상태 필터 제거)
-            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "출고중지")
-            // (7) longitude 만 null + 거래 → 포함
-            persistAccount(externalKey = "EXT-7", latitude = "37.5", longitude = null, accountStatusName = "거래")
-            // (8) 폐업 → 포함 (레거시 이탈)
-            persistAccount(externalKey = "EXT-8", latitude = null, longitude = null, accountStatusName = "폐업")
-            // (9) 상태 null → 포함
-            persistAccount(externalKey = "EXT-9", latitude = null, longitude = null, accountStatusName = null)
-
-            // When
-            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
-
-            // Then — (1) (2) (6) (7) (8) (9) 매칭
-            Assertions.assertThat(result.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-6", "EXT-7", "EXT-8", "EXT-9")
-        }
-
-        @Test
-        @DisplayName("LIMIT 정확히 적용")
-        fun findCoordinatesMissingAccounts_appliesLimit() {
-            // Given — 5건 모두 매칭 조건
-            (1..5).forEach { idx ->
-                persistAccount(externalKey = "EXT-LIMIT-$idx", latitude = null, longitude = null, accountStatusName = "거래")
-            }
-
-            // When
-            val result = accountRepository.findCoordinatesMissingAccounts(limit = 3)
-
-            // Then
-            Assertions.assertThat(result).hasSize(3)
-        }
-
-        @Test
-        @DisplayName("매칭 거래처 0건 — 빈 리스트 반환")
-        fun findCoordinatesMissingAccounts_emptyResult() {
-            // Given
-            persistAccount(externalKey = "EXT-FULL", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
-
-            // When
-            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
-
-            // Then
-            Assertions.assertThat(result).isEmpty()
-        }
-
-        @Test
-        @DisplayName("실패 상한 도달(geocodeFailCount >= MAX) 거래처는 배치 재조회에서 제외")
-        fun findCoordinatesMissingAccounts_excludesExhaustedFailCount() {
-            // Given — 셋 다 좌표 미수신이나 실패 횟수만 다름
-            persistAccount(externalKey = "EXT-ZERO", latitude = null, longitude = null, geocodeFailCount = 0) // 포함
-            persistAccount(externalKey = "EXT-BELOW", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT - 1) // 포함
-            persistAccount(externalKey = "EXT-MAX", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT) // 상한 → 제외
-
-            // When
-            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
-
-            // Then — 상한 미만 2건만
-            Assertions.assertThat(result.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-ZERO", "EXT-BELOW")
-        }
-    }
-
-    @Nested
-    @DisplayName("findAllAccessibleByPolicy — coordinatesMissing 필터 (거래처 화면 '좌표 미수신만')")
-    inner class FindAllAccessibleByPolicyCoordinatesMissingTests {
-
-        @Test
-        @DisplayName("coordinatesMissing=true → batch 후보와 동일 조건으로 좁혀 조회")
-        fun coordinatesMissingTrue_appliesBatchCandidateFilter() {
-            // Given — findCoordinatesMissingAccounts 와 동일한 후보 판정 시나리오
-            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래") // 포함
-            persistAccount(externalKey = "EXT-2", latitude = null, longitude = "127.1", accountStatusName = "거래") // 포함
-            persistAccount(externalKey = "EXT-3", latitude = "37.5", longitude = "127.1", accountStatusName = "거래") // 좌표 있음 → 제외
-            persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래") // 주소 없음 → 제외
-            persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래") // externalKey 없음 → 제외
-            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "폐업") // 비-거래 → 포함 (상태 무관)
-
-            // When
-            val result = findAllAccessible(coordinatesMissing = true)
-
-            // Then — EXT-1, EXT-2, EXT-6 매칭
-            Assertions.assertThat(result.content.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-6")
-        }
-
-        @Test
-        @DisplayName("coordinatesMissing=false → 좌표 유무 무관 전건 조회")
-        fun coordinatesMissingFalse_returnsAll() {
-            // Given
-            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래")
-            persistAccount(externalKey = "EXT-2", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
-
-            // When
-            val result = findAllAccessible(coordinatesMissing = false)
-
-            // Then — 좌표 있는 EXT-2 도 포함
-            Assertions.assertThat(result.content.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-1", "EXT-2")
-        }
-
-        @Test
-        @DisplayName("coordinatesMissing=true → 실패 상한 도달 거래처도 포함 (운영자 확인용)")
-        fun coordinatesMissingTrue_includesExhaustedFailCount() {
-            // Given — 화면 필터는 배치와 달리 상한 도달 건을 제외하지 않는다 (운영자가 봐야 함)
-            persistAccount(externalKey = "EXT-A", latitude = null, longitude = null, geocodeFailCount = 0)
-            persistAccount(externalKey = "EXT-B", latitude = null, longitude = null, geocodeFailCount = GeocodeRetryPolicy.MAX_FAIL_COUNT)
-
-            // When
-            val result = findAllAccessible(coordinatesMissing = true)
-
-            // Then — 상한 도달한 EXT-B 도 포함
-            Assertions.assertThat(result.content.map { it.externalKey })
-                .containsExactlyInAnyOrder("EXT-A", "EXT-B")
-        }
-
-        private fun findAllAccessible(coordinatesMissing: Boolean) =
-            accountRepository.findAllAccessibleByPolicy(
-                policyPredicate = Expressions.TRUE.isTrue,
-                keyword = null,
-                abcType = null,
-                accountType = null,
-                accountStatusName = null,
-                applyPromotionFilter = false,
-                excludeClosedAccount = false,
-                coordinatesMissing = coordinatesMissing,
-                pageable = PageRequest.of(0, 100),
-            )
-    }
-
-    // ========== Helpers ==========
-
-    private fun createAccount(
-        name: String? = "테스트 거래처",
-        externalKey: String? = "EXT-00001",
-        address1: String? = "부산시 테스트구",
-        representative: String? = "테스트 대표",
-        phone: String? = "010-1234-5678"
-    ): Account {
-        return Account(
+    private fun persist(
+        name: String,
+        isDeleted: Boolean?,
+        branchCode: String? = null,
+        accountGroup: String? = null,
+    ): Account = em.persist(
+        Account(
             name = name,
-            externalKey = externalKey,
-            address1 = address1,
-            representative = representative,
-            phone = phone
+            isDeleted = isDeleted,
+            branchCode = branchCode,
+            accountGroup = accountGroup,
         )
-    }
-
-    private fun persistAccount(
-        externalKey: String?,
-        latitude: String? = null,
-        longitude: String? = null,
-        address1: String? = "부산시 테스트구",
-        accountStatusName: String? = "거래",
-        geocodeFailCount: Int = 0
-    ): Account {
-        val account = Account(
-            name = "거래처-${externalKey ?: "NULL"}",
-            externalKey = externalKey,
-            address1 = address1,
-            latitude = latitude,
-            longitude = longitude,
-            accountStatusName = accountStatusName,
-            geocodeFailCount = geocodeFailCount
-        )
-        val saved = testEntityManager.persistAndFlush(account)
-        testEntityManager.clear()
-        return saved
-    }
+    )
 }

@@ -138,7 +138,7 @@ class AdminSalesComparisonServiceTest {
 
     @BeforeEach
     fun setup() {
-        every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns emptyList()
+        every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns emptyList()
         // SF categoryMap 시드 — Account.Type(운영 실제 저장값) → accountCode. 대형마트(3대)=01, 체인=02.
         every { accountCategoryMasterRepository.findAll() } returns listOf(
             categoryMaster("대형마트(3대)", "01"),
@@ -190,7 +190,7 @@ class AdminSalesComparisonServiceTest {
         fun `useSearch=true 항목을 accountCode 정렬로 반환`() {
             val cm1 = AccountCategoryMaster(accountCode = "01", name = "대형마트")
             val cm2 = AccountCategoryMaster(accountCode = "02", name = "체인")
-            every { accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)) } returns listOf(cm1, cm2)
+            every { accountCategoryMasterRepository.findByUseSearchTrueAndNotDeletedOrderByAccountCode() } returns listOf(cm1, cm2)
 
             val result = service.getSearchCategories()
 
@@ -203,7 +203,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `useSearch=true 항목 없으면 빈 리스트`() {
-            every { accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)) } returns emptyList()
+            every { accountCategoryMasterRepository.findByUseSearchTrueAndNotDeletedOrderByAccountCode() } returns emptyList()
 
             val result = service.getSearchCategories()
 
@@ -402,7 +402,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(eq("2026"), eq("5"), eq(listOf("CC001"))) } returns searchResult(listOf(itm))
             every { accountRepository.findByExternalKeyIn(listOf("A001")) } returns listOf(acc)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit)
 
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -436,7 +436,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit)
 
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -466,7 +466,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fitEmp, eventOnly))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit)
 
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -491,7 +491,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(itmA, itmB))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit, crit2)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit, crit2)
         }
 
         @Test
@@ -534,7 +534,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit)
 
             val onlyBifurcation = AdminSalesComparisonService.SummaryFilter(emptySet(), emptySet(), setOf("격고"))
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"), onlyBifurcation)
@@ -553,7 +553,7 @@ class AdminSalesComparisonServiceTest {
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
-            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndNotDeleted(any()) } returns listOf(crit)
 
             // 배치적합성=[적합]만 → 격고(적합) 행만 후보 → worst-case=적합 → 적합으로 카운트.
             val onlyFit = AdminSalesComparisonService.SummaryFilter(setOf("적합"), emptySet(), emptySet())

@@ -60,7 +60,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1, 2)
-            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
 
@@ -97,7 +97,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1)
-            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
 
@@ -122,7 +122,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every {
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted("1100", listOf("1000", "1010"))
             } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
@@ -144,7 +144,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every {
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted("1100", listOf("1000", "1010"))
             } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
@@ -181,14 +181,14 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findDistinctAccountIdsByTeamLeaderIdAndDateRange(userId, any(), any()) } returns listOf(5)
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(5), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(5)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
 
             assertThat(result.accounts).hasSize(1)
             assertThat(result.accounts[0].accountName).isEqualTo("사과마을")
             // yang 예외는 지점코드 기반(teamleaderAccList)을 타지 않는다
-            verify(exactly = 0) { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), any()) }
+            verify(exactly = 0) { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(any(), any()) }
         }
     }
 
@@ -213,7 +213,7 @@ class MyAccountServiceTest {
 
             assertThat(result.accounts).hasSize(2)
             verify { teamMemberScheduleRepository.findDistinctScheduledAccounts(null, any()) }
-            verify(exactly = 0) { accountRepository.findByIdInAndIsDeletedNot(any(), any()) }
+            verify(exactly = 0) { accountRepository.findByIdInAndNotDeleted(any()) }
         }
 
         @Test
@@ -248,7 +248,7 @@ class MyAccountServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), true) } returns accounts
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(any(), any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, "경산")
 
@@ -267,7 +267,7 @@ class MyAccountServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), true) } returns accounts
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(any(), any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, "1025")
 
@@ -313,7 +313,7 @@ class MyAccountServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), true) } returns accounts
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(any(), any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null)
 
@@ -343,7 +343,7 @@ class MyAccountServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1, 2)
             every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(2, 3)
-            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
 
@@ -363,7 +363,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1)
-            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.FIELD)
 
@@ -384,7 +384,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every {
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted("1100", listOf("1000", "1010"))
             } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
@@ -453,7 +453,7 @@ class MyAccountServiceTest {
             every {
                 promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 4), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(3, 4)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -485,7 +485,7 @@ class MyAccountServiceTest {
             every {
                 promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(7)
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3, 7), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(3, 7)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -509,7 +509,7 @@ class MyAccountServiceTest {
             every {
                 promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(3)
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(3), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(3)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -532,7 +532,7 @@ class MyAccountServiceTest {
             every {
                 promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns listOf(7)
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(7), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(7)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -573,7 +573,7 @@ class MyAccountServiceTest {
             } returns false
             every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1)
             every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(3)
-            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -605,7 +605,7 @@ class MyAccountServiceTest {
             every {
                 promotionEmployeeRepository.findConfirmedAssignedAccountIdsByEmployeeAndDate(userId, any())
             } returns emptyList()
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(5), true) } returns accounts
+            every { accountRepository.findByIdInAndNotDeleted(listOf(5)) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
 
@@ -624,7 +624,7 @@ class MyAccountServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every {
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted("1100", listOf("1000", "1010"))
             } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER_WRITE)
@@ -703,7 +703,7 @@ class MyAccountServiceTest {
             val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.LEADER, costCenterCode = "1100")
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), true) } returns emptyList()
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(any(), any()) } returns emptyList()
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
 

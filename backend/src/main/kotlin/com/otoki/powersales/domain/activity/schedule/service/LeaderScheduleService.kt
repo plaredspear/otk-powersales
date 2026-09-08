@@ -458,10 +458,9 @@ class LeaderScheduleService(
         val branchCode = registrant.costCenterCode
             ?: return emptyList()
 
-        val accounts = accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+        val accounts = accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
             branchCode = branchCode,
             accountGroups = LEADER_ACCOUNT_GROUPS,
-            isDeleted = true
         )
 
         val trimmedKeyword = keyword?.trim()?.takeIf { it.isNotEmpty() }

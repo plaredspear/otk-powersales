@@ -74,7 +74,7 @@ class MonthlySalesServiceTest {
                 every { name } returns "(주)이마트 월배점"
             }
             every {
-                accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true)
+                accountRepository.findByIdInAndNotDeleted(listOf(100L))
             } returns listOf(account)
 
             // 조회월(202605) 마감 합계 실적 7,796만원. account_id FK 로 조회 (레거시 Account 관계 조인 정합).
@@ -131,7 +131,7 @@ class MonthlySalesServiceTest {
                 every { externalKey } returns "1000091"
                 every { name } returns "(주)이마트 월배점"
             }
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true) } returns listOf(account)
+            every { accountRepository.findByIdInAndNotDeleted(listOf(100L)) } returns listOf(account)
             every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
                 // 조회월: 카테고리 축 500만 ≠ 합계 축 700만
                 MonthlySalesRow(
@@ -182,7 +182,7 @@ class MonthlySalesServiceTest {
                 every { externalKey } returns "1000091"
                 every { name } returns "(주)이마트 월배점"
             }
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true) } returns listOf(account)
+            every { accountRepository.findByIdInAndNotDeleted(listOf(100L)) } returns listOf(account)
             every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
                 MonthlySalesRow(
                     sapAccountCode = "1000091",

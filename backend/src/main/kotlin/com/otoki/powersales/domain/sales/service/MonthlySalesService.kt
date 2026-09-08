@@ -67,7 +67,7 @@ class MonthlySalesService(
 
         // customerId(=내부 account.id) → Account resolve. 숫자가 아니면 레거시 SAP 코드 직접 호출(관리/테스트).
         val account = customerIdRaw.toLongOrNull()
-            ?.let { accountRepository.findByIdInAndIsDeletedNot(listOf(it), true).firstOrNull() }
+            ?.let { accountRepository.findByIdInAndNotDeleted(listOf(it)).firstOrNull() }
             ?: accountRepository.findByExternalKey(customerIdRaw)
         val customerName = account?.name ?: customerIdRaw
 

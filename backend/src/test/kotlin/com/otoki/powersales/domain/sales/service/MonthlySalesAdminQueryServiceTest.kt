@@ -142,7 +142,7 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail — ClosingAmountSum(ABC+Ship) = achievedAmount, account_id FK 로 조인")
     fun detailSumsClosingAmount() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
             row(accountId = 1, salesDate = "202604", abc1 = 500, ship1 = 100, ship2 = 200, ship3 = 100, ship4 = 100),
         )
@@ -160,7 +160,7 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail — SalesProgressRateMaster 목표 = targetAmount + 달성률 round(실적/목표×100)")
     fun detailRestoresTargetFromProgressRateMaster() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
             row(accountId = 1, salesDate = "202604", ship1 = 1000),
         )
@@ -179,7 +179,7 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail — RDS row 부재 → achievedAmount = 0")
     fun detailReturnsZeroWhenNoRow() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
         every { salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, "2026") } returns emptyList()
 
@@ -246,7 +246,7 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail — 실적은 합계 축, 「전년 대비」 차트는 과거월 조회 시 양쪽 모두 카테고리 축")
     fun detailAxesForPastMonth() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
             divergentRow(accountId = 1, salesDate = "202001", categoryAxis = 4_000_000, sumAxis = 9_000_000),
             divergentRow(accountId = 1, salesDate = "201901", categoryAxis = 2_000_000, sumAxis = 8_000_000),
@@ -275,7 +275,7 @@ class MonthlySalesAdminQueryServiceTest {
         val currentSalesDate = "%04d%02d".format(today.year, today.monthValue)
         val lastYearSalesDate = "%04d%02d".format(today.year - 1, today.monthValue)
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
             divergentRow(accountId = 1, salesDate = currentSalesDate, categoryAxis = 4_000_000, sumAxis = 9_000_000),
             divergentRow(accountId = 1, salesDate = lastYearSalesDate, categoryAxis = 2_000_000, sumAxis = 8_000_000),

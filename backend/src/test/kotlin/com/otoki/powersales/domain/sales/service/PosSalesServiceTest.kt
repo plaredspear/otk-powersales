@@ -39,7 +39,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("externalKey 에 '000' 패딩한 CUST_CD + 월 1일~말일 범위로 조회하고 제품별 매핑")
 	fun querySourceAndMapping() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		val custSlot = slot<String>()
 		val startSlot = slot<String>()
 		val endSlot = slot<String>()
@@ -72,7 +72,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("거래처 없음 → BusinessException")
 	fun accountNotFound() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(99), true) } returns emptyList()
+		every { accountRepository.findByIdInAndNotDeleted(listOf(99)) } returns emptyList()
 
 		assertThatThrownBy { service.getPosSales(99, "202602") }
 			.isInstanceOf(BusinessException::class.java)
@@ -81,7 +81,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("externalKey 없으면 POS 조회 없이 빈 items")
 	fun noExternalKey() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = null))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = null))
 
 		val res = service.getPosSales(1, "202602")
 
@@ -92,7 +92,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("POS DB 조회 실패 시 빈 items 로 graceful fallback")
 	fun posDownGracefulFallback() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account())
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account())
 		every { livePosSalesDailyRepository.aggregateByProduct(any(), any(), any()) } throws RuntimeException("POS down")
 
 		val res = service.getPosSales(1, "202602")
@@ -105,7 +105,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("getPosSalesByRange - barcodes 비면 전체 제품 집계(aggregateByProduct) + 합계 서버 산출")
 	fun getPosSalesByRange_noBarcodes() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		val custSlot = slot<String>()
 		val startSlot = slot<String>()
 		val endSlot = slot<String>()
@@ -134,7 +134,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("getPosSalesByRange - barcodes 1건+ 이면 바코드 필터 집계 + 공백/중복 정제 후 전달")
 	fun getPosSalesByRange_withBarcodes() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		val barcodeSlot = slot<List<String>>()
 		every {
 			livePosSalesDailyRepository.aggregateByProductAndBarcodes(any(), any(), any(), capture(barcodeSlot))
@@ -160,7 +160,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("getPosSalesByRange - POS DB 장애 시 빈 명세로 fallback")
 	fun getPosSalesByRange_emptyFallback() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = "12345"))
 		every {
 			livePosSalesDailyRepository.aggregateByProduct(any(), any(), any())
 		} throws RuntimeException("POS down")
@@ -175,7 +175,7 @@ class PosSalesServiceTest {
 	@Test
 	@DisplayName("getPosSalesByRange - 거래처 SAP 코드 없으면 빈 명세 (POS 조회 미수행)")
 	fun getPosSalesByRange_noSapCode() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = null))
+		every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(account(externalKey = null))
 
 		val res = service.getPosSalesByRange(1, "2026-02-01", "2026-02-15", listOf("8801045123456"))
 

@@ -2,11 +2,27 @@ package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 interface AccountCategoryMasterRepository : JpaRepository<AccountCategoryMaster, Long> {
     fun findByAccountCode(accountCode: String): AccountCategoryMaster?
 
-    fun findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(isDeleted: Boolean): List<AccountCategoryMaster>
+    /**
+     * 조회화면이용(useSearch) + 미삭제 거래처유형마스터 (거래처코드 오름차순).
+     *
+     * 미삭제 조건은 `is_deleted IS NULL OR = false` — `IsDeletedNot(true)` 파생 쿼리는
+     * NULL 행을 통째로 탈락시킨다 ([com.otoki.powersales.domain.foundation.account.repository.AccountRepository] KDoc 참조).
+     */
+    @Query(
+        """
+        SELECT m FROM AccountCategoryMaster m
+        WHERE m.useSearch = true
+          AND (m.isDeleted IS NULL OR m.isDeleted = false)
+        ORDER BY m.accountCode
+        """
+    )
+    fun findByUseSearchTrueAndNotDeletedOrderByAccountCode(): List<AccountCategoryMaster>
 
     /**
      * spec #680 §5.3 — refreshIntegration 의 EmployeeInputCriteriaMaster lookup.
@@ -32,8 +48,15 @@ interface AccountCategoryMasterRepository : JpaRepository<AccountCategoryMaster,
      * (raw String) IN 조건을 직접 구성한다. `getSearchCategories` 와 동일하게
      * useSearch=true 항목만 검색 대상으로 노출.
      */
-    fun findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(
-        name: String,
-        isDeleted: Boolean,
+    @Query(
+        """
+        SELECT m FROM AccountCategoryMaster m
+        WHERE LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%'))
+          AND m.useSearch = true
+          AND (m.isDeleted IS NULL OR m.isDeleted = false)
+        """
+    )
+    fun findByNameContainingIgnoreCaseAndUseSearchTrueAndNotDeleted(
+        @Param("name") name: String,
     ): List<AccountCategoryMaster>
 }

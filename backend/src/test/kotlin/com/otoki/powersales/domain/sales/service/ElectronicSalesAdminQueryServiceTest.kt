@@ -366,7 +366,7 @@ class ElectronicSalesAdminQueryServiceTest {
     @DisplayName("getDetail — 제품별 명세 + 합계 산출")
     fun detailAggregatesProducts() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every {
             posRepository.aggregateByProduct("000S001", "2026-04-01", "2026-04-30")
         } returns listOf(
@@ -390,7 +390,7 @@ class ElectronicSalesAdminQueryServiceTest {
     @DisplayName("getDetail — 제품 필터 시 UPC_CD 행을 제품코드 단위로 병합")
     fun detailMergesBarcodeRowsByItemCd() {
         val acc = account(1, "S001")
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
         every {
             productRepository.findBarcodesForElectronicSales(listOf(10L), null, null)
         } returns listOf("880001", "880002")
@@ -419,7 +419,7 @@ class ElectronicSalesAdminQueryServiceTest {
     @DisplayName("getDetail — externalKey null → POS 조회 생략, 빈 명세")
     fun detailHandlesNullExternalKey() {
         val acc = account(1, externalKey = null)
-        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
+        every { accountRepository.findByIdInAndNotDeleted(listOf(1)) } returns listOf(acc)
 
         val result = service.getDetail(
             allBranchesScope,

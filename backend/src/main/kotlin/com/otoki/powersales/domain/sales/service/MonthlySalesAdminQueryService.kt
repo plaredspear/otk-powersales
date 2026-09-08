@@ -192,7 +192,7 @@ class MonthlySalesAdminQueryService(
      */
     fun getDetail(scope: DataScope, customerId: Long, year: Int, month: Int): MonthlySalesDashboardDetailResponse {
         validateYearMonth(year, month)
-        val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
+        val account = accountRepository.findByIdInAndNotDeleted(listOf(customerId)).firstOrNull()
             ?: throw BusinessException(
                 errorCode = "ACCOUNT_NOT_FOUND",
                 message = "거래처를 찾을 수 없습니다: $customerId",
@@ -422,10 +422,9 @@ class MonthlySalesAdminQueryService(
     ): List<Account> {
         val candidates = if (accountGroup != null) {
             effectiveCodes.flatMap { code ->
-                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+                accountRepository.findByBranchCodeAndAccountGroupInAndNotDeleted(
                     branchCode = code,
                     accountGroups = listOf(accountGroup),
-                    isDeleted = true,
                 )
             }
         } else {
