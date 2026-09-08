@@ -21,10 +21,14 @@ import com.fasterxml.jackson.annotation.JsonValue
  * SF `DKRetail__Status__c` 는 restricted picklist (임시저장/전송완료/전송실패) 라 다른 값을 보내면
  * outbound DML 이 거부된다.
  *
- * **모바일 화면에는 이 축을 표시하지 않는다**: 신규 시스템에는 DRAFT 를 벗어나는 전이 경로가 없어
- * (전이는 SF `SendClaimController`/`ClaimTriggerHandler` 안에서만 일어나고 마스터 sync 는 조치 필드만
- * 가져온다) 앱 등록분은 영구히 "임시저장" 으로 남는다. 사원 화면 상태 표시는 실제로 갱신되는
- * `Claim.actionStatus` (코스모스 조치상태) 축을 쓴다 — [com.otoki.powersales.domain.activity.claim.entity.Claim.actionStatusLabel].
+ * **전이는 SF 안에서만 일어나고, 신규는 sync 로 회수한다**: 신규 시스템에 DRAFT 를 벗어나는 자체 전이 경로는
+ * 없다. `/ClaimRegist`(`IF_REST_MOBILE_ClaimRegist`) 가 '임시저장' 으로 insert 하고, 첨부 CDL insert 가 태우는
+ * `SendClaimController.sendClaim` 이 코스모스 전송에 성공하면 SF 가 '전송완료' 로 올린다. 그 값은 클레임 마스터
+ * sync([com.otoki.powersales.domain.activity.claim.service.AdminClaimMasterSyncTestService]) 가 매시간 회수해
+ * 반영한다 — 이 회수가 없던 동안 앱/웹 등록분이 전량 "임시저장" 으로 남아 있었다.
+ *
+ * **모바일 화면에는 이 축을 표시하지 않는다**: 사원 화면 상태 표시는 `Claim.actionStatus` (코스모스 조치상태)
+ * 축을 쓴다 — [com.otoki.powersales.domain.activity.claim.entity.Claim.actionStatusLabel].
  */
 enum class ClaimStatus(
     val displayName: String

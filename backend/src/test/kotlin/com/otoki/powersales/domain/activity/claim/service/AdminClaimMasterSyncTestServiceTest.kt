@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimMasterSyncTestRequest
 import com.otoki.powersales.domain.activity.claim.entity.Claim
+import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
@@ -137,6 +138,40 @@ class AdminClaimMasterSyncTestServiceTest {
         assertThat(claim.reasonType).isEqualTo("포장불량")
         assertThat(claim.actContent).isEqualTo("교환 처리함")
         assertThat(claim.cosmosKey).isEqualTo("COS-9")
+    }
+
+    @Test
+    @DisplayName("Status(코스모스 전송상태) 를 응답값으로 갱신 — 앱 등록분의 임시저장 잔류 해소")
+    fun updatesCosmosStatus() {
+        val claim = Claim(id = 42L, status = ClaimStatus.DRAFT)
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf("""[{ "pwrskey": "42", "Status": "전송완료", "ActionStatus": "처리완료" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(claim.status).isEqualTo(ClaimStatus.SENT)
+    }
+
+    @Test
+    @DisplayName("Status 가 없거나 picklist 밖 값이면 기존 status 유지 — 전송완료가 임시저장으로 되돌지 않는다")
+    fun keepsStatusWhenAbsentOrUnknown() {
+        val absent = Claim(id = 42L, status = ClaimStatus.SENT)
+        val unknown = Claim(id = 43L, status = ClaimStatus.SENT)
+        every { claimRepository.findById(42L) } returns Optional.of(absent)
+        every { claimRepository.findById(43L) } returns Optional.of(unknown)
+        stubSf(
+            """[
+              { "pwrskey": "42", "ActionStatus": "처리완료" },
+              { "pwrskey": "43", "Status": "접수", "ActionStatus": "처리완료" }
+            ]"""
+        )
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(2)
+        assertThat(absent.status).isEqualTo(ClaimStatus.SENT)
+        assertThat(unknown.status).isEqualTo(ClaimStatus.SENT)
     }
 
     @Test
