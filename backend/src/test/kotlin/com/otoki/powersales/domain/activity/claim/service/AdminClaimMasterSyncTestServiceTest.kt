@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.transaction.support.TransactionCallback
 import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.ObjectMapper
+import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("AdminClaimMasterSyncTestService (SF IF_SendClaimToPWS 조회 + pwrskey 우선/name fallback 매칭 갱신) 테스트")
@@ -172,6 +173,71 @@ class AdminClaimMasterSyncTestServiceTest {
         assertThat(response.updatedCount).isEqualTo(2)
         assertThat(absent.status).isEqualTo(ClaimStatus.SENT)
         assertThat(unknown.status).isEqualTo(ClaimStatus.SENT)
+    }
+
+    @Test
+    @DisplayName("SF 만 아는 값(접수번호/전송일시/출고처/샘플회수) 을 응답값으로 적재")
+    fun fillsSfOnlyFields() {
+        val claim = Claim(id = 42L)
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf(
+            """[{
+              "pwrskey": "42",
+              "Name": "CL00043625",
+              "InterfaceDate": "2026-09-07 21:37:19",
+              "LogisticsCenter": "[물류L]칠서물류",
+              "SampleCollectionFlag": "false"
+            }]"""
+        )
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(claim.name).isEqualTo("CL00043625")
+        assertThat(claim.interfaceDate).isEqualTo(LocalDateTime.of(2026, 9, 7, 21, 37, 19))
+        assertThat(claim.logisticsCenter).isEqualTo("[물류L]칠서물류")
+        assertThat(claim.sampleCollectionFlag).isFalse()
+    }
+
+    @Test
+    @DisplayName("응답에 CosmosKey 가 없으면 기존 cosmosKey 를 지우지 않는다 (문서 응답 표에 없는 필드)")
+    fun keepsCosmosKeyWhenAbsent() {
+        val claim = Claim(id = 42L, cosmosKey = "COS-EXISTING")
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf("""[{ "pwrskey": "42", "ActionStatus": "처리완료" }]""")
+
+        service.test(userId = 1L, request = request())
+
+        assertThat(claim.cosmosKey).isEqualTo("COS-EXISTING")
+    }
+
+    @Test
+    @DisplayName("SF 만 아는 값이 비어 오면 기존값 유지 — 접수번호/출고처가 지워지지 않는다")
+    fun keepsSfOnlyFieldsWhenBlank() {
+        val claim = Claim(
+            id = 42L,
+            name = "CL00043625",
+            logisticsCenter = "[물류L]칠서물류",
+            interfaceDate = LocalDateTime.of(2026, 9, 7, 21, 37, 19),
+            sampleCollectionFlag = true,
+        )
+        every { claimRepository.findById(42L) } returns Optional.of(claim)
+        stubSf(
+            """[{
+              "pwrskey": "42",
+              "Name": "",
+              "InterfaceDate": null,
+              "LogisticsCenter": "   ",
+              "SampleCollectionFlag": ""
+            }]"""
+        )
+
+        service.test(userId = 1L, request = request())
+
+        assertThat(claim.name).isEqualTo("CL00043625")
+        assertThat(claim.logisticsCenter).isEqualTo("[물류L]칠서물류")
+        assertThat(claim.interfaceDate).isEqualTo(LocalDateTime.of(2026, 9, 7, 21, 37, 19))
+        assertThat(claim.sampleCollectionFlag).isTrue()
     }
 
     @Test

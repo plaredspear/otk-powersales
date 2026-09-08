@@ -23,13 +23,13 @@ import java.time.format.DateTimeFormatter
  * 응답하는 SF → PWS 조회 인터페이스. 응답의 각 레코드를 `pwrskey`(=claim_id, 신규 생성분) 우선,
  * 없으면 `Name`(접수번호, SF 생성분) 으로 신규 claim 과 매칭해 **조치/상담 필드를 신규 데이터로 갱신**한다.
  *
- * 갱신 대상 필드(7개):
- *  - **조치 6필드** — SF 레거시 inbound Apex(`IF_ClaimStatusUpdate` / `IF_REST_SAP_ClaimReceive`) 가 claim 을
- *    update 로 set 하는 필드의 합집합과 정합: actionStatus / actionCode / counselNumber / reasonType /
- *    actContent / cosmosKey (cosmosKey 는 `IF_REST_SAP_ClaimReceive` 에서만 set).
- *  - **status(코스모스 전송상태)** — SF 가 `SendClaimController` 안에서 '임시저장' → '전송완료'/'전송실패' 로
- *    전이시키는 값. 신규 시스템에는 이 전이를 관측할 다른 경로가 없어 본 sync 가 유일한 회수 경로다
- *    ([ClaimMasterSfRecord] 참조).
+ * 갱신 대상 필드(11개) — 근거와 필드별 성격은 [ClaimMasterSfRecord] KDoc 이 권위 출처다:
+ *  - **조치 5필드 (무조건 갱신)** — actionStatus / actionCode / counselNumber / reasonType / actContent.
+ *    SF 레거시 inbound Apex(`IF_ClaimStatusUpdate` / `IF_REST_SAP_ClaimReceive`) 의 SET 절 합집합.
+ *  - **SF 만 아는 값 6종 (값이 온 경우에만 갱신)** — status(코스모스 전송상태) / name(접수번호) /
+ *    interfaceDate(전송일시) / logisticsCenter(출고처) / sampleCollectionFlag(샘플 회수 여부) / cosmosKey.
+ *    신규는 등록 시 이 컬럼들을 채우지 않으므로 본 sync 가 유일한 공급원이고, 응답에 값이 없다고 덮으면
+ *    이미 채워둔 값이 소실된다(cosmosKey 는 문서 응답 표에 아예 없어 무조건 대입 시 매 회 NULL 로 지워졌다).
  * 등록 시 확정 필드(제품/거래처/수량/금액 등) 는 갱신하지 않는다. SF 레거시 `ClaimTriggerHandler` 의
  * before-update 게이트는 status 가 '임시저장' 이 아니면 수정을 차단하나(시스템 관리자 프로필 예외),
  * inbound 갱신 API 는 그 예외 권한으로 실행돼 status 와 무관하게 조치 필드를 갱신한다. 신규는 배치 pull
@@ -134,7 +134,7 @@ class AdminClaimMasterSyncTestService(
      *  1. `pwrskey`(=claim_id) — 신규 시스템에서 생성해 SF 가 echo 한 PK. 존재하면 이 값으로 우선 조회.
      *  2. `name`(접수번호, EXNUM) — SF 단독 생성분(pwrskey 미보유)의 자연키. pwrskey 로 찾지 못하면 name 으로 조회.
      *
-     * 두 키 모두 없으면 skipped, 키는 있으나 매칭 claim 이 없으면 notFound, 찾으면 7필드를 신규 데이터로 갱신한다.
+     * 두 키 모두 없으면 skipped, 키는 있으나 매칭 claim 이 없으면 notFound, 찾으면 위 11필드를 갱신한다.
      */
     fun applyUpdates(records: List<ClaimMasterSfRecord>): UpdateResult = txTemplate.execute {
         var updated = 0
@@ -156,18 +156,20 @@ class AdminClaimMasterSyncTestService(
                 notFound++
                 continue
             }
-            // SF 레거시 inbound SET 절 정합 — 조치/상담 6필드 + 코스모스 전송상태를 신규 데이터로 갱신.
+            // ① 조치 5필드 — SF 레거시 inbound SET 절 정합. 응답이 SF 레코드의 현재값이므로 빈 값도 그대로 반영.
             claim.actionStatus = record.actionStatus
             claim.actionCode = record.actionCode
             claim.counselNumber = record.counselNumber
             claim.reasonType = record.reasonType
             claim.actContent = record.actContent
-            // CosmosKey 는 문서 응답 스키마에 없을 수 있다 — 응답에 키가 없으면 null 로 와 기존값을 덮는다.
-            // 레거시 IF_REST_SAP_ClaimReceive 도 무조건 set 하므로 동일하게 응답값으로 갱신한다.
-            claim.cosmosKey = record.cosmosKey
-            // 코스모스 전송상태 — 값이 온 경우에만 갱신한다. cosmosKey 와 달리 무조건 덮으면 Status 가 빠진
-            // 응답에서 SF 가 이미 '전송완료' 로 올린 건이 '임시저장' 으로 되돌아간다.
+            // ② SF 만 아는 값 6종 — 값이 온 경우에만 갱신한다. 무조건 대입하면 응답에서 빠진 필드 때문에
+            // 이미 채워둔 값이 지워진다(예: cosmosKey 는 문서 응답 표에 없어 매 sync 마다 NULL 로 소실됐다).
             record.statusAsClaimStatus()?.let { claim.status = it }
+            record.nameAsClaimName()?.let { claim.name = it }
+            record.interfaceDateAsDateTime()?.let { claim.interfaceDate = it }
+            record.logisticsCenterOrNull()?.let { claim.logisticsCenter = it }
+            record.sampleCollectionFlagAsBoolean()?.let { claim.sampleCollectionFlag = it }
+            record.cosmosKeyOrNull()?.let { claim.cosmosKey = it }
             updated++
         }
 
