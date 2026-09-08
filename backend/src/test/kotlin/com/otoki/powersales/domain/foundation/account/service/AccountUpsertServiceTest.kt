@@ -143,6 +143,8 @@ class AccountUpsertServiceTest {
             assertThat(savedSlot.captured).hasSize(1)
             assertThat(savedSlot.captured[0].externalKey).isEqualTo("1032619")
             assertThat(savedSlot.captured[0].name).isEqualTo("(주)홍길동상회")
+            // is_deleted 는 NULL 이 아니라 false 로 찍힌다 — SF 마이그레이션 적재분과 동일 상태.
+            assertThat(savedSlot.captured[0].isDeleted).isFalse()
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
         }

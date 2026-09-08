@@ -26,7 +26,11 @@ class AccountUpsertMapper {
         matchedOrg: Organization?,
         matchedUser: User?
     ): Account {
-        val account = Account(externalKey = externalKey, name = name)
+        // is_deleted 를 명시적으로 false 로 찍는다. 레거시에서 거래처는 SF 를 거쳐 들어와 표준 시스템 필드
+        // IsDeleted(nillable=false)가 항상 채워졌으나, SAP 직접 적재 경로에는 그 보장이 없어 NULL 로 남았다.
+        // 조회 측은 NULL 을 미삭제로 취급하지만(AccountRepository KDoc), SF 마이그레이션 적재분(false)과
+        // 상태가 갈리지 않도록 적재 시점에 맞춘다.
+        val account = Account(externalKey = externalKey, name = name, isDeleted = false)
         applyMutableFields(account, command, matchedOrg, matchedUser)
         return account
     }
