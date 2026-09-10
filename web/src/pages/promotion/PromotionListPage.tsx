@@ -31,14 +31,11 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
 };
 
 /**
- * 목록의 시작일/종료일 표기 — 당해년도면 연도를 생략해 `MM-DD` 로만 보여준다 (컬럼 폭 절약).
- * 타 년도(전년 시작 / 익년 종료 등)는 혼동을 막기 위해 `YYYY-MM-DD` 전체를 유지한다
- * — 연도가 붙어 있으면 올해가 아니라는 신호가 된다.
- * 엑셀 다운로드는 서버 생성이라 이 표기와 무관하게 `YYYY-MM-DD` 를 유지한다.
+ * 목록의 시작일/종료일 표기 — 연도 생략 없이 항상 `YYYY-MM-DD` 전체를 보여준다.
+ * 엑셀 다운로드(서버 생성) 표기와도 동일하다.
  */
 function formatDate(value: string): string {
-  const date = dayjs(value);
-  return date.year() === dayjs().year() ? date.format('MM-DD') : date.format('YYYY-MM-DD');
+  return dayjs(value).format('YYYY-MM-DD');
 }
 
 function formatDateTime(value: string): string {
