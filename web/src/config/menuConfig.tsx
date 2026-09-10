@@ -433,6 +433,7 @@ export const menuRoute: MenuRoute = {
         // 직접 진입 URL: Stage 1 적재 = /admin/tools/sf-migration-1, Stage 2 FK = /admin/tools/sf-migration-2.
         { path: '/admin/tools/cache', name: 'Redis 캐시 관리', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/schedule-name-backfill', name: '여사원일정 name 백필', systemPermission: 'MODIFY_ALL_DATA' },
+        { path: '/admin/tools/ppt-history-master-id-backfill', name: '전문행사조 이력 마스터 연결 백필', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/permissions/guide', name: '권한 사용 가이드', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
