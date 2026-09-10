@@ -19,6 +19,9 @@ import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromoti
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAccountNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAppliedCoreFieldUpdateForbiddenException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAppliedDeleteForbiddenException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterEndDateInPastException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterBulkValidationFailedException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterEmployeeNotFoundException
@@ -129,8 +132,12 @@ class AdminPPTMasterService(
             employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, employmentStatus,
             LocalDate.now(), pageable
         )
+        // 반영 이력 보유 여부(applied) — 행마다 조회하지 않도록 페이지 단위 1회 IN 조회로 채운다.
+        val appliedIds =
+            if (page.content.isEmpty()) emptySet()
+            else pptHistoryRepository.findAppliedMasterIds(page.content.map { it.master.id }).toSet()
         return PPTMasterListResponse(
-            content = page.content.map { PPTMasterResponse.from(it) },
+            content = page.content.map { PPTMasterResponse.from(it, applied = it.master.id in appliedIds) },
             totalElements = page.totalElements,
             totalPages = page.totalPages,
             number = page.number,
@@ -221,7 +228,8 @@ class AdminPPTMasterService(
             branchName = employee.orgName,
             employeeStatus = employee.status,
             employeeOrdDetailNode = employee.ordDetailNode,
-            accountType = account.accountType
+            accountType = account.accountType,
+            applied = pptHistoryRepository.existsByMasterId(master.id)
         )
     }
 
@@ -237,10 +245,29 @@ class AdminPPTMasterService(
      *
      * 레거시 매핑: PPTMasterTriggerHandler.ChangeToNormal (before update) + ChangeToNormalAfter (after update).
      * 레거시 동등성: before update 의 종료일 자동 set 룰을 신규에서 동등 적용 (자기 객체 자동 종료 — UC-05).
+     *
+     * 신규 정책 (레거시 미존재) — 사원 값 잔존 차단:
+     * - 반영 이력이 있는 마스터는 **사원 / 전문행사조 / 시작일 변경 불가**. 바꾸면 이미 반영된 사원 값이
+     *   근거를 잃고 남는데, 해제 배치는 `종료일 = 오늘` 인 마스터만 스캔해 영영 해제되지 않는다.
+     * - **종료일을 오늘 이전으로 변경 불가**. 과거로 종료하면 같은 이유로 해제 배치에 걸리지 않는다.
+     * 반영된 배정을 끝낼 때는 종료일을 오늘 이후로 지정해 `expireMasters` 가 정상 해제하게 한다.
      */
     @Transactional
     fun updateMaster(id: Long, request: PPTMasterUpdateRequest): PPTMasterResponse {
         val master = findMasterById(id)
+        if (pptHistoryRepository.existsByMasterId(id) &&
+            (request.employeeId != master.employeeId ||
+                request.teamType != master.teamType ||
+                request.startDate != master.startDate)
+        ) {
+            throw PPTMasterAppliedCoreFieldUpdateForbiddenException()
+        }
+        // 이미 과거 종료일을 가진 마스터의 다른 필드 수정까지 막지 않도록, 종료일이 실제로 바뀔 때만 검사한다.
+        val newEndDate = request.endDate
+        if (newEndDate != null && newEndDate != master.endDate && newEndDate.isBefore(LocalDate.now())) {
+            throw PPTMasterEndDateInPastException()
+        }
+
         val employee = findEmployeeById(request.employeeId)
         val account = findAccountById(request.accountId)
 
@@ -283,12 +310,19 @@ class AdminPPTMasterService(
             branchName = employee.orgName,
             employeeStatus = employee.status,
             employeeOrdDetailNode = employee.ordDetailNode,
-            accountType = account.accountType
+            accountType = account.accountType,
+            applied = pptHistoryRepository.existsByMasterId(id)
         )
     }
 
     /**
      * 전문행사조 마스터 삭제 — **마스터 row 만 제거하고 사원 / 근무일정 / 이력에는 손대지 않는다.**
+     *
+     * 신규 정책 (레거시 미존재) — **사원에 반영된 이력이 있는 마스터는 삭제를 차단한다**
+     * ([PPTMasterAppliedDeleteForbiddenException]). 삭제해도 사원 전문행사조는 그대로 남는데
+     * 해제 배치(`expireMasters`) 는 `종료일 = 오늘` 인 마스터만 스캔하므로, 근거를 잃은 값이 영영 해제되지
+     * 않고 행사조원 등록이 대표제품 매칭 검증에서 막힌다 (2026-09 운영 장애 — 사번 20260153 등 2명).
+     * 반영 전(오등록 / 예정 / 미확정) 마스터는 그대로 삭제 가능하고, 반영된 배정은 종료일 지정으로 끝낸다.
      *
      * 레거시 매핑: `PPTMasterTrigger` (before delete) → `PPTMasterTriggerHandler.beforeDelete()` — UC.
      * 레거시 동등성: 해당 핸들러는 **빈 메서드**이고 after delete 는 트리거에 등록조차 되어 있지 않다.
@@ -307,6 +341,9 @@ class AdminPPTMasterService(
     @Transactional
     fun deleteMaster(id: Long) {
         val master = findMasterById(id)
+        if (pptHistoryRepository.existsByMasterId(master.id)) {
+            throw PPTMasterAppliedDeleteForbiddenException()
+        }
         pptMasterRepository.delete(master)
     }
 
@@ -757,13 +794,13 @@ class AdminPPTMasterService(
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)
 
+        // 값이 실제로 바뀔 때만 부수 효과 — 레거시 `EmployeeTriggerHandler.ProfessionalPromotionTeamHistory`
+        // 의 `if (ppth.oldValue__c != ppth.newValue__c)` 정합. 해제(null) 도 값 변경이므로 이력을 남긴다
+        // (SF 는 '일반' 문자열로 기록 / 신규는 미배정 = null).
         if (oldValue != newTeamType) {
             teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(
                 employee.id, LocalDate.now()
             )
-        }
-
-        if (newTeamType != null) {
             pptHistoryRepository.save(
                 ProfessionalPromotionTeamHistory(
                     name = generateHistoryName(),

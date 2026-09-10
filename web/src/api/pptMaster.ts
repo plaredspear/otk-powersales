@@ -16,6 +16,11 @@ export interface PPTMaster {
   startDate: string;
   endDate: string | null;
   isConfirmed: boolean;
+  /**
+   * 사원 전문행사조에 반영된 적이 있는지 (반영 이력 보유).
+   * true 면 서버가 삭제와 사원/전문행사조/시작일 변경을 차단한다 — 액션 버튼 활성화 판단의 단일 출처.
+   */
+  applied: boolean;
   branchCode: string | null;
   /** SF BranchName__c — 사원 소속 지점명 */
   branchName: string | null;

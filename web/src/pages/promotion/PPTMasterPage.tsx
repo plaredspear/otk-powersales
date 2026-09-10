@@ -13,6 +13,7 @@ import { PPT_MASTER_TEMPLATE_PATH, PPT_MASTER_EXPORT_PATH } from '@/api/pptMaste
 import type { PPTMaster } from '@/api/pptMaster';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import PPTMasterFormModal from './components/PPTMasterFormModal';
 import PPTMasterUploadModal from './components/PPTMasterUploadModal';
 import {
@@ -190,8 +191,9 @@ export default function PPTMasterPage() {
     try {
       await deleteMutation.mutateAsync(id);
       message.success('삭제되었습니다');
-    } catch {
-      message.error('삭제에 실패했습니다');
+    } catch (err) {
+      // 반영 이력이 있는 마스터는 서버가 409 로 막는다 — 사유를 그대로 노출해야 종료일 안내가 전달된다.
+      message.error(apiErrorMessage(err, '삭제에 실패했습니다'));
     }
   };
 
@@ -346,18 +348,29 @@ export default function PPTMasterPage() {
                     복제
                   </Button>
                 )}
-                {canDelete && (
-                  <Popconfirm
-                    title="이 마스터를 삭제하시겠습니까?"
-                    onConfirm={() => handleDelete(record.id)}
-                    okText="확인"
-                    cancelText="취소"
-                  >
-                    <Button size="small" danger>
-                      삭제
-                    </Button>
-                  </Popconfirm>
-                )}
+                {/* 반영 이력이 있는 마스터는 서버가 삭제를 차단한다 — 버튼을 미리 잠그고 종료일 지정을 안내. */}
+                {canDelete &&
+                  (record.applied ? (
+                    <Tooltip title="이미 사원에 반영된 마스터입니다. 종료일을 지정해 종료해 주세요">
+                      {/* disabled 버튼은 포인터 이벤트가 없어 Tooltip 이 뜨지 않으므로 span 으로 감싼다. */}
+                      <span>
+                        <Button size="small" danger disabled>
+                          삭제
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Popconfirm
+                      title="이 마스터를 삭제하시겠습니까?"
+                      onConfirm={() => handleDelete(record.id)}
+                      okText="확인"
+                      cancelText="취소"
+                    >
+                      <Button size="small" danger>
+                        삭제
+                      </Button>
+                    </Popconfirm>
+                  ))}
               </Space>
             ),
           },

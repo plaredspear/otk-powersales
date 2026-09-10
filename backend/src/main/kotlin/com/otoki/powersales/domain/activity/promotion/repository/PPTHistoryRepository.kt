@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.promotion.repository
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamHistory
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 interface PPTHistoryRepository : JpaRepository<ProfessionalPromotionTeamHistory, Long>, PPTHistoryRepositoryCustom {
 
@@ -42,4 +43,19 @@ interface PPTHistoryRepository : JpaRepository<ProfessionalPromotionTeamHistory,
         nativeQuery = true
     )
     fun syncNameSeq(): Long
+
+    /**
+     * 해당 마스터로 인해 사원 전문행사조가 실제로 바뀐 적이 있는지 — 삭제 / 핵심필드 수정 가드의 판정 기준.
+     *
+     * 이력은 사원 값이 바뀔 때만 쌓이므로 true 면 "운영에 반영된 마스터" 다. SF 이관 이력은 원본 오브젝트에
+     * 마스터 참조 필드 자체가 없어 `master_id` 가 비어 있으므로, 백필 전에는 이관분이 판정되지 않는다.
+     */
+    fun existsByMasterId(masterId: Long): Boolean
+
+    /**
+     * 주어진 마스터 중 반영 이력이 있는 id 만 추린다 — 목록 응답의 `applied` 플래그용.
+     * 행마다 [existsByMasterId] 를 호출하지 않도록 페이지 단위로 1회 조회한다.
+     */
+    @Query("SELECT DISTINCT h.masterId FROM ProfessionalPromotionTeamHistory h WHERE h.masterId IN :masterIds")
+    fun findAppliedMasterIds(@Param("masterIds") masterIds: Collection<Long>): List<Long>
 }

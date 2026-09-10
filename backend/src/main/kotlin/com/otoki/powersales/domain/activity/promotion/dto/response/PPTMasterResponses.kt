@@ -22,6 +22,13 @@ data class PPTMasterResponse(
     val startDate: LocalDate,
     val endDate: LocalDate?,
     val isConfirmed: Boolean,
+    /**
+     * 이 마스터로 인해 사원 전문행사조가 실제로 바뀐 적이 있는지 (반영 이력 보유).
+     *
+     * true 면 서버가 삭제와 사원 / 전문행사조 / 시작일 변경을 차단하므로, 화면 액션 버튼 활성화 판단의
+     * 단일 출처로 쓴다. 판정은 이력의 원인 마스터 FK 기준이며 SF 이관 이력은 그 FK 가 비어 있다.
+     */
+    val applied: Boolean = false,
     val branchCode: String?,
     // SF BranchName__c — 사원 소속 지점명(Employee.orgName)
     val branchName: String?,
@@ -40,7 +47,7 @@ data class PPTMasterResponse(
     val updatedAt: LocalDateTime
 ) {
     companion object {
-        fun from(result: PPTMasterSearchResult): PPTMasterResponse {
+        fun from(result: PPTMasterSearchResult, applied: Boolean = false): PPTMasterResponse {
             val m = result.master
             return PPTMasterResponse(
                 id = m.id,
@@ -55,6 +62,7 @@ data class PPTMasterResponse(
                 startDate = m.startDate,
                 endDate = m.endDate,
                 isConfirmed = m.isConfirmed,
+                applied = applied,
                 branchCode = m.branchCode,
                 branchName = result.branchName,
                 employmentStatus = DismissalPolicy.displayStatus(
@@ -76,7 +84,8 @@ data class PPTMasterResponse(
             branchName: String? = null,
             employeeStatus: String? = null,
             employeeOrdDetailNode: String? = null,
-            accountType: String? = null
+            accountType: String? = null,
+            applied: Boolean = false
         ): PPTMasterResponse {
             return PPTMasterResponse(
                 id = master.id,
@@ -91,6 +100,7 @@ data class PPTMasterResponse(
                 startDate = master.startDate,
                 endDate = master.endDate,
                 isConfirmed = master.isConfirmed,
+                applied = applied,
                 branchCode = master.branchCode,
                 branchName = branchName,
                 employmentStatus = DismissalPolicy.displayStatus(employeeStatus, employeeOrdDetailNode),

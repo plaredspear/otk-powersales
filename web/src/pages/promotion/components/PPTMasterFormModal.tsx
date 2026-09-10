@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Modal, Form, Select, DatePicker, Checkbox, Button, message } from 'antd';
+import { Modal, Form, Select, DatePicker, Checkbox, Button, Alert, message } from 'antd';
 import dayjs from 'dayjs';
 import { fetchEmployeesForPromotionLookup, type Employee } from '@/api/employee';
 import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 import { useCreatePPTMaster, useUpdatePPTMaster } from '@/hooks/promotion/usePPTMasters';
 import { usePPTMasterFormMeta } from '@/hooks/promotion/usePPTMasterFormMeta';
 import type { PPTMaster } from '@/api/pptMaster';
-import { AxiosError } from 'axios';
+import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { type PPTTeamType } from '@/constants/pptTeamType';
 
 interface FormValues {
@@ -34,6 +34,10 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
   // 전문행사조 유형 옵션 — 서버 form-meta 를 단일 출처로 사용(프론트 상수 하드코딩 제거).
   const teamTypeOptions =
     formMeta?.teamTypes.map((t) => ({ value: t.value, label: t.name })) ?? [];
+
+  // 사원에 반영된 이력이 있는 마스터는 서버가 사원 / 전문행사조 / 시작일 변경과 종료일 소급을 막는다
+  // (반영된 사원 값이 근거를 잃고 남는 것을 차단). 복제는 신규 등록이므로 잠그지 않는다.
+  const isApplied = editingItem?.applied === true;
 
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
   const [accountOptions, setAccountOptions] = useState<Account[]>([]);
@@ -155,16 +159,9 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
       }
       onClose();
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.status === 409) {
-        message.error('중복으로 유효한 마스터가 존재합니다');
-      } else if (
-        err &&
-        typeof err === 'object' &&
-        'message' in err &&
-        typeof (err as { message: unknown }).message === 'string'
-      ) {
-        message.error((err as { message: string }).message);
-      }
+      // 중복 유효 마스터(409) / 반영 마스터 수정 차단(409) / 종료일 소급(400) 등 사유가 여러 갈래라
+      // 서버 메시지를 그대로 노출한다.
+      message.error(apiErrorMessage(err, '저장에 실패했습니다'));
     }
   };
 
@@ -191,6 +188,15 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
         </div>
       }
     >
+      {isApplied && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginTop: 8 }}
+          message="이미 사원에 반영된 마스터입니다"
+          description="사원 / 전문행사조 / 시작일은 변경할 수 없습니다. 배정을 끝내려면 종료일을 오늘 이후로 지정해 주세요."
+        />
+      )}
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         {/* 항목 순서는 SF '새 전문행사조 마스터' 모달과 동일하게: 거래처 → 사원 → 시작일 → 확정 → 종료일 → 전문행사조 */}
         <Form.Item
@@ -227,6 +233,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
             filterOption={false}
             onSearch={searchEmployees}
             loading={employeeLoading}
+            disabled={isApplied}
             options={employeeOptions.map((emp) => ({
               value: emp.id,
               label: `${emp.name} (${emp.employeeCode})${emp.orgName ? ` ${emp.orgName}` : ''}`,
@@ -239,7 +246,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           label="시작일"
           rules={[{ required: true, message: '시작일을 선택해주세요' }]}
         >
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker style={{ width: '100%' }} disabled={isApplied} />
         </Form.Item>
 
         <Form.Item name="isConfirmed" valuePropName="checked">
@@ -247,7 +254,13 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
         </Form.Item>
 
         <Form.Item name="endDate" label="종료일">
-          <DatePicker style={{ width: '100%' }} />
+          {/* 수정 시 종료일 소급 금지 — 과거로 종료하면 해제 배치(종료일 = 오늘)가 잡지 못해 사원 값이 잔존한다. */}
+          <DatePicker
+            style={{ width: '100%' }}
+            disabledDate={
+              editingItem ? (d) => !!d && d.isBefore(dayjs().startOf('day')) : undefined
+            }
+          />
         </Form.Item>
 
         <Form.Item
@@ -255,7 +268,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           label="전문행사조"
           rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
         >
-          <Select placeholder="전문행사조 선택" options={teamTypeOptions} />
+          <Select placeholder="전문행사조 선택" options={teamTypeOptions} disabled={isApplied} />
         </Form.Item>
       </Form>
     </Modal>

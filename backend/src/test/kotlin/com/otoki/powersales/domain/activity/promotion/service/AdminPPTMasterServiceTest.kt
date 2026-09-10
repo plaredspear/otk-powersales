@@ -10,6 +10,9 @@ import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterUpdat
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAccountNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAppliedCoreFieldUpdateForbiddenException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterAppliedDeleteForbiddenException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterEndDateInPastException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterEmployeeNotFoundException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterInvalidDateRangeException
@@ -79,6 +82,12 @@ class AdminPPTMasterServiceTest {
         every { pptMasterRepository.getNextNameSeq() } returns 1L
         // 이력 번호(name) 채번 시퀀스 — 별도 지정 없으면 1 반환 (PH0000001)
         every { pptHistoryRepository.getNextNameSeq() } returns 1L
+        // 반영 이력 보유 여부(삭제 / 핵심필드 수정 가드 기준) — 별도 지정 없으면 "미반영"
+        every { pptHistoryRepository.existsByMasterId(any()) } returns false
+        every { pptHistoryRepository.findAppliedMasterIds(any()) } returns emptyList()
+        // 이력 저장은 값이 바뀌는 모든 경로(해제 포함)에서 발생하므로 기본 stub 을 둔다.
+        // 개별 테스트가 slot capture 로 재정의한다.
+        every { pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()) } answers { firstArg() }
     }
 
     private fun createEmployee(
@@ -639,6 +648,123 @@ class AdminPPTMasterServiceTest {
     }
 
     @Nested
+    @DisplayName("updateMaster - 반영 마스터 가드 / 종료일 소급 금지")
+    inner class UpdateMasterAppliedGuardTests {
+
+        private fun stubUpdateDeps(master: ProfessionalPromotionTeamMaster, employeeId: Long = 1L) {
+            every { pptMasterRepository.findById(master.id) } returns Optional.of(master)
+            every { employeeRepository.findById(employeeId) } returns Optional.of(createEmployee(id = employeeId))
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findLegacyDuplicateMasters(any(), any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(employeeId) } returns emptyList()
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+        }
+
+        @Test
+        @DisplayName("실패 - 반영된 마스터의 전문행사조 변경 -> 차단")
+        fun updateMaster_appliedTeamTypeChange_blocked() {
+            val master = createMaster(teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            stubUpdateDeps(master)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns true
+
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1,
+                teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED,
+                startDate = master.startDate, isConfirmed = master.isConfirmed
+            )
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterAppliedCoreFieldUpdateForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 반영된 마스터의 사원 변경 -> 차단 (옛 사원 값이 근거를 잃고 남는 경로)")
+        fun updateMaster_appliedEmployeeChange_blocked() {
+            val master = createMaster(employeeId = 1L)
+            stubUpdateDeps(master, employeeId = 2L)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns true
+
+            val request = PPTMasterUpdateRequest(
+                employeeId = 2L, accountId = 1, teamType = master.teamType!!,
+                startDate = master.startDate, isConfirmed = master.isConfirmed
+            )
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterAppliedCoreFieldUpdateForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 반영된 마스터의 시작일 변경 -> 차단")
+        fun updateMaster_appliedStartDateChange_blocked() {
+            val master = createMaster()
+            stubUpdateDeps(master)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns true
+
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = master.teamType!!,
+                startDate = master.startDate.plusDays(1), isConfirmed = master.isConfirmed
+            )
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterAppliedCoreFieldUpdateForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("성공 - 반영된 마스터라도 종료일을 오늘 이후로 지정하는 것은 허용")
+        fun updateMaster_appliedEndDateOnly_allowed() {
+            val master = createMaster()
+            stubUpdateDeps(master)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns true
+
+            val endDate = LocalDate.now()
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = master.teamType!!,
+                startDate = master.startDate, endDate = endDate, isConfirmed = master.isConfirmed
+            )
+
+            service.updateMaster(1L, request)
+
+            assertThat(master.endDate).isEqualTo(endDate)
+        }
+
+        @Test
+        @DisplayName("실패 - 종료일을 오늘 이전으로 변경 -> PPTMasterEndDateInPastException")
+        fun updateMaster_endDateInPast_blocked() {
+            val master = createMaster()
+            stubUpdateDeps(master)
+
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = master.teamType!!,
+                startDate = master.startDate, endDate = LocalDate.now().minusDays(1),
+                isConfirmed = master.isConfirmed
+            )
+
+            assertThatThrownBy { service.updateMaster(1L, request) }
+                .isInstanceOf(PPTMasterEndDateInPastException::class.java)
+        }
+
+        @Test
+        @DisplayName("성공 - 이미 과거 종료일인 마스터의 다른 필드 수정은 허용 (종료일 미변경)")
+        fun updateMaster_keepsExistingPastEndDate() {
+            val pastEndDate = LocalDate.now().minusDays(5)
+            val master = createMaster(endDate = pastEndDate, isConfirmed = false)
+            stubUpdateDeps(master)
+
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = master.teamType!!,
+                startDate = master.startDate, endDate = pastEndDate, isConfirmed = true
+            )
+
+            service.updateMaster(1L, request)
+
+            assertThat(master.isConfirmed).isTrue()
+            assertThat(master.endDate).isEqualTo(pastEndDate)
+        }
+    }
+
+    @Nested
     @DisplayName("deleteMaster - 마스터 삭제")
     inner class DeleteMasterTests {
 
@@ -683,6 +809,31 @@ class AdminPPTMasterServiceTest {
 
             assertThatThrownBy { service.deleteMaster(999L) }
                 .isInstanceOf(PPTMasterNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 사원에 반영된 이력이 있으면 삭제 차단 (종료일 지정으로 유도)")
+        fun deleteMaster_applied_blocked() {
+            val master = createMaster()
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns true
+
+            assertThatThrownBy { service.deleteMaster(1L) }
+                .isInstanceOf(PPTMasterAppliedDeleteForbiddenException::class.java)
+
+            verify(exactly = 0) { pptMasterRepository.delete(any<ProfessionalPromotionTeamMaster>()) }
+        }
+
+        @Test
+        @DisplayName("성공 - 반영 이력이 없는 오등록 마스터는 그대로 삭제")
+        fun deleteMaster_notApplied_allowed() {
+            val master = createMaster()
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { pptHistoryRepository.existsByMasterId(1L) } returns false
+
+            service.deleteMaster(1L)
+
+            verify { pptMasterRepository.delete(master) }
         }
     }
 
@@ -1615,20 +1766,24 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
-        @DisplayName("expireMasters 해제 -> 이력 자체 미기록 (masterId 전달 무의미)")
-        fun expireMasters_noHistory() {
+        @DisplayName("expireMasters 해제 -> 해제도 이력에 기록 (변경 후 = null, 원인 마스터 미특정)")
+        fun expireMasters_recordsClearHistory() {
             val today = LocalDate.now()
             val master = createMaster(employeeId = 1L, endDate = today)
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            val saved = slot<ProfessionalPromotionTeamHistory>()
+            every { pptHistoryRepository.save(capture(saved)) } answers { firstArg() }
             stubTeamMemberScheduleDelete()
 
             batchService.expireMasters()
 
-            // 해제(→null)는 기존 정책대로 이력을 남기지 않는다.
-            verify(exactly = 0) { pptHistoryRepository.save(any()) }
+            // 레거시 EmployeeTriggerHandler 는 값이 바뀌면(해제 포함) 이력을 남긴다 — 동등.
+            assertThat(saved.captured.oldValue).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+            assertThat(saved.captured.newValue).isNull()
+            assertThat(saved.captured.masterId).isNull()
         }
 
         @Test

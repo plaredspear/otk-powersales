@@ -6,7 +6,8 @@ import PPTMasterPage from './PPTMasterPage';
 import type { PPTMaster } from '@/api/pptMaster';
 import { useAuthStore } from '@/stores/authStore';
 
-const sampleMaster: PPTMaster = {
+// 반영 여부(applied) 를 케이스마다 갈아끼우기 위해 let — 훅 mock 이 호출 시점에 이 바인딩을 읽는다.
+let sampleMaster: PPTMaster = {
   id: 1,
   name: 'PM0010001',
   branchName: '서울지점',
@@ -22,6 +23,7 @@ const sampleMaster: PPTMaster = {
   startDate: '2026-01-01',
   endDate: null,
   isConfirmed: false,
+  applied: false,
 } as PPTMaster;
 
 vi.mock('@/hooks/promotion/usePPTMasters', () => ({
@@ -244,5 +246,26 @@ describe('PPTMasterPage 권한 게이팅', () => {
       const link = screen.getByRole('link', { name: '백은경' });
       expect(link).toHaveAttribute('href', '/employee/100');
     });
+  });
+});
+
+describe('PPTMasterPage 반영 마스터 삭제 가드', () => {
+  beforeEach(() => {
+    setPermissions([
+      'professional_promotion_team_master:R',
+      'professional_promotion_team_master:D',
+    ]);
+  });
+
+  it('반영 이력이 없는 마스터의 삭제 버튼은 활성이다', () => {
+    sampleMaster = { ...sampleMaster, applied: false };
+    renderPage();
+    expect(screen.getByRole('button', { name: '삭제' })).toBeEnabled();
+  });
+
+  it('사원에 반영된 마스터의 삭제 버튼은 비활성이다 (서버 409 전에 화면에서 차단)', () => {
+    sampleMaster = { ...sampleMaster, applied: true };
+    renderPage();
+    expect(screen.getByRole('button', { name: '삭제' })).toBeDisabled();
   });
 });
