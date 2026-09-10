@@ -5041,6 +5041,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseBackfillPreview" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BackfillPreview"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBackfillResult" : {
         "properties" : {
           "data" : {
@@ -10458,6 +10487,19 @@
         },
         "type" : "object"
       },
+      "BackfillPreview" : {
+        "properties" : {
+          "ambiguous" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "backfillable" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "BackfillResult" : {
         "properties" : {
           "processed" : {
@@ -15283,6 +15325,9 @@
           },
           "accountType" : {
             "type" : [ "string", "null" ]
+          },
+          "applied" : {
+            "type" : "boolean"
           },
           "branchCode" : {
             "type" : [ "string", "null" ]
@@ -27822,6 +27867,51 @@
           }
         },
         "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
+    "/api/v1/admin/ppt-history/master-id-backfill/execute" : {
+      "post" : {
+        "operationId" : "execute_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBackfillResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-history-master-id-backfill-controller" ]
+      }
+    },
+    "/api/v1/admin/ppt-history/master-id-backfill/preview" : {
+      "get" : {
+        "operationId" : "preview_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBackfillPreview"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-history-master-id-backfill-controller" ]
       }
     },
     "/api/v1/admin/ppt-masters" : {

@@ -3572,6 +3572,9 @@
           "imageUrl" : {
             "type" : [ "string", "null" ]
           },
+          "otherProduct" : {
+            "type" : [ "string", "null" ]
+          },
           "otherSalesAmount" : {
             "type" : [ "number", "null" ]
           },
@@ -3580,6 +3583,12 @@
           },
           "primaryProductAmount" : {
             "type" : [ "number", "null" ]
+          },
+          "primaryProductCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "primaryProductName" : {
+            "type" : [ "string", "null" ]
           },
           "primarySalesPrice" : {
             "type" : [ "number", "null" ]
@@ -3594,6 +3603,12 @@
           "promotionId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionType" : {
+            "type" : [ "string", "null" ]
           },
           "scheduleDate" : {
             "format" : "date",
@@ -4980,6 +4995,9 @@
           "promotionId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
           },
           "promotionNumber" : {
             "type" : "string"
