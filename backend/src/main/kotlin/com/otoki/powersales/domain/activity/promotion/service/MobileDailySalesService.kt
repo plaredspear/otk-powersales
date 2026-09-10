@@ -14,6 +14,8 @@ import com.otoki.powersales.domain.activity.promotion.exception.PromotionEmploye
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.domain.activity.promotion.repository.DailySalesDraftRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
@@ -48,6 +50,7 @@ import java.math.BigDecimal
 class MobileDailySalesService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val dailySalesDraftRepository: DailySalesDraftRepository,
+    private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService,
     private val storageService: StorageService
 ) {
@@ -56,8 +59,12 @@ class MobileDailySalesService(
         val pe = loadOwnedPromotionEmployee(userId, promotionEmployeeId)
         val draft = dailySalesDraftRepository.findByPromotionEmployeeId(promotionEmployeeId)
         val imageKey = draft?.s3ImageUniqueKey ?: pe.s3ImageUniqueKey
-        return DailySalesFormResponse.from(pe, draft, imageUrl(imageKey))
+        return DailySalesFormResponse.from(pe, draft, imageUrl(imageKey), primaryProduct(pe))
     }
+
+    // 레거시 write.jsp "대표 제품" 영역(제품명 + 제품코드) 및 행사명 파생용. 미지정이면 null.
+    private fun primaryProduct(pe: PromotionEmployee): Product? =
+        pe.promotion?.primaryProductId?.let { productRepository.findById(it).orElse(null) }
 
     // 일매출 사진은 private/ 저장 → presigned URL 로만 조회 가능 (본인 PE 만 조회 권한 통제와 정합). key 없으면 null.
     private fun imageUrl(key: String?): String? =
@@ -150,7 +157,7 @@ class MobileDailySalesService(
 
         val saved = dailySalesDraftRepository.save(draft)
         val imageKey = saved.s3ImageUniqueKey ?: pe.s3ImageUniqueKey
-        return DailySalesFormResponse.from(pe, saved, imageUrl(imageKey))
+        return DailySalesFormResponse.from(pe, saved, imageUrl(imageKey), primaryProduct(pe))
     }
 
     @Transactional

@@ -155,9 +155,16 @@ class MobilePromotionService(
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
 
+        // 행사명(`제품온도타입(대표제품명)`) 파생용 대표제품명 배치 로딩 (N+1 방지)
+        val productIds = assignments.mapNotNull { it.promotion?.primaryProductId }.distinct()
+        val productMap = if (productIds.isNotEmpty()) {
+            productRepository.findAllById(productIds).associateBy { it.id }
+        } else emptyMap()
+
         return assignments.map { assignment ->
             val accountName = assignment.promotion?.account?.id?.let { accountMap[it]?.name }
-            MyPromotionAssignmentItem.from(assignment, accountName)
+            val primaryProductName = assignment.promotion?.primaryProductId?.let { productMap[it]?.name }
+            MyPromotionAssignmentItem.from(assignment, accountName, primaryProductName)
         }
     }
 

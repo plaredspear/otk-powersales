@@ -92,9 +92,9 @@ class _AssignmentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 행사유형은 제목(`[유형]행사명`)에 이미 포함되므로 부제에서 제외한다.
     final subtitleParts = <String>[
       if (assignment.accountName != null) assignment.accountName!,
-      if (assignment.promotionType != null) assignment.promotionType!,
       if (assignment.standLocation != null) assignment.standLocation!,
     ];
 
@@ -112,7 +112,8 @@ class _AssignmentRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    assignment.promotionNumber,
+                    // 레거시 write.jsp 팝업 표기: `[행사유형]행사명`(= 제품온도타입(대표제품명)).
+                    assignment.displayLabel,
                     style: AppTypography.bodyLarge
                         .copyWith(fontWeight: FontWeight.w700),
                   ),

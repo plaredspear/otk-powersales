@@ -6,6 +6,11 @@ class DailySalesFormModel {
     return DailySalesForm(
       promotionEmployeeId: json['promotionEmployeeId'] as int,
       promotionId: json['promotionId'] as int?,
+      promotionType: json['promotionType'] as String?,
+      promotionName: json['promotionName'] as String?,
+      primaryProductName: json['primaryProductName'] as String?,
+      primaryProductCode: json['primaryProductCode'] as String?,
+      otherProduct: json['otherProduct'] as String?,
       scheduleDate: json['scheduleDate'] as String?,
       employeeName: json['employeeName'] as String?,
       isClosed: json['isClosed'] as bool? ?? false,

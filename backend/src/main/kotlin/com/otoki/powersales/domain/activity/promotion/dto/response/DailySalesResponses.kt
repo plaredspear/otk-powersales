@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.promotion.dto.response
 
 import com.otoki.powersales.domain.activity.promotion.entity.DailySalesDraft
 import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -14,6 +15,19 @@ import java.time.LocalDate
 data class DailySalesFormResponse(
     val promotionEmployeeId: Long,
     val promotionId: Long?,
+    /** 행사유형. 레거시 `write.jsp` 행사 필드 `[행사유형]행사명` 의 앞부분. */
+    val promotionType: String?,
+    /**
+     * 행사명. SF formula `DKRetail__PromotionName__c`(`제품온도타입(대표제품명)`) 동등 파생값.
+     * 레거시 `write.jsp` 행사 필드 표기(`[시식]상온(오뚜기카레_매운맛100G)`) 정합.
+     */
+    val promotionName: String?,
+    /** 대표제품명. 레거시 `write.jsp` "대표 제품" 영역 1행(`primaryProductNmTxt`). */
+    val primaryProductName: String?,
+    /** 대표제품코드. 레거시 `write.jsp` "대표 제품" 영역 2행(`primaryProductCdTxt`). */
+    val primaryProductCode: String?,
+    /** 행사마스터의 기타제품 텍스트. 레거시 `write.jsp` "기타 제품" 영역(`otherProduct`). */
+    val otherProduct: String?,
     val scheduleDate: LocalDate?,
     val employeeName: String?,
     val isClosed: Boolean,
@@ -35,15 +49,24 @@ data class DailySalesFormResponse(
     companion object {
         /**
          * draft(임시저장)가 있으면 draft 값으로, 없으면 PromotionEmployee 현재 값으로 prefill 한다.
-         * [pe.employee] lazy 접근을 포함하므로 트랜잭션 내부에서 호출해야 한다.
+         * [pe.employee] / [pe.promotion] lazy 접근을 포함하므로 트랜잭션 내부에서 호출해야 한다.
          */
         fun from(
             pe: PromotionEmployee,
             draft: DailySalesDraft?,
-            imageUrl: String?
+            imageUrl: String?,
+            primaryProduct: Product?
         ): DailySalesFormResponse = DailySalesFormResponse(
             promotionEmployeeId = pe.id,
             promotionId = pe.promotionId,
+            promotionType = pe.promotion?.promotionType?.displayName,
+            promotionName = MobilePromotionListItem.buildPromotionName(
+                pe.promotion?.productType,
+                primaryProduct?.name
+            ),
+            primaryProductName = primaryProduct?.name,
+            primaryProductCode = primaryProduct?.productCode,
+            otherProduct = pe.promotion?.otherProduct,
             scheduleDate = pe.scheduleDate,
             employeeName = pe.employee?.name,
             isClosed = pe.promoCloseByTm,

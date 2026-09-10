@@ -140,6 +140,9 @@ class MyPromotionAssignment {
   final int promotionId;
   final String promotionNumber;
   final String? promotionType;
+
+  /// 행사명(`제품온도타입(대표제품명)`). 서버 파생값.
+  final String? promotionName;
   final String? accountName;
   final String? scheduleDate;
   final String? standLocation;
@@ -152,11 +155,17 @@ class MyPromotionAssignment {
     required this.promotionId,
     required this.promotionNumber,
     this.promotionType,
+    this.promotionName,
     this.accountName,
     this.scheduleDate,
     this.standLocation,
     this.isClosed = false,
   });
+
+  /// 레거시 `write.jsp` 담당행사 선택 팝업 표기 `[행사유형]행사명`.
+  /// 행사명이 없으면 행사번호로 대체한다(표시 공백 방지).
+  String get displayLabel =>
+      formatPromotionLabel(promotionType, promotionName) ?? promotionNumber;
 
   factory MyPromotionAssignment.fromJson(Map<String, dynamic> json) {
     return MyPromotionAssignment(
@@ -164,12 +173,22 @@ class MyPromotionAssignment {
       promotionId: json['promotionId'] as int,
       promotionNumber: json['promotionNumber'] as String,
       promotionType: json['promotionType'] as String?,
+      promotionName: json['promotionName'] as String?,
       accountName: json['accountName'] as String?,
       scheduleDate: json['scheduleDate'] as String?,
       standLocation: json['standLocation'] as String?,
       isClosed: json['isClosed'] as bool? ?? false,
     );
   }
+}
+
+/// 레거시 행사 표기 `[행사유형]행사명` 조합. 둘 다 비면 null.
+String? formatPromotionLabel(String? promotionType, String? promotionName) {
+  final type = promotionType?.trim() ?? '';
+  final name = promotionName?.trim() ?? '';
+  if (type.isEmpty && name.isEmpty) return null;
+  if (type.isEmpty) return name;
+  return '[$type]$name';
 }
 
 /// 행사 조원 엔티티

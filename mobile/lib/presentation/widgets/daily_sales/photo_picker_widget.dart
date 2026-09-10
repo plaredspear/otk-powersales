@@ -34,9 +34,14 @@ class PhotoPickerWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 라벨
-        const Text(
-          '사진 첨부',
+        // 라벨 (레거시: "사진 (최대 1장) *" — 필수 입력)
+        const Text.rich(
+          TextSpan(
+            text: '사진 (최대 1장)',
+            children: [
+              TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+            ],
+          ),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,

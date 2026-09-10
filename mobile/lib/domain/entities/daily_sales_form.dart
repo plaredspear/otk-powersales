@@ -1,9 +1,26 @@
+import 'promotion.dart';
+
 /// 일매출 마감 폼 (서버 GET 응답 / 임시저장 응답).
 ///
 /// 임시저장(draft)이 있으면 draft 값이, 없으면 PromotionEmployee 현재 값이 prefill 된다.
 class DailySalesForm {
   final int promotionEmployeeId;
   final int? promotionId;
+
+  /// 행사유형. 레거시 행사 필드 `[행사유형]행사명` 의 앞부분.
+  final String? promotionType;
+
+  /// 행사명(`제품온도타입(대표제품명)`). 서버 파생값.
+  final String? promotionName;
+
+  /// 대표제품명 (행사마스터). 레거시 "대표 제품" 영역 1행.
+  final String? primaryProductName;
+
+  /// 대표제품코드 (행사마스터). 레거시 "대표 제품" 영역 2행.
+  final String? primaryProductCode;
+
+  /// 행사마스터의 기타제품 텍스트. 레거시 "기타 제품" 영역.
+  final String? otherProduct;
   final String? scheduleDate;
   final String? employeeName;
 
@@ -35,6 +52,11 @@ class DailySalesForm {
   const DailySalesForm({
     required this.promotionEmployeeId,
     this.promotionId,
+    this.promotionType,
+    this.promotionName,
+    this.primaryProductName,
+    this.primaryProductCode,
+    this.otherProduct,
     this.scheduleDate,
     this.employeeName,
     required this.isClosed,
@@ -50,6 +72,10 @@ class DailySalesForm {
     this.description,
     this.imageUrl,
   });
+
+  /// 레거시 `write.jsp` 행사 필드 표기 `[행사유형]행사명`.
+  String? get promotionLabel =>
+      formatPromotionLabel(promotionType, promotionName);
 }
 
 /// 일매출 마감 처리 결과.

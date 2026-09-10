@@ -142,6 +142,12 @@ data class MyPromotionAssignmentItem(
     val promotionId: Long,
     val promotionNumber: String,
     val promotionType: String?,
+    /**
+     * 행사명. SF formula `DKRetail__PromotionName__c`(`제품온도타입(대표제품명)`) 동등 파생값.
+     * 레거시 `promotion/event/write.jsp` 담당행사 선택 팝업이 `[행사유형]행사명` 으로 표기하므로
+     * 목록 표시는 행사번호가 아니라 본 필드를 사용한다.
+     */
+    val promotionName: String?,
     val accountName: String?,
     val scheduleDate: LocalDate?,
     val standLocation: String?,
@@ -151,7 +157,8 @@ data class MyPromotionAssignmentItem(
     companion object {
         fun from(
             entity: PromotionEmployee,
-            accountName: String?
+            accountName: String?,
+            primaryProductName: String?
         ): MyPromotionAssignmentItem {
             val promotion = entity.promotion!!
             return MyPromotionAssignmentItem(
@@ -159,6 +166,10 @@ data class MyPromotionAssignmentItem(
                 promotionId = promotion.id,
                 promotionNumber = promotion.promotionNumber,
                 promotionType = promotion.promotionType?.displayName,
+                promotionName = MobilePromotionListItem.buildPromotionName(
+                    promotion.productType,
+                    primaryProductName
+                ),
                 accountName = accountName,
                 scheduleDate = entity.scheduleDate,
                 standLocation = promotion.standLocation?.displayName,

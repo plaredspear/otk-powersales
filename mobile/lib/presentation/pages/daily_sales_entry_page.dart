@@ -121,7 +121,8 @@ class _SelectEventRow extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              '담당 행사 선택',
+              // 레거시 write.jsp 행사 입력칸 placeholder.
+              '내 담당 행사 선택',
               style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textTertiary),
             ),

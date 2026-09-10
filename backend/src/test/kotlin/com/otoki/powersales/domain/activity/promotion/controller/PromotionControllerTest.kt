@@ -193,6 +193,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                     promotionId = 1L,
                     promotionNumber = "PM-2026-001",
                     promotionType = "시식",
+                    promotionName = "상온(오뚜기카레_매운맛100G)",
                     accountName = "이마트 강남점",
                     scheduleDate = LocalDate.of(2026, 6, 9),
                     standLocation = "엔드",
@@ -209,6 +210,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data[0].id").value(10))
                 .andExpect(jsonPath("$.data[0].promotionId").value(1))
                 .andExpect(jsonPath("$.data[0].promotionNumber").value("PM-2026-001"))
+                .andExpect(jsonPath("$.data[0].promotionName").value("상온(오뚜기카레_매운맛100G)"))
                 .andExpect(jsonPath("$.data[0].accountName").value("이마트 강남점"))
                 .andExpect(jsonPath("$.data[0].scheduleDate").value("2026-06-09"))
                 .andExpect(jsonPath("$.data[0].standLocation").value("엔드"))

@@ -86,12 +86,43 @@ class PromotionDailySalesState {
 
   bool get hasAnyProduct => hasMainProduct || hasSubProduct;
 
+  /// 기타제품 3필드 중 하나라도 입력되었는지 (입력 시 나머지도 필수).
+  bool get hasAnySubInput =>
+      (subName != null && subName!.isNotEmpty) ||
+      subQuantity != null ||
+      subAmount != null;
+
   /// 기존 이미지(서버) 또는 새 사진이 있는지.
   bool get hasPhoto => photo != null || (form?.imageUrl != null);
 
-  /// 최종 마감 가능 여부. 출근 미등록 시 마감 차단(임시저장은 허용).
-  bool get canSubmit =>
-      editable && attendanceRegistered && hasAnyProduct && hasPhoto;
+  /// 등록(마감) 가능 여부. 레거시와 동일하게 버튼은 항상 활성이며, 미충족 항목은
+  /// 탭 시점에 [validationError] 메시지로 안내한다.
+  bool get canSubmit => editable;
+
+  /// 등록 전 검증. 레거시 `write.jsp` `#send` 핸들러의 검사 순서/문구를 그대로 따른다.
+  /// 통과하면 null.
+  String? get validationError {
+    if (mainQuantity == null &&
+        mainAmount == null &&
+        subQuantity == null &&
+        subAmount == null) {
+      return '대표 제품 및 기타 제품 중 한 개는 필수로 입력해야 합니다.';
+    }
+    if (mainQuantity != null && mainAmount == null) {
+      return '총 판매 금액을 입력하세요.';
+    }
+    if (mainAmount != null && mainQuantity == null) {
+      return '판매 수량을 입력하세요.';
+    }
+    if (hasAnySubInput) {
+      if (subName == null || subName!.isEmpty) return '행사 대체 제품을 입력하세요.';
+      if (subQuantity == null) return '기타제품 판매 수량을 입력하세요.';
+      if (subAmount == null) return '총 판매 금액을 입력하세요.';
+    }
+    if (!hasPhoto) return '사진을 첨부해 주세요.';
+    if (!attendanceRegistered) return '출근등록을 완료해주세요.';
+    return null;
+  }
 
   bool get isSubmitting => submitStatus == DailySalesSubmitStatus.submitting;
 
@@ -223,25 +254,25 @@ class PromotionDailySalesNotifier
     );
   }
 
-  /// 최종 마감. 성공 시 true.
-  Future<bool> submit() async {
-    if (state.isSubmitting) return false;
+  /// 등록 전 검증. 통과하면 true, 실패하면 레거시 문구를 errorMessage 로 노출하고 false.
+  /// (레거시는 검증 통과 후에 전송 confirm 을 띄우므로 화면이 confirm 전에 호출한다)
+  bool validateForSubmit() {
     if (!state.editable) {
       state = state.copyWith(errorMessage: '마감되었거나 수정 권한이 없습니다');
       return false;
     }
-    if (!state.attendanceRegistered) {
-      state = state.copyWith(errorMessage: '출근등록을 완료해주세요');
+    final error = state.validationError;
+    if (error != null) {
+      state = state.copyWith(errorMessage: error);
       return false;
     }
-    if (!state.hasAnyProduct) {
-      state = state.copyWith(errorMessage: '대표상품 또는 기타상품 정보를 입력해주세요');
-      return false;
-    }
-    if (!state.hasPhoto) {
-      state = state.copyWith(errorMessage: '사진을 첨부해주세요');
-      return false;
-    }
+    return true;
+  }
+
+  /// 최종 마감. 성공 시 true.
+  Future<bool> submit() async {
+    if (state.isSubmitting) return false;
+    if (!validateForSubmit()) return false;
 
     state = state.copyWith(
       submitStatus: DailySalesSubmitStatus.submitting,
