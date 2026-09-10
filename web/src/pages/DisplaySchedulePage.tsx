@@ -53,14 +53,11 @@ const PERIOD_FILTER_NOTICE =
   '(예: 7/1~7/31 스케줄은 7/15~7/20 으로 조회해도 표시)';
 
 /**
- * 목록의 시작일/종료일 표기 — 당해년도면 연도를 생략해 `MM-DD` 로만 보여준다 (컬럼 폭 절약).
- * 타 년도(전년 시작 / 익년 종료 등)는 혼동을 막기 위해 `YYYY-MM-DD` 전체를 유지한다.
- * 값은 서버가 내려주는 `YYYY-MM-DD` 문자열이므로 파싱 없이 prefix 비교로 판정한다.
+ * 목록의 시작일/종료일 표기 — 연도 생략 없이 항상 `YYYY-MM-DD` 전체를 보여준다.
+ * 값은 서버가 내려주는 `YYYY-MM-DD` 문자열이라 그대로 출력하고, 빈 값만 `-` 로 대체한다.
  */
 function formatScheduleDate(value: string | null): string {
-  if (!value) return '-';
-  const currentYearPrefix = `${dayjs().year()}-`;
-  return value.startsWith(currentYearPrefix) ? value.slice(currentYearPrefix.length) : value;
+  return value ?? '-';
 }
 
 const errorColumns: ColumnsType<RowError> = [
