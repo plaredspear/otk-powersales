@@ -232,7 +232,7 @@ class AdminPromotionTargetActualReportServiceTest {
     }
 
     @Nested
-    @DisplayName("지점 스코프 (여사원일정 소속 costCenterCode)")
+    @DisplayName("지점 스코프 (행사사원 사원 마스터 소속 costCenterCode)")
     inner class BranchScope {
 
         @Test

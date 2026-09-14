@@ -157,9 +157,13 @@ class PromotionEmployeeRepositoryCustomImpl(
             .where(
                 promotionEmployee.scheduleDate.between(startDate, endDate),
                 notDeleted, // soft-delete 제외
-                // 지점 스코프 — 여사원일정 소속 지점(teamMemberSchedule.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
-                // teamMemberSchedule 미연결(null) 행은 IN 조건에서 제외됨 (지점 판별 불가).
-                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { teamMemberSchedule.costCenterCode.`in`(it) },
+                // 지점 스코프 — 행사사원(사원 마스터) 소속 지점(employee.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
+                // 여사원일정(teamMemberSchedule.costCenterCode)을 판정 축으로 쓰지 않는다: 그 컬럼은 출근 등록 시점에만
+                // stamp 되고(AttendanceService.stampLegacyWorkReportMeta) 행사 확정으로 생성된 일정은 NULL 이라,
+                // 지점을 고르는 순간 "출근한 행"만 남아 미출근/미확정 투입 계획이 통째로 누락됐다.
+                // SF 리포트는 조원일정을 outer join(ProMasCollect.reportType outerJoin=true) 으로 붙여 일정/출근 유무와
+                // 무관하게 행사사원 행을 모두 내보내므로, 지점 필터에서도 그 정합을 유지한다.
+                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { employee.costCenterCode.`in`(it) },
             )
             // Summary 그룹 재현 — 행사명(promotion.Name = promotionNumber) 그룹 + 그룹 내 일자 오름차순
             .orderBy(promotion.promotionNumber.asc(), promotionEmployee.scheduleDate.asc())

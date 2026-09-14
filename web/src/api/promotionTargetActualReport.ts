@@ -90,7 +90,7 @@ export async function fetchPromotionReportBranches(): Promise<PromotionReportBra
   return res.data.data;
 }
 
-/** 행사사원 목표/실적 조회 (ScheduleDate 기간). branchCode 지정 시 그 지점(여사원일정 소속)으로 좁힘. */
+/** 행사사원 목표/실적 조회 (ScheduleDate 기간). branchCode 지정 시 그 지점(행사사원의 사원 마스터 소속)으로 좁힘. */
 export async function fetchPromotionTargetActualReport(
   startDate: string,
   endDate: string,
@@ -103,7 +103,7 @@ export async function fetchPromotionTargetActualReport(
   return res.data.data;
 }
 
-/** 행사사원 목표/실적 엑셀 다운로드. branchCode 지정 시 그 지점(여사원일정 소속)으로 좁힘. */
+/** 행사사원 목표/실적 엑셀 다운로드. branchCode 지정 시 그 지점(행사사원의 사원 마스터 소속)으로 좁힘. */
 export async function exportPromotionTargetActualReport(
   startDate: string,
   endDate: string,

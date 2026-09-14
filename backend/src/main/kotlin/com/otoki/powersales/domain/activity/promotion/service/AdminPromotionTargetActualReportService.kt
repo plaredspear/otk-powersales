@@ -61,7 +61,7 @@ class AdminPromotionTargetActualReportService(
      * 행사사원 목표/실적 조회 — 행사명 그룹 + 소계 + 전체 합계 + 차트.
      *
      * startDate/endDate 필수 (미입력 시 IllegalArgumentException).
-     * 지점 스코프: branchScope(여사원일정 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
+     * 지점 스코프: branchScope(행사사원의 사원 마스터 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
      * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
      * 상세 행은 [WEB_DISPLAY_ROW_LIMIT] 까지만 응답에 포함 (SF 리포트 화면 2,000행 표시 제한 정합).
      */

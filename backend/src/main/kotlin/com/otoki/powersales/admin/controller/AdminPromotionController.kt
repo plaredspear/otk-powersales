@@ -108,7 +108,7 @@ class AdminPromotionController(
 
     /**
      * 행사사원 목표 대비 실적 보고서 조회 (Spec #845). ScheduleDate 기간(필수) 조회.
-     * 행사명 그룹 + 소계 + 전체 합계 + 도넛 차트 데이터. branchCode 선택 시 그 지점(여사원일정 소속)으로 좁힘 —
+     * 행사명 그룹 + 소계 + 전체 합계 + 도넛 차트 데이터. branchCode 선택 시 그 지점(행사사원의 사원 마스터 소속)으로 좁힘 —
      * 지점 코드는 `BranchMapping` 확장 후 조회에 쓰여 레거시/별칭 조직코드로 적재된 일정도 함께 잡힌다.
      */
     @GetMapping("/target-actual-report")
