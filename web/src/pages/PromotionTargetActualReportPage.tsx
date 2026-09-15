@@ -145,6 +145,10 @@ export default function PromotionTargetActualReportPage() {
         <div style={{ marginBottom: 8 }}>
           <Text type="secondary">
             {range.startDate} ~ {range.endDate} 행사사원 목표 대비 실적
+            {/* 건수는 잘림 여부와 무관하게 항상 이 한 곳에만 표시한다 (잘린 경우만 화면 표시분을 덧붙임). */}
+            {query.data != null && ` · 총 ${query.data.totalRowCount.toLocaleString()}건`}
+            {query.data?.truncated === true &&
+              ` 중 ${query.data.displayedRowCount.toLocaleString()}건 표시`}
           </Text>
         </div>
       )}
@@ -163,7 +167,7 @@ export default function PromotionTargetActualReportPage() {
             <Alert
               type="info"
               showIcon
-              message={`조회 결과 총 ${query.data.totalRowCount.toLocaleString()}행 중 앞 ${query.data.displayedRowCount.toLocaleString()}행까지만 화면에 표시합니다. 소계/합계/차트는 전체 기준이며, 전체 내역은 엑셀 다운로드를 이용해 주세요.`}
+              message="화면에는 앞에서부터 일부 건만 표시됩니다. 소계/합계/차트는 전체 기준이며, 전체 내역은 엑셀 다운로드를 이용해 주세요."
               style={{ marginBottom: 8 }}
             />
           )}
