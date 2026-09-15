@@ -44,7 +44,7 @@ function triggerDownload(blob: Blob, filename: string): void {
  *
  * @param path     export 엔드포인트 경로 (예: `/api/v1/admin/promotions/export`)
  * @param fallbackName 헤더에 파일명이 없을 때 사용할 기본 파일명 (확장자 포함)
- * @param options  HTTP method / 쿼리 파라미터 / POST body. 기본 GET.
+ * @param options  HTTP method / 쿼리 파라미터 / POST body / 요청 타임아웃. 기본 GET.
  */
 export async function downloadExcel(
   path: string,
@@ -53,6 +53,11 @@ export async function downloadExcel(
     method?: 'get' | 'post';
     params?: Record<string, unknown>;
     data?: unknown;
+    /**
+     * 요청 타임아웃(ms). 미지정 시 axios client 공통값(30초).
+     * 서버가 시트를 만들어 내려주는 구조라, 행 수 상한이 없는 export 는 공통값을 넘길 수 있어 호출처가 올려 잡는다.
+     */
+    timeout?: number;
   },
 ): Promise<void> {
   const method = options?.method ?? 'get';
@@ -62,6 +67,7 @@ export async function downloadExcel(
     params: options?.params,
     responseType: 'blob',
   };
+  if (options?.timeout != null) config.timeout = options.timeout;
   if (method === 'post') config.data = options?.data ?? {};
 
   try {

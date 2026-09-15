@@ -28,7 +28,7 @@ import java.time.LocalDate
  *
  * 신규 차이: 기존 행사마스터 화면(PromotionController CRUD)과 별개 보고서 — ScheduleDate 기간 조회 +
  *   Summary 그룹/소계/차트 + 엑셀. SF scope=organization = 전사(영업지원실용, DataScope 미적용).
- *   상세 행 상한: 화면 [WEB_DISPLAY_ROW_LIMIT] / 엑셀 [EXPORT_MAX_ROWS] (소계/합계/차트는 전량 기준).
+ *   상세 행 상한: 화면 [WEB_DISPLAY_ROW_LIMIT] / 엑셀 상한 없음(조회 조건 전량). 소계/합계/차트는 양쪽 모두 전량 기준.
  */
 @Service
 @Transactional(readOnly = true)
@@ -38,17 +38,13 @@ class AdminPromotionTargetActualReportService(
 
     companion object {
         /**
-         * 화면 표시 상세 행 상한 — SF 리포트 실행 화면의 플랫폼 고정 표시 제한(2,000행) 정합.
-         * 소계/합계/차트는 전량 기준으로 산출하고 상세 행만 앞에서부터 상한까지 내려준다. 전량은 엑셀 export.
+         * 화면 표시 상세 행 상한 — 상한까지의 행만 SQL `LIMIT` 으로 조회한다.
+         *
+         * SF 리포트 화면 제한(2,000행) 을 그대로 이식했었으나, 브라우저가 그 규모의 표(행사명 그룹마다 테이블 1개,
+         * 컬럼 23개)를 렌더하다 메인 스레드가 막혀 "페이지가 응답하지 않습니다" 가 뜨는 문제로 500행으로 낮췄다.
+         * 소계/합계/차트/전체 행 수는 이 상한과 무관하게 항상 전량 기준 (DB 집계 쿼리로 분리). 전량은 엑셀 export.
          */
-        const val WEB_DISPLAY_ROW_LIMIT = 2_000
-
-        /**
-         * 엑셀 export 상세 행 상한 — SF 리포트 export 도 플랫폼 고정 행 수 상한(100,000행)으로 보호되었고
-         * (기간 길이 제한은 레거시에 없음), 신규는 타 export 관례(EXPORT_MAX_ROWS) 정합으로 50,000행.
-         * 초과 시 소계/합계는 전량 기준 유지 + 시트 최상단에 잘림 안내 행 추가.
-         */
-        const val EXPORT_MAX_ROWS = 50_000
+        const val WEB_DISPLAY_ROW_LIMIT = 500
 
         /** export 24컬럼 고정 폭(문자 수) — autoSizeColumn 은 전 행 실측이라 수만 행에서 timeout 주범이 되어 미사용. */
         private val EXPORT_COLUMN_WIDTHS = intArrayOf(
@@ -63,7 +59,7 @@ class AdminPromotionTargetActualReportService(
      * startDate/endDate 필수 (미입력 시 IllegalArgumentException).
      * 지점 스코프: branchScope(행사사원의 사원 마스터 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
      * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
-     * 상세 행은 [WEB_DISPLAY_ROW_LIMIT] 까지만 응답에 포함 (SF 리포트 화면 2,000행 표시 제한 정합).
+     * 상세 행은 [WEB_DISPLAY_ROW_LIMIT] 까지만 응답에 포함. 소계/합계/차트/전체 행 수는 전량 기준.
      */
     fun getReport(
         startDate: LocalDate?,
@@ -71,44 +67,59 @@ class AdminPromotionTargetActualReportService(
         branchScope: EffectiveBranchResult,
     ): PromotionTargetActualReportResponse = buildReport(startDate, endDate, branchScope, WEB_DISPLAY_ROW_LIMIT)
 
+    /**
+     * 조회 2회로 리포트를 조립한다 — 집계(전량, GROUP BY) + 상세(출력에 쓸 [detailRowLimit] 행만).
+     *
+     * 이전에는 조건에 맞는 전 행을 애플리케이션 메모리로 올려 `sumOf` 로 소계를 구하고 상세만 잘라 버렸다.
+     * 소계/합계/차트가 전량 기준이어야 한다는 요구가 곧 "전량 조회" 를 강제한 구조였는데, 그 집계는 DB 가
+     * `GROUP BY` 로 대신할 수 있으므로 분리했다. 이제 조회량은 `그룹 수 + detailRowLimit` 으로 묶인다.
+     *
+     * 상세를 앞에서부터 자르는 결과는 이전 in-memory 절단과 동일하다 — 그룹 키(promotionName = promotionNumber)가
+     * 상세 정렬의 첫 키와 같아 "그룹 순서대로 채운 N행" 과 "정렬 순 앞 N행" 이 언제나 일치한다.
+     *
+     * [detailRowLimit] `null` = 상한 없음 (엑셀 export — 조회 조건 전량).
+     */
     private fun buildReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
-        displayRowLimit: Int?,
+        detailRowLimit: Int?,
     ): PromotionTargetActualReportResponse {
         require(startDate != null && endDate != null) {
             "조회 기간(startDate, endDate)은 필수입니다"
         }
 
-        val records = when (branchScope) {
-            is EffectiveBranchResult.All -> promotionEmployeeRepository.findTargetActualReport(startDate, endDate, emptyList())
-            is EffectiveBranchResult.Filtered ->
-                promotionEmployeeRepository.findTargetActualReport(startDate, endDate, branchScope.codes)
-            is EffectiveBranchResult.NoAccess -> emptyList()
+        // NoAccess(가시 지점 없음)는 repository 를 호출하지 않고 빈 결과 — IDOR 차단.
+        val scopeCodes: List<String>? = when (branchScope) {
+            is EffectiveBranchResult.All -> emptyList()
+            is EffectiveBranchResult.Filtered -> branchScope.codes
+            is EffectiveBranchResult.NoAccess -> null
         }
+        val subtotals = scopeCodes
+            ?.let { promotionEmployeeRepository.findTargetActualReportSubtotals(startDate, endDate, it) }
+            .orEmpty()
+        val details = scopeCodes
+            ?.let { promotionEmployeeRepository.findTargetActualReport(startDate, endDate, it, detailRowLimit) }
+            .orEmpty()
 
-        // 행사명 그룹핑 (SF Promotion.Name = promotionNumber. 조회 정렬이 promotionNumber asc 이므로 순서 보존)
-        // 소계/합계/차트는 전량 기준, 상세 행만 표시 상한까지 그룹 순서대로 채운다 (SF 리포트 표시 제한 동작 정합).
-        var remaining = displayRowLimit ?: Int.MAX_VALUE
-        val grouped = records.groupBy { it.promotionName }
-        val groups = grouped.map { (promotionName, recs) ->
-            val visible = if (recs.size <= remaining) recs else recs.subList(0, remaining)
-            remaining -= visible.size
+        // 상세는 그룹 순서대로 앞에서부터만 존재하므로, 상한에 걸린 뒤의 그룹은 rows 가 빈 채로 소계만 남는다.
+        val detailRowsByPromotion = details.groupBy { it.promotionName }
+        val groups = subtotals.map { subtotal ->
             PromotionTargetActualReportGroup(
-                promotionName = promotionName,
-                subtotalTargetAmount = recs.sumOf { it.targetAmount ?: BigDecimal.ZERO },
-                subtotalActualAmount = recs.sumOf { it.actualAmount ?: BigDecimal.ZERO },
-                subtotalPrimaryQuantity = recs.sumOf { it.primarySalesQuantity ?: BigDecimal.ZERO },
-                subtotalPrimaryAmount = recs.sumOf { it.primaryProductAmount ?: BigDecimal.ZERO },
-                subtotalOtherQuantity = recs.sumOf { it.otherSalesQuantity ?: BigDecimal.ZERO },
-                subtotalOtherAmount = recs.sumOf { it.otherSalesAmount ?: BigDecimal.ZERO },
-                rows = visible.map { toRow(it) },
+                promotionName = subtotal.promotionName,
+                subtotalTargetAmount = subtotal.targetAmount,
+                subtotalActualAmount = subtotal.actualAmount,
+                subtotalPrimaryQuantity = subtotal.primaryQuantity,
+                subtotalPrimaryAmount = subtotal.primaryAmount,
+                subtotalOtherQuantity = subtotal.otherQuantity,
+                subtotalOtherAmount = subtotal.otherAmount,
+                rows = detailRowsByPromotion[subtotal.promotionName].orEmpty().map { toRow(it) },
             )
         }
 
         val chart = groups.map { PromotionTargetActualChartItem(it.promotionName, it.subtotalActualAmount) }
-        val displayedRowCount = groups.sumOf { it.rows.size }
+        val totalRowCount = subtotals.sumOf { it.rowCount }
+        val displayedRowCount = details.size
 
         return PromotionTargetActualReportResponse(
             startDate = startDate.toString(),
@@ -121,23 +132,26 @@ class AdminPromotionTargetActualReportService(
             totalOtherQuantity = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalOtherQuantity },
             totalOtherAmount = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotalOtherAmount },
             chart = chart,
-            totalRowCount = records.size,
+            totalRowCount = totalRowCount.toInt(),
             displayedRowCount = displayedRowCount,
-            truncated = displayedRowCount < records.size,
+            truncated = displayedRowCount < totalRowCount,
         )
     }
 
     /**
      * 목표/실적 엑셀 export — 행사명 그룹 헤더/소계 행 포함 24컬럼 + 전체 합계 행 (Summary 재현).
-     * 상세 행은 [EXPORT_MAX_ROWS] 까지 (소계/합계는 전량 기준, 초과 시 최상단 안내 행).
-     * SXSSF 스트리밍 + 고정 컬럼 폭 — 수만 행 export 의 메모리/시간 병목(XSSF 전량 메모리 + autoSizeColumn 전 행 실측) 회피.
+     *
+     * 상세 행 **상한 없음** — 조회 조건에 해당하는 전량을 내려받는다. 화면은 [WEB_DISPLAY_ROW_LIMIT] 로 잘리므로
+     * 전체 내역을 얻는 유일한 경로가 엑셀이고, 여기에 상한을 두면 그 경로가 막히기 때문이다(기간 제한은 레거시에도 없다).
+     * 대신 조회 기간을 넓게 잡으면 조회량·생성 시간이 그만큼 늘어난다 — SXSSF 스트리밍 + 고정 컬럼 폭으로
+     * 시트 생성 쪽 병목(XSSF 전량 메모리 + autoSizeColumn 전 행 실측)은 피하지만, 상세 행 자체는 메모리에 올라온다.
      */
     fun exportReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         branchScope: EffectiveBranchResult,
     ): ExcelResult {
-        val response = buildReport(startDate, endDate, branchScope, EXPORT_MAX_ROWS)
+        val response = buildReport(startDate, endDate, branchScope, detailRowLimit = null)
 
         val workbook = SXSSFWorkbook()
         val sheet = workbook.createSheet("행사사원목표대비실적")
@@ -151,13 +165,8 @@ class AdminPromotionTargetActualReportService(
         )
         EXPORT_COLUMN_WIDTHS.forEachIndexed { i, w -> sheet.setColumnWidth(i, w * 256) }
 
+        // 상한이 없으므로 잘림 안내 행도 없다 — 1행이 항상 헤더.
         var rowIdx = 0
-        if (response.truncated) {
-            sheet.createRow(rowIdx++).createCell(0).setCellValue(
-                "[안내] 조회 결과 총 ${response.totalRowCount}행 중 앞 ${EXPORT_MAX_ROWS}행까지만 포함됩니다. " +
-                    "소계/합계는 전체 기준입니다. 기간을 나눠 다시 내려받아 주세요.",
-            )
-        }
         val headerRow = sheet.createRow(rowIdx++)
         headers.forEachIndexed { i, h ->
             headerRow.createCell(i).apply {

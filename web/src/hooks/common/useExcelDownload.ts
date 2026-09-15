@@ -11,8 +11,10 @@ interface DownloadOptions {
    * `maxRows` 초과 시 안내 후 진행한다. 미지정 시 검사 생략.
    */
   totalCount?: number;
-  /** 서버 export 상한. `totalCount` 가 이 값을 넘으면 잘림 안내. */
+  /** 서버 export 상한. `totalCount` 가 이 값을 넘으면 잘림 안내. 상한 없는 export 는 미지정. */
   maxRows?: number;
+  /** 요청 타임아웃(ms). 미지정 시 axios client 공통값(30초). 전량 추출처럼 오래 걸리는 export 만 올려 잡는다. */
+  timeout?: number;
 }
 
 /**

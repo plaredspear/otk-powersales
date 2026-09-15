@@ -109,14 +109,35 @@ class PromotionEmployeeRepositoryCustomImpl(
             .fetchOne()
     }
 
+    /**
+     * 목표/실적 보고서 공통 filter — 상세 조회와 소계 집계가 같은 모집단을 보도록 한 곳에서 만든다.
+     *
+     * 지점 스코프는 행사사원(사원 마스터) 소속 지점(employee.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
+     * 여사원일정(teamMemberSchedule.costCenterCode)을 판정 축으로 쓰지 않는다: 그 컬럼은 출근 등록 시점에만
+     * stamp 되고(AttendanceService.stampLegacyWorkReportMeta) 행사 확정으로 생성된 일정은 NULL 이라,
+     * 지점을 고르는 순간 "출근한 행"만 남아 미출근/미확정 투입 계획이 통째로 누락됐다.
+     * SF 리포트는 조원일정을 outer join(ProMasCollect.reportType outerJoin=true) 으로 붙여 일정/출근 유무와
+     * 무관하게 행사사원 행을 모두 내보내므로, 지점 필터에서도 그 정합을 유지한다.
+     */
+    private fun targetActualReportPredicates(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        branchScopeCodes: List<String>,
+    ): Array<Predicate?> = arrayOf(
+        promotionEmployee.scheduleDate.between(startDate, endDate),
+        notDeleted, // soft-delete 제외
+        branchScopeCodes.takeIf { it.isNotEmpty() }?.let { employee.costCenterCode.`in`(it) },
+    )
+
     override fun findTargetActualReport(
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
+        limit: Int?,
     ): List<PromotionTargetActualReportRecord> {
         // DTO projection — 기간 조회 행 수가 수만 건 규모라 entity fetchJoin(6 entity 전 컬럼) 대신 사용 컬럼만 select.
         // attendanceLog 는 TeamMemberSchedule 파생 프로퍼티(isWorkReport/commuteDate)의 원천 — 조인에 포함해 N+1 회피.
-        return queryFactory
+        val query = queryFactory
             .select(
                 Projections.constructor(
                     PromotionTargetActualReportRecord::class.java,
@@ -154,19 +175,44 @@ class PromotionEmployeeRepositoryCustomImpl(
             // isWorkReport / commuteDate 원천 컬럼은 TeamMemberSchedule→AttendanceLog 소유
             .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule)
             .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog)
-            .where(
-                promotionEmployee.scheduleDate.between(startDate, endDate),
-                notDeleted, // soft-delete 제외
-                // 지점 스코프 — 행사사원(사원 마스터) 소속 지점(employee.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
-                // 여사원일정(teamMemberSchedule.costCenterCode)을 판정 축으로 쓰지 않는다: 그 컬럼은 출근 등록 시점에만
-                // stamp 되고(AttendanceService.stampLegacyWorkReportMeta) 행사 확정으로 생성된 일정은 NULL 이라,
-                // 지점을 고르는 순간 "출근한 행"만 남아 미출근/미확정 투입 계획이 통째로 누락됐다.
-                // SF 리포트는 조원일정을 outer join(ProMasCollect.reportType outerJoin=true) 으로 붙여 일정/출근 유무와
-                // 무관하게 행사사원 행을 모두 내보내므로, 지점 필터에서도 그 정합을 유지한다.
-                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { employee.costCenterCode.`in`(it) },
-            )
+            .where(*targetActualReportPredicates(startDate, endDate, branchScopeCodes))
             // Summary 그룹 재현 — 행사명(promotion.Name = promotionNumber) 그룹 + 그룹 내 일자 오름차순
             .orderBy(promotion.promotionNumber.asc(), promotionEmployee.scheduleDate.asc())
+
+        // 출력에 쓰지 않을 행은 애초에 가져오지 않는다 (화면 상한). limit 이 null 이면 조건 전량 = 엑셀 export.
+        if (limit != null) query.limit(limit.toLong())
+        return query.fetch()
+    }
+
+    override fun findTargetActualReportSubtotals(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        branchScopeCodes: List<String>,
+    ): List<PromotionTargetActualReportSubtotal> {
+        // 소계/합계/차트는 상세 행 상한과 무관하게 전량 기준이어야 하므로 DB 집계로 분리한다.
+        // 조인은 그룹 키(promotion) + 지점 스코프(employee) 만 — 나머지 관계는 단일값 @ManyToOne 이라
+        // 생략해도 행 수가 동일해 집계값이 상세 조회와 일치한다.
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    PromotionTargetActualReportSubtotal::class.java,
+                    promotion.promotionNumber,
+                    dailyTargetAmountSum,
+                    dailyActualAmountSum,
+                    promotionEmployee.primarySalesQuantity.coalesce(BigDecimal.ZERO).sumAggregate(),
+                    promotionEmployee.primaryProductAmount.coalesce(BigDecimal.ZERO).sumAggregate(),
+                    promotionEmployee.otherSalesQuantity.coalesce(BigDecimal.ZERO).sumAggregate(),
+                    promotionEmployee.otherSalesAmount.coalesce(BigDecimal.ZERO).sumAggregate(),
+                    promotionEmployee.count(),
+                ),
+            )
+            .from(promotionEmployee)
+            .join(promotionEmployee.promotion, promotion)
+            .leftJoin(promotionEmployee.employee, employee)
+            .where(*targetActualReportPredicates(startDate, endDate, branchScopeCodes))
+            .groupBy(promotion.promotionNumber)
+            // 상세 조회와 같은 그룹 순서 (Summary 그룹 재현)
+            .orderBy(promotion.promotionNumber.asc())
             .fetch()
     }
 

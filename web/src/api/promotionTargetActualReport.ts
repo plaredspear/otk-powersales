@@ -1,5 +1,4 @@
 import client from './client';
-import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 목표/실적 1행 (23컬럼) — SF Report new_report_AtQ 이식 (Spec #845). */
@@ -75,6 +74,7 @@ export interface PromotionReportBranch {
 
 const BASE = '/api/v1/admin/promotions/target-actual-report';
 
+
 function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
@@ -103,13 +103,15 @@ export async function fetchPromotionTargetActualReport(
   return res.data.data;
 }
 
-/** 행사사원 목표/실적 엑셀 다운로드. branchCode 지정 시 그 지점(행사사원의 사원 마스터 소속)으로 좁힘. */
-export async function exportPromotionTargetActualReport(
-  startDate: string,
-  endDate: string,
-  branchCode?: string,
-): Promise<void> {
-  await downloadExcel(`${BASE}/export`, `행사사원목표대비실적_${startDate}_${endDate}.xlsx`, {
-    params: { startDate, endDate, branchCode: branchCode || undefined },
-  });
-}
+/**
+ * 행사사원 목표/실적 엑셀 export 엔드포인트 — 페이지가 `useExcelDownload().run()` 으로 호출한다.
+ *
+ * 화면은 상위 일부 행만 표시하므로 전체 내역을 얻는 경로는 이 엑셀뿐이다 — 서버도 행 수 상한 없이 전량을 담는다.
+ * (그래서 `run` 에 `maxRows` 를 넘기지 않는다 — 잘림 안내가 필요 없다.)
+ */
+export const PROMOTION_TARGET_ACTUAL_EXPORT_PATH = `${BASE}/export`;
+
+/**
+ * 엑셀 export 전용 타임아웃(ms) — 전량 추출이라 기간을 넓게 잡으면 공통 30초로는 부족할 수 있다.
+ */
+export const PROMOTION_TARGET_ACTUAL_EXPORT_TIMEOUT_MS = 300_000;

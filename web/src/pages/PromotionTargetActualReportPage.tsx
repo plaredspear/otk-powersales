@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
 import {
   fetchPromotionTargetActualReport,
-  exportPromotionTargetActualReport as apiExport,
+  PROMOTION_TARGET_ACTUAL_EXPORT_PATH,
+  PROMOTION_TARGET_ACTUAL_EXPORT_TIMEOUT_MS,
   type PromotionTargetActualReportRow,
 } from '@/api/promotionTargetActualReport';
 import { usePromotionReportBranches } from '@/hooks/promotion/usePromotionReportBranches';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import PromotionActualDonutChart from '@/components/charts/PromotionActualDonutChart';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -61,13 +63,26 @@ export default function PromotionTargetActualReportPage() {
     });
   };
 
-  const handleExport = async () => {
+  // 공통 훅 — 다운로드 중 버튼 loading + 연타 차단. 전량 추출이라 응답까지 수십 초가 걸릴 수 있어,
+  // 진행 표시가 없으면 사용자가 다시 눌러 같은 전량 export 가 중복 실행된다.
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  const handleExport = () => {
     if (!range) return;
-    try {
-      await apiExport(range.startDate, range.endDate, range.branchCode);
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
-    }
+    runExport(
+      PROMOTION_TARGET_ACTUAL_EXPORT_PATH,
+      `행사사원목표대비실적_${range.startDate}_${range.endDate}.xlsx`,
+      {
+        params: {
+          startDate: range.startDate,
+          endDate: range.endDate,
+          branchCode: range.branchCode || undefined,
+        },
+        // 서버 export 는 행 수 상한이 없으므로 maxRows 미지정 (잘림 안내 불필요).
+        totalCount: query.data?.totalRowCount,
+        timeout: PROMOTION_TARGET_ACTUAL_EXPORT_TIMEOUT_MS,
+      },
+    );
   };
 
   const columns: ColumnsType<PromotionTargetActualReportRow> = useMemo(
@@ -117,7 +132,11 @@ export default function PromotionTargetActualReportPage() {
         {range != null && (
           <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
         )}
-        <Button onClick={handleExport} disabled={!query.data || query.data.groups.length === 0}>
+        <Button
+          onClick={handleExport}
+          loading={exporting}
+          disabled={!query.data || query.data.groups.length === 0}
+        >
           엑셀 다운로드
         </Button>
       </Space>

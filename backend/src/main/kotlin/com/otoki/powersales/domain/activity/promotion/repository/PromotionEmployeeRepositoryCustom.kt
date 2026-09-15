@@ -42,9 +42,12 @@ interface PromotionEmployeeRepositoryCustom {
      * 행사사원 목표 대비 실적 보고서 조회 (Spec #845 — SF Report `new_report_AtQ` 이식).
      * `promotion_employee` ⋈ promotion ⋈ promotion.account ⋈ promotion.primaryProduct ⋈ employee ⋈ teamMemberSchedule ⋈ attendanceLog.
      * 필터: scheduleDate ∈ [startDate, endDate], soft-delete 제외.
-     * 지점 스코프: branchScopeCodes 비어있지 않으면 여사원일정 소속 지점(teamMemberSchedule.costCenterCode) IN. 빈 목록 = 전사.
-     *   teamMemberSchedule 은 leftJoin 이라 미연결 행은 스코프 적용 시 제외된다(지점 판별 불가).
+     * 지점 스코프: branchScopeCodes 비어있지 않으면 행사사원(사원 마스터) 소속 지점(employee.costCenterCode) IN. 빈 목록 = 전사.
+     *   employee 는 leftJoin 이라 미연결 행은 스코프 적용 시 제외된다(지점 판별 불가).
      * 정렬: 행사명(promotion.promotionNumber = SF Name) 오름차순 + scheduleDate 오름차순 (Summary 그룹 재현).
+     * [limit]: 출력에 실제로 쓰는 상세 행 수 상한을 SQL `LIMIT` 으로 내린다. `null` 이면 조건 전량(엑셀 export).
+     *   그룹 키가 정렬 첫 키와 같아 "앞에서부터 limit 행" = "그룹 순서대로 채운 limit 행" 이 항상 일치한다.
+     *   소계/합계는 본 결과가 아니라 [findTargetActualReportSubtotals] 로 산출하므로 limit 의 영향을 받지 않는다.
      *
      * DTO projection — 보고서에 쓰는 컬럼만 select (entity fetchJoin 대비 행 폭 ~1/8, hydration 회피).
      * isWorkReport/commuteDate 는 TeamMemberSchedule 파생 프로퍼티가 attendanceLog LAZY 관계를 읽는 구조라
@@ -54,7 +57,28 @@ interface PromotionEmployeeRepositoryCustom {
         startDate: LocalDate,
         endDate: LocalDate,
         branchScopeCodes: List<String>,
+        limit: Int?,
     ): List<PromotionTargetActualReportRecord>
+
+    /**
+     * 행사사원 목표 대비 실적 보고서 그룹 소계 (Spec #845).
+     *
+     * [findTargetActualReport] 와 동일한 filter/scope 를 DB 에서 `GROUP BY promotion.promotionNumber` 로 집계한다.
+     * 소계/합계/차트/전체 행 수는 상세 행 [limit] 과 무관하게 항상 전량 기준이어야 하므로, 상세를 limit 으로
+     * 자르는 대신 집계를 별도 쿼리로 분리했다 (이전에는 전량을 애플리케이션 메모리로 올려 sum 했다).
+     *
+     * 조인은 집계에 실제로 필요한 것만 — promotion(그룹 키), employee(지점 스코프). 생략한 account/primaryProduct/
+     * teamMemberSchedule/attendanceLog 는 모두 단일값 `@ManyToOne` 이라 행 수를 늘리지 않으므로 집계값이 동일하다.
+     *
+     * 합산식은 [PromotionTargetActualReportRecord] 의 파생 프로퍼티 + `sumOf { it.x ?: ZERO }` 와 동일 의미론 —
+     * `SUM(COALESCE(x, 0))` 형태라 그룹 내 전 행이 NULL 이어도 0 이 되고, 그룹이 없으면 행 자체가 나오지 않는다.
+     * 정렬은 상세 조회와 같은 promotionNumber 오름차순 (그룹 순서 일치).
+     */
+    fun findTargetActualReportSubtotals(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        branchScopeCodes: List<String>,
+    ): List<PromotionTargetActualReportSubtotal>
 
     /**
      * 로그인 여사원의 특정 일자 담당 행사 일람 (홈 "행사매출 등록" → 일 매출 등록 진입화면용).
@@ -157,3 +181,23 @@ data class PromotionTargetActualReportRecord(
     val isWorkReport: String
         get() = if (attendanceLogId != null) "근무등록" else ""
 }
+
+/**
+ * 목표 대비 실적 보고서 행사명 그룹 소계 projection
+ * ([PromotionEmployeeRepositoryCustom.findTargetActualReportSubtotals]).
+ *
+ * 상세 행 상한과 무관하게 항상 조회 조건 전량을 집계한 값이다. 각 필드는
+ * [PromotionTargetActualReportRecord] 의 동명 파생값을 `sumOf { it.x ?: ZERO }` 한 것과 같다.
+ */
+data class PromotionTargetActualReportSubtotal(
+    /** 그룹 키 = promotion.promotionNumber (SF Promotion.Name). */
+    val promotionName: String?,
+    val targetAmount: BigDecimal,
+    val actualAmount: BigDecimal,
+    val primaryQuantity: BigDecimal,
+    val primaryAmount: BigDecimal,
+    val otherQuantity: BigDecimal,
+    val otherAmount: BigDecimal,
+    /** 그룹의 전량 기준 상세 행 수 — 화면 잘림 판정(truncated)과 안내 문구의 분모. */
+    val rowCount: Long,
+)

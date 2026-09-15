@@ -21,7 +21,7 @@ data class PromotionTargetActualReportResponse(
     val chart: List<PromotionTargetActualChartItem>,
     /** 조회 조건에 걸린 전체 상세 행 수 (소계/합계/차트 산출 모수). */
     val totalRowCount: Int,
-    /** 응답에 실제 포함된 상세 행 수 — 화면 표시 상한(SF 리포트 2,000행 제한 정합) 적용 후. */
+    /** 응답에 실제 포함된 상세 행 수 — 화면 표시 상한(WEB_DISPLAY_ROW_LIMIT) 적용 후. 엑셀 export 는 상한 없이 전량. */
     val displayedRowCount: Int,
     /** 표시 상한으로 상세 행이 잘렸는지 여부 (true 면 전량은 엑셀 export 안내). */
     val truncated: Boolean,

@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.promotion.service
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionTargetActualReportRecord
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionTargetActualReportSubtotal
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -59,6 +60,35 @@ class AdminPromotionTargetActualReportServiceTest {
         )
     }
 
+    /**
+     * 소계 집계 쿼리(`findTargetActualReportSubtotals`) stub — DB `GROUP BY` 가 내놓아야 할 값을 상세 행 전량에서
+     * 재현한다. 실제 SQL 이 이 값과 일치하는지는 `PromotionEmployeeTargetActualReportQueryTest` 가 DB 로 검증한다.
+     */
+    private fun subtotalsOf(
+        records: List<PromotionTargetActualReportRecord>,
+    ): List<PromotionTargetActualReportSubtotal> =
+        records.groupBy { it.promotionName }.map { (promotionName, recs) ->
+            PromotionTargetActualReportSubtotal(
+                promotionName = promotionName,
+                targetAmount = recs.sumOf { it.targetAmount ?: BigDecimal.ZERO },
+                actualAmount = recs.sumOf { it.actualAmount ?: BigDecimal.ZERO },
+                primaryQuantity = recs.sumOf { it.primarySalesQuantity ?: BigDecimal.ZERO },
+                primaryAmount = recs.sumOf { it.primaryProductAmount ?: BigDecimal.ZERO },
+                otherQuantity = recs.sumOf { it.otherSalesQuantity ?: BigDecimal.ZERO },
+                otherAmount = recs.sumOf { it.otherSalesAmount ?: BigDecimal.ZERO },
+                rowCount = recs.size.toLong(),
+            )
+        }
+
+    /** 집계 = 전량, 상세 = limit 적용 (SQL `LIMIT` 동작 재현 — null 이면 전량). */
+    private fun stubRepository(records: List<PromotionTargetActualReportRecord>) {
+        every { repository.findTargetActualReportSubtotals(any(), any(), any()) } returns subtotalsOf(records)
+        every { repository.findTargetActualReport(any(), any(), any(), any()) } answers {
+            val limit = arg<Int?>(3)
+            if (limit == null) records else records.take(limit)
+        }
+    }
+
     @Nested
     @DisplayName("조회 — 그룹/소계/합계/차트")
     inner class GetReport {
@@ -67,10 +97,12 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("행사명별로 그룹핑하고 소계/합계를 산출한다")
         fun groupsAndSubtotals() {
             // A행사: 목표 (10×10)+(20×10), 대표수량 2+3, 기타수량 1+1 / B행사: 목표 5×10
-            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
-                record("A행사", LocalDate.of(2026, 3, 2), BigDecimal(20), BigDecimal.TEN, BigDecimal(3), BigDecimal.ONE),
-                record("B행사", LocalDate.of(2026, 3, 3), BigDecimal(5), BigDecimal.TEN, BigDecimal(1), BigDecimal.ZERO),
+            stubRepository(
+                listOf(
+                    record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
+                    record("A행사", LocalDate.of(2026, 3, 2), BigDecimal(20), BigDecimal.TEN, BigDecimal(3), BigDecimal.ONE),
+                    record("B행사", LocalDate.of(2026, 3, 3), BigDecimal(5), BigDecimal.TEN, BigDecimal(1), BigDecimal.ZERO),
+                ),
             )
 
             val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
@@ -95,12 +127,14 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("목표금액 = 목표갯수×기준단가, 실적금액 = 대표금액+기타금액 (SF Report 컬럼 formula 재현)")
         fun targetAndActualAmountFormula() {
             // 목표 = 10×100 = 1000, 실적(총 실적) = 300 + 70 = 370
-            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                record(
-                    "A행사", LocalDate.of(2026, 3, 1),
-                    targetCount = BigDecimal(10), basePrice = BigDecimal(100),
-                    primaryQty = BigDecimal(2), otherQty = BigDecimal(3),
-                    primaryAmount = BigDecimal(300), otherAmount = BigDecimal(70),
+            stubRepository(
+                listOf(
+                    record(
+                        "A행사", LocalDate.of(2026, 3, 1),
+                        targetCount = BigDecimal(10), basePrice = BigDecimal(100),
+                        primaryQty = BigDecimal(2), otherQty = BigDecimal(3),
+                        primaryAmount = BigDecimal(300), otherAmount = BigDecimal(70),
+                    ),
                 ),
             )
 
@@ -114,12 +148,14 @@ class AdminPromotionTargetActualReportServiceTest {
         @Test
         @DisplayName("거래처코드 = ExternalKey, 전문행사조 = 조원일정(투입 당시) 값")
         fun accountCodeAndPptMapping() {
-            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                record(
-                    "A행사", LocalDate.of(2026, 3, 1),
-                    targetCount = BigDecimal.ONE, basePrice = BigDecimal.TEN,
-                    primaryQty = BigDecimal.ONE, otherQty = BigDecimal.ZERO,
-                    professionalPromotionTeam = "라면세일조",
+            stubRepository(
+                listOf(
+                    record(
+                        "A행사", LocalDate.of(2026, 3, 1),
+                        targetCount = BigDecimal.ONE, basePrice = BigDecimal.TEN,
+                        primaryQty = BigDecimal.ONE, otherQty = BigDecimal.ZERO,
+                        professionalPromotionTeam = "라면세일조",
+                    ),
                 ),
             )
 
@@ -142,7 +178,10 @@ class AdminPromotionTargetActualReportServiceTest {
         fun passesPeriod() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findTargetActualReport(capture(startSlot), capture(endSlot), any()) } returns emptyList()
+            every { repository.findTargetActualReportSubtotals(any(), any(), any()) } returns emptyList()
+            every {
+                repository.findTargetActualReport(capture(startSlot), capture(endSlot), any(), any())
+            } returns emptyList()
 
             service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
@@ -152,36 +191,69 @@ class AdminPromotionTargetActualReportServiceTest {
     }
 
     @Nested
-    @DisplayName("화면 표시 상한 (SF 리포트 2,000행 표시 제한 정합)")
-    inner class DisplayRowLimit {
+    @DisplayName("상세 행 상한 — 화면은 LIMIT, 엑셀은 전량")
+    inner class DetailRowLimit {
 
         @Test
-        @DisplayName("상세 행은 상한까지만 포함 — 소계/합계는 전량 기준 유지")
-        fun truncatesRowsButKeepsFullSubtotals() {
-            // A행사 1,500행 + B행사 1,000행 = 2,500행 > 상한 2,000행
-            val records =
-                (1..1500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) } +
-                    (1..1000).map { record("B행사", LocalDate.of(2026, 6, 2), BigDecimal.ONE, BigDecimal.TEN) }
-            every { repository.findTargetActualReport(any(), any(), any()) } returns records
+        @DisplayName("화면 조회는 WEB_DISPLAY_ROW_LIMIT, 엑셀 export 는 limit=null(전량) 로 상세를 조회한다")
+        fun limitPerEntryPoint() {
+            val requestedLimits = mutableListOf<Int?>()
+            every { repository.findTargetActualReportSubtotals(any(), any(), any()) } returns emptyList()
+            every { repository.findTargetActualReport(any(), any(), any(), any()) } answers {
+                requestedLimits += arg<Int?>(3)
+                emptyList()
+            }
 
-            val res = service.getReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+            service.getReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+            service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
 
-            assertThat(res.totalRowCount).isEqualTo(2500)
-            assertThat(res.displayedRowCount).isEqualTo(AdminPromotionTargetActualReportService.WEB_DISPLAY_ROW_LIMIT)
-            assertThat(res.truncated).isTrue()
-            // 그룹 순서대로 앞에서부터 채움 — A행사 전량 + B행사 잔여분
-            assertThat(res.groups[0].rows).hasSize(1500)
-            assertThat(res.groups[1].rows).hasSize(500)
-            // 소계/합계는 잘림과 무관하게 전량 기준
-            assertThat(res.groups[1].subtotalTargetAmount).isEqualByComparingTo(BigDecimal(10_000))
-            assertThat(res.totalTargetAmount).isEqualByComparingTo(BigDecimal(25_000))
+            assertThat(requestedLimits)
+                .containsExactly(AdminPromotionTargetActualReportService.WEB_DISPLAY_ROW_LIMIT, null)
         }
 
         @Test
-        @DisplayName("엑셀 export 는 화면 상한(2,000행)과 무관 — 캡 이내면 전량 추출")
-        fun exportIsNotTruncatedByDisplayLimit() {
+        @DisplayName("상세 행은 상한까지만 포함 — 소계/합계/전체 행 수는 전량 기준 유지")
+        fun truncatesRowsButKeepsFullSubtotals() {
+            // A행사 400행 + B행사 300행 = 700행 > 상한 500행
+            val records =
+                (1..400).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) } +
+                    (1..300).map { record("B행사", LocalDate.of(2026, 6, 2), BigDecimal.ONE, BigDecimal.TEN) }
+            stubRepository(records)
+
+            val res = service.getReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+
+            assertThat(res.totalRowCount).isEqualTo(700)
+            assertThat(res.displayedRowCount).isEqualTo(AdminPromotionTargetActualReportService.WEB_DISPLAY_ROW_LIMIT)
+            assertThat(res.truncated).isTrue()
+            // 그룹 순서대로 앞에서부터 채움 — A행사 전량 + B행사 잔여분
+            assertThat(res.groups[0].rows).hasSize(400)
+            assertThat(res.groups[1].rows).hasSize(100)
+            // 소계/합계는 잘림과 무관하게 전량 기준
+            assertThat(res.groups[1].subtotalTargetAmount).isEqualByComparingTo(BigDecimal(3_000))
+            assertThat(res.totalTargetAmount).isEqualByComparingTo(BigDecimal(7_000))
+        }
+
+        @Test
+        @DisplayName("상한을 넘겨 상세가 비게 된 그룹도 소계/차트 항목은 유지된다")
+        fun groupBeyondLimitKeepsSubtotalRow() {
+            val records =
+                (1..500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) } +
+                    (1..10).map { record("B행사", LocalDate.of(2026, 6, 2), BigDecimal.ONE, BigDecimal.TEN) }
+            stubRepository(records)
+
+            val res = service.getReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
+
+            val b = res.groups.first { it.promotionName == "B행사" }
+            assertThat(b.rows).isEmpty()
+            assertThat(b.subtotalTargetAmount).isEqualByComparingTo(BigDecimal(100))
+            assertThat(res.chart).hasSize(2)
+        }
+
+        @Test
+        @DisplayName("엑셀 export 는 화면 상한과 무관하게 전량 추출 — 잘림 안내 행 없음")
+        fun exportIsNotTruncated() {
             val records = (1..2500).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) }
-            every { repository.findTargetActualReport(any(), any(), any()) } returns records
+            stubRepository(records)
 
             val result = service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
 
@@ -190,26 +262,8 @@ class AdminPromotionTargetActualReportServiceTest {
             val sheet = workbook.getSheetAt(0)
             assertThat(sheet.lastRowNum + 1).isEqualTo(2503)
             assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("행사명")
-        }
-
-        @Test
-        @DisplayName("엑셀 export 는 EXPORT_MAX_ROWS(50,000행) 캡 — 초과 시 안내 행 + 소계/합계 전량 기준")
-        fun exportIsCappedAtExportMaxRows() {
-            val over = AdminPromotionTargetActualReportService.EXPORT_MAX_ROWS + 100
-            val records = (1..over).map { record("A행사", LocalDate.of(2026, 6, 1), BigDecimal.ONE, BigDecimal.TEN) }
-            every { repository.findTargetActualReport(any(), any(), any()) } returns records
-
-            val result = service.exportReport(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), EffectiveBranchResult.All)
-
-            // 안내 1 + 헤더 1 + 상세 50,000 + 소계 1 + 합계 1
-            val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(result.bytes.inputStream())
-            val sheet = workbook.getSheetAt(0)
-            assertThat(sheet.lastRowNum + 1)
-                .isEqualTo(AdminPromotionTargetActualReportService.EXPORT_MAX_ROWS + 4)
-            assertThat(sheet.getRow(0).getCell(0).stringCellValue).contains("[안내]")
-            // 소계는 잘림과 무관하게 전량(50,100행 × 목표 1×10) 기준
-            assertThat(sheet.getRow(sheet.lastRowNum - 1).getCell(13).numericCellValue)
-                .isEqualTo(over * 10.0)
+            // 소계는 전량(2,500행 × 목표 1×10) 기준
+            assertThat(sheet.getRow(sheet.lastRowNum - 1).getCell(13).numericCellValue).isEqualTo(25_000.0)
         }
     }
 
@@ -220,8 +274,10 @@ class AdminPromotionTargetActualReportServiceTest {
         @Test
         @DisplayName("그룹/소계/합계 행 포함 xlsx + 파일명")
         fun exportsXlsx() {
-            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
-                record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
+            stubRepository(
+                listOf(
+                    record("A행사", LocalDate.of(2026, 3, 1), BigDecimal(10), BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
+                ),
             )
 
             val result = service.exportReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
@@ -236,24 +292,32 @@ class AdminPromotionTargetActualReportServiceTest {
     inner class BranchScope {
 
         @Test
-        @DisplayName("Filtered → 선택 지점 코드를 branchScopeCodes 로 전달")
+        @DisplayName("Filtered → 선택 지점 코드를 두 쿼리 모두에 전달")
         fun filtered() {
-            val codesSlot = slot<List<String>>()
-            every { repository.findTargetActualReport(any(), any(), capture(codesSlot)) } returns emptyList()
+            val detailCodesSlot = slot<List<String>>()
+            val subtotalCodesSlot = slot<List<String>>()
+            every {
+                repository.findTargetActualReportSubtotals(any(), any(), capture(subtotalCodesSlot))
+            } returns emptyList()
+            every {
+                repository.findTargetActualReport(any(), any(), capture(detailCodesSlot), any())
+            } returns emptyList()
 
             service.getReport(
                 LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31),
                 EffectiveBranchResult.Filtered(listOf("A001")),
             )
 
-            assertThat(codesSlot.captured).containsExactly("A001")
+            assertThat(detailCodesSlot.captured).containsExactly("A001")
+            assertThat(subtotalCodesSlot.captured).containsExactly("A001")
         }
 
         @Test
         @DisplayName("All(전사) → 빈 branchScopeCodes 전달")
         fun all() {
             val codesSlot = slot<List<String>>()
-            every { repository.findTargetActualReport(any(), any(), capture(codesSlot)) } returns emptyList()
+            every { repository.findTargetActualReportSubtotals(any(), any(), any()) } returns emptyList()
+            every { repository.findTargetActualReport(any(), any(), capture(codesSlot), any()) } returns emptyList()
 
             service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
@@ -269,7 +333,8 @@ class AdminPromotionTargetActualReportServiceTest {
             )
 
             assertThat(res.groups).isEmpty()
-            io.mockk.verify(exactly = 0) { repository.findTargetActualReport(any(), any(), any()) }
+            io.mockk.verify(exactly = 0) { repository.findTargetActualReport(any(), any(), any(), any()) }
+            io.mockk.verify(exactly = 0) { repository.findTargetActualReportSubtotals(any(), any(), any()) }
         }
     }
 }
