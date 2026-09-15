@@ -49,5 +49,16 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # 일부 transitive pod (libwebp / SDWebImage / Mantle / SDWebImageWebPCoder) 이
+    # podspec 에 iOS 9.0 / 13.0 최소 버전을 선언해, Xcode 27 의 하한(15.0) 미만으로
+    # archive 가 거부된다. flutter_additional_ios_build_settings 가 이들을 끌어올려
+    # 주지 않으므로 Podfile 의 platform :ios, '15.0' 과 동일하게 직접 맞춘다.
+    target.build_configurations.each do |config|
+      deployment_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      if deployment_target.nil? || deployment_target.to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      end
+    end
   end
 end
