@@ -10,6 +10,10 @@ import '../common/copyable_value.dart';
 ///
 /// 즐겨찾기/검색/주문이력 탭에서 공통으로 사용되는 제품 카드입니다.
 /// 체크박스, 즐겨찾기 토글, 제품 정보를 표시합니다.
+///
+/// 선택 차단 룰 2종 (레거시 `poplayer.js` 정합):
+///  - 전용상품 — [blockExclusive] 가 true 인 화면(주문서 작성)에서만 차단
+///  - 시식·증정용 — 화면과 무관하게 **항상** 차단
 class ProductCardForAdd extends StatelessWidget {
   final ProductForOrder product;
   final bool isSelected;
@@ -46,9 +50,16 @@ class ProductCardForAdd extends StatelessWidget {
     // 그 외 화면은 전용상품도 선택 가능하다.
     // (바코드 없는 제품은 목록 단계에서 제외되므로 카드에서 별도 차단하지 않는다.)
     final bool exclusiveBlocked = blockExclusive && product.isExclusiveBlocked;
-    final bool isBlocked = exclusiveBlocked;
-    final String? blockReason =
-        exclusiveBlocked ? '전용상품은 주문이 불가능합니다.' : null;
+    // 시식·증정용은 blockExclusive 와 무관하게 전 화면에서 항상 차단한다.
+    // 레거시(poplayer.js:38) 는 전용상품과 달리 경로 예외도 제품코드 예외도 두지 않았다.
+    final bool tastingGiftBlocked = product.isTastingGift;
+    final bool isBlocked = exclusiveBlocked || tastingGiftBlocked;
+    // 메시지 우선순위는 레거시 핸들러 평가 순서(전용상품 → 시식·증정) 를 따른다.
+    final String? blockReason = exclusiveBlocked
+        ? '전용상품은 주문이 불가능합니다.'
+        : tastingGiftBlocked
+            ? '시식/증정용 상품은 추가할 수 없습니다.'
+            : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -61,7 +72,7 @@ class ProductCardForAdd extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        // 전용상품은 선택 불가 — 인라인 안내로 사유를 표시한다.
+        // 차단 대상(전용상품/시식·증정용)은 선택 불가 — 인라인 안내로 사유를 표시한다.
         onTap: isBlocked ? null : () => onSelectionChanged(!isSelected),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: Padding(
@@ -69,7 +80,7 @@ class ProductCardForAdd extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 체크박스 (전용상품은 선택 불가 → 차단 아이콘)
+              // 체크박스 (차단 대상은 선택 불가 → 차단 아이콘)
               if (isBlocked)
                 const SizedBox(
                   width: 48,
@@ -103,6 +114,10 @@ class ProductCardForAdd extends StatelessWidget {
                         if (exclusiveBlocked) ...[
                           const SizedBox(width: AppSpacing.xs),
                           _ExclusiveBadge(),
+                        ],
+                        if (tastingGiftBlocked) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          _TastingGiftBadge(),
                         ],
                       ],
                     ),
@@ -248,6 +263,34 @@ class _ExclusiveBadge extends StatelessWidget {
       ),
       child: Text(
         '전용상품',
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.error,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+/// 시식·증정용 표시 뱃지
+///
+/// 시식·증정용(`tastegift__c == 'x'/'X'`)은 어떤 화면에서도 선택할 수 없으므로,
+/// 제품 목록에서 식별할 수 있도록 제품명 옆에 표시합니다.
+class _TastingGiftBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.errorLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.error),
+      ),
+      child: Text(
+        '시식/증정',
         style: AppTypography.labelSmall.copyWith(
           color: AppColors.error,
           fontWeight: FontWeight.bold,

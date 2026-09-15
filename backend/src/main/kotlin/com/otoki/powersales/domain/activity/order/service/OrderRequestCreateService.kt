@@ -49,6 +49,7 @@ import java.time.LocalDateTime
  *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
  *  3. 제품 마스터 대조 — 클라이언트 제공 productCode 가 마스터에 없으면 SAP 호출 전 즉시 거부
  *  3-1. 전용상품 차단 — product_type='2' 라인 거부 (20010042 레거시 예외 허용)
+ *  3-1-b. 시식·증정용 차단 — taste_gift='x'/'X' 라인 거부 (예외 없음)
  *  3-2. SAP `InventorySearch` 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
  *  4. SAP `LoanInquiry` 호출 — 여신 한도 서버 재검증 (`creditBalance >= totalAmount`)
  *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `OR{00000000}` (레거시 SF Auto Number 동폭), 초기 status `SENT`
@@ -168,6 +169,19 @@ class OrderRequestCreateService(
         if (exclusiveCodes.isNotEmpty()) {
             throw OrderInvalidRequestException(
                 "전용상품은 주문할 수 없습니다: ${exclusiveCodes.joinToString(", ")}"
+            )
+        }
+
+        // 3-1-b. 시식·증정용 차단 — 레거시 주문 화면(poplayer.js tgType=='x'/'X' 차단) 정합 서버 가드.
+        //        전용상품과 달리 레거시에 경로 예외도 제품코드 예외도 없으므로 무조건 차단한다.
+        //        레거시는 이 판정을 제품검색 탭 체크박스에서만 수행해 즐겨찾기/주문이력/바코드
+        //        경로로는 통과했으나, 신규는 진입 경로와 무관하게 본 가드에서 최종 차단한다.
+        val tastingGiftCodes = productCodes.filter { code ->
+            productsByCode.getValue(code).tasteGift?.equals(TASTE_GIFT_FLAG, ignoreCase = true) == true
+        }
+        if (tastingGiftCodes.isNotEmpty()) {
+            throw OrderInvalidRequestException(
+                "시식/증정용 상품은 주문할 수 없습니다: ${tastingGiftCodes.joinToString(", ")}"
             )
         }
 
@@ -423,6 +437,14 @@ class OrderRequestCreateService(
 
         /** 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합). */
         private const val EXCLUSIVE_BLOCK_EXEMPT_CODE = "20010042"
+
+        /**
+         * 시식·증정용 판정값 (`DKRetail__Product__c.TasteGift__c`, SAP 제품마스터 수신값).
+         *
+         * SF 필드가 Text(1) 자유 입력이라 값 제약이 없어 레거시도 대소문자 양쪽을 비교했다
+         * (`tgType == 'x' || tgType == 'X'`). 비교는 항상 ignoreCase 로 수행한다.
+         */
+        private const val TASTE_GIFT_FLAG = "x"
         private const val ORDER_REQUEST_NUMBER_PREFIX = "OR"
         private const val ORDER_REQUEST_NUMBER_DIGITS = 8
     }
