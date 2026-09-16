@@ -1,14 +1,16 @@
 package com.otoki.powersales.domain.activity.schedule.dto.response
 
 /**
- * 여사원 배치 점검 현황 응답 — 영업지원실용 월간 배치 점검 (퇴직자 포함 · 여사원/조장 · 상시/임시).
+ * 여사원 배치 점검 현황 응답 — 영업지원실용 기간(시작일~종료일) 배치 점검 (퇴직자 포함 · 여사원/조장 · 상시/임시).
  *
  * 레거시 매핑: SF Report `InternalSalesReportFolder/new_report_4Ic`
  * (여사원 배치 점검 퇴직자 포함 (영업지원실 용) 상시_임시(조장포함)). Tabular 형식 — 일정 행 단위 나열.
  */
 data class FemaleEmployeePlacementCheckResponse(
-    val year: Int,
-    val month: Int,
+    /** 조회 시작일 (ISO-8601, 요청 그대로 에코). */
+    val startDate: String,
+    /** 조회 종료일 (ISO-8601, 요청 그대로 에코). */
+    val endDate: String,
     val items: List<FemaleEmployeePlacementCheckItem>,
 )
 

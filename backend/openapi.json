@@ -17151,19 +17151,17 @@
       },
       "FemaleEmployeePlacementCheckResponse" : {
         "properties" : {
+          "endDate" : {
+            "type" : "string"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/FemaleEmployeePlacementCheckItem"
             },
             "type" : "array"
           },
-          "month" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "year" : {
-            "format" : "int32",
-            "type" : "integer"
+          "startDate" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -17483,19 +17481,17 @@
           "employeeCode" : {
             "type" : "string"
           },
+          "endDate" : {
+            "type" : "string"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/FemaleEmployeeWorkHistoryItem"
             },
             "type" : "array"
           },
-          "month" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "year" : {
-            "format" : "int32",
-            "type" : "integer"
+          "startDate" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -33051,19 +33047,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -33104,19 +33100,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -33317,19 +33313,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -33377,19 +33373,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",

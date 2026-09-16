@@ -12,17 +12,18 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 /**
  * 여사원 근무내역 (개인별 조회) — 영업지원실용 보고서 조회 + 엑셀 export.
  *
  * 레거시 매핑: SF Report `InternalSalesReportFolder/new_report_nEX` (여사원 근무내역).
- * 동작: 특정 사번 1명 + year/month 를 해당 월 1일~말일로 환산하여 `TeamMemberSchedule` 을 조회.
+ * 동작: 특정 사번 1명 + 조회기간(시작일~종료일) 으로 `TeamMemberSchedule` 을 조회.
  *       employee/account 조인 결과를 15컬럼 행으로 매핑. 근무일자 오름차순.
  * 부수 효과: 없음 (조회 전용).
  *
- * 신규 도입 — 레거시 SF Report 의 web admin 이식. 레거시 하드코딩 사번은 검색 조건으로, 기간 없음은 년·월로 전환 (Spec #840 Q1/Q2).
+ * 신규 도입 — 레거시 SF Report 의 web admin 이식. 레거시 하드코딩 사번은 검색 조건으로, 기간 없음은 시작일~종료일로 전환
+ * (Spec #840 Q1/Q2 는 년·월 단위였으나, 월 경계를 걸친 조회 요구로 일 단위 기간으로 확장).
  * 지점 스코프는 사원 소속 지점(costCenterCode) 기준 — SF `CurrentUserBranchNameList` 정합 (Q3).
  * 나이(`Age__c`) 는 SF formula 필드이므로 birthDate 기반 계산으로 대체. 기존 [EmployeeWorkHistoryService] (상세 화면용 최근 N건) 와 별개.
  */
@@ -36,29 +37,31 @@ class AdminFemaleEmployeeWorkHistoryService(
     /**
      * 개인별 근무내역 조회.
      *
-     * employeeCode 필수 + year/month 검증 (2020~2099 / 1~12) 후 해당 월 [1일, 말일] 환산하여 조회.
+     * employeeCode 필수 + 기간 검증 (2020~2099 / 시작일 ≤ 종료일 / 최대 [MAX_RANGE_DAYS]일) 후 [startDate, endDate] 로 조회.
      * 지점 스코프: costCenterCodes(화면 지점 선택값)를 [applyScope] 로 해석 — 전사 권한자는 입력 그대로(미선택 시 전건),
      * 지점 사용자는 권한 지점과 교집합(미선택 시 권한 전체, 교집합 없으면 빈 결과). 배치 점검(#839)과 동일 정합.
-     * 사번 미존재/해당 월 일정 없음/스코프 밖이면 빈 결과 (예외 아님).
+     * 사번 미존재/해당 기간 일정 없음/스코프 밖이면 빈 결과 (예외 아님).
      */
     fun getWorkHistory(
         scope: DataScope,
         employeeCode: String,
-        year: Int,
-        month: Int,
+        startDate: LocalDate,
+        endDate: LocalDate,
         costCenterCodes: List<String>,
     ): FemaleEmployeeWorkHistoryResponse {
-        validateParams(employeeCode, year, month)
-        val yearMonth = YearMonth.of(year, month)
-        val from = yearMonth.atDay(1)
-        val to = yearMonth.atEndOfMonth()
+        validateParams(employeeCode, startDate, endDate)
         val branchCodes = applyScope(scope, costCenterCodes)
-            ?: return FemaleEmployeeWorkHistoryResponse(employeeCode.trim(), year, month, emptyList())
+            ?: return FemaleEmployeeWorkHistoryResponse(
+                employeeCode.trim(),
+                startDate.toString(),
+                endDate.toString(),
+                emptyList(),
+            )
 
         val schedules = teamMemberScheduleRepository.findWorkHistory(
             employeeCode = employeeCode.trim(),
-            from = from,
-            to = to,
+            from = startDate,
+            to = endDate,
             // BranchMapping 확장 — 레거시/별칭 조직코드로 적재된 일정 누락 방지 (안전점검 보고서와 동일)
             branchCodes = branchCodes.takeIf { it.isNotEmpty() }
                 ?.let { branchCodeExpander.expand(it).toList() }
@@ -66,7 +69,7 @@ class AdminFemaleEmployeeWorkHistoryService(
         )
 
         val items = schedules.map { toItem(it) }
-        return FemaleEmployeeWorkHistoryResponse(employeeCode.trim(), year, month, items)
+        return FemaleEmployeeWorkHistoryResponse(employeeCode.trim(), startDate.toString(), endDate.toString(), items)
     }
 
     /**
@@ -75,11 +78,11 @@ class AdminFemaleEmployeeWorkHistoryService(
     fun exportWorkHistory(
         scope: DataScope,
         employeeCode: String,
-        year: Int,
-        month: Int,
+        startDate: LocalDate,
+        endDate: LocalDate,
         costCenterCodes: List<String>,
     ): ExcelResult {
-        val response = getWorkHistory(scope, employeeCode, year, month, costCenterCodes)
+        val response = getWorkHistory(scope, employeeCode, startDate, endDate, costCenterCodes)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("여사원근무내역")
@@ -122,7 +125,8 @@ class AdminFemaleEmployeeWorkHistoryService(
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
-        val filename = "여사원근무내역_%s_%04d%02d.xlsx".format(employeeCode.trim(), year, month)
+        val filename = "여사원근무내역_%s_%s_%s.xlsx"
+            .format(employeeCode.trim(), compact(startDate), compact(endDate))
         return ExcelResult(bytes, filename)
     }
 
@@ -167,15 +171,31 @@ class AdminFemaleEmployeeWorkHistoryService(
         return intersect.ifEmpty { null }
     }
 
-    private fun validateParams(employeeCode: String, year: Int, month: Int) {
+    /**
+     * 사번 + 조회기간 검증 — 연도 2020~2099, 시작일 ≤ 종료일, 최대 [MAX_RANGE_DAYS]일.
+     *
+     * 상한이 배치 점검(92일) 보다 넉넉한 것은 결과가 사번 1명의 일정으로 한정되기 때문 (1년치도 수백 행 수준).
+     */
+    private fun validateParams(employeeCode: String, startDate: LocalDate, endDate: LocalDate) {
         if (employeeCode.isBlank()) {
             throw InvalidParameterException("employee_code는 필수입니다")
         }
-        if (year !in 2020..2099) {
-            throw InvalidParameterException("year는 2020~2099 범위여야 합니다")
+        if (startDate.year !in 2020..2099 || endDate.year !in 2020..2099) {
+            throw InvalidParameterException("조회 기간은 2020~2099 범위여야 합니다")
         }
-        if (month !in 1..12) {
-            throw InvalidParameterException("month는 1~12 범위여야 합니다")
+        if (startDate.isAfter(endDate)) {
+            throw InvalidParameterException("시작일은 종료일보다 이후일 수 없습니다")
         }
+        if (ChronoUnit.DAYS.between(startDate, endDate) > MAX_RANGE_DAYS) {
+            throw InvalidParameterException("조회 기간은 최대 ${MAX_RANGE_DAYS}일까지 가능합니다")
+        }
+    }
+
+    /** 파일명용 날짜 압축 표기 (2026-05-01 → 20260501). */
+    private fun compact(date: LocalDate): String = "%04d%02d%02d".format(date.year, date.monthValue, date.dayOfMonth)
+
+    companion object {
+        /** 조회 기간 상한 (일) — 개인 1명 대상이라 1년(윤년 포함) 까지 허용. */
+        private const val MAX_RANGE_DAYS = 366L
     }
 }

@@ -30,8 +30,10 @@ export interface FemaleEmployeePlacementCheckItem {
 }
 
 export interface FemaleEmployeePlacementCheckResponse {
-  year: number;
-  month: number;
+  /** 조회 시작일 (YYYY-MM-DD, 요청 에코) */
+  startDate: string;
+  /** 조회 종료일 (YYYY-MM-DD, 요청 에코) */
+  endDate: string;
   items: FemaleEmployeePlacementCheckItem[];
 }
 
@@ -41,16 +43,16 @@ function failureMessage(label: string, res: { data: ApiResponse<unknown> }): str
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 여사원 배치 점검 월간 조회. */
+/** 여사원 배치 점검 기간(시작일~종료일) 조회. 서버 상한 92일. */
 export async function fetchPlacementCheck(
-  year: number,
-  month: number,
+  startDate: string,
+  endDate: string,
   costCenterCodes: string[],
 ): Promise<FemaleEmployeePlacementCheckResponse> {
   const res = await client.get<ApiResponse<FemaleEmployeePlacementCheckResponse>>(BASE, {
     params: {
-      year,
-      month,
+      startDate,
+      endDate,
       ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
     },
   });
@@ -60,15 +62,20 @@ export async function fetchPlacementCheck(
 
 /** 여사원 배치 점검 엑셀 다운로드. */
 export async function exportPlacementCheck(
-  year: number,
-  month: number,
+  startDate: string,
+  endDate: string,
   costCenterCodes: string[],
 ): Promise<void> {
-  await downloadExcel(`${BASE}/export`, `여사원배치점검_${year}${String(month).padStart(2, '0')}.xlsx`, {
-    params: {
-      year,
-      month,
-      ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
+  const compact = (d: string) => d.replace(/-/g, '');
+  await downloadExcel(
+    `${BASE}/export`,
+    `여사원배치점검_${compact(startDate)}_${compact(endDate)}.xlsx`,
+    {
+      params: {
+        startDate,
+        endDate,
+        ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
+      },
     },
-  });
+  );
 }

@@ -26,6 +26,7 @@ import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -66,16 +67,16 @@ class AdminFemaleEmployeePlacementCheckController(
         return ResponseEntity.ok(ApiResponse.success(branchScopeGateway.resolveBranches(principal, BranchScopeProfile.REPORT)))
     }
 
-    /** 월간 배치 점검 조회 (퇴직자 포함 · 여사원/조장). */
+    /** 기간(시작일~종료일) 배치 점검 조회 (퇴직자 포함 · 여사원/조장). 최대 92일. */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/placement-check")
     fun getPlacementCheck(
         @CurrentDataScope scope: DataScope,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
         @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ApiResponse<FemaleEmployeePlacementCheckResponse>> {
-        val response = service.getPlacementCheck(scope, year, month, costCenterCodes)
+        val response = service.getPlacementCheck(scope, startDate, endDate, costCenterCodes)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -84,25 +85,28 @@ class AdminFemaleEmployeePlacementCheckController(
     @GetMapping("/placement-check/export")
     fun exportPlacementCheck(
         @CurrentDataScope scope: DataScope,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
         @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ByteArray> {
-        val result = service.exportPlacementCheck(scope, year, month, costCenterCodes)
+        val result = service.exportPlacementCheck(scope, startDate, endDate, costCenterCodes)
         return ExcelResponseUtils.build(result)
     }
 
-    /** 개인별(사번) 월간 근무내역 조회 (Spec #840). costCenterCodes 선택 시 그 지점(사원 소속)으로 좁힘. */
+    /**
+     * 개인별(사번) 기간 근무내역 조회 (Spec #840). costCenterCodes 선택 시 그 지점(사원 소속)으로 좁힘.
+     * 기간은 시작일~종료일 (최대 366일).
+     */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/work-history")
     fun getWorkHistory(
         @CurrentDataScope scope: DataScope,
         @RequestParam employeeCode: String,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
         @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ApiResponse<FemaleEmployeeWorkHistoryResponse>> {
-        val response = workHistoryService.getWorkHistory(scope, employeeCode, year, month, costCenterCodes)
+        val response = workHistoryService.getWorkHistory(scope, employeeCode, startDate, endDate, costCenterCodes)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -112,11 +116,11 @@ class AdminFemaleEmployeePlacementCheckController(
     fun exportWorkHistory(
         @CurrentDataScope scope: DataScope,
         @RequestParam employeeCode: String,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
         @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ByteArray> {
-        val result = workHistoryService.exportWorkHistory(scope, employeeCode, year, month, costCenterCodes)
+        val result = workHistoryService.exportWorkHistory(scope, employeeCode, startDate, endDate, costCenterCodes)
         return ExcelResponseUtils.build(result)
     }
 

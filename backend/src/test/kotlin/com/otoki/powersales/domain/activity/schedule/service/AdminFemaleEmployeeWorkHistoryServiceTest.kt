@@ -32,6 +32,10 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
+    /** 대부분의 케이스가 쓰는 기본 조회기간 (2026-05 한 달). */
+    private val mayFrom: LocalDate = LocalDate.of(2026, 5, 1)
+    private val mayTo: LocalDate = LocalDate.of(2026, 5, 31)
+
     private fun employee(
         code: String = "20230016",
         name: String = "홍길동",
@@ -77,16 +81,16 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
     inner class GetWorkHistory {
 
         @Test
-        @DisplayName("사번의 월간 근무내역을 15컬럼으로 매핑한다")
+        @DisplayName("사번의 기간 근무내역을 15컬럼으로 매핑한다")
         fun mapsRows() {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee()))
 
-            val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            val res = service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
             assertThat(res.employeeCode).isEqualTo("20230016")
-            assertThat(res.year).isEqualTo(2026)
-            assertThat(res.month).isEqualTo(5)
+            assertThat(res.startDate).isEqualTo("2026-05-01")
+            assertThat(res.endDate).isEqualTo("2026-05-31")
             assertThat(res.items).hasSize(1)
             val item = res.items[0]
             assertThat(item.scheduleName).isEqualTo("2026-05-12 진열")
@@ -109,7 +113,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee(), withAttendanceLog = false))
 
-            val item = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList()).items[0]
+            val item = service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList()).items[0]
 
             assertThat(item.secondWorkType).isNull()
             assertThat(item.isWorkReport).isEmpty()
@@ -117,7 +121,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("repository 에 사번·월 1일~말일·trim 된 사번을 전달한다")
+        @DisplayName("repository 에 요청 기간을 그대로 (월 경계 무관) · trim 된 사번을 전달한다")
         fun passesParams() {
             val codeSlot = slot<String>()
             val fromSlot = slot<LocalDate>()
@@ -126,11 +130,13 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
                 repository.findWorkHistory(capture(codeSlot), capture(fromSlot), capture(toSlot), any())
             } returns emptyList()
 
-            service.getWorkHistory(allScope, " 20230016 ", 2026, 2, emptyList())
+            service.getWorkHistory(
+                allScope, " 20230016 ", LocalDate.of(2026, 2, 20), LocalDate.of(2026, 3, 10), emptyList(),
+            )
 
             assertThat(codeSlot.captured).isEqualTo("20230016")
-            assertThat(fromSlot.captured).isEqualTo(LocalDate.of(2026, 2, 1))
-            assertThat(toSlot.captured).isEqualTo(LocalDate.of(2026, 2, 28))
+            assertThat(fromSlot.captured).isEqualTo(LocalDate.of(2026, 2, 20))
+            assertThat(toSlot.captured).isEqualTo(LocalDate.of(2026, 3, 10))
         }
 
         @Test
@@ -138,7 +144,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         fun emptyResult() {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns emptyList()
 
-            val res = service.getWorkHistory(allScope, "99999999", 2026, 5, emptyList())
+            val res = service.getWorkHistory(allScope, "99999999", mayFrom, mayTo, emptyList())
 
             assertThat(res.items).isEmpty()
         }
@@ -149,7 +155,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             val emp = employee(birthDate = "1985-01-01")
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns listOf(schedule(emp))
 
-            val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            val res = service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
             // 기준일이 TODAY 이므로 동일 계산기의 오늘 값과 대조한다 (고정 기대값은 시간이 지나면 깨짐).
             assertThat(res.items[0].age).isEqualTo(emp.calculateAge(java.time.LocalDate.now(), womanOnly = true))
@@ -162,7 +168,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee(birthDate = null)))
 
-            val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            val res = service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].age).isNull()
         }
@@ -173,7 +179,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee(role = com.otoki.powersales.platform.auth.entity.AppAuthority.LEADER)))
 
-            val res = service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            val res = service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].age).isNull()
         }
@@ -189,7 +195,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findWorkHistory(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
             assertThat(codesSlot.captured).isEmpty()
         }
@@ -200,7 +206,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findWorkHistory(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getWorkHistory(allScope, "20230016", 2026, 5, listOf("B999"))
+            service.getWorkHistory(allScope, "20230016", mayFrom, mayTo, listOf("B999"))
 
             assertThat(codesSlot.captured).containsExactly("B999")
         }
@@ -211,7 +217,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findWorkHistory(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getWorkHistory(branchScope("A001", "A002"), "20230016", 2026, 5, emptyList())
+            service.getWorkHistory(branchScope("A001", "A002"), "20230016", mayFrom, mayTo, emptyList())
 
             assertThat(codesSlot.captured).containsExactlyInAnyOrder("A001", "A002")
         }
@@ -222,7 +228,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findWorkHistory(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getWorkHistory(branchScope("A001", "A002"), "20230016", 2026, 5, listOf("A002"))
+            service.getWorkHistory(branchScope("A001", "A002"), "20230016", mayFrom, mayTo, listOf("A002"))
 
             assertThat(codesSlot.captured).containsExactly("A002")
         }
@@ -230,7 +236,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         @Test
         @DisplayName("지점 사용자 + 권한 밖 지점 선택 → 교집합 없음 → 빈 결과 (repository 미호출)")
         fun branchScopedIdorBlocked() {
-            val res = service.getWorkHistory(branchScope("A001"), "20230016", 2026, 5, listOf("Z999"))
+            val res = service.getWorkHistory(branchScope("A001"), "20230016", mayFrom, mayTo, listOf("Z999"))
 
             assertThat(res.items).isEmpty()
             io.mockk.verify(exactly = 0) { repository.findWorkHistory(any(), any(), any(), any()) }
@@ -244,22 +250,36 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         @Test
         @DisplayName("employeeCode 공백이면 InvalidParameterException")
         fun blankEmployeeCode() {
-            assertThatThrownBy { service.getWorkHistory(allScope, "  ", 2026, 5, emptyList()) }
+            assertThatThrownBy { service.getWorkHistory(allScope, "  ", mayFrom, mayTo, emptyList()) }
                 .isInstanceOf(InvalidParameterException::class.java)
         }
 
         @Test
-        @DisplayName("year 범위 외면 InvalidParameterException")
+        @DisplayName("연도 범위 외면 InvalidParameterException")
         fun invalidYear() {
-            assertThatThrownBy { service.getWorkHistory(allScope, "20230016", 1999, 5, emptyList()) }
-                .isInstanceOf(InvalidParameterException::class.java)
+            assertThatThrownBy {
+                service.getWorkHistory(
+                    allScope, "20230016", LocalDate.of(1999, 5, 1), LocalDate.of(1999, 5, 31), emptyList(),
+                )
+            }.isInstanceOf(InvalidParameterException::class.java)
         }
 
         @Test
-        @DisplayName("month 범위 외면 InvalidParameterException")
-        fun invalidMonth() {
-            assertThatThrownBy { service.getWorkHistory(allScope, "20230016", 2026, 13, emptyList()) }
-                .isInstanceOf(InvalidParameterException::class.java)
+        @DisplayName("시작일이 종료일보다 뒤면 InvalidParameterException")
+        fun startAfterEnd() {
+            assertThatThrownBy {
+                service.getWorkHistory(allScope, "20230016", mayTo, mayFrom, emptyList())
+            }.isInstanceOf(InvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("기간이 366일을 넘으면 InvalidParameterException")
+        fun rangeTooWide() {
+            assertThatThrownBy {
+                service.getWorkHistory(
+                    allScope, "20230016", LocalDate.of(2025, 1, 1), LocalDate.of(2026, 1, 5), emptyList(),
+                )
+            }.isInstanceOf(InvalidParameterException::class.java)
         }
     }
 
@@ -268,14 +288,14 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
     inner class Export {
 
         @Test
-        @DisplayName("15컬럼 xlsx 생성 + 파일명 사번_yyyyMM")
+        @DisplayName("15컬럼 xlsx 생성 + 파일명 사번_시작일_종료일")
         fun exportsXlsx() {
             every { repository.findWorkHistory(any(), any(), any(), any()) } returns
                 listOf(schedule(employee()))
 
-            val result = service.exportWorkHistory(allScope, "20230016", 2026, 5, emptyList())
+            val result = service.exportWorkHistory(allScope, "20230016", mayFrom, mayTo, emptyList())
 
-            assertThat(result.filename).isEqualTo("여사원근무내역_20230016_202605.xlsx")
+            assertThat(result.filename).isEqualTo("여사원근무내역_20230016_20260501_20260531.xlsx")
             assertThat(result.bytes).isNotEmpty()
         }
     }

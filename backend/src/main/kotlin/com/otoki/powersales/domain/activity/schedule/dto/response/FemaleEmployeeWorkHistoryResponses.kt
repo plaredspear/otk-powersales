@@ -4,12 +4,14 @@ package com.otoki.powersales.domain.activity.schedule.dto.response
  * 여사원 근무내역 (개인별 조회) 응답 — 영업지원실용 보고서 (Spec #840).
  *
  * 레거시 매핑: SF Report `InternalSalesReportFolder/new_report_nEX` (여사원 근무내역).
- * 특정 사번 1명의 월간 여사원일정 행을 일자별로 나열 (Tabular, 15컬럼).
+ * 특정 사번 1명의 조회기간(시작일~종료일) 여사원일정 행을 일자별로 나열 (Tabular, 15컬럼).
  */
 data class FemaleEmployeeWorkHistoryResponse(
     val employeeCode: String,
-    val year: Int,
-    val month: Int,
+    /** 조회 시작일 (ISO-8601, 요청 그대로 에코). */
+    val startDate: String,
+    /** 조회 종료일 (ISO-8601, 요청 그대로 에코). */
+    val endDate: String,
     val items: List<FemaleEmployeeWorkHistoryItem>,
 )
 

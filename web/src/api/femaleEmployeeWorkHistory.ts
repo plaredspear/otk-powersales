@@ -25,8 +25,10 @@ export interface FemaleEmployeeWorkHistoryItem {
 
 export interface FemaleEmployeeWorkHistoryResponse {
   employeeCode: string;
-  year: number;
-  month: number;
+  /** 조회 시작일 (YYYY-MM-DD, 요청 에코) */
+  startDate: string;
+  /** 조회 종료일 (YYYY-MM-DD, 요청 에코) */
+  endDate: string;
   items: FemaleEmployeeWorkHistoryItem[];
 }
 
@@ -36,18 +38,21 @@ function failureMessage(label: string, res: { data: ApiResponse<unknown> }): str
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 여사원 개인별 근무내역 월간 조회. costCenterCodes 지정 시 그 지점(사원 소속)으로 좁힘. */
+/**
+ * 여사원 개인별 근무내역 기간(시작일~종료일) 조회. 서버 상한 366일.
+ * costCenterCodes 지정 시 그 지점(사원 소속)으로 좁힘.
+ */
 export async function fetchWorkHistory(
   employeeCode: string,
-  year: number,
-  month: number,
+  startDate: string,
+  endDate: string,
   costCenterCodes: string[],
 ): Promise<FemaleEmployeeWorkHistoryResponse> {
   const res = await client.get<ApiResponse<FemaleEmployeeWorkHistoryResponse>>(BASE, {
     params: {
       employeeCode,
-      year,
-      month,
+      startDate,
+      endDate,
       ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
     },
   });
@@ -58,18 +63,19 @@ export async function fetchWorkHistory(
 /** 여사원 근무내역 엑셀 다운로드. costCenterCodes 지정 시 그 지점(사원 소속)으로 좁힘. */
 export async function exportWorkHistory(
   employeeCode: string,
-  year: number,
-  month: number,
+  startDate: string,
+  endDate: string,
   costCenterCodes: string[],
 ): Promise<void> {
+  const compact = (d: string) => d.replace(/-/g, '');
   await downloadExcel(
     `${BASE}/export`,
-    `여사원근무내역_${employeeCode}_${year}${String(month).padStart(2, '0')}.xlsx`,
+    `여사원근무내역_${employeeCode}_${compact(startDate)}_${compact(endDate)}.xlsx`,
     {
       params: {
         employeeCode,
-        year,
-        month,
+        startDate,
+        endDate,
         ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
       },
     },

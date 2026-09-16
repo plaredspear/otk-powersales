@@ -13,21 +13,22 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 /**
- * 여사원 배치 점검 현황 — 영업지원실용 월간 배치 점검 조회 + 엑셀 export.
+ * 여사원 배치 점검 현황 — 영업지원실용 기간(시작일~종료일) 배치 점검 조회 + 엑셀 export.
  *
  * 레거시 매핑: SF Report `InternalSalesReportFolder/new_report_4Ic`
  * (여사원 배치 점검 퇴직자 포함 (영업지원실 용) 상시_임시(조장포함)). Tabular — 여사원일정 행 단위 나열.
- * 동작: year/month 를 해당 월 1일~말일로 환산하여 `TeamMemberSchedule` 을 조회 (근무유형='근무', 앱권한 여사원/조장,
+ * 동작: 조회기간(시작일~종료일) 으로 `TeamMemberSchedule` 을 조회 (근무유형='근무', 앱권한 여사원/조장,
  *       더미 사원명 제외, 퇴직자 포함 = status 필터 없음). employee/account 조인 결과를 21컬럼 행으로 매핑.
  * 부수 효과: 없음 (조회 전용).
  *
- * 신규 도입 — 레거시 SF Report 의 web admin 이식. 레거시 하드코딩 날짜는 year/month 검색 조건으로 전환 (Spec #839 Q1).
+ * 신규 도입 — 레거시 SF Report 의 web admin 이식. 레거시 하드코딩 날짜는 기간(시작일~종료일) 검색 조건으로 전환
+ * (Spec #839 Q1 은 년·월 단위였으나, 월 경계를 걸친 조회 요구로 일 단위 기간으로 확장).
  * 나이(`Age__c`) / 근속연수(`yearsOfService__c`) 는 SF formula 필드이므로 [Employee.calculateAge] /
  * [Employee.calculateYearsOfService] (SF 계산식 정합 구현) 로 대체한다. SF formula 가 `TODAY()` 기준이고
- * `AppAuthority='여사원'` 일 때만 값을 내므로, 기준일은 조회월이 아닌 오늘, 조장 행은 공백이다.
+ * `AppAuthority='여사원'` 일 때만 값을 내므로, 기준일은 조회기간이 아닌 오늘, 조장 행은 공백이다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -39,30 +40,28 @@ class AdminFemaleEmployeePlacementCheckService(
     /**
      * 여사원 배치 점검 조회.
      *
-     * year/month 검증 (2020~2099 / 1~12) 후 해당 월 [1일, 말일] 로 환산하여 조회. 권한: scope.isAllBranches 면
-     * 사용자 입력 그대로, 아니면 scope.branchCodes 와 교집합 (교집합 없으면 빈 결과 — 안전점검 보고서와 동일).
+     * 기간 검증 (2020~2099 / 시작일 ≤ 종료일 / 최대 [MAX_RANGE_DAYS]일) 후 [startDate, endDate] 로 조회.
+     * 권한: scope.isAllBranches 면 사용자 입력 그대로, 아니면 scope.branchCodes 와 교집합
+     * (교집합 없으면 빈 결과 — 안전점검 보고서와 동일).
      * 지점 코드는 조회 직전 `BranchMapping` 확장 적용 (레거시/별칭 조직코드 적재 일정 누락 방지).
      * 정렬: 입사일(StartDate) 오름차순 1차 (SF new_report_4Ic sortColumn 정합) + 소속/사번/근무일자 후순위.
      *
-     * 나이/근속연수 기준일은 조회월이 아니라 **오늘** — SF formula 가 `TODAY()` 이므로 과거 월을 조회해도
+     * 나이/근속연수 기준일은 조회기간이 아니라 **오늘** — SF formula 가 `TODAY()` 이므로 과거 기간을 조회해도
      * 현재 시점 값이 나온다 (레거시 리포트 정합).
      */
     fun getPlacementCheck(
         scope: DataScope,
-        year: Int,
-        month: Int,
+        startDate: LocalDate,
+        endDate: LocalDate,
         costCenterCodes: List<String>,
     ): FemaleEmployeePlacementCheckResponse {
-        validateParams(year, month)
-        val yearMonth = YearMonth.of(year, month)
-        val from = yearMonth.atDay(1)
-        val to = yearMonth.atEndOfMonth()
+        validateRange(startDate, endDate)
         val effectiveCodes = applyScope(scope, costCenterCodes)
-            ?: return FemaleEmployeePlacementCheckResponse(year, month, emptyList())
+            ?: return FemaleEmployeePlacementCheckResponse(startDate.toString(), endDate.toString(), emptyList())
 
         val schedules = teamMemberScheduleRepository.findPlacementCheck(
-            from = from,
-            to = to,
+            from = startDate,
+            to = endDate,
             roles = listOf(AppAuthority.WOMAN, AppAuthority.LEADER),
             branchCodes = effectiveCodes.takeIf { it.isNotEmpty() }
                 ?.let { branchCodeExpander.expand(it).toList() }
@@ -78,7 +77,7 @@ class AdminFemaleEmployeePlacementCheckService(
                     .thenBy { it.employeeCode }
                     .thenBy { it.workingDate ?: "" }
             )
-        return FemaleEmployeePlacementCheckResponse(year, month, items)
+        return FemaleEmployeePlacementCheckResponse(startDate.toString(), endDate.toString(), items)
     }
 
     /**
@@ -86,11 +85,11 @@ class AdminFemaleEmployeePlacementCheckService(
      */
     fun exportPlacementCheck(
         scope: DataScope,
-        year: Int,
-        month: Int,
+        startDate: LocalDate,
+        endDate: LocalDate,
         costCenterCodes: List<String>,
     ): ExcelResult {
-        val response = getPlacementCheck(scope, year, month, costCenterCodes)
+        val response = getPlacementCheck(scope, startDate, endDate, costCenterCodes)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("여사원배치점검")
@@ -140,7 +139,7 @@ class AdminFemaleEmployeePlacementCheckService(
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
         val bytes = ExcelStyleSupport.workbookToBytes(workbook)
-        val filename = "여사원배치점검_%04d%02d.xlsx".format(year, month)
+        val filename = "여사원배치점검_%s_%s.xlsx".format(compact(startDate), compact(endDate))
         return ExcelResult(bytes, filename)
     }
 
@@ -192,12 +191,29 @@ class AdminFemaleEmployeePlacementCheckService(
         return intersect.ifEmpty { null }
     }
 
-    private fun validateParams(year: Int, month: Int) {
-        if (year !in 2020..2099) {
-            throw InvalidParameterException("year는 2020~2099 범위여야 합니다")
+    /**
+     * 조회기간 검증 — 연도 2020~2099, 시작일 ≤ 종료일, 최대 [MAX_RANGE_DAYS]일.
+     *
+     * 상한은 지점 전건 × 일별 행이라는 결과 규모 때문 — 전사 권한자가 장기간을 걸면 export 가 수십만 행이 된다.
+     * 개인 1명만 나열하는 근무내역([AdminFemaleEmployeeWorkHistoryService]) 보다 보수적으로 잡는다.
+     */
+    private fun validateRange(startDate: LocalDate, endDate: LocalDate) {
+        if (startDate.year !in 2020..2099 || endDate.year !in 2020..2099) {
+            throw InvalidParameterException("조회 기간은 2020~2099 범위여야 합니다")
         }
-        if (month !in 1..12) {
-            throw InvalidParameterException("month는 1~12 범위여야 합니다")
+        if (startDate.isAfter(endDate)) {
+            throw InvalidParameterException("시작일은 종료일보다 이후일 수 없습니다")
         }
+        if (ChronoUnit.DAYS.between(startDate, endDate) > MAX_RANGE_DAYS) {
+            throw InvalidParameterException("조회 기간은 최대 ${MAX_RANGE_DAYS}일까지 가능합니다")
+        }
+    }
+
+    /** 파일명용 날짜 압축 표기 (2026-05-01 → 20260501). */
+    private fun compact(date: LocalDate): String = "%04d%02d%02d".format(date.year, date.monthValue, date.dayOfMonth)
+
+    companion object {
+        /** 조회 기간 상한 (일). 여사원일정 기간 조회 상한(`AdminTeamScheduleService`) 과 동일한 3개월 수준. */
+        private const val MAX_RANGE_DAYS = 92L
     }
 }

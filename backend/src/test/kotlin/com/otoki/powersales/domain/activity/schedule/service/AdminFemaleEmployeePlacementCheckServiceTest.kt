@@ -31,6 +31,10 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     private val service = AdminFemaleEmployeePlacementCheckService(repository, BranchCodeExpander(mockk()))
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+    /** 대부분의 케이스가 쓰는 기본 조회기간 (2026-05 한 달). */
+    private val mayFrom: LocalDate = LocalDate.of(2026, 5, 1)
+    private val mayTo: LocalDate = LocalDate.of(2026, 5, 31)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
     private fun employee(
@@ -100,7 +104,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(employee("100234", "홍길동"), account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].professionalPromotionTeam).isEqualTo("라면세일조")
         }
@@ -113,10 +117,10 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(woman, acc))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
-            assertThat(res.year).isEqualTo(2026)
-            assertThat(res.month).isEqualTo(5)
+            assertThat(res.startDate).isEqualTo("2026-05-01")
+            assertThat(res.endDate).isEqualTo("2026-05-31")
             assertThat(res.items).hasSize(1)
             val item = res.items[0]
             assertThat(item.employeeCode).isEqualTo("100234")
@@ -134,8 +138,8 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         }
 
         @Test
-        @DisplayName("repository 에 여사원/조장 role 과 월 1일~말일 범위를 전달한다")
-        fun passesRolesAndMonthRange() {
+        @DisplayName("repository 에 여사원/조장 role 과 요청 기간을 그대로 전달한다 (월 경계 무관)")
+        fun passesRolesAndDateRange() {
             val fromSlot = slot<LocalDate>()
             val toSlot = slot<LocalDate>()
             val rolesSlot = slot<List<String>>()
@@ -143,10 +147,10 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
                 repository.findPlacementCheck(capture(fromSlot), capture(toSlot), capture(rolesSlot), any())
             } returns emptyList()
 
-            service.getPlacementCheck(allScope, 2026, 2, emptyList())
+            service.getPlacementCheck(allScope, LocalDate.of(2026, 2, 20), LocalDate.of(2026, 3, 10), emptyList())
 
-            assertThat(fromSlot.captured).isEqualTo(LocalDate.of(2026, 2, 1))
-            assertThat(toSlot.captured).isEqualTo(LocalDate.of(2026, 2, 28))
+            assertThat(fromSlot.captured).isEqualTo(LocalDate.of(2026, 2, 20))
+            assertThat(toSlot.captured).isEqualTo(LocalDate.of(2026, 3, 10))
             assertThat(rolesSlot.captured).containsExactlyInAnyOrder(AppAuthority.WOMAN, AppAuthority.LEADER)
         }
 
@@ -157,7 +161,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(resigned, account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items).hasSize(1)
             assertThat(res.items[0].employmentStatus).isEqualTo("퇴직")
@@ -170,7 +174,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(emp, account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             // SF `Age__c` = FLOOR(경과일/365.2425)+'살', `yearsOfService__c` = FLOOR(경과일/365)+'년'.
             // 기준일이 TODAY 이므로 동일 계산기의 오늘 값과 대조한다 (고정 기대값은 시간이 지나면 깨짐).
@@ -182,13 +186,13 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         }
 
         @Test
-        @DisplayName("과거 월을 조회해도 나이 기준일은 조회월 말일이 아닌 오늘이다 (SF TODAY 정합)")
-        fun ageBasedOnTodayNotQueriedMonth() {
+        @DisplayName("과거 기간을 조회해도 나이 기준일은 조회기간 종료일이 아닌 오늘이다 (SF TODAY 정합)")
+        fun ageBasedOnTodayNotQueriedPeriod() {
             val emp = employee("100234", "홍길동", birthDate = "1985-01-01")
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(emp, account("마트", "B1", "지점"), workingDate = LocalDate.of(2020, 3, 5)))
 
-            val res = service.getPlacementCheck(allScope, 2020, 3, emptyList())
+            val res = service.getPlacementCheck(allScope, LocalDate.of(2020, 3, 1), LocalDate.of(2020, 3, 31), emptyList())
 
             assertThat(res.items[0].age).isEqualTo(emp.calculateAge(LocalDate.now(), womanOnly = true))
         }
@@ -200,7 +204,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(leader, account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].employeeCode).isEqualTo("100777")
             assertThat(res.items[0].age).isNull()
@@ -214,7 +218,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(emp, account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].age).isNull()
         }
@@ -227,7 +231,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(compact, account("마트", "B1", "지점")))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].age).isNotNull()
             assertThat(res.items[0].age).isEqualTo(dashed.calculateAge(LocalDate.now(), womanOnly = true))
@@ -245,7 +249,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
                 )
             )
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].secondWorkType).isEqualTo("냉동/냉장")
             assertThat(res.items[0].commuteDate).startsWith("2026-05-12T08:30")
@@ -259,7 +263,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(emp, account("마트", "B1", "지점"), withAttendanceLog = false))
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items[0].secondWorkType).isNull()
             assertThat(res.items[0].commuteDate).isNull()
@@ -276,7 +280,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
                 schedule(e2, account("마트", "B1", "지점"), workingDate = LocalDate.of(2026, 5, 3)),
             )
 
-            val res = service.getPlacementCheck(allScope, 2026, 5, emptyList())
+            val res = service.getPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
             assertThat(res.items.map { it.employeeCode }).containsExactly("100", "200")
         }
@@ -289,7 +293,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         @Test
         @DisplayName("isAllBranches=false 인데 스코프 외 costCenterCode 만 입력하면 빈 결과 (repository 미호출)")
         fun forbiddenWhenNoIntersection() {
-            val res = service.getPlacementCheck(branchScope("A001"), 2026, 5, listOf("Z999"))
+            val res = service.getPlacementCheck(branchScope("A001"), mayFrom, mayTo, listOf("Z999"))
 
             assertThat(res.items).isEmpty()
             io.mockk.verify(exactly = 0) { repository.findPlacementCheck(any(), any(), any(), any()) }
@@ -301,7 +305,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findPlacementCheck(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getPlacementCheck(branchScope("A001", "A002"), 2026, 5, emptyList())
+            service.getPlacementCheck(branchScope("A001", "A002"), mayFrom, mayTo, emptyList())
 
             assertThat(codesSlot.captured).containsExactlyInAnyOrder("A001", "A002")
         }
@@ -312,7 +316,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             val codesSlot = slot<List<String>>()
             every { repository.findPlacementCheck(any(), any(), any(), capture(codesSlot)) } returns emptyList()
 
-            service.getPlacementCheck(branchScope("A001", "A002"), 2026, 5, listOf("A001", "Z999"))
+            service.getPlacementCheck(branchScope("A001", "A002"), mayFrom, mayTo, listOf("A001", "Z999"))
 
             assertThat(codesSlot.captured).containsExactly("A001")
         }
@@ -323,17 +327,37 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     inner class Validation {
 
         @Test
-        @DisplayName("year 범위 외면 InvalidParameterException")
+        @DisplayName("연도 범위 외면 InvalidParameterException")
         fun invalidYear() {
-            assertThatThrownBy { service.getPlacementCheck(allScope, 1999, 5, emptyList()) }
-                .isInstanceOf(InvalidParameterException::class.java)
+            assertThatThrownBy {
+                service.getPlacementCheck(allScope, LocalDate.of(1999, 5, 1), LocalDate.of(1999, 5, 31), emptyList())
+            }.isInstanceOf(InvalidParameterException::class.java)
         }
 
         @Test
-        @DisplayName("month 범위 외면 InvalidParameterException")
-        fun invalidMonth() {
-            assertThatThrownBy { service.getPlacementCheck(allScope, 2026, 13, emptyList()) }
-                .isInstanceOf(InvalidParameterException::class.java)
+        @DisplayName("시작일이 종료일보다 뒤면 InvalidParameterException")
+        fun startAfterEnd() {
+            assertThatThrownBy {
+                service.getPlacementCheck(allScope, LocalDate.of(2026, 5, 31), LocalDate.of(2026, 5, 1), emptyList())
+            }.isInstanceOf(InvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("기간이 92일을 넘으면 InvalidParameterException")
+        fun rangeTooWide() {
+            assertThatThrownBy {
+                service.getPlacementCheck(allScope, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 4, 5), emptyList())
+            }.isInstanceOf(InvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("기간이 정확히 92일이면 통과한다 (경계)")
+        fun rangeAtLimit() {
+            every { repository.findPlacementCheck(any(), any(), any(), any()) } returns emptyList()
+
+            val res = service.getPlacementCheck(allScope, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 4, 3), emptyList())
+
+            assertThat(res.items).isEmpty()
         }
     }
 
@@ -342,15 +366,15 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     inner class Export {
 
         @Test
-        @DisplayName("21컬럼 헤더의 xlsx 를 생성하고 파일명을 yyyyMM 으로 짓는다")
+        @DisplayName("21컬럼 헤더의 xlsx 를 생성하고 파일명에 조회기간을 담는다")
         fun exportsXlsx() {
             val emp = employee("100234", "홍길동")
             every { repository.findPlacementCheck(any(), any(), any(), any()) } returns
                 listOf(schedule(emp, account("마트", "B1", "지점")))
 
-            val result = service.exportPlacementCheck(allScope, 2026, 5, emptyList())
+            val result = service.exportPlacementCheck(allScope, mayFrom, mayTo, emptyList())
 
-            assertThat(result.filename).isEqualTo("여사원배치점검_202605.xlsx")
+            assertThat(result.filename).isEqualTo("여사원배치점검_20260501_20260531.xlsx")
             assertThat(result.bytes).isNotEmpty()
         }
     }
