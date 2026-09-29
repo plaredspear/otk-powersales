@@ -19,6 +19,7 @@ class FakeProxyAttendanceRepository implements ProxyAttendanceRepository {
   int? lastRegisterTargetEmployeeId;
   int? lastRegisterScheduleId;
   int? lastRegisterDisplayWorkScheduleId;
+  DateTime? lastRegisterWorkingDate;
   int registerCallCount = 0;
 
   @override
@@ -53,12 +54,14 @@ class FakeProxyAttendanceRepository implements ProxyAttendanceRepository {
   Future<void> registerProxyAttendance({
     required String branchCode,
     required int targetEmployeeId,
+    required DateTime workingDate,
     int? scheduleId,
     int? displayWorkScheduleId,
   }) async {
     registerCallCount++;
     lastRegisterBranchCode = branchCode;
     lastRegisterTargetEmployeeId = targetEmployeeId;
+    lastRegisterWorkingDate = workingDate;
     lastRegisterScheduleId = scheduleId;
     lastRegisterDisplayWorkScheduleId = displayWorkScheduleId;
     if (exceptionToThrow != null) throw exceptionToThrow!;
@@ -155,6 +158,22 @@ void main() {
       expect(repo.lastRegisterTargetEmployeeId, 10);
       expect(repo.lastRegisterDisplayWorkScheduleId, 500);
       expect(repo.registerCallCount, 1);
+    });
+
+    test('registerProxyAttendance - 선택한 과거 근무일을 등록 요청에 전달', () async {
+      final repo = FakeProxyAttendanceRepository();
+      final notifier = ProxyAttendanceNotifier(repo);
+      await notifier.selectBranch(branch);
+      final pastDate = DateTime(2026, 6, 10);
+      await notifier.changeDate(pastDate);
+
+      final err = await notifier.registerProxyAttendance(
+        targetEmployeeId: 10,
+        displayWorkScheduleId: 500,
+      );
+
+      expect(err, isNull);
+      expect(repo.lastRegisterWorkingDate, pastDate);
     });
 
     test('registerProxyAttendance - 실패 시 에러 메시지 반환', () async {

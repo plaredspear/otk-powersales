@@ -35,12 +35,14 @@ class ProxyAttendanceRepositoryImpl implements ProxyAttendanceRepository {
   Future<void> registerProxyAttendance({
     required String branchCode,
     required int targetEmployeeId,
+    required DateTime workingDate,
     int? scheduleId,
     int? displayWorkScheduleId,
   }) {
     return _dataSource.registerProxyAttendance(
       branchCode: branchCode,
       targetEmployeeId: targetEmployeeId,
+      workingDate: _formatDate(workingDate),
       scheduleId: scheduleId,
       displayWorkScheduleId: displayWorkScheduleId,
     );

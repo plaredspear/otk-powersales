@@ -60,6 +60,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -349,35 +350,41 @@ class AttendanceService(
     }
 
     /**
-     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
+     * 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
      *
      * 본인 출근 등록([register])과의 차이:
-     * - **GPS 거리 검증 없음** (조장은 현장에 없음 — 레거시 addScheduleProc 동일).
-     * - 안전점검 완료 검증 대상이 **대상 여사원([targetEmployee])** 의 당일 안전점검.
+     * - **GPS 거리 검증 없음** (등록자는 현장에 없음 — 레거시 addScheduleProc 동일).
+     * - 안전점검 완료 검증 대상이 **대상 여사원([targetEmployee])** 의 [workingDate] 안전점검.
+     * - 등록 일자가 오늘 고정이 아니라 [workingDate] — 과거일 소급 등록 지원.
+     *
+     * [workingDate] 는 등록 대상 근무일이며, 대휴 충돌·안전점검·스케줄 해석·중복 검증·월별 환산
+     * 재집계·등록 현황 집계가 모두 이 날짜 기준으로 동작한다. 출근 시각(`attendance_log.attendanceDate`)
+     * 과 출근보고시각은 **[workingDate] + 실제 등록 시각(시·분·초)** 으로 남겨, 소급 등록 건도 관리자
+     * 출근로그를 근무일로 조회하면 잡히게 한다 (오늘 등록 시에는 `now()` 와 동일한 값).
+     * 미래일 차단은 호출부([ProxyAttendanceService.registerProxyAttendance]) 책임.
      *
      * 진열=displayWorkScheduleId(마스터→TMS 동적 생성/재사용), 행사·기배정=scheduleId 분기.
-     * 조장 권한/팀원 검증은 호출부([LeaderScheduleService.registerProxyAttendance]) 책임.
+     * 권한/지점·팀원 검증은 호출부 책임.
      */
     @Transactional
     fun registerProxy(
         targetEmployee: Employee,
         scheduleId: Long?,
         displayWorkScheduleId: Long?,
+        workingDate: LocalDate = LocalDate.now(),
     ): AttendanceRegisterResponse {
         // 타깃 식별자 배타 검증
         val nonNullCount = listOf(scheduleId, displayWorkScheduleId).count { it != null }
         if (nonNullCount == 0) throw AttendanceTargetRequiredException()
         if (nonNullCount > 1) throw AttendanceTargetConflictException()
 
-        val today = LocalDate.now()
-
         // 대휴 충돌 검증
-        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(targetEmployee, today, WorkingType.ALT_HOLIDAY)) {
+        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(targetEmployee, workingDate, WorkingType.ALT_HOLIDAY)) {
             throw AttendanceDayOffConflictException()
         }
 
-        // 대상 여사원 안전점검 완료 검증 (레거시 surveyCnt='Y')
-        if (!safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(targetEmployee.id, today)) {
+        // 대상 여사원 안전점검 완료 검증 (레거시 surveyCnt='Y') — 근무일 기준
+        if (!safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(targetEmployee.id, workingDate)) {
             throw SafetyCheckRequiredException()
         }
 
@@ -385,8 +392,8 @@ class AttendanceService(
         // 소유자 검증 기준은 요청자가 아니라 대상 여사원 — 타인 스케줄 등록 차단은
         // resolveByScheduleId 내부 가드가 수행한다.
         val resolved = when {
-            scheduleId != null -> resolveByScheduleId(scheduleId, targetEmployee, today)
-            else -> resolveByDisplayWorkSchedule(displayWorkScheduleId!!, targetEmployee, today)
+            scheduleId != null -> resolveByScheduleId(scheduleId, targetEmployee, workingDate)
+            else -> resolveByDisplayWorkSchedule(displayWorkScheduleId!!, targetEmployee, workingDate)
         }
         val teamMemberSchedule = resolved.schedule
         val displayMaster = resolved.displayMaster
@@ -401,23 +408,29 @@ class AttendanceService(
 
         // 안전점검 데이터 기반 출근 등록 (본인 등록과 동일 경로)
         val safetyCheckSubmission = safetyCheckSubmissionRepository
-            .findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
+            .findByEmployeeIdAndWorkingDate(targetEmployee.id, workingDate)
             .orElse(null)
 
         // 대리등록 분기: 진열=DISPLAY / scheduleId(행사·기배정)=REGULAR (본인 등록과 동일 규칙, 행사 분기 없음)
         val attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR
+
+        // 출근 시각 = 근무일 + 실제 등록 시각(시·분·초). 소급 등록 건이 관리자 출근로그에서 근무일로
+        // 조회되도록 날짜축을 근무일에 맞추고, 시·분은 등록 순간을 그대로 남겨 감사 흔적을 보존한다.
+        // 오늘 등록 시에는 `LocalDateTime.now(clock)` 과 동일한 값이 된다.
+        val reportedAt = LocalDateTime.of(workingDate, LocalTime.now(clock.withZone(SEOUL_ZONE)))
 
         val savedLog = attendanceRegistrar.register(
             AttendanceRegisterRequest(
                 employeeId = targetEmployee.id,
                 accountId = teamMemberSchedule.account?.id,
                 attendanceType = attendanceType,
+                attendanceDate = reportedAt,
             )
         )
         // 백링크는 managed entity 에 직접 세팅 (본인 등록과 동일 — bulk UPDATE 는 이후 dirty flush 에 덮여 유실).
         teamMemberSchedule.attendanceLog = savedLog
         // 출근보고시각 — 레거시 WorkReport 공통 블록 정합 (본인 등록과 동일, 대리등록도 기록).
-        teamMemberSchedule.commuteReportDatetime = LocalDateTime.now(clock.withZone(SEOUL_ZONE))
+        teamMemberSchedule.commuteReportDatetime = reportedAt
 
         // 후속 처리: completeWorkYn='Y' + TMS 안전점검 stamp (본인 등록과 동일)
         if (safetyCheckSubmission != null) {
@@ -433,13 +446,13 @@ class AttendanceService(
         stampLegacyWorkReportMeta(teamMemberSchedule, targetEmployee)
         adminMonthlyIntegrationService.refreshIntegration(
             employeeId = targetEmployee.id,
-            yearMonth = YearMonth.from(today)
+            yearMonth = YearMonth.from(workingDate)
         )
 
         // 출근 현황 집계
-        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
-        val totalCount = todayTeamMemberSchedules.size
-        val registeredCount = todayTeamMemberSchedules.count { it.attendanceLog != null || it.id == teamMemberSchedule.id }
+        val workingDateSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(targetEmployee.id, workingDate)
+        val totalCount = workingDateSchedules.size
+        val registeredCount = workingDateSchedules.count { it.attendanceLog != null || it.id == teamMemberSchedule.id }
 
         return AttendanceRegisterResponse(
             scheduleId = teamMemberSchedule.id,

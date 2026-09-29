@@ -172,6 +172,7 @@ class ProxyAttendanceNotifier extends StateNotifier<ProxyAttendanceState> {
 
   /// 대리출근 등록 후 재조회. 성공 시 null, 실패 시 에러 메시지 반환.
   /// 진열=[displayWorkScheduleId], 행사·기배정=[scheduleId] 중 하나 전달.
+  /// 등록 대상 근무일은 화면에서 선택한 날짜(state.selectedDate) — 과거일 소급 등록 지원.
   Future<String?> registerProxyAttendance({
     required int targetEmployeeId,
     int? scheduleId,
@@ -183,6 +184,7 @@ class ProxyAttendanceNotifier extends StateNotifier<ProxyAttendanceState> {
       await _repository.registerProxyAttendance(
         branchCode: branch.branchCode,
         targetEmployeeId: targetEmployeeId,
+        workingDate: state.selectedDate,
         scheduleId: scheduleId,
         displayWorkScheduleId: displayWorkScheduleId,
       );

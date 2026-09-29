@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailySta
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceBranchNotAllowedException
+import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceFutureDateException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceNotAllowedException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceNotBranchMemberException
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -37,6 +38,10 @@ import java.time.LocalDate
  * - 지점 스코프가 조장 costCenterCode(자동) → 선택 지점(사용자 지정 + 서버 IDOR 재검증) 으로 변경.
  * - 권한 가드가 조장(LEADER) → AccountViewAll 로 변경.
  * - 지점 목록/여사원 스코프 = 대시보드 34개 화이트리스트 기준([ProxyAttendanceBranchResolver]).
+ * - 등록 가능 일자가 "당일만" → **과거일 소급 허용 + 미래일 차단**. 레거시는 화면 스크립트
+ *   (`mngDaily.jsp` `btn-add-sch`) 에서만 당일/오후 5시를 막았고 서버(`addScheduleProc`)에는
+ *   일자 가드가 없었다. 신규는 누락 출근의 사후 보정 요구를 반영해 과거일을 열되, 클라이언트
+ *   우회를 막기 위해 미래일 차단은 **서버가 정본**으로 검증한다. 참조: legacy-deviation.md §3 API 계약.
  */
 @Service
 @Transactional(readOnly = true)
@@ -87,8 +92,11 @@ class ProxyAttendanceService(
     }
 
     /**
-     * 대리출근 등록. 권한(AccountViewAll) + 지점 허용(IDOR) + 대상 여사원 지점 소속 검증 후,
-     * 실제 출근 등록은 [AttendanceService.registerProxy] 에 위임 (GPS 스킵).
+     * 대리출근 등록. 권한(AccountViewAll) + 지점 허용(IDOR) + 근무일(미래 차단) + 대상 여사원 지점
+     * 소속 검증 후, 실제 출근 등록은 [AttendanceService.registerProxy] 에 위임 (GPS 스킵).
+     *
+     * 근무일은 요청의 `workingDate` 를 따르며 생략 시 오늘. 과거일은 소급 등록을 허용하고,
+     * 미래일은 [ProxyAttendanceFutureDateException] 으로 거부한다 (클래스 KDoc §신규 차이 참조).
      */
     @Transactional
     fun registerProxyAttendance(
@@ -96,6 +104,12 @@ class ProxyAttendanceService(
         request: ProxyAttendanceRegisterRequest
     ): AttendanceRegisterResponse {
         requireAccountViewAll(findRegistrant(registrantId))
+
+        val today = LocalDate.now()
+        val workingDate = request.workingDate ?: today
+        if (workingDate.isAfter(today)) {
+            throw ProxyAttendanceFutureDateException()
+        }
 
         val branchCode = request.branchCode?.takeIf { it.isNotBlank() }
             ?: throw ProxyAttendanceBranchNotAllowedException()
@@ -114,7 +128,8 @@ class ProxyAttendanceService(
         return attendanceService.registerProxy(
             targetEmployee = targetEmployee,
             scheduleId = request.scheduleId,
-            displayWorkScheduleId = request.displayWorkScheduleId
+            displayWorkScheduleId = request.displayWorkScheduleId,
+            workingDate = workingDate
         )
     }
 

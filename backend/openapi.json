@@ -22691,6 +22691,40 @@
         },
         "type" : "object"
       },
+      "ProductAppVisibility" : {
+        "properties" : {
+          "issues" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductAppVisibilityIssue"
+            },
+            "type" : "array"
+          },
+          "orderable" : {
+            "type" : "boolean"
+          },
+          "searchable" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "ProductAppVisibilityIssue" : {
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ProductBarcodeItem" : {
         "properties" : {
           "barcode" : {
@@ -22730,6 +22764,9 @@
         "properties" : {
           "allergen" : {
             "type" : [ "string", "null" ]
+          },
+          "appVisibility" : {
+            "$ref" : "#/components/schemas/ProductAppVisibility"
           },
           "barcode" : {
             "type" : [ "string", "null" ]
@@ -23005,6 +23042,9 @@
       },
       "ProductListItem" : {
         "properties" : {
+          "appVisibility" : {
+            "$ref" : "#/components/schemas/ProductAppVisibility"
+          },
           "category1" : {
             "type" : [ "string", "null" ]
           },
@@ -24265,6 +24305,10 @@
           "targetEmployeeId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "workingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "branchCode", "targetEmployeeId" ],
@@ -36387,6 +36431,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "appSearchable",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -36479,6 +36530,13 @@
           "required" : false,
           "schema" : {
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "appSearchable",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
           }
         } ],
         "responses" : {

@@ -5,30 +5,31 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/leader_daily_status.dart';
 
-/// 대리출근 등록 가능 판정 결과 (레거시 mngDaily `btn-add-sch` 동등).
-enum ProxyEligibility { ok, notToday }
+/// 대리출근 등록 가능 판정 결과.
+enum ProxyEligibility { ok, future }
 
 /// 선택 날짜·현재 시각으로 대리출근 가능 여부 판정.
 ///
-/// 당일 일정만 등록 가능 (시간 제한 없음). 조장/AccountViewAll 대리출근 공통 규칙.
+/// 오늘과 과거일은 등록 가능(누락 출근 소급 등록), 미래일만 차단. 시간 제한 없음.
+/// 레거시(mngDaily `btn-add-sch`)는 당일 + 오후 5시 이전만 허용했으나, 소급 등록 요구로 과거일을
+/// 열었다. 미래일 차단은 서버가 정본으로 재검증한다(PROXY_ATTENDANCE_FUTURE_DATE).
 ProxyEligibility proxyEligibility(DateTime selectedDate, DateTime now) {
-  final isToday = selectedDate.year == now.year &&
-      selectedDate.month == now.month &&
-      selectedDate.day == now.day;
-  if (!isToday) return ProxyEligibility.notToday;
+  final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+  final today = DateTime(now.year, now.month, now.day);
+  if (selected.isAfter(today)) return ProxyEligibility.future;
   return ProxyEligibility.ok;
 }
 
 extension ProxyEligibilityX on ProxyEligibility {
   bool get canRegister => this == ProxyEligibility.ok;
 
-  /// 불가 사유 (레거시 alert 문구 정합). ok 면 null.
+  /// 불가 사유 (서버 에러 메시지와 동일 문구). ok 면 null.
   String? get reason {
     switch (this) {
       case ProxyEligibility.ok:
         return null;
-      case ProxyEligibility.notToday:
-        return '당일 일정만 대리출근 등록할 수 있습니다.';
+      case ProxyEligibility.future:
+        return '미래 일정은 대리출근 등록할 수 없습니다.';
     }
   }
 }

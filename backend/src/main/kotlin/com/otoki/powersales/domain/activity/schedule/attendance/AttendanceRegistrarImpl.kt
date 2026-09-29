@@ -16,6 +16,7 @@ import java.time.LocalDateTime
  *
  * 레거시 대비 필드 적재:
  * - `attendance_date` = 등록 시각 (레거시 `DKRetail__CommuteDate__c = system.now()` 동등, IF_REST_MOBILE_WorkReport.cls:78).
+ *   단 호출측이 [AttendanceRegisterRequest.attendanceDate] 를 지정하면 그 값 (대리출근 과거일 소급 등록).
  * - `reason` = 요청 사유 (레거시 `DKRetail__Reason__c = inputObj.Reason` 동등, cls:77).
  * - `employee_id` / `account_id` / `attendance_type` = 신규 id-FK 모델 실체 데이터.
  *   레거시 CommuteLog__c 는 이 값들을 NULL 로 두고 TeamMemberSchedule 측에 두었으나, 신규는 출근로그
@@ -36,7 +37,7 @@ class AttendanceRegistrarImpl(
             AttendanceLog(
                 employeeId = request.employeeId,
                 accountId = request.accountId,
-                attendanceDate = LocalDateTime.now(clock),
+                attendanceDate = request.attendanceDate ?: LocalDateTime.now(clock),
                 attendanceType = request.attendanceType,
                 reason = request.reason,
             )

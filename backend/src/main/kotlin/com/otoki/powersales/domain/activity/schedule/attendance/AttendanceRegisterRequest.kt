@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.attendance
 
 import com.otoki.powersales.domain.activity.schedule.enums.AttendanceType
+import java.time.LocalDateTime
 
 /**
  * 출근로그 생성 요청 데이터
@@ -10,6 +11,9 @@ import com.otoki.powersales.domain.activity.schedule.enums.AttendanceType
  * `Reason__c` 만 채우고 사원/거래처는 TeamMemberSchedule 측에 두었으나, 신규 시스템은 id-FK 모델이라
  * 출근로그 자체에 사원/거래처 id 를 적재해 admin 출근현황 조회(AdminAttendanceLog*)와 정합시킨다.
  *
+ * [attendanceDate] 는 출근 시각을 호출측이 지정하는 경우에만 채운다 (대리출근 과거일 소급 등록 —
+ * 근무일 + 등록 시각). null 이면 registrar 가 현재 시각을 쓴다 (본인 출근 등록 = 레거시 동등).
+ *
  * TMS 백링크·안전점검 stamp 는 registrar 책임이 아니므로 스케줄/안전점검 필드를 갖지 않는다
  * ([AttendanceRegistrar] 문서 참조).
  */
@@ -18,4 +22,5 @@ data class AttendanceRegisterRequest(
     val accountId: Long? = null,
     val attendanceType: AttendanceType = AttendanceType.REGULAR,
     val reason: String? = null,
+    val attendanceDate: LocalDateTime? = null,
 )

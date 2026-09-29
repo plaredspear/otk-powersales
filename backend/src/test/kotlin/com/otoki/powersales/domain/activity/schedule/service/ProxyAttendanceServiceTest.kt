@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailySta
 import com.otoki.powersales.domain.activity.schedule.enums.AttendanceType
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceBranchNotAllowedException
+import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceFutureDateException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceNotAllowedException
 import com.otoki.powersales.domain.activity.schedule.exception.ProxyAttendanceNotBranchMemberException
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -154,8 +155,11 @@ class ProxyAttendanceServiceTest {
             every { proxyAttendanceBranchResolver.isBranchAllowed(branchCode) } returns true
             every { employeeRepository.findById(10) } returns Optional.of(target)
             val expected = registerResponse()
+            val today = LocalDate.now()
             every {
-                attendanceService.registerProxy(target, scheduleId = null, displayWorkScheduleId = 500L)
+                attendanceService.registerProxy(
+                    target, scheduleId = null, displayWorkScheduleId = 500L, workingDate = today
+                )
             } returns expected
 
             val result = service.registerProxyAttendance(
@@ -169,7 +173,59 @@ class ProxyAttendanceServiceTest {
 
             assertThat(result).isSameAs(expected)
             assertThat(result.gpsSkipped).isTrue()
-            verify { attendanceService.registerProxy(target, null, 500L) }
+            // workingDate 생략 -> 오늘로 위임
+            verify { attendanceService.registerProxy(target, null, 500L, today) }
+        }
+
+        @Test
+        @DisplayName("성공 - 과거 근무일 소급 등록 -> 선택 날짜 그대로 위임")
+        fun pastWorkingDate() {
+            val viewer = employee(id = 1, role = AppAuthority.ACCOUNT_VIEW_ALL)
+            val target = employee(id = 10, role = AppAuthority.WOMAN, costCenterCode = branchCode)
+            every { employeeRepository.findById(1) } returns Optional.of(viewer)
+            every { proxyAttendanceBranchResolver.isBranchAllowed(branchCode) } returns true
+            every { employeeRepository.findById(10) } returns Optional.of(target)
+            val pastDate = LocalDate.now().minusDays(3)
+            val expected = registerResponse()
+            every {
+                attendanceService.registerProxy(
+                    target, scheduleId = null, displayWorkScheduleId = 500L, workingDate = pastDate
+                )
+            } returns expected
+
+            val result = service.registerProxyAttendance(
+                1,
+                ProxyAttendanceRegisterRequest(
+                    branchCode = branchCode,
+                    targetEmployeeId = 10,
+                    displayWorkScheduleId = 500L,
+                    workingDate = pastDate,
+                )
+            )
+
+            assertThat(result).isSameAs(expected)
+            verify { attendanceService.registerProxy(target, null, 500L, pastDate) }
+        }
+
+        @Test
+        @DisplayName("실패 - 미래 근무일 -> PROXY_ATTENDANCE_FUTURE_DATE (등록 위임 없음)")
+        fun futureWorkingDate() {
+            val viewer = employee(id = 1, role = AppAuthority.ACCOUNT_VIEW_ALL)
+            every { employeeRepository.findById(1) } returns Optional.of(viewer)
+
+            assertThatThrownBy {
+                service.registerProxyAttendance(
+                    1,
+                    ProxyAttendanceRegisterRequest(
+                        branchCode = branchCode,
+                        targetEmployeeId = 10,
+                        displayWorkScheduleId = 500L,
+                        workingDate = LocalDate.now().plusDays(1),
+                    )
+                )
+            }.isInstanceOf(ProxyAttendanceFutureDateException::class.java)
+
+            verify(exactly = 0) { attendanceService.registerProxy(any(), any(), any(), any()) }
         }
 
         @Test

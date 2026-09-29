@@ -50,15 +50,18 @@ class ProxyAttendanceApiDataSource {
   }
 
   /// 대리출근 등록. 진열=displayWorkScheduleId, 행사·기배정=scheduleId 중 하나 전달.
+  /// [workingDate]: 등록 대상 근무일 (YYYY-MM-DD). 과거일 소급 등록 지원, 미래일은 서버가 거부.
   Future<void> registerProxyAttendance({
     required String branchCode,
     required int targetEmployeeId,
+    required String workingDate,
     int? scheduleId,
     int? displayWorkScheduleId,
   }) async {
     final body = <String, dynamic>{
       'branchCode': branchCode,
       'targetEmployeeId': targetEmployeeId,
+      'workingDate': workingDate,
     };
     if (displayWorkScheduleId != null) {
       body['displayWorkScheduleId'] = displayWorkScheduleId;

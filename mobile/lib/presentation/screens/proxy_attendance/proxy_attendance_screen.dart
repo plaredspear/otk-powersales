@@ -249,7 +249,11 @@ class _ProxyAttendanceScreenState extends ConsumerState<ProxyAttendanceScreen>
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         children: [
-          _EligibilityBanner(eligibility: eligibility, now: now),
+          _EligibilityBanner(
+            eligibility: eligibility,
+            selectedDate: state.selectedDate,
+            now: now,
+          ),
           if (displayGroups.isNotEmpty)
             _SectionHeader(title: '진열 (${displayGroups.length}명)'),
           ...displayGroups.map((g) => _buildGroupBand(g, '진열', eligibility)),
@@ -425,17 +429,27 @@ class _DateSelector extends StatelessWidget {
 /// 등록 가능 여부/사유를 한 줄로 표시하는 배너.
 class _EligibilityBanner extends StatelessWidget {
   final ProxyEligibility eligibility;
+  final DateTime selectedDate;
   final DateTime now;
 
-  const _EligibilityBanner({required this.eligibility, required this.now});
+  const _EligibilityBanner({
+    required this.eligibility,
+    required this.selectedDate,
+    required this.now,
+  });
 
   @override
   Widget build(BuildContext context) {
     final ok = eligibility.canRegister;
     final color = ok ? AppColors.secondary : AppColors.warning;
     final icon = ok ? Icons.check_circle_outline : Icons.info_outline;
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
     final text = ok
-        ? '오늘 ${DateFormat('HH:mm').format(now)} · 대리출근 등록 가능'
+        ? (isToday
+            ? '오늘 ${DateFormat('HH:mm').format(now)} · 대리출근 등록 가능'
+            : '${DateFormat('yyyy.MM.dd(E)', 'ko_KR').format(selectedDate)} · 지난 근무 대리출근 등록 가능')
         : (eligibility.reason ?? '');
 
     return Container(
