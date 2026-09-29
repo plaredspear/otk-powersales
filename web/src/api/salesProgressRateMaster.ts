@@ -29,9 +29,15 @@ export interface SalesProgressRateMasterListItem {
   frTargetAmount: number | null;
   foTargetAmount: number | null;
   targetSum: number;
+  /** 조회 시점에 월매출이력(마감 합계)에서 산출된 당월 실적. 원천 row 가 없으면 SF 이관 스냅샷. */
   currentMonthSalesAmount: number | null;
+  /** 동일 규칙의 전월(직전 달) 실적. */
   previousMonthSalesAmount: number | null;
   progressRate: number | null;
+  /** 당월 실적의 원천 월매출이력 최종 적재 시각. 이관 스냅샷으로 폴백한 경우 null. */
+  currentMonthSourceUpdatedAt: string | null;
+  /** 전월 실적의 원천 월매출이력 최종 적재 시각. 이관 스냅샷으로 폴백한 경우 null. */
+  previousMonthSourceUpdatedAt: string | null;
 }
 
 export interface SalesProgressRateMasterListData {
@@ -61,6 +67,8 @@ export interface SalesProgressRateMasterDetail {
   currentMonthSalesAmount: number | null;
   previousMonthSalesAmount: number | null;
   progressRate: number | null;
+  currentMonthSourceUpdatedAt: string | null;
+  previousMonthSourceUpdatedAt: string | null;
   businessRate: number | null;
   externalKey: string | null;
   accountBranchView: string | null;

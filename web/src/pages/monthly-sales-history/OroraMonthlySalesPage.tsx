@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Alert, Button, Card, DatePicker, Input, Space, Statistic, Tag, Typography, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
@@ -62,13 +63,33 @@ function amountColumn(
  * 월 매출(물류배부/전산실적)·POS매출 등 기존 매출 화면과 같은 entity 다.
  */
 export default function OroraMonthlySalesPage() {
+  /*
+    조회조건을 URL query 로도 받는다 (`?accountCode=1025008&salesMonth=202609&accountName=...`).
+    거래처목표등록마스터의 당월/전월 실적 금액에서 "이 값의 원천" 으로 넘어오는 진입점이며
+    (`lib/monthlySalesSourceLink`), 조건이 갖춰져 있으면 진입 즉시 조회된 상태로 연다.
+    새로고침/뒤로가기에도 조건이 남도록 수동 조회 시에도 같은 param 을 갱신한다.
+  */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialAccountCode = (searchParams.get('accountCode') ?? '').trim();
+  const initialSalesMonth = (searchParams.get('salesMonth') ?? '').trim();
+  const initialMonth = /^\d{6}$/.test(initialSalesMonth)
+    ? dayjs(`${initialSalesMonth.slice(0, 4)}-${initialSalesMonth.slice(4, 6)}-01`)
+    : null;
+
   // 입력 버퍼 (조회 버튼/Enter 전까지 API 미호출).
-  const [accountCodeInput, setAccountCodeInput] = useState('');
-  const [selectedAccountName, setSelectedAccountName] = useState<string | null>(null);
-  const [monthInput, setMonthInput] = useState<Dayjs>(dayjs());
+  const [accountCodeInput, setAccountCodeInput] = useState(initialAccountCode);
+  const [selectedAccountName, setSelectedAccountName] = useState<string | null>(
+    () => searchParams.get('accountName') ?? null,
+  );
+  const [monthInput, setMonthInput] = useState<Dayjs>(() => initialMonth ?? dayjs());
   const [searchOpen, setSearchOpen] = useState(false);
   // 조회 실행 시점의 확정 조건. null 이면 조회 전.
-  const [submitted, setSubmitted] = useState<{ accountCode: string; salesMonth: string } | null>(null);
+  const [submitted, setSubmitted] = useState<{ accountCode: string; salesMonth: string } | null>(
+    () =>
+      initialAccountCode && initialMonth
+        ? { accountCode: initialAccountCode, salesMonth: initialSalesMonth }
+        : null,
+  );
 
   const { data, isLoading, isFetching, isError, error, refetch } = useMonthlySalesHistories(submitted);
 
@@ -78,7 +99,10 @@ export default function OroraMonthlySalesPage() {
       message.warning('거래처코드는 필수항목입니다. 직접 입력하거나 고급 검색으로 선택해주세요.');
       return;
     }
-    setSubmitted({ accountCode, salesMonth: monthInput.format('YYYYMM') });
+    const salesMonth = monthInput.format('YYYYMM');
+    setSubmitted({ accountCode, salesMonth });
+    // 직전 진입 param(accountName 등)이 남지 않도록 조회조건만으로 교체한다.
+    setSearchParams({ accountCode, salesMonth }, { replace: true });
   };
 
   const handleAccountSelect = (account: Account) => {

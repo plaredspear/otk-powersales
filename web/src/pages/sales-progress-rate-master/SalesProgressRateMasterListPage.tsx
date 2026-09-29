@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Button, Input, Select, Tag, Typography } from 'antd';
+import { Link } from 'react-router-dom';
+import { Button, Input, Select, Tag, Tooltip, Typography } from 'antd';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useSalesProgressRateMasters } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasters';
 import { useSalesProgressRateMasterBranches } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasterBranches';
@@ -10,10 +12,39 @@ import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
+import {
+  MONTHLY_SALES_HISTORY_ENTITY,
+  buildMonthlySalesSourceHref,
+  toSalesMonthToken,
+} from '@/lib/monthlySalesSourceLink';
+import { usePermission } from '@/hooks/usePermission';
 import { listTableLocale } from '@/lib/listTableLocale';
 
 function formatAmount(value: number | null): string {
   return value != null ? value.toLocaleString() : '-';
+}
+
+/** 당월/전월 실적 컬럼 헤더 tooltip 본문 — 값의 출처 + 원천(ORORA) 갱신 시점을 함께 보여준다. */
+const ACTUALS_SOURCE_HINT =
+  '기준정보 > ORORA 월매출(월매출이력)의 마감 합계(전산마감 합계 + 물류마감 합계)에서 조회 시점에 산출됩니다. 금액을 클릭하면 해당 거래처·월의 원천 데이터를 볼 수 있습니다.';
+
+/** 적재 시각 표기 — null 이면 '-'. */
+function formatDateTime(value: string | null | undefined): string {
+  return value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-';
+}
+
+/**
+ * 현재 목록 행들의 원천(월매출이력) 최종 적재 시각 중 가장 최근 값.
+ *
+ * 행마다 거래처·매출월이 달라 적재 시각도 제각각이라, 헤더에는 "이 목록 기준 가장 최근" 을 표기한다
+ * (행별 정확한 값은 금액 cell tooltip). 전부 SF 이관 스냅샷 폴백이면 null.
+ */
+function latestSourceUpdatedAt(
+  rows: SalesProgressRateMasterListItem[],
+  key: 'currentMonthSourceUpdatedAt' | 'previousMonthSourceUpdatedAt',
+): string | null {
+  const values = rows.map((row) => row[key]).filter((v): v is string => !!v);
+  return values.length > 0 ? values.reduce((a, b) => (a > b ? a : b)) : null;
 }
 
 function formatRate(value: number | null): string {
@@ -39,6 +70,7 @@ export default function SalesProgressRateMasterListPage() {
   const [keywordInput, setKeywordInput] = useState(keyword);
 
   // 권한별 지점 화이트리스트 — 지점 1개면 셀렉터 대신 고정 Tag 표시 (거래처 마스터 화면과 동일 패턴).
+  const { hasEntityPermission } = usePermission();
   const { data: branches } = useSalesProgressRateMasterBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
   const singleBranch = branches?.length === 1 ? branches[0] : null;
@@ -61,6 +93,66 @@ export default function SalesProgressRateMasterListPage() {
     page,
     size,
   });
+
+  const rows = data?.content ?? [];
+
+  /**
+   * 당월/전월 실적 컬럼 헤더 — hover 시 산출 출처 + **ORORA 최종 적재 시각**을 보여준다.
+   * 숫자가 언제 기준인지(= 어제 마감까지인지, 지난달에 멈춘 건지)를 화면에서 바로 판단할 수 있게 한다.
+   */
+  const actualsColumnTitle = (
+    label: string,
+    sourceKey: 'currentMonthSourceUpdatedAt' | 'previousMonthSourceUpdatedAt',
+  ) => {
+    const latest = latestSourceUpdatedAt(rows, sourceKey);
+    return (
+      <Tooltip
+        title={
+          <div style={{ whiteSpace: 'pre-line' }}>
+            {`${ACTUALS_SOURCE_HINT}\n\n${
+              latest
+                ? `현재 목록 기준 ORORA 최종 적재: ${formatDateTime(latest)}`
+                : 'ORORA 적재 이력 없음 — SF 이관 시점 값으로 표시 중입니다.'
+            }`}
+          </div>
+        }
+      >
+        <span>{label} ⓘ</span>
+      </Tooltip>
+    );
+  };
+
+  // 실적 금액 → 원천 기준정보(ORORA 월매출) 링크. 권한(monthly_sales_history:R) 이 없거나
+  // 거래처코드/목표월을 해석할 수 없으면 링크 없이 숫자만 노출한다.
+  const canViewMonthlySales = hasEntityPermission(MONTHLY_SALES_HISTORY_ENTITY, 'READ');
+
+  /** @param monthOffset 0 = 당월 실적, -1 = 전월 실적 (해당 매출월의 월매출이력으로 이동). */
+  const renderAmountWithSource = (
+    value: number | null,
+    row: SalesProgressRateMasterListItem,
+    monthOffset: number,
+  ) => {
+    const salesMonth = toSalesMonthToken(row.targetYear, row.targetMonth, monthOffset);
+    // 행별 정확한 적재 시각 — 헤더의 "목록 기준 최신" 과 달리 이 행/월의 원천 시각이다.
+    const sourceUpdatedAt =
+      monthOffset === 0 ? row.currentMonthSourceUpdatedAt : row.previousMonthSourceUpdatedAt;
+    const sourceText = sourceUpdatedAt
+      ? `ORORA 적재 ${formatDateTime(sourceUpdatedAt)}`
+      : 'ORORA 적재 없음 (SF 이관 값)';
+
+    if (!canViewMonthlySales || !row.accountCode || !salesMonth) {
+      return <Tooltip title={sourceText}>{formatAmount(value)}</Tooltip>;
+    }
+    return (
+      <Tooltip
+        title={`${salesMonth.slice(0, 4)}년 ${salesMonth.slice(4, 6)}월 월매출이력 보기 · ${sourceText}`}
+      >
+        <Link to={buildMonthlySalesSourceHref(row.accountCode, salesMonth, row.accountName)}>
+          {formatAmount(value)}
+        </Link>
+      </Tooltip>
+    );
+  };
 
   const columns: ColumnsType<SalesProgressRateMasterListItem> = [
     {
@@ -164,18 +256,20 @@ export default function SalesProgressRateMasterListPage() {
       render: (val: number) => (val != null ? val.toLocaleString() : '-'),
     },
     {
-      title: '당월 매출 실적',
+      title: actualsColumnTitle('당월 매출 실적', 'currentMonthSourceUpdatedAt'),
       dataIndex: 'currentMonthSalesAmount',
       width: 130,
       align: 'right',
-      render: formatAmount,
+      render: (val: number | null, row: SalesProgressRateMasterListItem) =>
+        renderAmountWithSource(val, row, 0),
     },
     {
-      title: '전월 매출 실적',
+      title: actualsColumnTitle('전월 매출 실적', 'previousMonthSourceUpdatedAt'),
       dataIndex: 'previousMonthSalesAmount',
       width: 130,
       align: 'right',
-      render: formatAmount,
+      render: (val: number | null, row: SalesProgressRateMasterListItem) =>
+        renderAmountWithSource(val, row, -1),
     },
     {
       title: '매출 진도율',
@@ -253,7 +347,7 @@ export default function SalesProgressRateMasterListPage() {
         <ResizableTable
           rowKey="id"
           columns={columns}
-          dataSource={data?.content}
+          dataSource={rows}
           loading={isLoading}
           locale={listTableLocale()}
           scroll={{ x: 1900, y: scrollY }}
