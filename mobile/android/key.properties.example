@@ -17,10 +17,14 @@
 # 서명 키로 채택했기 때문이다. 키 자체는 이 프로젝트 고유하며(머신마다 다르게
 # 생성됨), 운영 배포본이 실제로 이 키로 서명돼 있어 교체할 수 없다.
 #
-# 새 머신에서 빌드할 때: 위 .jks 를 안전한 경로에 복사하고 storeFile 을 그 경로로.
-# ── 경로 ────────────────────────────────────────────────────────────
-# storeFile 은 절대경로 또는 rootProject(= android/) 기준 상대경로.
-storeFile=/절대경로/otoki/.signing/otoki-powersales-release.jks
+# ── storeFile 경로 ──────────────────────────────────────────────────
+# rootProject(= mobile/android/) 기준 상대경로 또는 절대경로.
+# 아래 기본값은 저장소 루트 바깥의 otoki/.signing/ 을 상대경로로 가리킨다:
+#   mobile/android → mobile → <worktree> → otoki/  →  .signing/
+# otoki 루트 아래 worktree 구조를 유지하면 머신·계정이 달라도 이 파일을 수정 없이
+# 그대로 쓸 수 있다(맥미니 등 다른 빌드 머신 포함).
+# 구조가 다른 곳에 두었다면 절대경로로 바꾼다.
+storeFile=../../../.signing/otoki-powersales-release.jks
 storePassword=여기에_keystore_비밀번호
 keyAlias=androiddebugkey
 keyPassword=여기에_key_비밀번호
