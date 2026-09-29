@@ -17,7 +17,7 @@ import kotlin.collections.iterator
  *
  * - **매칭 키**: ExternalKey(`연+월+거래처코드`). [SalesProgressRateMasterFetchDto.externalKey] 가
  *   비어 있으면 `targetYear + targetMonth + accountCode` 로 재조합 (SF Trigger 동등, month leftPad 없음).
- * - 기존 row 존재 → 목표/실적/영업일진도율/지점 컬럼 UPDATE. 없으면 INSERT.
+ * - 기존 row 존재 → 목표/영업일진도율/지점 컬럼 UPDATE. 없으면 INSERT.
  * - 거래처(account FK)는 거래처코드(Account.externalKey) 로 resolve. INSERT 시 미매칭이면 account
  *   미연결로 적재(목표 데이터 자체는 보존), UPDATE 시 미매칭이면 기존 FK 를 보존한다.
  * - **삭제 미반영**: SF fetch 결과에 없는 기존 row 는 건드리지 않는다 (upsert only).
@@ -26,6 +26,16 @@ import kotlin.collections.iterator
  * `accountCdUpl`(엑셀 업로드 임시), owner/createdBy/lastModifiedBy 계열 audit FK 는 SF fetch 입력
  * ([SalesProgressRateMasterFetchDto])에 포함하지 않는다 — 이들은 SF→RDS 마이그레이션(Stage1) 권위이며
  * 주기 sync 의 책임 밖이다.
+ *
+ * ## 당월/전월 매출 실적은 sync 대상이 아니다
+ * SF Apex REST `IF_salesprogresssend` 는 `CurrentMonthSalesAmount__c` / `PreviousMonthSalesAmount__c` 를
+ * SOQL 로 조회하면서도 **응답 Result map 에 담지 않는다** (레거시 Apex 실측). 이 값은 레거시에서도
+ * 월매출이력 파생값이었으므로, 신규는 화면 조회 시점에 RDS `monthly_sales_history` 에서 산출한다
+ * ([com.otoki.powersales.domain.sales.service.SalesProgressRateMasterActualsResolver]).
+ * 본 sync 는 해당 2컬럼을 **읽지도 쓰지도 않는다**.
+ *
+ * (2026-06 ~ 2026-09 "6월 이후 실적 미표시" 장애 원인: 초기 구현이 fetch 결과의 null 을 그대로 대입해
+ * SF 가 매일 갱신하는 당월·전월 행의 기존 실적을 매 사이클 지워버렸다. 복제본을 두지 않는 것으로 해소.)
  *
  * ## 충돌 처리
  * `external_key` 는 unique 제약. 동일 사이클 내 중복은 [LinkedHashMap] dedupe 로 방어하나, 본 sync 와
@@ -167,8 +177,7 @@ class SalesProgressRateMasterSyncService(
         rmTargetAmount = dto.rmTargetAmount,
         foTargetAmount = dto.foTargetAmount,
         targetSumAmount = dto.targetSumAmount,
-        currentMonthSalesAmount = dto.currentMonthSalesAmount,
-        previousMonthSalesAmount = dto.previousMonthSalesAmount,
+        // 당월/전월 실적은 SF 응답에 없다 — 화면이 조회 시점에 월매출이력에서 산출한다 (적재 대상 아님).
         businessRate = dto.businessRate,
         accountBranchView = dto.accountBranchView,
         accountBranchCode = dto.accountBranchCode,
@@ -190,8 +199,8 @@ class SalesProgressRateMasterSyncService(
         entity.rmTargetAmount = dto.rmTargetAmount
         entity.foTargetAmount = dto.foTargetAmount
         entity.targetSumAmount = dto.targetSumAmount
-        entity.currentMonthSalesAmount = dto.currentMonthSalesAmount
-        entity.previousMonthSalesAmount = dto.previousMonthSalesAmount
+        // 당월/전월 실적은 갱신 대상에서 제외 — SF 응답에 없어 대입하면 이관 스냅샷을 null 로 지운다.
+        // 표시값은 화면 조회 시점에 월매출이력에서 산출한다.
         entity.businessRate = dto.businessRate
         entity.accountBranchView = dto.accountBranchView
         entity.accountBranchCode = dto.accountBranchCode

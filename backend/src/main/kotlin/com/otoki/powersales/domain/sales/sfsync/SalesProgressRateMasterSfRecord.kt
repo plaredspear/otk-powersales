@@ -44,9 +44,8 @@ data class SalesProgressRateMasterSfRecord(
         rmTargetAmount = parseDouble(rmTargetAmount),
         foTargetAmount = parseDouble(foTargetAmount),
         targetSumAmount = parseDouble(targetSumAmount),
-        // 문서 Response 에 없는 컬럼(현/전월 실적·지점). 신규 DB 가 산출/보강하므로 fetch 비대상 → null.
-        currentMonthSalesAmount = null,
-        previousMonthSalesAmount = null,
+        // 현/전월 실적은 SF 응답에 없다 (SOQL 조회는 하지만 Result map 에서 누락 — 레거시 Apex 실측).
+        // 레거시 Batch_SalesProgressRate_M 과 동일하게 신규 DB 가 월매출이력에서 파생하므로 DTO 필드 자체가 없다.
         businessRate = parseDouble(businessRate),
         accountBranchView = null,
         accountBranchCode = null,

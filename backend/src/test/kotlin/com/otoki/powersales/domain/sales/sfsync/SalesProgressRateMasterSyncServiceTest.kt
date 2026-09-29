@@ -22,7 +22,6 @@ class SalesProgressRateMasterSyncServiceTest {
     private val fetchClient: SalesProgressRateMasterFetchClient = mockk()
     private val repository: SalesProgressRateMasterRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
-
     private val service = SalesProgressRateMasterSyncService(
         fetchClient = fetchClient,
         repository = repository,
@@ -54,7 +53,7 @@ class SalesProgressRateMasterSyncServiceTest {
             externalKey = "202631025008",
             year = "2026", month = "3", accountCode = "1025008",
             rt = 100.0, fr = 200.0, rm = 300.0, fo = 400.0,
-            current = 500.0, previous = 450.0, businessRate = 60.0,
+            businessRate = 60.0,
         )
         every { fetchClient.fetch(any()) } returns listOf(dto)
 
@@ -66,13 +65,14 @@ class SalesProgressRateMasterSyncServiceTest {
         assertThat(saved.externalKey).isEqualTo("202631025008")
         assertThat(saved.rtTargetAmount).isEqualTo(100.0)
         assertThat(saved.foTargetAmount).isEqualTo(400.0)
-        assertThat(saved.currentMonthSalesAmount).isEqualTo(500.0)
-        assertThat(saved.previousMonthSalesAmount).isEqualTo(450.0)
         assertThat(saved.businessRate).isEqualTo(60.0)
+        // 실적 2컬럼은 SF 응답에 없어 적재 대상이 아니다 (화면이 월매출이력에서 산출).
+        assertThat(saved.currentMonthSalesAmount).isNull()
+        assertThat(saved.previousMonthSalesAmount).isNull()
     }
 
     @Test
-    @DisplayName("기존 row 가 있으면 UPDATE — 동일 인스턴스의 목표/실적이 갱신된다")
+    @DisplayName("기존 row 가 있으면 UPDATE — 동일 인스턴스의 목표가 갱신된다")
     fun updatesExistingRecord() {
         val existing = SalesProgressRateMaster(
             id = 7L,
@@ -82,13 +82,14 @@ class SalesProgressRateMasterSyncServiceTest {
             targetMonth = "3",
             rtTargetAmount = 1.0,
             currentMonthSalesAmount = 1.0,
+            previousMonthSalesAmount = 2.0,
         )
         every { repository.findByExternalKeyIn(any()) } returns listOf(existing)
 
         val dto = dto(
             externalKey = "202631025008",
             year = "2026", month = "3", accountCode = "1025008",
-            rt = 999.0, current = 888.0,
+            rt = 999.0,
         )
 
         val result = service.syncRecords(listOf(dto))
@@ -98,7 +99,28 @@ class SalesProgressRateMasterSyncServiceTest {
         val saved = savedSlot.captured.single()
         assertThat(saved.id).isEqualTo(7L)
         assertThat(saved.rtTargetAmount).isEqualTo(999.0)
-        assertThat(saved.currentMonthSalesAmount).isEqualTo(888.0)
+    }
+
+    @Test
+    @DisplayName("UPDATE 가 기존 당월/전월 실적을 지우지 않는다 (SF 응답 미포함 컬럼 보존)")
+    fun preservesActualsOnUpdate() {
+        val existing = SalesProgressRateMaster(
+            id = 7L,
+            externalKey = "202631025008",
+            targetYear = "2026",
+            targetMonth = "3",
+            currentMonthSalesAmount = 500.0,
+            previousMonthSalesAmount = 450.0,
+        )
+        every { repository.findByExternalKeyIn(any()) } returns listOf(existing)
+
+        val dto = dto(externalKey = "202631025008", year = "2026", month = "3", accountCode = "1025008", rt = 1.0)
+
+        service.syncRecords(listOf(dto))
+
+        val saved = savedSlot.captured.single()
+        assertThat(saved.currentMonthSalesAmount).isEqualTo(500.0)
+        assertThat(saved.previousMonthSalesAmount).isEqualTo(450.0)
     }
 
     @Test
@@ -206,8 +228,6 @@ class SalesProgressRateMasterSyncServiceTest {
         fr: Double? = null,
         rm: Double? = null,
         fo: Double? = null,
-        current: Double? = null,
-        previous: Double? = null,
         businessRate: Double? = null,
     ) = SalesProgressRateMasterFetchDto(
         sfid = "a01AAAAAAAAAAAAAAA",
@@ -221,8 +241,6 @@ class SalesProgressRateMasterSyncServiceTest {
         rmTargetAmount = rm,
         foTargetAmount = fo,
         targetSumAmount = null,
-        currentMonthSalesAmount = current,
-        previousMonthSalesAmount = previous,
         businessRate = businessRate,
         accountBranchView = null,
         accountBranchCode = null,

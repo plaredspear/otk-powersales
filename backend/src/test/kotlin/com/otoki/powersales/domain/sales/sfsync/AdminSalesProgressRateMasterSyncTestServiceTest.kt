@@ -87,7 +87,6 @@ class AdminSalesProgressRateMasterSyncTestServiceTest {
                 targetYear = "2026", targetMonth = "3", accountCode = "A-1",
                 rtTargetAmount = null, frTargetAmount = null, rmTargetAmount = null,
                 foTargetAmount = null, targetSumAmount = null,
-                currentMonthSalesAmount = null, previousMonthSalesAmount = null,
                 businessRate = null, accountBranchView = null, accountBranchCode = null,
                 isDeleted = false,
             ),

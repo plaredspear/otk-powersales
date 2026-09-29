@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.domain.sales.repository.MonthlySalesHistoryRepository
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 /**
  * RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) 기반 월별 마감실적 조회 게이트웨이.
@@ -116,6 +117,7 @@ class MonthlySalesHistoryQueryGateway(
                     salesDate = salesDateOf(row),
                     closingAmountSum = closingAmountSum(row),
                     accountId = row.account?.id?.toLong(),
+                    updatedAt = row.updatedAt,
                     abcClosingAmount1 = row.abcClosingAmount1?.let { BigDecimal.valueOf(it) },
                     abcClosingAmount2 = row.abcClosingAmount2?.let { BigDecimal.valueOf(it) },
                     abcClosingAmount3 = row.abcClosingAmount3?.let { BigDecimal.valueOf(it) },
@@ -169,6 +171,7 @@ class MonthlySalesHistoryQueryGateway(
  * @property sapAccountCode 거래처 SAP 코드
  * @property salesDate 매출 연월 `YYYYMM` (조회월/전년월 구분 키). 물류매출 화면에서 사용
  * @property closingAmountSum SF `ClosingAmountSum__c` formula 동등 합계 (ABC합 + Ship합)
+ * @property updatedAt 해당 월 row 의 최종 적재 시각 — 파생값 화면이 "이 숫자가 언제 갱신된 값인지" 를 표기하는 데 사용
  * @property abcClosingAmount1 전산마감실적_상온 (refresh/batch 의 양수 필터 평균 산출용 + 카테고리별 합산). null 가능
  * @property abcClosingAmount2 전산마감실적_라면 (카테고리별 합산용). null 가능
  * @property abcClosingAmount3 전산마감실적_냉장냉동 (카테고리별 합산용). null 가능
@@ -184,6 +187,8 @@ data class MonthlySalesRow(
     val closingAmountSum: BigDecimal,
     /** Account FK (`account_id`). account_id 기준 조회 시에만 채워짐 — sapAccountCode 기준 조회에서는 null */
     val accountId: Long? = null,
+    /** 월매출이력 row 의 최종 적재 시각 (ORORA 적재 배치 / 수동 재집계 시점). */
+    val updatedAt: LocalDateTime? = null,
     val abcClosingAmount1: BigDecimal?,
     val abcClosingAmount2: BigDecimal? = null,
     val abcClosingAmount3: BigDecimal? = null,

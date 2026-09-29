@@ -16,16 +16,25 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
+import java.math.BigDecimal
+import java.time.LocalDateTime
 
 @DisplayName("AdminSalesProgressRateMasterService 테스트")
 class AdminSalesProgressRateMasterServiceTest {
 
     private val repository: SalesProgressRateMasterRepository = mockk()
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk(relaxed = true)
+
+    // 당월/전월 실적은 조회 시점 산출이라 실제 resolver 를 물리고 원천(월매출이력)만 mock 한다 —
+    // 저장 컬럼 폴백/산출값 우선 규칙까지 이 테스트가 함께 지킨다.
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
     private val service = AdminSalesProgressRateMasterService(
         repository = repository,
         policyEvaluator = policyEvaluator,
+        actualsResolver = SalesProgressRateMasterActualsResolver(monthlySalesHistoryGateway),
     )
+
+    private val materializedAt: LocalDateTime = LocalDateTime.of(2026, 3, 20, 6, 12)
 
     private val scope: DataScope = mockk(relaxed = true)
 
@@ -33,6 +42,8 @@ class AdminSalesProgressRateMasterServiceTest {
     fun setUp() {
         // 가시 범위 단건 검증 기본 통과 — forbidden 케이스는 개별 override.
         every { repository.existsVisibleById(any(), any()) } returns true
+        // 월매출이력 기본 stub — 산출 케이스는 개별 override (미적재 = 저장 컬럼 폴백).
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
     }
 
     @Nested
@@ -92,6 +103,44 @@ class AdminSalesProgressRateMasterServiceTest {
 
             assertThat(item.targetSum).isEqualTo(0.0)
             assertThat(item.progressRate).isNull()
+        }
+
+        @Test
+        @DisplayName("월매출이력이 있으면 저장 컬럼 대신 마감 합계로 실적/진도율을 산출하고 적재 시각을 함께 준다")
+        fun derivesActualsFromMonthlySalesHistory() {
+            // 저장 컬럼은 이관 스냅샷(500/450) 이지만, 월매출이력 row 가 있으면 그 값이 정본이다.
+            val entity = createEntity()
+            every {
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(entity))
+            every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns listOf(
+                monthlySalesRow("202603", "800", materializedAt),
+                monthlySalesRow("202602", "600", materializedAt.minusDays(30)),
+            )
+
+            val item = service.getList(scope, null, null, null, null, 0, 20).content.single()
+
+            assertThat(item.currentMonthSalesAmount).isEqualTo(800.0)
+            assertThat(item.previousMonthSalesAmount).isEqualTo(600.0)
+            // 진도율도 산출값 기준 — 800 / 1000
+            assertThat(item.progressRate).isEqualTo(0.8)
+            assertThat(item.currentMonthSourceUpdatedAt).isEqualTo(materializedAt)
+        }
+
+        @Test
+        @DisplayName("월매출이력 row 가 없으면 저장 컬럼(이관 스냅샷)으로 폴백하고 적재 시각은 null 이다")
+        fun fallsBackToStoredColumnWhenNoMonthlyRow() {
+            val entity = createEntity()
+            every {
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(entity))
+
+            val item = service.getList(scope, null, null, null, null, 0, 20).content.single()
+
+            assertThat(item.currentMonthSalesAmount).isEqualTo(500.0)
+            assertThat(item.previousMonthSalesAmount).isEqualTo(450.0)
+            assertThat(item.currentMonthSourceUpdatedAt).isNull()
+            assertThat(item.previousMonthSourceUpdatedAt).isNull()
         }
 
         @Test
@@ -215,4 +264,15 @@ class AdminSalesProgressRateMasterServiceTest {
         currentMonthSalesAmount = currentMonthSalesAmount,
         previousMonthSalesAmount = 450.0,
     ).also { it.account = account }
+
+    /** createEntity 의 거래처(account id=100) + 지정 매출월 월매출이력 row. */
+    private fun monthlySalesRow(salesDate: String, closingAmountSum: String, updatedAt: LocalDateTime) =
+        MonthlySalesRow(
+            sapAccountCode = "1025008",
+            salesDate = salesDate,
+            closingAmountSum = BigDecimal(closingAmountSum),
+            accountId = 100L,
+            updatedAt = updatedAt,
+            abcClosingAmount1 = null,
+        )
 }

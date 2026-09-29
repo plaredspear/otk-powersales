@@ -18135,6 +18135,10 @@
             "format" : "double",
             "type" : [ "number", "null" ]
           },
+          "currentMonthSourceUpdatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "externalKey" : {
             "type" : [ "string", "null" ]
           },
@@ -18159,6 +18163,10 @@
           "previousMonthSalesAmount" : {
             "format" : "double",
             "type" : [ "number", "null" ]
+          },
+          "previousMonthSourceUpdatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "progressRate" : {
             "format" : "double",
@@ -18211,6 +18219,10 @@
             "format" : "double",
             "type" : [ "number", "null" ]
           },
+          "currentMonthSourceUpdatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "foTargetAmount" : {
             "format" : "double",
             "type" : [ "number", "null" ]
@@ -18229,6 +18241,10 @@
           "previousMonthSalesAmount" : {
             "format" : "double",
             "type" : [ "number", "null" ]
+          },
+          "previousMonthSourceUpdatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "progressRate" : {
             "format" : "double",

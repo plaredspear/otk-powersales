@@ -17,12 +17,16 @@ import org.springframework.transaction.annotation.Transactional
  *
  * SF 에서 주기적으로 fetch 한 데이터를 web admin 에서 SF ListView "모두" 동등 컬럼으로 조회.
  * 데이터 권위는 SF — 등록/수정/삭제 없음. OWD=Private 라 [SharingRulePolicyEvaluator] 로 가시 범위 필터.
+ *
+ * 단, **당월/전월 매출 실적만은 SF 가 아니라 RDS 월매출이력에서 조회 시점에 산출**한다
+ * ([SalesProgressRateMasterActualsResolver]) — SF 응답에 담기지 않는 파생값이라 복제본을 둘 수 없다.
  */
 @Service
 @Transactional(readOnly = true)
 class AdminSalesProgressRateMasterService(
     private val repository: SalesProgressRateMasterRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val actualsResolver: SalesProgressRateMasterActualsResolver,
 ) {
 
     /**
@@ -59,8 +63,13 @@ class AdminSalesProgressRateMasterService(
             pageable = pageable
         )
 
+        // 페이지 행들의 실적을 월매출이력에서 일괄 산출 (거래처 IN + 매출월 IN — 페이지당 1 trip).
+        val actualsByTargetId = actualsResolver.resolve(resultPage.content)
+
         return SalesProgressRateMasterListResponse(
-            content = resultPage.content.map { SalesProgressRateMasterListItem.from(it) },
+            content = resultPage.content.map {
+                SalesProgressRateMasterListItem.from(it, actualsByTargetId.getValue(it.id))
+            },
             page = page,
             size = size,
             totalElements = resultPage.totalElements,
@@ -83,6 +92,6 @@ class AdminSalesProgressRateMasterService(
         val entity = repository.findByIdWithRelations(id)
             ?: throw SalesProgressRateMasterNotFoundException()
 
-        return SalesProgressRateMasterDetailResponse.from(entity)
+        return SalesProgressRateMasterDetailResponse.from(entity, actualsResolver.resolveOne(entity))
     }
 }

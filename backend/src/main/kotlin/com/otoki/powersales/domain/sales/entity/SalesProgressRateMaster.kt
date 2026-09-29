@@ -19,6 +19,15 @@ import com.otoki.powersales.platform.common.entity.FieldName
  * 거래처별 월 목표 금액(상온/냉동냉장/라면/유지) + 당월·전월 매출 실적을 보관하는 마스터.
  * 데이터 권위: SF (HC sync 대상 아님 — Heroku PG 미존재. SF → RDS 단방향 마이그레이션).
  *
+ * ## 당월/전월 매출 실적 컬럼은 더 이상 앱이 쓰지 않는다 (읽기도 폴백 한정)
+ * `current_month_sales_amount` / `previous_month_sales_amount` 는 SF 에서도 입력값이 아니라
+ * 월매출이력 파생값이었고 (레거시 `Batch_SalesProgressRate_M`), SF fetch 응답에도 담기지 않는다.
+ * 신규는 화면 조회 시점에 `monthly_sales_history` 에서 산출하므로
+ * ([com.otoki.powersales.domain.sales.service.SalesProgressRateMasterActualsResolver]),
+ * 이 두 컬럼에 값을 쓰는 경로는 **SF→RDS 이관(Stage1) 뿐**이다. 주기 sync 도 건드리지 않는다.
+ * 남겨둔 이유는 하나 — 월매출이력 row 가 없는 과거 월의 화면값 폴백. DB 를 직접 보는 경우 이 컬럼의
+ * 값은 "이관 시점 스냅샷" 이지 현재 화면에 보이는 값이 아닐 수 있다.
+ *
  * Formula 필드(6개)는 SOQL 적재 불가 + DB 컬럼 미추가 정책:
  * - AccountCode__c / AccountName__c / AccountType__c / AccoutBranchName__c (Account__r lookup)
  * - ProgressRate__c (CurrentMonthSalesAmount / TargetSum)

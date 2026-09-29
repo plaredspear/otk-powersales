@@ -8,6 +8,10 @@ package com.otoki.powersales.domain.sales.sfsync
  * 로 재조합한다 (SF Trigger `beforeInsertSetExternerKey` 동등 — month leftPad 없음).
  *
  * Formula 필드(거래처명/지점명/유형, TargetSum, ProgressRate)는 신규 DB 에서 산출하므로 fetch 대상 아님.
+ *
+ * **당월/전월 매출 실적도 fetch 대상이 아니다** — SF `IF_salesprogresssend` 응답에 아예 담기지 않으며,
+ * 레거시 `Batch_SalesProgressRate_M` 과 동일하게 월매출이력에서 파생한다
+ * ([com.otoki.powersales.domain.sales.service.SalesProgressRateMasterActualsService]).
  */
 data class SalesProgressRateMasterFetchDto(
     /** SF 18자리 Id. 감사/추적용 — upsert 키 아님. */
@@ -26,8 +30,6 @@ data class SalesProgressRateMasterFetchDto(
     val foTargetAmount: Double?,
     /** SF TargetSumAmount__c (운영 미사용 컬럼이나 적재 정합 위해 보존). */
     val targetSumAmount: Double?,
-    val currentMonthSalesAmount: Double?,
-    val previousMonthSalesAmount: Double?,
     val businessRate: Double?,
     val accountBranchView: String?,
     val accountBranchCode: String?,

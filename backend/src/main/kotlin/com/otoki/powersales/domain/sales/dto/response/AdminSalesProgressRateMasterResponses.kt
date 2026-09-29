@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.sales.dto.response
 
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
+import com.otoki.powersales.domain.sales.service.SalesProgressRateMasterActualsResolver.Actuals
 import java.time.LocalDateTime
 
 /**
@@ -10,6 +11,11 @@ import java.time.LocalDateTime
  * - accountName/accountBranchName/accountCode/accountType — Account lookup 조인
  * - targetSum — RT+FR+RM+FO 합산 (SF `TargetSum__c`)
  * - progressRate — currentMonthSalesAmount / targetSum 비율 (SF `ProgressRate__c`, Percent). targetSum=0 시 null.
+ *
+ * 당월/전월 실적은 저장 컬럼이 아니라 조회 시점에 월매출이력에서 산출한 값이다
+ * ([com.otoki.powersales.domain.sales.service.SalesProgressRateMasterActualsResolver]).
+ * `*SourceUpdatedAt` 은 그 원천 row 의 최종 적재 시각으로, 화면이 "언제 갱신된 숫자인지" 를 표기한다
+ * (월매출이력 row 가 없어 이관 스냅샷으로 폴백한 경우 null).
  */
 data class SalesProgressRateMasterListItem(
     val id: Long,
@@ -28,9 +34,11 @@ data class SalesProgressRateMasterListItem(
     val currentMonthSalesAmount: Double?,
     val previousMonthSalesAmount: Double?,
     val progressRate: Double?,
+    val currentMonthSourceUpdatedAt: LocalDateTime?,
+    val previousMonthSourceUpdatedAt: LocalDateTime?,
 ) {
     companion object {
-        fun from(entity: SalesProgressRateMaster): SalesProgressRateMasterListItem {
+        fun from(entity: SalesProgressRateMaster, actuals: Actuals): SalesProgressRateMasterListItem {
             val targetSum = sumTarget(entity)
             return SalesProgressRateMasterListItem(
                 id = entity.id,
@@ -46,9 +54,11 @@ data class SalesProgressRateMasterListItem(
                 frTargetAmount = entity.frTargetAmount,
                 foTargetAmount = entity.foTargetAmount,
                 targetSum = targetSum,
-                currentMonthSalesAmount = entity.currentMonthSalesAmount,
-                previousMonthSalesAmount = entity.previousMonthSalesAmount,
-                progressRate = progressRate(entity.currentMonthSalesAmount, targetSum),
+                currentMonthSalesAmount = actuals.currentMonthSalesAmount,
+                previousMonthSalesAmount = actuals.previousMonthSalesAmount,
+                progressRate = progressRate(actuals.currentMonthSalesAmount, targetSum),
+                currentMonthSourceUpdatedAt = actuals.currentMonthSourceUpdatedAt,
+                previousMonthSourceUpdatedAt = actuals.previousMonthSourceUpdatedAt,
             )
         }
     }
@@ -64,6 +74,9 @@ data class SalesProgressRateMasterListResponse(
 
 /**
  * 거래처목표등록마스터 상세 — 목록 필드 + 영업일 진도율/외부키/감사 정보.
+ *
+ * 당월/전월 실적 + `*SourceUpdatedAt` 의 의미는 [SalesProgressRateMasterListItem] 과 동일하다
+ * (조회 시점 월매출이력 산출값 + 원천 적재 시각).
  */
 data class SalesProgressRateMasterDetailResponse(
     val id: Long,
@@ -84,6 +97,8 @@ data class SalesProgressRateMasterDetailResponse(
     val currentMonthSalesAmount: Double?,
     val previousMonthSalesAmount: Double?,
     val progressRate: Double?,
+    val currentMonthSourceUpdatedAt: LocalDateTime?,
+    val previousMonthSourceUpdatedAt: LocalDateTime?,
     val businessRate: Double?,
     val externalKey: String?,
     val accountBranchView: String?,
@@ -93,7 +108,7 @@ data class SalesProgressRateMasterDetailResponse(
     val updatedAt: LocalDateTime?,
 ) {
     companion object {
-        fun from(entity: SalesProgressRateMaster): SalesProgressRateMasterDetailResponse {
+        fun from(entity: SalesProgressRateMaster, actuals: Actuals): SalesProgressRateMasterDetailResponse {
             val targetSum = sumTarget(entity)
             return SalesProgressRateMasterDetailResponse(
                 id = entity.id,
@@ -111,9 +126,11 @@ data class SalesProgressRateMasterDetailResponse(
                 foTargetAmount = entity.foTargetAmount,
                 targetSum = targetSum,
                 targetSumAmount = entity.targetSumAmount,
-                currentMonthSalesAmount = entity.currentMonthSalesAmount,
-                previousMonthSalesAmount = entity.previousMonthSalesAmount,
-                progressRate = progressRate(entity.currentMonthSalesAmount, targetSum),
+                currentMonthSalesAmount = actuals.currentMonthSalesAmount,
+                previousMonthSalesAmount = actuals.previousMonthSalesAmount,
+                progressRate = progressRate(actuals.currentMonthSalesAmount, targetSum),
+                currentMonthSourceUpdatedAt = actuals.currentMonthSourceUpdatedAt,
+                previousMonthSourceUpdatedAt = actuals.previousMonthSourceUpdatedAt,
                 businessRate = entity.businessRate,
                 externalKey = entity.externalKey,
                 accountBranchView = entity.accountBranchView,
