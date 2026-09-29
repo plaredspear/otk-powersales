@@ -10,11 +10,14 @@
 #   - 빌드 범위: --platform {ios|android|all} --env {dev|prod|all}
 #   - 버전 증가 후 pubspec.yaml 자동 커밋 + 버전 태그(mobile-v<X.Y.Z>+<N>)
 #   - 릴리즈 노트: 직전 버전 태그 이후 mobile/ 커밋에서 초안 출력(확정은 별도)
+#   - 서명 preflight: Android 는 release keystore 미설정 시 중단(debug 서명 APK 는
+#     기존 설치본에 업데이트되지 않음), iOS 는 인증서/프로파일 상태를 경고
 #
 # 사용 예:
 #   mobile/scripts/build-packages.sh                      # 대화형(버전·범위 질문)
 #   mobile/scripts/build-packages.sh --platform all --env dev --bump patch
 #   mobile/scripts/build-packages.sh --platform ios --env prod --bump patch --no-commit
+#   ALLOW_DEBUG_SIGNING=1 mobile/scripts/build-packages.sh ...   # debug 서명 허용(배포 금지)
 #
 set -euo pipefail
 
@@ -85,6 +88,137 @@ if [[ -z "$ENV" ]]; then
 fi
 case "$PLATFORM" in ios|android|all) ;; *) err "platform 은 ios|android|all 중 하나" ;; esac
 case "$ENV" in dev|prod|all) ;; *) err "env 는 dev|prod|all 중 하나" ;; esac
+
+ENVS=()
+case "$ENV" in dev) ENVS=(dev) ;; prod) ENVS=(prod) ;; all) ENVS=(dev prod) ;; esac
+
+# ── 서명 preflight 가드 ──────────────────────────────────────────────
+# 배경: android/key.properties 가 없으면 app/build.gradle 이 release 를
+# **debug 키로 조용히 서명**한다(빌드 자체는 성공). debug keystore 는 머신마다 다르게
+# 자동 생성되므로 그렇게 만든 APK 는 기존 설치본과 서명이 달라 덮어쓰기 설치가
+# INSTALL_FAILED_UPDATE_INCOMPATIBLE 로 거부된다 — "버전만 오르고 업데이트가 안 되는"
+# 증상의 원인. 실패가 산출물 침묵으로 나타나므로 Android 는 **차단**한다.
+# iOS 는 인증서/프로파일이 없으면 xcodebuild 가 명시적으로 실패하므로 **경고**만 한다.
+#
+# 탈출구: ALLOW_DEBUG_SIGNING=1 (debug 서명 APK 를 의도적으로 만들 때만)
+ANDROID_DIR="$MOBILE_DIR/android"
+KEY_PROPS="$ANDROID_DIR/key.properties"
+PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+
+warn() { echo "⚠️  $*" >&2; }
+
+prop() { # <key> <properties-file> → 값
+  grep -E "^[[:space:]]*$1[[:space:]]*=" "$2" 2>/dev/null | head -1 \
+    | sed -E "s/^[^=]*=[[:space:]]*//" | tr -d '\r'
+}
+
+preflight_android() {
+  if [[ "${ALLOW_DEBUG_SIGNING:-}" == "1" ]]; then
+    warn "ALLOW_DEBUG_SIGNING=1 — Android 서명 검사를 건너뜁니다 (배포용으로 쓰지 마세요)"
+    return 0
+  fi
+
+  if [[ ! -f "$KEY_PROPS" ]]; then
+    cat >&2 <<EOF
+
+Android release keystore 설정이 없습니다: android/key.properties
+
+이대로 빌드하면 release APK 가 debug 키로 서명되어, 기존 설치본 위에 업데이트가
+되지 않습니다 (앱 삭제 후 재설치만 가능).
+
+  1) 기존 배포본을 빌드한 머신에 key.properties + *.jks 가 있으면 복사한다.
+     (둘 다 .gitignore 대상이라 git / worktree 로 전파되지 않습니다)
+  2) 없으면 release keystore 를 새로 만들고 설정 파일을 작성한다.
+       cp android/key.properties.example android/key.properties
+     ※ 새 키로 바꾸면 기존 사용자는 1회 삭제 후 재설치가 필요합니다.
+
+  debug 서명 APK 가 의도한 것이라면: ALLOW_DEBUG_SIGNING=1 로 재실행.
+EOF
+    err "Android 서명 설정 누락으로 중단"
+  fi
+
+  local store_file store_pass key_alias key_pass store_path kv
+  store_file="$(prop storeFile "$KEY_PROPS")"
+  store_pass="$(prop storePassword "$KEY_PROPS")"
+  key_alias="$(prop keyAlias "$KEY_PROPS")"
+  key_pass="$(prop keyPassword "$KEY_PROPS")"
+  for kv in "storeFile:$store_file" "storePassword:$store_pass" "keyAlias:$key_alias" "keyPassword:$key_pass"; do
+    [[ -n "${kv#*:}" ]] || err "android/key.properties 에 ${kv%%:*} 값이 비어 있습니다"
+  done
+
+  # storeFile 은 rootProject(= android/) 기준 상대경로
+  case "$store_file" in
+    /*) store_path="$store_file" ;;
+    *)  store_path="$ANDROID_DIR/$store_file" ;;
+  esac
+  [[ -f "$store_path" ]] \
+    || err "keystore 파일이 없습니다: $store_path  (key.properties 의 storeFile=$store_file)"
+
+  # keytool 이 있으면 비밀번호/alias 까지 실제로 열어서 검증한다.
+  # (틀린 비밀번호는 원래 Gradle 단계에 가서야 실패하므로 여기서 미리 잡는다)
+  if command -v keytool >/dev/null 2>&1; then
+    local cert until_
+    cert="$(keytool -list -v -keystore "$store_path" -storepass "$store_pass" -alias "$key_alias" 2>&1)" \
+      || err "keystore 를 열지 못했습니다 (storePassword 또는 keyAlias 불일치): $store_path, alias=$key_alias"
+    if grep -q 'CN=Android Debug' <<<"$cert"; then
+      err "key.properties 가 debug keystore 를 가리키고 있습니다: $store_path — 배포용 release keystore 로 교체하세요"
+    fi
+    until_="$(grep -m1 'Valid from' <<<"$cert" | sed -E 's/.*until: //')"
+    ok "Android 서명: $store_path (alias=$key_alias, 유효기간 ~ ${until_:-확인불가})"
+  else
+    ok "Android 서명: $store_path (alias=$key_alias) — keytool 이 없어 파일 존재만 확인"
+  fi
+}
+
+# ExportOptions plist 의 provisioningProfiles 첫 값(프로파일 이름)
+export_profile_name() { # <plist>
+  plutil -convert xml1 -o - "$1" 2>/dev/null \
+    | awk '/<key>provisioningProfiles<\/key>/ { f = 1 }
+           f && /<string>/ { gsub(/.*<string>|<\/string>.*/, ""); print; exit }'
+}
+
+preflight_ios() {
+  security find-identity -v -p codesigning 2>/dev/null | grep -q 'iPhone Distribution' \
+    || warn "'iPhone Distribution' 코드서명 인증서를 찾지 못했습니다 — IPA export 가 실패할 수 있습니다"
+
+  local e plist profile f name exp exp_s now_s found
+  for e in "${ENVS[@]}"; do
+    case "$e" in
+      dev)  plist="$MOBILE_DIR/ios/ExportOptions-Enterprise-Dev.plist" ;;
+      prod) plist="$MOBILE_DIR/ios/ExportOptions-Enterprise.plist" ;;
+    esac
+    if [[ ! -f "$plist" ]]; then warn "export 옵션 파일이 없습니다: $plist"; continue; fi
+    profile="$(export_profile_name "$plist")"
+    if [[ -z "$profile" ]]; then warn "$plist 에서 provisioning profile 이름을 읽지 못했습니다"; continue; fi
+
+    found=""
+    if [[ -d "$PROFILE_DIR" ]]; then
+      for f in "$PROFILE_DIR"/*.mobileprovision; do
+        [[ -f "$f" ]] || continue
+        name="$(security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw - 2>/dev/null || true)"
+        [[ "$name" == "$profile" ]] || continue
+        found="$f"
+        exp="$(security cms -D -i "$f" 2>/dev/null | plutil -extract ExpirationDate raw - 2>/dev/null || true)"
+        ok "iOS($e) 프로파일: $profile (만료 ${exp:-확인불가})"
+        if [[ -n "$exp" ]]; then
+          exp_s="$(date -j -f '%Y-%m-%dT%H:%M:%SZ' "$exp" +%s 2>/dev/null || echo 0)"
+          now_s="$(date +%s)"
+          if (( exp_s > 0 && exp_s - now_s < 30 * 24 * 3600 )); then
+            warn "iOS($e) 프로파일 '$profile' 만료가 30일 이내입니다 ($exp)"
+          fi
+        fi
+        break
+      done
+    fi
+    [[ -n "$found" ]] \
+      || warn "iOS($e) provisioning profile '$profile' 이 설치돼 있지 않습니다 — IPA export 가 실패할 수 있습니다"
+  done
+}
+
+echo ""
+info "서명 preflight 검사"
+if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then preflight_android; fi
+if [[ "$PLATFORM" == "ios"     || "$PLATFORM" == "all" ]]; then preflight_ios; fi
 
 # ── versionName 증가 규칙 결정 ──────────────────────────────────────
 if [[ -z "$BUMP" ]]; then
@@ -166,8 +300,26 @@ build_one() { # <make-target>
   make "$target"
 }
 
-ENVS=()
-case "$ENV" in dev) ENVS=(dev) ;; prod) ENVS=(prod) ;; all) ENVS=(dev prod) ;; esac
+# 산출된 APK 가 정말 release keystore 로 서명됐는지 확인한다.
+# preflight 를 통과해도 Gradle 이 서명 설정을 적용하지 못하는 경우가 있어,
+# "debug 서명 APK 가 배포까지 흘러가는" 최종 경로를 여기서 막는다.
+verify_apk_signature() { # <apk>
+  local apk="$1" signer
+  if [[ "${ALLOW_DEBUG_SIGNING:-}" == "1" ]]; then return 0; fi
+
+  APKSIGNER="${APKSIGNER:-$(ls "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"/build-tools/*/apksigner 2>/dev/null | tail -1 || true)}"
+  if [[ -z "$APKSIGNER" || ! -x "$APKSIGNER" ]]; then
+    warn "apksigner 를 찾지 못해 APK 서명 검증을 건너뜁니다: $apk"
+    return 0
+  fi
+
+  signer="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null | grep -m1 'certificate DN' || true)"
+  if grep -q 'CN=Android Debug' <<<"$signer"; then
+    err "$apk 가 debug 키로 서명됐습니다 — 기존 설치본에 업데이트되지 않습니다.
+android/key.properties 의 서명 설정이 Gradle 에 적용됐는지 확인하세요."
+  fi
+  ok "서명 확인: $(basename "$apk") — ${signer#*certificate DN: }"
+}
 
 # ── 기존 빌드 산출물 정리 (stale 산출물 방지) ───────────────────────
 # 이전 빌드의 APK/IPA 와 빌드 캐시(.dart_tool, build/)가 남아 있으면 (1) Flutter/
@@ -197,7 +349,10 @@ for e in "${ENVS[@]}"; do
   if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
     build_one "build-apk-$e"; BUILT+=("apk-$e")
     src="build/app/outputs/flutter-apk/app-$e-release.apk"
-    [[ -f "$src" ]] && cp -f "$src" "$DIST_DIR/app-$e-$NEW_VERSION.apk"
+    if [[ -f "$src" ]]; then
+      verify_apk_signature "$src"
+      cp -f "$src" "$DIST_DIR/app-$e-$NEW_VERSION.apk"
+    fi
   fi
 done
 
