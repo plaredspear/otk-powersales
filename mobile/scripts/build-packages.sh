@@ -94,16 +94,27 @@ case "$ENV" in dev) ENVS=(dev) ;; prod) ENVS=(prod) ;; all) ENVS=(dev prod) ;; e
 
 # ── 서명 preflight 가드 ──────────────────────────────────────────────
 # 배경: android/key.properties 가 없으면 app/build.gradle 이 release 를
-# **debug 키로 조용히 서명**한다(빌드 자체는 성공). debug keystore 는 머신마다 다르게
-# 자동 생성되므로 그렇게 만든 APK 는 기존 설치본과 서명이 달라 덮어쓰기 설치가
+# **임의의 debug 키로 조용히 서명**한다(빌드 자체는 성공). debug keystore 는 머신마다
+# 다르게 자동 생성되므로 그렇게 만든 APK 는 기존 설치본과 서명이 달라 덮어쓰기 설치가
 # INSTALL_FAILED_UPDATE_INCOMPATIBLE 로 거부된다 — "버전만 오르고 업데이트가 안 되는"
 # 증상의 원인. 실패가 산출물 침묵으로 나타나므로 Android 는 **차단**한다.
 # iOS 는 인증서/프로파일이 없으면 xcodebuild 가 명시적으로 실패하므로 **경고**만 한다.
 #
-# 탈출구: ALLOW_DEBUG_SIGNING=1 (debug 서명 APK 를 의도적으로 만들 때만)
+# 판정 기준은 인증서 이름(DN)이 아니라 **지문(SHA-256)** 이다. 운영 배포본이 실제로
+# 서명된 키가 유일한 정답이고, 이름이 같아도 지문이 다르면 업데이트가 깨지기 때문이다.
+# 이 프로젝트의 서명 키는 SDK 가 자동 생성한 키를 정식 채택한 것이라 DN 이
+# 'CN=Android Debug' 지만, 키 자체는 프로젝트 고유하다(아래 RELEASE_CERT_SHA256).
+# 따라서 DN 으로 막으면 정당한 빌드가 차단되고, 다른 머신의 debug 키는 통과해버린다.
+#
+# 탈출구: ALLOW_DEBUG_SIGNING=1 (서명이 다른 APK 를 의도적으로 만들 때만)
 ANDROID_DIR="$MOBILE_DIR/android"
 KEY_PROPS="$ANDROID_DIR/key.properties"
 PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+
+# 운영 배포본이 서명된 인증서 지문(SHA-256, 콜론 없는 소문자).
+# 이 값과 다른 키로 서명하면 기존 설치본에 업데이트되지 않는다.
+# 키를 정식으로 교체할 때만(= 전 사용자 재설치를 감수할 때만) 이 값을 바꾼다.
+RELEASE_CERT_SHA256="5817c9a58ff97d873ec36cfc155e46640eedd996e123a370ccee0142effde61a"
 
 warn() { echo "⚠️  $*" >&2; }
 
@@ -160,8 +171,16 @@ EOF
     local cert until_
     cert="$(keytool -list -v -keystore "$store_path" -storepass "$store_pass" -alias "$key_alias" 2>&1)" \
       || err "keystore 를 열지 못했습니다 (storePassword 또는 keyAlias 불일치): $store_path, alias=$key_alias"
-    if grep -q 'CN=Android Debug' <<<"$cert"; then
-      err "key.properties 가 debug keystore 를 가리키고 있습니다: $store_path — 배포용 release keystore 로 교체하세요"
+    local fp
+    fp="$(grep -m1 -Eo 'SHA256: [0-9A-F:]+' <<<"$cert" | sed -E 's/^SHA256: //; s/://g' | tr 'A-Z' 'a-z')"
+    if [[ -z "$fp" ]]; then
+      warn "keystore 지문을 읽지 못해 대조를 건너뜁니다: $store_path"
+    elif [[ "$fp" != "$RELEASE_CERT_SHA256" ]]; then
+      err "keystore 지문이 운영 배포본과 다릅니다 — 이 키로 만든 APK 는 기존 설치본에 업데이트되지 않습니다.
+  keystore : $store_path (alias=$key_alias)
+  지문     : $fp
+  기대값   : $RELEASE_CERT_SHA256
+운영 서명 키(otoki/.signing/otoki-powersales-release.jks)를 가리키도록 key.properties 를 고치세요."
     fi
     until_="$(grep -m1 'Valid from' <<<"$cert" | sed -E 's/.*until: //')"
     ok "Android 서명: $store_path (alias=$key_alias, 유효기간 ~ ${until_:-확인불가})"
@@ -300,11 +319,12 @@ build_one() { # <make-target>
   make "$target"
 }
 
-# 산출된 APK 가 정말 release keystore 로 서명됐는지 확인한다.
+# 산출된 APK 가 정말 운영 서명 키로 서명됐는지 확인한다.
 # preflight 를 통과해도 Gradle 이 서명 설정을 적용하지 못하는 경우가 있어,
-# "debug 서명 APK 가 배포까지 흘러가는" 최종 경로를 여기서 막는다.
+# "서명이 다른 APK 가 배포까지 흘러가는" 최종 경로를 여기서 막는다.
+# 판정은 preflight 와 같은 기준(RELEASE_CERT_SHA256 지문 대조)으로 한다.
 verify_apk_signature() { # <apk>
-  local apk="$1" signer
+  local apk="$1" fp dn
   if [[ "${ALLOW_DEBUG_SIGNING:-}" == "1" ]]; then return 0; fi
 
   APKSIGNER="${APKSIGNER:-$(ls "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"/build-tools/*/apksigner 2>/dev/null | tail -1 || true)}"
@@ -313,12 +333,21 @@ verify_apk_signature() { # <apk>
     return 0
   fi
 
-  signer="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null | grep -m1 'certificate DN' || true)"
-  if grep -q 'CN=Android Debug' <<<"$signer"; then
-    err "$apk 가 debug 키로 서명됐습니다 — 기존 설치본에 업데이트되지 않습니다.
+  local out
+  out="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null || true)"
+  fp="$(grep -m1 -Eo 'certificate SHA-256 digest: [0-9a-f]+' <<<"$out" | sed -E 's/.*digest: //')"
+  dn="$(grep -m1 'certificate DN' <<<"$out" | sed -E 's/.*certificate DN: //')"
+  if [[ -z "$fp" ]]; then
+    warn "APK 서명 지문을 읽지 못해 검증을 건너뜁니다: $apk"
+    return 0
+  fi
+  if [[ "$fp" != "$RELEASE_CERT_SHA256" ]]; then
+    err "$(basename "$apk") 의 서명이 운영 배포본과 다릅니다 — 기존 설치본에 업데이트되지 않습니다.
+  지문   : $fp
+  기대값 : $RELEASE_CERT_SHA256
 android/key.properties 의 서명 설정이 Gradle 에 적용됐는지 확인하세요."
   fi
-  ok "서명 확인: $(basename "$apk") — ${signer#*certificate DN: }"
+  ok "서명 확인: $(basename "$apk") — ${dn:-?} (지문 일치)"
 }
 
 # ── 기존 빌드 산출물 정리 (stale 산출물 방지) ───────────────────────

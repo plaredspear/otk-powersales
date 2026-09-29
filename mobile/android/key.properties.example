@@ -1,10 +1,26 @@
 # Android release 서명 설정 템플릿.
-# 이 파일을 복사해 android/key.properties 로 만들고 실제 값을 채운다.
+# 이 파일을 복사해 android/key.properties 로 만든다.
 #   cp android/key.properties.example android/key.properties
 # key.properties 와 *.jks 는 .gitignore 로 추적 제외된다. 절대 커밋하지 않는다.
 #
-# storeFile 은 rootProject(= android/) 기준 상대경로. 예: keystore 를 android/app/ 에 두면 app/upload-keystore.jks
-storeFile=app/upload-keystore.jks
+# ── 중요 ────────────────────────────────────────────────────────────
+# 운영 배포본에 업데이트되려면 **기존 배포본과 같은 키**로 서명해야 한다.
+# 다른 키로 서명한 APK 는 INSTALL_FAILED_UPDATE_INCOMPATIBLE 로 설치가 거부되고,
+# 사용자는 앱을 삭제 후 재설치해야 한다(로그인 정보·로컬 데이터 소실).
+#
+# 이 프로젝트의 운영 서명 키:
+#   파일  : otoki/.signing/otoki-powersales-release.jks   (git 추적 밖)
+#   지문  : SHA-256 5817C9A5:8FF9:7D87:... (build-packages.sh 의 RELEASE_CERT_SHA256)
+#   alias : androiddebugkey
+#
+# 인증서 주체가 'CN=Android Debug' 인 것은 SDK 가 자동 생성한 키를 그대로 정식
+# 서명 키로 채택했기 때문이다. 키 자체는 이 프로젝트 고유하며(머신마다 다르게
+# 생성됨), 운영 배포본이 실제로 이 키로 서명돼 있어 교체할 수 없다.
+#
+# 새 머신에서 빌드할 때: 위 .jks 를 안전한 경로에 복사하고 storeFile 을 그 경로로.
+# ── 경로 ────────────────────────────────────────────────────────────
+# storeFile 은 절대경로 또는 rootProject(= android/) 기준 상대경로.
+storeFile=/절대경로/otoki/.signing/otoki-powersales-release.jks
 storePassword=여기에_keystore_비밀번호
-keyAlias=upload
+keyAlias=androiddebugkey
 keyPassword=여기에_key_비밀번호
