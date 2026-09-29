@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.foundation.product.dto.response
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.entity.ProductBarcode
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
+import com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator
 import java.math.BigDecimal
 import java.net.URI
 
@@ -30,10 +31,15 @@ data class ProductListItem(
     val shelfLife: String?,
     val shelfLifeUnit: String?,
     val tasteGift: String?,
-    val lastModifiedAt: String?
+    val lastModifiedAt: String?,
+    /**
+     * 앱 노출/주문 진단 — 목록에서 "왜 앱에 안 보이는가" 를 바로 식별하기 위한 필드.
+     * 판정은 [com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator].
+     */
+    val appVisibility: ProductAppVisibility
 ) {
     companion object {
-        fun from(product: Product): ProductListItem = ProductListItem(
+        fun from(product: Product, appVisibility: ProductAppVisibility): ProductListItem = ProductListItem(
             id = product.id,
             productCode = product.productCode,
             name = product.name,
@@ -50,7 +56,8 @@ data class ProductListItem(
             shelfLife = product.shelfLife,
             shelfLifeUnit = product.shelfLifeUnit,
             tasteGift = product.tasteGift,
-            lastModifiedAt = product.updatedAt.toString()
+            lastModifiedAt = product.updatedAt.toString(),
+            appVisibility = appVisibility
         )
     }
 }
@@ -134,7 +141,12 @@ data class ProductDetail(
     val claimManagement: String?,
     val createdAt: String,
     val lastModifiedAt: String,
-    val barcodes: List<ProductBarcodeItem>
+    val barcodes: List<ProductBarcodeItem>,
+    /**
+     * 앱 노출/주문 진단 — 상세 화면 최상단에 사유와 조치처를 표시하기 위한 필드.
+     * 판정은 [com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator].
+     */
+    val appVisibility: ProductAppVisibility
 ) {
     companion object {
         // SF 레거시 수식 `IMAGE(ImgRefPathTXT__c + ImgRefPath_*__c)` 와 동등.
@@ -145,7 +157,17 @@ data class ProductDetail(
             return baseUrl.trimEnd('/') + "/" + encodedPath.trimStart('/')
         }
 
-        fun from(product: Product, barcodes: List<ProductBarcode> = emptyList()): ProductDetail = ProductDetail(
+        /**
+         * 제품 상세 DTO 변환.
+         *
+         * [appVisibility] 는 넘겨받지 않고 [barcodes] 로 직접 산출한다 — 호출부가 진단 인자를 빠뜨려
+         * 화면마다 다른 결과가 나오는 것을 막기 위함이다. 판정은 소프트 삭제를 거르지 않은
+         * 원본 바코드 기준이며(앱 검색 술어와 동일), 화면 표시용 [barcodes] 목록만 삭제분을 제외한다.
+         */
+        fun from(
+            product: Product,
+            barcodes: List<ProductBarcode> = emptyList()
+        ): ProductDetail = ProductDetail(
             id = product.id,
             productCode = product.productCode,
             name = product.name,
@@ -188,7 +210,8 @@ data class ProductDetail(
             barcodes = barcodes
                 .filter { it.isDeleted != true }
                 .sortedBy { it.sortOrder }
-                .map { ProductBarcodeItem.from(it) }
+                .map { ProductBarcodeItem.from(it) },
+            appVisibility = ProductAppVisibilityEvaluator.evaluate(product, barcodes)
         )
     }
 }

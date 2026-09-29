@@ -277,6 +277,93 @@ class ProductRepositoryTest {
 
     // ========== 헬퍼 메서드 ==========
 
+    // ========== searchForAdmin — 관리자 목록의 앱 노출 필터 ==========
+
+    @Nested
+    @DisplayName("searchForAdmin - appSearchable 필터")
+    inner class SearchForAdminAppSearchable {
+
+        /** 시드 7건은 모두 노출 조건을 만족한다. 여기에 미노출 사유별 제품을 얹어 검증한다. */
+        private fun seedHiddenProducts() {
+            // 바코드 없음 — 바코드 마스터 미수신 (18010406 한강라면 케이스)
+            testEntityManager.persistAndFlush(
+                createProduct("바코드없음_제품", "90000001", "8809000000001")
+            )
+            // 발주단위 불일치 — 제품은 PAC, 바코드는 BOX
+            val unitMismatch = testEntityManager.persistAndFlush(
+                createProduct("단위불일치_제품", "90000002", "8809000000002", unit = "PAC")
+            )
+            testEntityManager.persistAndFlush(
+                createBarcode(productId = unitMismatch.id, unit = "BOX", barcode = "8809000000002")
+            )
+            // 소분류 NULL — IN 술어가 NULL 을 내므로 부정 필터에서 누락되기 쉬운 케이스
+            val nullCategory = testEntityManager.persistAndFlush(
+                createProduct("소분류없음_제품", "90000003", "8809000000003", category3 = null)
+            )
+            testEntityManager.persistAndFlush(
+                createBarcode(productId = nullCategory.id, unit = nullCategory.unit, barcode = "8809000000003")
+            )
+            // 단종
+            val discontinued = testEntityManager.persistAndFlush(
+                createProduct(
+                    "단종_제품", "90000004", "8809000000004",
+                    productStatus = ProductStatus.OUT_OF_STOCK
+                )
+            )
+            testEntityManager.persistAndFlush(
+                createBarcode(productId = discontinued.id, unit = discontinued.unit, barcode = "8809000000004")
+            )
+            testEntityManager.clear()
+        }
+
+        private fun search(appSearchable: Boolean?): List<String> =
+            productRepository.searchForAdmin(
+                keyword = null,
+                category1 = null,
+                category2 = null,
+                category3 = null,
+                productStatus = null,
+                appSearchable = appSearchable,
+                pageable = PageRequest.of(0, 100)
+            ).content.mapNotNull { it.productCode }
+
+        @Test
+        @DisplayName("null 이면 필터 미적용 — 노출/미노출 전량 반환")
+        fun noFilterReturnsAll() {
+            seedHiddenProducts()
+
+            assertThat(search(null)).hasSize(11)
+        }
+
+        @Test
+        @DisplayName("false 면 앱 미노출 제품만 — 사유 4종이 모두 잡힌다")
+        fun hiddenOnly() {
+            seedHiddenProducts()
+
+            assertThat(search(false))
+                .containsExactlyInAnyOrder("90000001", "90000002", "90000003", "90000004")
+        }
+
+        @Test
+        @DisplayName("소분류가 NULL 인 미노출 제품도 누락되지 않는다 (IN 술어의 3값 논리 회귀 방지)")
+        fun nullCategoryHiddenProductIsNotLost() {
+            seedHiddenProducts()
+
+            assertThat(search(false)).contains("90000003")
+            assertThat(search(true)).doesNotContain("90000003")
+        }
+
+        @Test
+        @DisplayName("true 면 앱 노출 제품만 — 미노출 4건이 제외된다")
+        fun visibleOnly() {
+            seedHiddenProducts()
+
+            val visible = search(true)
+            assertThat(visible).hasSize(7)
+            assertThat(visible).doesNotContain("90000001", "90000002", "90000003", "90000004")
+        }
+    }
+
     private fun createProduct(
         productName: String,
         productCode: String,

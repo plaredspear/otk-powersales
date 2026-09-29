@@ -84,6 +84,29 @@ class AdminProductExportServiceTest {
     }
 
     @Test
+    @DisplayName("앱 노출 필터도 그대로 전달 — 화면에서 '앱 미노출만' 으로 좁힌 조건이 파일에 반영되어야 한다")
+    fun exportByCondition_passesAppSearchableThrough() {
+        stubSearch()
+
+        service.exportByCondition(
+            keyword = null, category1 = null, category2 = null, category3 = null,
+            productStatus = null, appSearchable = false
+        )
+
+        verify {
+            productRepository.searchForAdmin(
+                keyword = null,
+                category1 = null,
+                category2 = null,
+                category3 = null,
+                productStatus = null,
+                appSearchable = false,
+                pageable = any()
+            )
+        }
+    }
+
+    @Test
     @DisplayName("tasteGift 알 수 없는 코드 — 원본 그대로 출력")
     fun exportByCondition_unknownTasteGift() {
         stubSearch(createProduct(productCode = "P003", name = "기타", tasteGift = "X"))
@@ -140,7 +163,7 @@ class AdminProductExportServiceTest {
 
     private fun stubSearch(vararg products: Product) {
         every {
-            productRepository.searchForAdmin(any(), any(), any(), any(), any(), any())
+            productRepository.searchForAdmin(any(), any(), any(), any(), any(), any(), any())
         } returns PageImpl(products.toList())
     }
 

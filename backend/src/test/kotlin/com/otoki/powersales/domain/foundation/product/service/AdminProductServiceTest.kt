@@ -13,6 +13,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -32,6 +33,16 @@ class AdminProductServiceTest {
         productRepository,
         productBarcodeRepository,
     )
+
+    /**
+     * 목록 조회는 앱 노출 진단을 위해 페이지 제품들의 바코드를 일괄 조회한다.
+     * 바코드 자체가 관심사가 아닌 목록 테스트에서는 빈 결과로 고정한다
+     * (= 바코드 미등록 → 진단은 "검색불가" 로 나오며, 각 테스트의 단언 대상은 아니다).
+     */
+    @BeforeEach
+    fun stubBarcodeLookup() {
+        every { productBarcodeRepository.findByProductIdIn(any()) } returns emptyList()
+    }
 
     @Nested
     @DisplayName("getProducts - 제품 목록 조회")

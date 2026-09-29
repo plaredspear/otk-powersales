@@ -49,6 +49,7 @@ class AdminProductController(
         @RequestParam(required = false) category2: String?,
         @RequestParam(required = false) category3: String?,
         @RequestParam(required = false) productStatus: String?,
+        @RequestParam(required = false) appSearchable: Boolean?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<ProductListResponse>> {
@@ -58,6 +59,7 @@ class AdminProductController(
             category2 = category2,
             category3 = category3,
             productStatus = productStatus,
+            appSearchable = appSearchable,
             page = page,
             size = size
         )
@@ -181,14 +183,16 @@ class AdminProductController(
         @RequestParam(required = false) category1: String?,
         @RequestParam(required = false) category2: String?,
         @RequestParam(required = false) category3: String?,
-        @RequestParam(required = false) productStatus: String?
+        @RequestParam(required = false) productStatus: String?,
+        @RequestParam(required = false) appSearchable: Boolean?
     ): ResponseEntity<ByteArrayResource> {
         val bytes = adminProductExportService.exportByCondition(
             keyword = keyword,
             category1 = category1,
             category2 = category2,
             category3 = category3,
-            productStatus = productStatus
+            productStatus = productStatus,
+            appSearchable = appSearchable
         )
         val fileName = URLEncoder.encode("제품.xlsx", StandardCharsets.UTF_8)
         return ResponseEntity.ok()

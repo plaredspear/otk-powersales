@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchPar
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.domain.foundation.product.exception.ProductNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductBarcodeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class ProductService(
     private val productRepository: ProductRepository,
+    private val productBarcodeRepository: ProductBarcodeRepository,
     private val favoriteProductService: FavoriteProductService,
     private val orderRequestRepository: OrderRequestRepository
 ) {
@@ -238,7 +240,8 @@ class ProductService(
     fun getProductDetail(productCode: String): ProductDetail {
         val product = productRepository.findByProductCode(productCode)
             ?: throw ProductNotFoundException(productCode)
-        return ProductDetail.Companion.from(product)
+        val barcodes = productBarcodeRepository.findByProductId(product.id)
+        return ProductDetail.Companion.from(product, barcodes)
     }
 
     private fun validateSearchType(type: String) {

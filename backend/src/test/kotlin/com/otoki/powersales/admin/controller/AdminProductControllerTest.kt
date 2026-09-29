@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.foundation.product.dto.response.ProductListRe
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductListItem
 import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree
 import com.otoki.powersales.domain.foundation.product.dto.response.Category2Node
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductAppVisibility
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductDetail
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResponse
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResultItem
@@ -66,7 +67,8 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                         shelfLife = "12",
                         shelfLifeUnit = "월",
                         tasteGift = "1",
-                        lastModifiedAt = "2026-01-01T00:00:00"
+                        lastModifiedAt = "2026-01-01T00:00:00",
+                        appVisibility = visibleAppVisibility()
                     )
                 ),
                 page = 0,
@@ -303,7 +305,8 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                 claimManagement = null,
                 createdAt = "2026-01-01T00:00:00",
                 lastModifiedAt = "2026-05-01T00:00:00",
-                barcodes = emptyList()
+                barcodes = emptyList(),
+                appVisibility = visibleAppVisibility()
             )
             every { adminProductService.getProductDetail(eq("P001")) } returns detail
 
@@ -313,6 +316,13 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.name").value("꿀배청 680G"))
         }
     }
+
+    /** 앱 노출 진단이 본 테스트의 관심사가 아닐 때 쓰는 "정상" 픽스처. */
+    private fun visibleAppVisibility() = ProductAppVisibility(
+        searchable = true,
+        orderable = true,
+        issues = emptyList()
+    )
 
     @Nested
     @DisplayName("POST /api/v1/admin/products/inventory-search - 재고조회 (UC-03/04)")

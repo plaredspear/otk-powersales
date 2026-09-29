@@ -12,6 +12,8 @@ interface ProductBarcodeRepository : JpaRepository<ProductBarcode, Int> {
 
     fun findByProductId(productId: Long): List<ProductBarcode>
 
+    fun findByProductIdIn(productIds: Collection<Long>): List<ProductBarcode>
+
     fun findByBarcode(barcode: String): List<ProductBarcode>
 
     fun findByCustomKey(customKey: String): ProductBarcode?

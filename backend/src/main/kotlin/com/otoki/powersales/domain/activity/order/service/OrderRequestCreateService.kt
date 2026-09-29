@@ -25,6 +25,7 @@ import com.otoki.powersales.domain.activity.order.util.OrderLineLimits
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.enums.ProductType
+import com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
@@ -435,16 +436,22 @@ class OrderRequestCreateService(
         /** SAP InventorySearch 제품별 정상 상태값 (레거시 `StringUtils.equals("OK", message)`). */
         private const val SAP_MESSAGE_OK = "OK"
 
-        /** 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합). */
-        private const val EXCLUSIVE_BLOCK_EXEMPT_CODE = "20010042"
+        /**
+         * 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합).
+         *
+         * 관리자 화면의 앱 노출 진단이 같은 예외를 적용해야 하므로 단일 출처는
+         * [ProductAppVisibilityEvaluator.EXCLUSIVE_BLOCK_EXEMPT_CODE] 이다.
+         */
+        private val EXCLUSIVE_BLOCK_EXEMPT_CODE = ProductAppVisibilityEvaluator.EXCLUSIVE_BLOCK_EXEMPT_CODE
 
         /**
          * 시식·증정용 판정값 (`DKRetail__Product__c.TasteGift__c`, SAP 제품마스터 수신값).
          *
          * SF 필드가 Text(1) 자유 입력이라 값 제약이 없어 레거시도 대소문자 양쪽을 비교했다
          * (`tgType == 'x' || tgType == 'X'`). 비교는 항상 ignoreCase 로 수행한다.
+         * 단일 출처는 [ProductAppVisibilityEvaluator.TASTE_GIFT_FLAG].
          */
-        private const val TASTE_GIFT_FLAG = "x"
+        private val TASTE_GIFT_FLAG = ProductAppVisibilityEvaluator.TASTE_GIFT_FLAG
         private const val ORDER_REQUEST_NUMBER_PREFIX = "OR"
         private const val ORDER_REQUEST_NUMBER_DIGITS = 8
     }

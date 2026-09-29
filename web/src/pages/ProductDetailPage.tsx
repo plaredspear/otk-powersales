@@ -9,6 +9,7 @@ import InventorySearchModal from '@/components/product/InventorySearchModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import { PRODUCT_STATUS_TAG } from '@/components/product/productStatus';
 import ProductStatusInfoIcon from '@/components/product/ProductStatusInfoIcon';
+import { ProductAppVisibilityPanel } from '@/components/product/ProductAppVisibility';
 
 
 const BARCODE_COLUMNS: ColumnsType<ProductBarcodeItem> = [
@@ -87,6 +88,9 @@ export default function ProductDetailPage() {
           재고조회
         </Button>
       </Space>
+
+      {/* 앱 노출 진단 — "판매중인데 앱에서 안 보인다" 를 상세 진입 즉시 판별할 수 있도록 최상단에 둔다. */}
+      <ProductAppVisibilityPanel visibility={data.appVisibility} />
 
       <Card title={data.name ?? data.productCode ?? '제품 상세'} style={{ marginBottom: 16 }}>
         <Row gutter={16}>
@@ -194,7 +198,15 @@ export default function ProductDetailPage() {
         </Descriptions>
       </Card>
 
-      <Card title={`제품 바코드 (${data.barcodes.length})`} style={{ marginBottom: 16 }}>
+      <Card
+        title={`제품 바코드 (${data.barcodes.length})`}
+        extra={
+          <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+            앱 제품검색은 발주단위({data.unit ?? '없음'})와 같은 단위의 바코드가 있어야 노출됩니다
+          </span>
+        }
+        style={{ marginBottom: 16 }}
+      >
         <ResizableTable
           rowKey="id"
           columns={BARCODE_COLUMNS}

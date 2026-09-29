@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.domain.foundation.product.entity.QProductBarcode.Companion.productBarcode
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
+import com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator
 import com.otoki.powersales.domain.activity.order.entity.QOrderRequest.Companion.orderRequest
 import com.otoki.powersales.domain.activity.order.entity.QOrderRequestProduct.Companion.orderRequestProduct
 import com.querydsl.core.types.dsl.Expressions
@@ -23,8 +24,13 @@ class ProductRepositoryCustomImpl(
 ) : ProductRepositoryCustom {
 
     companion object {
-        /** 레거시 제품검색 소분류(category3) 고정 필터 값 (label.properties: 가정/업소). */
-        private val ORDERABLE_CATEGORY3 = listOf("가정", "업소")
+        /**
+         * 레거시 제품검색 소분류(category3) 고정 필터 값 (label.properties: 가정/업소).
+         *
+         * 관리자 화면의 앱 노출 진단이 같은 값으로 판정해야 하므로 단일 출처는
+         * [ProductAppVisibilityEvaluator.ORDERABLE_CATEGORY3] 이다.
+         */
+        private val ORDERABLE_CATEGORY3 = ProductAppVisibilityEvaluator.ORDERABLE_CATEGORY3
     }
 
     /**
@@ -34,6 +40,12 @@ class ProductRepositoryCustomImpl(
      *     (레거시: `b.productbarcode__c IS NOT NULL AND a.dkretail__unit__c = b.productunit__c`)
      *  2) 소분류(category3) = '가정' 또는 '업소'
      *  3) productStatus IS NULL (활성 제품 — 단종/숨김 등 상태값이 찍힌 제품 제외)
+     *
+     * **NULL 안전성**: 소분류 조건에 `IS NOT NULL` 을 명시적으로 얹는다. `category3 IN (...)` 은
+     * category3 가 NULL 이면 결과가 NULL 이고, 술어가 그대로 쓰일 때는 WHERE 가 TRUE 만 통과시키므로
+     * 동작이 같지만 **부정(`NOT`) 으로 쓰이는 순간 달라진다** — `NOT NULL` 은 NULL 이라 행이
+     * 양쪽 어디에도 안 잡힌다. 관리자 목록의 "앱 미노출만" 필터가 이 술어를 부정해 쓰므로,
+     * 소분류가 비어 미노출인 제품이 그 목록에서 조용히 빠지는 것을 막는다.
      */
     private fun orderableProductFilter(): BooleanExpression {
         val unitMatchedBarcodeExists = JPAExpressions.selectOne()
@@ -46,6 +58,7 @@ class ProductRepositoryCustomImpl(
             .exists()
 
         return unitMatchedBarcodeExists
+            .and(product.productCategory3.isNotNull)
             .and(product.productCategory3.`in`(ORDERABLE_CATEGORY3))
             .and(product.productStatus.isNull)
     }
@@ -135,11 +148,19 @@ class ProductRepositoryCustomImpl(
         category2: String?,
         category3: String?,
         productStatus: String?,
+        appSearchable: Boolean?,
         pageable: Pageable
     ): Page<Product> {
         val builder = BooleanBuilder()
 
         builder.and(product.isDeleted.isNull.or(product.isDeleted.eq(false)))
+
+        // 앱 노출 여부 필터 — 모바일 검색과 **같은 술어**로 걸러야 목록이 진단 결과와 일치한다.
+        // 페이지 수/총건수가 맞아야 하므로 메모리 필터가 아니라 쿼리 술어로 처리한다.
+        if (appSearchable != null) {
+            val orderable = orderableProductFilter()
+            builder.and(if (appSearchable) orderable else orderable.not())
+        }
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"

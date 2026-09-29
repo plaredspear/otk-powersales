@@ -35,12 +35,19 @@ class AdminProductExportService(
     private val productRepository: ProductRepository
 ) {
 
+    /**
+     * 화면 조회 조건 그대로의 제품 목록 엑셀 생성.
+     *
+     * 목록 화면과 같은 `searchForAdmin` 술어를 쓰므로 [appSearchable] 앱 노출 필터도 함께 전달받는다 —
+     * 안 넘기면 "앱 미노출만" 으로 좁혀 놓고 받은 파일에 전체 제품이 들어가 화면과 어긋난다.
+     */
     fun exportByCondition(
         keyword: String?,
         category1: String?,
         category2: String?,
         category3: String?,
-        productStatus: String?
+        productStatus: String?,
+        appSearchable: Boolean? = null
     ): ByteArray {
         val products = productRepository.searchForAdmin(
             keyword = keyword,
@@ -48,6 +55,7 @@ class AdminProductExportService(
             category2 = category2,
             category3 = category3,
             productStatus = productStatus,
+            appSearchable = appSearchable,
             pageable = PageRequest.of(0, EXPORT_MAX_ROWS)
         ).content
 

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.product.dto.response
 
 import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.service.ProductAppVisibilityEvaluator
 
 /**
  * 주문 작성용 제품 검색 응답 DTO.
@@ -36,8 +37,13 @@ data class OrderProductDto(
     val recentlyOrdered: Boolean = false
 ) {
     companion object {
-        /** 레거시 전용상품 판정값 (DKRetail__ProductType__c). */
-        private const val EXCLUSIVE_PRODUCT_TYPE = "2"
+        /**
+         * 레거시 전용상품 판정값 (DKRetail__ProductType__c).
+         *
+         * 관리자 화면의 앱 노출 진단이 같은 값으로 판정해야 하므로 단일 출처는
+         * [ProductAppVisibilityEvaluator.EXCLUSIVE_PRODUCT_TYPE] 이다.
+         */
+        private val EXCLUSIVE_PRODUCT_TYPE = ProductAppVisibilityEvaluator.EXCLUSIVE_PRODUCT_TYPE.displayName
 
         fun from(product: Product, barcode: String? = null): OrderProductDto {
             val shelf = listOfNotNull(product.shelfLife, product.shelfLifeUnit)
@@ -57,7 +63,12 @@ data class OrderProductDto(
                 categoryMid = product.productCategory2,
                 categorySub = product.productCategory3,
                 productType = if (product.productType?.displayName == EXCLUSIVE_PRODUCT_TYPE) "EXCLUSIVE" else null,
-                tasteGiftType = if (product.tasteGift?.equals("x", ignoreCase = true) == true) "TASTING_GIFT" else null
+                tasteGiftType = if (
+                    product.tasteGift?.equals(
+                        ProductAppVisibilityEvaluator.TASTE_GIFT_FLAG,
+                        ignoreCase = true
+                    ) == true
+                ) "TASTING_GIFT" else null
             )
         }
     }

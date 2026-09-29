@@ -8,8 +8,33 @@ export interface FetchProductsParams {
   category2?: string;
   category3?: string;
   productStatus?: string;
+  /** 앱 노출 여부 필터 — true=앱 검색에 노출되는 제품만 / false=검색되지 않는 제품만 / undefined=전체 */
+  appSearchable?: boolean;
   page?: number;
   size?: number;
+}
+
+/**
+ * 제품의 모바일 앱 노출/주문 진단 결과 (백엔드 `ProductAppVisibilityEvaluator` 산출).
+ *
+ * 앱 검색 술어와 주문 차단 규칙을 서버가 그대로 평가한 결과이므로 화면에서 재계산하지 않는다.
+ */
+export interface ProductAppVisibility {
+  /** 앱 제품검색(주문서 제품검색 탭 / 제품조회 / 바코드 스캔)에 노출되는지 */
+  searchable: boolean;
+  /** 주문서에 담을 수 있는지 (전용상품 / 시식·증정용이 아닌지) */
+  orderable: boolean;
+  issues: ProductAppVisibilityIssue[];
+}
+
+export interface ProductAppVisibilityIssue {
+  code: string;
+  /** 'SEARCH' = 검색 자체에서 제외 / 'ORDER' = 검색은 되나 주문 담기 불가 */
+  scope: 'SEARCH' | 'ORDER';
+  /** 무엇이 문제인지 — 현재 값 포함 */
+  message: string;
+  /** 운영자가 다음에 확인할 곳 */
+  action: string;
 }
 
 export interface ProductDetail {
@@ -52,6 +77,7 @@ export interface ProductDetail {
   createdAt: string;
   lastModifiedAt: string;
   barcodes: ProductBarcodeItem[];
+  appVisibility: ProductAppVisibility;
 }
 
 export interface ProductBarcodeItem {
@@ -99,6 +125,7 @@ export interface Product {
   shelfLifeUnit: string | null;
   tasteGift: string | null;
   lastModifiedAt: string | null;
+  appVisibility: ProductAppVisibility;
 }
 
 export interface ProductListData {

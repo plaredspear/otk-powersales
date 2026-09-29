@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchPar
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.domain.foundation.product.repository.CategoryGroupRow
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductBarcodeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductSearchRow
 import com.otoki.powersales.domain.foundation.product.service.ProductService
@@ -26,11 +27,13 @@ import org.springframework.data.domain.PageRequest
 class ProductServiceTest {
 
     private val productRepository: ProductRepository = mockk()
+    private val productBarcodeRepository: ProductBarcodeRepository = mockk(relaxed = true)
     private val favoriteProductService: FavoriteProductService = mockk()
     private val orderRequestRepository: OrderRequestRepository = mockk(relaxed = true)
 
     private val productService = ProductService(
         productRepository,
+        productBarcodeRepository,
         favoriteProductService,
         orderRequestRepository,
     )

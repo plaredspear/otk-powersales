@@ -11,6 +11,7 @@ import { useProductInventorySearchStore } from '@/stores/productInventorySearchS
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
 import { PRODUCT_STATUS_TAG } from '@/components/product/productStatus';
+import { ProductAppVisibilityTag } from '@/components/product/ProductAppVisibility';
 import ProductStatusInfoIcon from '@/components/product/ProductStatusInfoIcon';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -24,6 +25,20 @@ const STATUS_OPTIONS = [
   { value: '판매중', label: '판매중' },
   { value: '단종', label: '단종' },
 ];
+
+// 앱 노출 필터 — 서버가 모바일 제품검색과 동일한 술어로 걸러준다(총건수/페이지 정합).
+const APP_VISIBILITY_OPTIONS = [
+  { value: '', label: '앱 노출 전체' },
+  { value: 'false', label: '앱 미노출만' },
+  { value: 'true', label: '앱 노출만' },
+];
+
+/** 앱 노출 필터 select 값('' | 'true' | 'false') → API 파라미터. */
+function toAppSearchableParam(value: string): boolean | undefined {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
+}
 
 
 const INVENTORY_SEARCH_MAX = 50;
@@ -48,15 +63,23 @@ export default function ProductPage() {
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
-    defaultFilters: { keyword: '', category1: '', category2: '', category3: '', productStatus: '' },
+    defaultFilters: {
+      keyword: '',
+      category1: '',
+      category2: '',
+      category3: '',
+      productStatus: '',
+      appSearchable: '',
+    },
   });
-  const { keyword, category1, category2, category3, productStatus } = filters;
+  const { keyword, category1, category2, category3, productStatus, appSearchable } = filters;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [keywordInput, setKeywordInput] = useState(keyword);
   const [category1Input, setCategory1Input] = useState(category1);
   const [category2Input, setCategory2Input] = useState(category2);
   const [category3Input, setCategory3Input] = useState(category3);
   const [productStatusInput, setProductStatusInput] = useState(productStatus);
+  const [appSearchableInput, setAppSearchableInput] = useState(appSearchable);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -69,6 +92,7 @@ export default function ProductPage() {
     category2: category2 || undefined,
     category3: category3 || undefined,
     productStatus: productStatus || undefined,
+    appSearchable: toAppSearchableParam(appSearchable),
     page,
     size,
   });
@@ -113,6 +137,7 @@ export default function ProductPage() {
       category2: category2Input,
       category3: category3Input,
       productStatus: productStatusInput,
+      appSearchable: appSearchableInput,
     });
   };
 
@@ -158,6 +183,7 @@ export default function ProductPage() {
         category2: category2 || undefined,
         category3: category3 || undefined,
         productStatus: productStatus || undefined,
+        appSearchable: toAppSearchableParam(appSearchable),
       },
       totalCount: data?.totalElements ?? 0,
       maxRows: EXCEL_EXPORT_MAX_ROWS,
@@ -236,6 +262,13 @@ export default function ProductPage() {
         val ? <Tag color={PRODUCT_STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
     {
+      title: '앱 노출',
+      dataIndex: 'appVisibility',
+      width: 90,
+      align: 'center',
+      render: (_: unknown, record) => <ProductAppVisibilityTag visibility={record.appVisibility} />,
+    },
+    {
       title: '증정/시식 구분',
       dataIndex: 'tasteGift',
       width: 80,
@@ -305,6 +338,12 @@ export default function ProductPage() {
           value={productStatusInput}
           options={STATUS_OPTIONS}
           onChange={setProductStatusInput}
+        />
+        <Select
+          style={{ width: 140 }}
+          value={appSearchableInput}
+          options={APP_VISIBILITY_OPTIONS}
+          onChange={setAppSearchableInput}
         />
         <Input
           placeholder="제품코드/제품명/바코드 검색"

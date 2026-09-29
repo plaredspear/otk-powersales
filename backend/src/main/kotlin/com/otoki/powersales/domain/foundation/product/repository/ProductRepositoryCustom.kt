@@ -57,12 +57,19 @@ interface ProductRepositoryCustom {
         pageable: Pageable
     ): Page<ProductSearchRow>
 
+    /**
+     * 관리자 제품 목록 검색.
+     *
+     * [appSearchable] 이 지정되면 모바일 제품검색 노출 조건(`orderableProductFilter`)으로 추가 필터링한다
+     * (`true` = 노출되는 제품만 / `false` = 앱에서 검색되지 않는 제품만). null 이면 미적용.
+     */
     fun searchForAdmin(
         keyword: String?,
         category1: String?,
         category2: String?,
         category3: String?,
         productStatus: String?,
+        appSearchable: Boolean? = null,
         pageable: Pageable
     ): Page<Product>
 
